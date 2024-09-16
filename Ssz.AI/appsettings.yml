@@ -1,0 +1,46 @@
+﻿Logging:
+  # задается уровень логирования событий в файлы журналов
+  LogLevel: 
+    Default: "Warning"
+    Grpc: "Warning"
+    System: "Warning"
+    Microsoft: "Warning"
+    Microsoft.Hosting.Lifetime: "Information"
+    # Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware: "None"
+  SszLogger: 
+    # путь до директории где будут храниться файлы журналов событий
+    LogsDirectory: "%ProgramData%\\SSZ\\Logs"
+    # базовое имя файлов журналов
+    LogFileName: "AI.log"
+    # Флаг указывающий на необходимость дублирования события в стандартный поток вывода приложения
+    DuplicateInConsole: "true"
+    # количество дней которое должны храниться файлы журналов
+    DaysCountToStoreFiles: "7"
+    # максимальный размер одного файла журнала
+    LogFileMaxSizeInBytes: "10000000"
+    # размер всех файлов журналов при котором пользователям с ролью администратор дается предупреждение в виде сообщения которое появляется в веб-интерфейсе ИТ-решения
+    LogFilesWarningSizeInBytes: "150000000"
+    # максимальный размер всех фалов журналов. Если размер превышает этот предел самые старые лог-файлы автоматически удаляются      
+    LogFilesMaxSizeInBytes: "200000000"
+Kestrel: 
+  EndpointDefaults: 
+    # Http1 нужен для TLS
+    Protocols: "Http1AndHttp2"   
+  Endpoints: 
+    HttpsDefaultCert: 
+      Url: "http://*:7000"
+  Certificates:
+    Default: 
+      Path: "certificate.pfx"      
+      Password: "identityserver"   
+      AllowInvalid: "true"     
+  Limits: 
+    # максимальный размер загружаемых через веб-интерфейс в ИТ-решение файлов
+    MaxRequestBodySize: "1024000000"
+MaxUploadFileSize: "1024000000"
+AllowedHosts: "*"
+# задается язык сообщений в журналах событий которые доступны через веб интерфейс ИТ-решения возможные значения RU EN
+UICulture: "RU"
+ConfigurationCrypterCertificateFileName: "appsettings.pfx"
+---
+  
