@@ -1,4 +1,8 @@
-﻿using OpenCvSharp;
+﻿using Avalonia.Controls;
+using Avalonia.Layout;
+using OpenCvSharp;
+using Ssz.AI.Helpers;
+using Ssz.AI.Views;
 using System;
 using System.Collections.Generic;
 
@@ -14,7 +18,10 @@ namespace Ssz.AI.Models
             var detectors = GenerateRandomCoordinatesAndRanges(numDetectors, new Size(28, 28), receptiveWidth);
             var visualization = new DetectorVisualization(detectors);
             var gifImages = GenerateGif();
-            visualization.Visualize(gifImages);
+
+            // TEMPCODE
+            ShowImages(gifImages);
+            //visualization.Visualize(gifImages);
         }
 
         public static List<Detector> GenerateRandomCoordinatesAndRanges(int numDetectors, Size imageShape, double receptiveWidth)
@@ -49,17 +56,49 @@ namespace Ssz.AI.Models
             var smallImage = new Mat();
             Cv2.Resize(image, smallImage, new Size(28, 28));
 
-            for (int i = 0; i < 100; i++)
-            {
-                var matExpr = Mat.Eye(rows: 2, cols: 3, MatType.CV_32F);
-                // TODO
-                //matExpr.Set(0, 2, i * 0.1f);
-                var shiftedImage = new Mat();
-                Cv2.WarpAffine(smallImage, shiftedImage, matExpr, new Size(28, 28));
-                images.Add(shiftedImage);
-            }
+            // TEMPCODE
+            images.Add(smallImage);
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    var matExpr = Mat.Eye(rows: 2, cols: 3, MatType.CV_32F);
+            //    // TODO
+            //    //matExpr.Set(0, 2, i * 0.1f);
+            //    var shiftedImage = new Mat();
+            //    Cv2.WarpAffine(smallImage, shiftedImage, matExpr, new Size(28, 28));
+            //    images.Add(shiftedImage);
+            //}
 
             return images;
+        }
+
+        private void ShowImages(List<Mat> images)
+        {
+            var window = new MainWindow
+            {
+                Width = 1500,
+                Height = 600,
+                Content = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal
+                }
+            };
+
+            var panel = (StackPanel)window.Content;
+
+            for (int i = 0; i < images.Count && i < 10; i += 1)
+            {
+                var image = images[i];
+                var bitmap = BitmapHelper.ConvertMatToBitmap(image);
+                var imageControl = new Image
+                {
+                    Source = bitmap,
+                    Width = 150,
+                    Height = 150
+                };
+                panel.Children.Add(imageControl);
+            }
+
+            window.Show();
         }
     }
 }

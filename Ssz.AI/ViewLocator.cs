@@ -7,7 +7,6 @@ namespace Ssz.AI
 {
     public class ViewLocator : IDataTemplate
     {
-
         public Control? Build(object? data)
         {
             if (data is null)

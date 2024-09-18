@@ -30,7 +30,7 @@ namespace Ssz.AI.Grafana
 
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddSingleton<BusinessLogic.Model>();            
+            services.AddSingleton<DataToDisplayHolder>();            
 
             IMvcCoreBuilder mvcBuilder = services.AddMvcCore(options =>
                 {
