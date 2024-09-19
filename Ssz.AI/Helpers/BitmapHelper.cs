@@ -3,12 +3,40 @@ using System;
 using System.DrawingCore;
 using System.DrawingCore.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Ssz.AI.Helpers
 {
     public static class BitmapHelper
     {
-        public static Avalonia.Media.Imaging.Bitmap ConvertMatToBitmap(Mat image)
+        //public static Bitmap ConvertImageDataToBitmap(byte[] imageData, int width, int height)
+        //{
+        //    Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
+
+        //    // Create a BitmapData and lock all pixels to be written 
+        //    BitmapData bitmapData = bitmap.LockBits(
+        //                        new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+        //                        ImageLockMode.WriteOnly, bitmap.PixelFormat);
+        //    // Copy the data from the byte array into BitmapData.Scan0
+        //    Marshal.Copy(imageData, 0, bitmapData.Scan0, imageData.Length);
+
+        //    // Unlock the pixels
+        //    bitmap.UnlockBits(bitmapData);
+
+        //    return bitmap;
+        //}
+
+        public static Avalonia.Media.Imaging.Bitmap ConvertImageToAvaloniaBitmap(Image image)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                image.Save(memoryStream, ImageFormat.Png);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+                return new Avalonia.Media.Imaging.Bitmap(memoryStream);
+            }
+        }
+
+        public static Avalonia.Media.Imaging.Bitmap ConvertMatToAvaloniaBitmap(Mat image)
         {
             using (var memoryStream = new MemoryStream())
             {

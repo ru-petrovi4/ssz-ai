@@ -28,7 +28,7 @@ namespace Ssz.AI.Grafana
 
         #region public functions           
 
-        public const string BooleanHisogram_Metric = @"BooleanHisogram";
+        public const string GradientHisogram_Metric = @"GradientHisogram";
 
         /// <summary>
         ///     Used for "Test connection" on the datasource config page.
@@ -52,19 +52,10 @@ namespace Ssz.AI.Grafana
                     {
                         new ListMetricsResponse
                         {
-                            Label = "Boolean Vector Info",
-                            Value = BooleanHisogram_Metric,
+                            Label = "Gradient Hisogram",
+                            Value = GradientHisogram_Metric,
                             Payloads = new List<ListMetricsResponsePayload>
-                            {
-                                //new ListMetricsResponsePayload
-                                //{
-                                //    Label = "N",
-                                //    Name = N_PropertyName,
-                                //    Type = ListMetricsResponsePayload.TypeEnum.Input,
-                                //    Placeholder = "integer",
-                                //    ReloadMetric = true,
-                                //    Width = 40,
-                                //},                                
+                            {                                                             
                             }
                         },                        
                     };
@@ -131,8 +122,8 @@ namespace Ssz.AI.Grafana
             {
                 switch (target.Target)
                 {
-                    case BooleanHisogram_Metric:
-                        result.Add(await Query_BooleanHisogram(queryRequest, target));
+                    case GradientHisogram_Metric:
+                        result.Add(await Query_GradientHisogram(queryRequest, target));
                         break;                    
                 }
             }
@@ -196,27 +187,41 @@ namespace Ssz.AI.Grafana
 
         #region private functions
 
-        private Task<QueryResponse> Query_BooleanHisogram(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
+        private Task<QueryResponse> Query_GradientHisogram(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
         {
             var jsonElement = (JObject)queryRequestTarget.Payload!;
             //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
 
-            List<object[]> rows = new List<object[]>();
-            //for (int i = 0; i <= n; i += 1)
-            //{
-            //    rows.Add([i.ToString(), ModelHelper.GetProbability(i, n, m)]);
-            //}
+            var data = _dataToDisplayHolder.GradientDistribution.Data;
+
+            int batchSize = 1;            
+            List<object[]> rows = new List<object[]>(data.Length);
+            int batchI = 0;
+            int count = 0;
+            for (int i = 0; i < data.Length; i += 1)
+            {
+                count += data[i];
+                batchI += 1;
+                if (batchI == batchSize)
+                {                    
+                    rows.Add([i.ToString(), count]);
+                    batchI = 0;
+                    count = 0;
+                }                
+            }
+
+            rows.RemoveAt(0);
 
             var queryResponse =
                 new QueryResponse
                 {
-                    Target = BooleanHisogram_Metric,
+                    Target = GradientHisogram_Metric,
                     //Datapoints = datapoints,
                     Type = QueryResponse.TypeEnum.Table,
                     Columns = new List<QueryResponseColumn>
                     {
-                                new QueryResponseColumn { Text = @"OnesCount", Type = QueryResponseColumn.TypeEnum.String },
-                                new QueryResponseColumn { Text = @"Probability", Type = QueryResponseColumn.TypeEnum.Number },
+                                new QueryResponseColumn { Text = @"Величина градиаента", Type = QueryResponseColumn.TypeEnum.String },
+                                new QueryResponseColumn { Text = @"Количество", Type = QueryResponseColumn.TypeEnum.Number },
                     },
                     Rows = rows,
                 };

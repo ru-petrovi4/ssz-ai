@@ -1,0 +1,43 @@
+﻿using Avalonia.Controls;
+using Avalonia.Layout;
+using Microsoft.Extensions.DependencyInjection;
+using OpenCvSharp;
+using Ssz.AI.Grafana;
+using Ssz.AI.Helpers;
+using Ssz.AI.Views;
+using System;
+using System.Collections.Generic;
+using System.DrawingCore;
+using System.Linq;
+using Size = System.DrawingCore.Size;
+
+namespace Ssz.AI.Models
+{
+    public class Model2
+    {
+        /// <summary>
+        ///     Построение графика распределения венлечин градиентов
+        /// </summary>
+        public Model2()
+        {
+            string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
+            string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
+
+            var (labels, images) = MNISTReader.ReadMNIST(labelsPath, imagesPath);
+
+            GradientDistribution gradientDistribution = new()
+            {
+                Data = new int[1449]
+            };            
+
+            foreach (int i in Enumerable.Range(0, images.Length))
+            {
+                // Применяем оператор Собеля
+                SobelOperator.ApplySobel(images[i], 28, 28, gradientDistribution);
+            }
+
+            DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            dataToDisplayHolder.GradientDistribution = gradientDistribution;
+        }
+    }
+}

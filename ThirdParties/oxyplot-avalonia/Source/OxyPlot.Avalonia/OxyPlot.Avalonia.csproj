@@ -33,6 +33,6 @@
   <ItemGroup>
     <EmbeddedResource Include="**\*.xaml;Assets\*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
     <PackageReference Include="Avalonia" Version="11.1.3" />
-    <PackageReference Include="OxyPlot.Core" Version="$(OxyPlotCoreVersion)" />
+    <PackageReference Include="OxyPlot.Core" Version="2.2.0" />
   </ItemGroup>
 </Project>

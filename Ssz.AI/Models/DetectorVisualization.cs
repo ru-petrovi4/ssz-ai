@@ -94,7 +94,7 @@ namespace Ssz.AI.Models
             for (int i = 0; i < images.Count && i < 10; i += 2)
             {
                 var image = images[i];
-                var bitmap = BitmapHelper.ConvertMatToBitmap(image);
+                var bitmap = BitmapHelper.ConvertMatToAvaloniaBitmap(image);
                 var imageControl = new Image
                 {
                     Source = bitmap,

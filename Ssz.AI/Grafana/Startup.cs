@@ -35,8 +35,8 @@ namespace Ssz.AI.Grafana
             IMvcCoreBuilder mvcBuilder = services.AddMvcCore(options =>
                 {
                     options.UseCentralRoutePrefix(new RouteAttribute(RouteNamespace));
-                });
-                //.AddNewtonsoftJson();
+                })
+                .AddNewtonsoftJson();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IServiceProvider serviceProvider, IConfiguration configuration)
