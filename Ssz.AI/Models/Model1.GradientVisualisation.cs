@@ -20,10 +20,12 @@ namespace Ssz.AI.Models
             string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
             string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
 
-            var (labels, images) = MNISTReader.ReadMNIST(labelsPath, imagesPath);            
+            var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
             // Применяем оператор Собеля к первому изображению
-            var (originalBitmap, gradientBitmap) = SobelOperator.ApplySobel(images[2], 28, 28);
+            var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
             // Сохраняем результат
             //gradientImage.Save("sobel_gradient_image.png");
 
@@ -42,8 +44,8 @@ namespace Ssz.AI.Models
 
             //var visualization = new DetectorVisualization(detectors);
             //var gifImages = GenerateGif();
-            
-            ShowImages([originalBitmap, gradientBitmap]);
+
+            VisualisationHelper.ShowImages([originalBitmap, gradientBitmap]);
             //visualization.Visualize(gifImages);
         }
 
@@ -64,7 +66,7 @@ namespace Ssz.AI.Models
 
                 if (!isOverlap)
                 {
-                    detectors.Add(new Detector(centerX, centerY, receptiveWidth, angleRange, gradientMagnitudeRange));
+                    //detectors.Add(new Detector(centerX, centerY, receptiveWidth, angleRange, gradientMagnitudeRange));
                 }
             }
 
@@ -92,65 +94,6 @@ namespace Ssz.AI.Models
         //    //}
 
         //    return images;
-        //}
-
-        private void ShowImages(System.DrawingCore.Image[] images)
-        {
-            var window = new MainWindow
-            {
-                Width = 1500,
-                Height = 600,
-                Content = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal
-                }
-            };
-
-            var panel = (StackPanel)window.Content;
-
-            for (int i = 0; i < images.Length && i < 10; i += 1)
-            {                
-                var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(images[i]);
-                var imageControl = new Avalonia.Controls.Image
-                {
-                    Source = bitmap,
-                    Width = 150,
-                    Height = 150
-                };
-                panel.Children.Add(imageControl);
-            }
-
-            window.Show();
-        }
-
-        private void ShowImages(List<Mat> images)
-        {
-            var window = new MainWindow
-            {
-                Width = 1500,
-                Height = 600,
-                Content = new StackPanel
-                {
-                    Orientation = Orientation.Horizontal
-                }
-            };
-
-            var panel = (StackPanel)window.Content;
-
-            for (int i = 0; i < images.Count && i < 10; i += 1)
-            {
-                var image = images[i];
-                var bitmap = BitmapHelper.ConvertMatToAvaloniaBitmap(image);
-                var imageControl = new Avalonia.Controls.Image
-                {
-                    Source = bitmap,
-                    Width = 150,
-                    Height = 150
-                };
-                panel.Children.Add(imageControl);
-            }
-
-            window.Show();
-        }
+        //}        
     }
 }

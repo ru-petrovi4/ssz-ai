@@ -1,5 +1,7 @@
 ﻿using OpenCvSharp;
+using Ssz.AI.Models;
 using System;
+using System.Collections.Generic;
 using System.DrawingCore;
 using System.DrawingCore.Imaging;
 using System.IO;
@@ -24,7 +26,7 @@ namespace Ssz.AI.Helpers
         //    bitmap.UnlockBits(bitmapData);
 
         //    return bitmap;
-        //}
+        //}               
 
         public static Avalonia.Media.Imaging.Bitmap ConvertImageToAvaloniaBitmap(Image image)
         {
@@ -172,6 +174,6 @@ namespace Ssz.AI.Helpers
                 if (bd is not null)
                     dst.UnlockBits(bd);
             }
-        }
+        }               
     }
 }

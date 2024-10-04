@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using Ssz.AI.Core.Grafana;
 using Ssz.Utils;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -192,12 +193,12 @@ namespace Ssz.AI.Grafana
             var jsonElement = (JObject)queryRequestTarget.Payload!;
             //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
 
-            var data = _dataToDisplayHolder.GradientDistribution.Data;
+            var data = _dataToDisplayHolder.GradientDistribution.MagnitudeData;
 
             int batchSize = 1;            
             List<object[]> rows = new List<object[]>(data.Length);
             int batchI = 0;
-            int count = 0;
+            UInt64 count = 0;
             for (int i = 0; i < data.Length; i += 1)
             {
                 count += data[i];

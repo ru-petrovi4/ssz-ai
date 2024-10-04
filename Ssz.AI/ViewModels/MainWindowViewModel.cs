@@ -6,7 +6,7 @@ namespace Ssz.AI.ViewModels
     {
         public MainWindowViewModel() 
         { 
-            new Model2();
+            new Model3();
         }        
     }
 }

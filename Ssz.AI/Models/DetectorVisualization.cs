@@ -22,36 +22,36 @@ namespace Ssz.AI.Models
             this.detectors = detectors;
         }
 
-        public void Visualize(List<Mat> images)
-        {
-            var scalarProducts = new List<double>();
-            List<int>? firstImageActivations = null;
+        //public void Visualize(List<Mat> images)
+        //{
+        //    var scalarProducts = new List<double>();
+        //    List<int>? firstImageActivations = null;
 
-            for (int i = 0; i < images.Count; i++)
-            {
-                var image = images[i];
-                var imageActivations = detectors.ConvertAll(d => d.IsActivated(image) ? 1 : 0);
+        //    for (int i = 0; i < images.Count; i++)
+        //    {
+        //        var image = images[i];
+        //        var imageActivations = detectors.ConvertAll(d => d.IsActivated(image) ? 1 : 0);
 
-                if (firstImageActivations != null)
-                {
-                    var scalarProduct = 0.0;
-                    for (int j = 0; j < imageActivations.Count; j++)
-                    {
-                        scalarProduct += imageActivations[j] * firstImageActivations[j];
-                    }
+        //        if (firstImageActivations != null)
+        //        {
+        //            var scalarProduct = 0.0;
+        //            for (int j = 0; j < imageActivations.Count; j++)
+        //            {
+        //                scalarProduct += imageActivations[j] * firstImageActivations[j];
+        //            }
 
-                    scalarProducts.Add(scalarProduct);
-                    //Console.WriteLine($"{Math.Round(i * 0.1, 1)}, SP = {Math.Round(scalarProduct, 1)}");
-                }
-                else
-                {
-                    firstImageActivations = imageActivations;
-                }
-            }
+        //            scalarProducts.Add(scalarProduct);
+        //            //Console.WriteLine($"{Math.Round(i * 0.1, 1)}, SP = {Math.Round(scalarProduct, 1)}");
+        //        }
+        //        else
+        //        {
+        //            firstImageActivations = imageActivations;
+        //        }
+        //    }
 
-            ShowGraph(scalarProducts);
-            ShowImages(images, scalarProducts);
-        }
+        //    ShowGraph(scalarProducts);
+        //    ShowImages(images, scalarProducts);
+        //}
 
         private void ShowGraph(List<double> scalarProducts)
         {

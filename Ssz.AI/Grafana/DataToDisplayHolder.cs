@@ -12,6 +12,11 @@ namespace Ssz.AI.Grafana
         /// <summary>
         ///     количество
         /// </summary>
-        public int[] Data = Array.Empty<int>();
+        public UInt64[] MagnitudeData = Array.Empty<UInt64>();
+
+        /// <summary>
+        ///     количество
+        /// </summary>
+        public UInt64[] AngleData = Array.Empty<UInt64>();
     }
 }

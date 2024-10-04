@@ -16,24 +16,26 @@ namespace Ssz.AI.Models
     public class Model2
     {
         /// <summary>
-        ///     Построение графика распределения венлечин градиентов
+        ///     Построение графика распределения величин градиентов
         /// </summary>
         public Model2()
         {
             string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
             string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
 
-            var (labels, images) = MNISTReader.ReadMNIST(labelsPath, imagesPath);
+            var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
             GradientDistribution gradientDistribution = new()
             {
-                Data = new int[1449]
+                MagnitudeData = new UInt64[SobelOperator.MagnitudeUpperLimit],
+                AngleData = new UInt64[360]
             };            
 
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                SobelOperator.ApplySobel(images[i], 28, 28, gradientDistribution);
+                GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[i], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+                SobelOperator.CalculateDistribution(gradientMatrix, gradientDistribution);
             }
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
