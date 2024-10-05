@@ -121,7 +121,7 @@ namespace Ssz.AI.Models
                 for (int y = 0; y < height; y += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt == 0)
+                    if (magnitudeInt < Detector.GradientMagnitudeMinimum)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;

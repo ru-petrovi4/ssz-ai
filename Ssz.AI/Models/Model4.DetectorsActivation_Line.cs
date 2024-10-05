@@ -1,5 +1,4 @@
-﻿using Avalonia.Controls;
-using Avalonia.Layout;
+﻿using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
@@ -15,10 +14,8 @@ using Size = System.DrawingCore.Size;
 namespace Ssz.AI.Models
 {
     public class Model4
-    {        
-        public const int AngleRangesCount = 4;
-
-        public const int MagnitudeRangesCount = 4;        
+    {
+        #region construction and destruction
 
         /// <summary>
         ///     Построение графика распределения венлечин градиентов
@@ -45,41 +42,93 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            List<Detector> detectors = DetectorsGenerator.Generate(gradientDistribution);            
+            _detectors = DetectorsGenerator.Generate(gradientDistribution);
+        }
 
+        #endregion
+
+        #region public functions
+
+        public const int AngleRangesCount = 4;
+
+        public const int MagnitudeRangesCount = 4;
+
+        public Image[] GetImages(double positionK, double angleK)
+        {
             // Создаем изображение размером 280x280
             int width = 280;
             int height = 280;
-            Bitmap bitmap = new Bitmap(width, height);
-            using (Graphics g = Graphics.FromImage(bitmap))
+
+            int centerX = (int)(width / 2.0 + positionK * width);
+            int centerY = (int)(height / 2.0);
+
+            double angle = Math.PI / 2 + angleK * 2 * Math.PI;
+
+            // Длина линии
+            int lineLength = 100;
+
+            // Рассчитываем конечные координаты линии
+            int endX = (int)(centerX + lineLength * Math.Cos(angle));
+            int endY = (int)(centerY + lineLength * Math.Sin(angle));
+
+            // Рассчитываем начальные координаты линии (в противоположном направлении)
+            int startX = (int)(centerX - lineLength * Math.Cos(angle));
+            int startY = (int)(centerY - lineLength * Math.Sin(angle));
+
+            Bitmap originalBitmap = new Bitmap(width, height);
+            using (Graphics g = Graphics.FromImage(originalBitmap))
             {
                 // Устанавливаем черный фон
                 g.Clear(Color.Black);
 
-                // Настраиваем качество сглаживания
-                g.SmoothingMode = SmoothingMode.AntiAlias;
+                // Настраиваем высококачественные параметры
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
 
                 // Создаем кисть и устанавливаем толщину линии
                 using (Pen pen = new Pen(Color.White, 15))
-                {
+                {                    
                     // Рисуем наклонную линию
-                    g.DrawLine(pen, 0, 0, width, height);
+                    g.DrawLine(pen, startX, startY, endX, endY);
                 }
             }
 
             // Уменьшаем изображение до размера 28x28
-            Bitmap resizedBitmap = new Bitmap(bitmap, new Size(MNISTHelper.ImageWidth, MNISTHelper.ImageHeight));
+
+            // Создаем пустое изображение 28x28
+            Bitmap resizedBitmap = new Bitmap(MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            using (Graphics g = Graphics.FromImage(resizedBitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+
+                // Настраиваем высококачественные параметры для уменьшения
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                // Масштабируем изображение
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.ImageWidth, MNISTHelper.ImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+            }
+
             // Применяем оператор Собеля к первому изображению
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
 
-            List<Detector> activatedDetectors = detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();            
-                     
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);            
+            List<Detector> activatedDetectors = _detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();
+
+            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
             //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
-            VisualisationHelper.ShowImages([bitmap, resizedBitmap, gradientBitmap, detectorsActivationBitmap]);
+            return [originalBitmap, resizedBitmap, gradientBitmap, detectorsActivationBitmap];
         }
+
+        #endregion
+
+        #region private functions
 
         private UInt64[] GetAccumulativeDistribution(UInt64[] distribution)
         {
@@ -106,7 +155,7 @@ namespace Ssz.AI.Models
             UInt64 rangeSamples = (maxSamples / (UInt64)rangesCount);
             UInt64 lowLimitSamples = (UInt64)(random.NextDouble() * maxSamples);
             UInt64 hightLimitSamples = lowLimitSamples + rangeSamples;
-            int lowLimitIndex = 0;            
+            int lowLimitIndex = 0;
             foreach (int i in Enumerable.Range(0, accumulativeDistribution.Length))
             {
                 if (lowLimitSamples < accumulativeDistribution[i])
@@ -114,7 +163,7 @@ namespace Ssz.AI.Models
                     lowLimitIndex = i;
                     break;
                 }
-            }            
+            }
             int highLimitIndex = accumulativeDistribution.Length;
             foreach (int i in Enumerable.Range(lowLimitIndex + 1, accumulativeDistribution.Length - lowLimitIndex - 1))
             {
@@ -123,8 +172,16 @@ namespace Ssz.AI.Models
                     highLimitIndex = i;
                     break;
                 }
-            }                        
+            }
             return (lowLimitIndex, highLimitIndex);
         }
+
+        #endregion
+
+        #region private fields
+
+        private List<Detector> _detectors;
+
+        #endregion        
     }
 }

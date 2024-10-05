@@ -23,13 +23,12 @@ namespace Ssz.AI.Models
             {
                 foreach (int j in Enumerable.Range(0, (MNISTHelper.ImageHeight - 1) * 10))
                 {
-                    var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = GetLimitsIndices(magnitudeAccumulativeDistribution, random, MagnitudeRangesCount);
-                    var (gradientAngleLowLimitIndex, gradientAngleHighLimitIndex) = GetLimitsIndices(angleAccumulativeDistribution, random, AngleRangesCount);
+                    var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = GetLimitsIndices(magnitudeAccumulativeDistribution, random, MagnitudeRangesCount);                       
 
-                    double gradientAngleLowLimit = Math.PI * gradientAngleLowLimitIndex / 180.0 - Math.PI;
+                    double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
                     double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / AngleRangesCount;
                     if (gradientAngleHighLimit > Math.PI)
-                        gradientAngleHighLimit -= 2 * Math.PI;
+                        gradientAngleHighLimit = gradientAngleHighLimit - 2 * Math.PI;
 
                     Detector detector = new()
                     {
@@ -68,8 +67,8 @@ namespace Ssz.AI.Models
         private static (int lowLimitIndex, int highLimitIndex) GetLimitsIndices(UInt64[] accumulativeDistribution, Random random, int rangesCount)
         {
             UInt64 maxSamples = accumulativeDistribution[^1]; // Последний элемент массиваж
-            UInt64 rangeSamples = (maxSamples / (UInt64)rangesCount);
-            UInt64 lowLimitSamples = (UInt64)(random.NextDouble() * maxSamples);
+            UInt64 rangeSamples = maxSamples / (UInt64)rangesCount;
+            UInt64 lowLimitSamples = (UInt64)(random.NextDouble() * (maxSamples + rangeSamples)) - rangeSamples;
             UInt64 hightLimitSamples = lowLimitSamples + rangeSamples;
             int lowLimitIndex = 0;
             foreach (int i in Enumerable.Range(0, accumulativeDistribution.Length))

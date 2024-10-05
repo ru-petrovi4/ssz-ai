@@ -6,6 +6,11 @@ namespace Ssz.AI.Models
 {
     public class Detector
     {
+        /// <summary>
+        ///     Минимальная чувствительность к модулю градиента
+        /// </summary>
+        public const double GradientMagnitudeMinimum = 5.0;
+
         public double CenterX { get; init; }
         public double CenterY { get; init; }
         //public double Width { get; init; }
@@ -23,6 +28,9 @@ namespace Ssz.AI.Models
         public bool IsActivated(GradientInPoint[,] gradientMatrix)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX, CenterY, gradientMatrix);            
+
+            if (magnitude < GradientMagnitudeMinimum) 
+                return false;
 
             bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeHighLimit);
             if (!activated)
