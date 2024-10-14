@@ -34,7 +34,7 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[i], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+                GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
                 SobelOperator.CalculateDistribution(gradientMatrix, gradientDistribution);
             }
 

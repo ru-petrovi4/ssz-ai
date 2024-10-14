@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
 using Ssz.AI.ViewModels;
+using Ssz.Utils;
 using System;
 
 namespace Ssz.AI.Views;
@@ -37,6 +38,13 @@ public partial class Model4View : UserControl
         double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
         var images = _model4.GetImages(position, angle);
+
+        this.FindControl<TextBlock>("PositionTextBlock")!.Text = 
+            new Any(_model4.CenterXDelta).ValueAsString(false);
+        this.FindControl<TextBlock>("AngleTextBlock")!.Text = 
+            new Any(180.0 * _model4.AngleDelta / Math.PI).ValueAsString(false);
+        this.FindControl<TextBlock>("ScalarProductTextBlock")!.Text = 
+            new Any(_model4.DetectorsActivationScalarProduct / _model4.DetectorsActivationScalarProduct0).ValueAsString(false);
 
         var panel = this.FindControl<StackPanel>("MainStackPanel")!;
         panel.Children.Clear();

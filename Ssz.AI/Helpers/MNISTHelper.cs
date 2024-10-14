@@ -10,9 +10,9 @@ namespace Ssz.AI.Helpers
     {
         #region public functions
 
-        public const int ImageWidth = 28;
+        public const int MNISTImageWidth = 28;
 
-        public const int ImageHeight = 28;
+        public const int MNISTImageHeight = 28;
 
         public static (byte[] labels, byte[][] images) ReadMNIST(string labelsPath, string imagesPath)
         {

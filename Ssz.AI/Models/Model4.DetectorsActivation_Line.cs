@@ -33,16 +33,41 @@ namespace Ssz.AI.Models
                 AngleData = new UInt64[360]
             };
 
-            //List<GradientInPoint[,]> gradientMatricesCollection = new(images.Length);
+            List<GradientInPoint[,]> gradientMatricesCollection = new(images.Length);
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
-                //gradientMatricesCollection.Add(gradientMatrix);
+                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+                gradientMatricesCollection.Add(gm);
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
             _detectors = DetectorsGenerator.Generate(gradientDistribution);
+
+            // Вызываем для вычисления начального вектора активации детекторов
+            GetImages(0.0, 0.0);
+
+            Cortex = new(
+                CortexWidth,
+                CortexHeight,
+                MNISTHelper.MNISTImageWidth,
+                MNISTHelper.MNISTImageHeight,
+                MiniColumnVisibleDetectorsCount,
+                0.01,
+                HashLength,
+                _detectors
+                );
+
+            DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            foreach (var gradientMatrix in gradientMatricesCollection)
+            {
+                List<Detector> activatedDetectors = _detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();
+
+                foreach (var miniColumn in Cortex.MiniColumns)
+                {                    
+                    dataToDisplayHolder.MiniColumsActiveBitsDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+                }                
+            }
         }
 
         #endregion
@@ -53,29 +78,50 @@ namespace Ssz.AI.Models
 
         public const int MagnitudeRangesCount = 4;
 
+        public const int GeneratedImageWidth = 280;
+        public const int GeneratedImageHeight = 280;
+
+        public const int CortexWidth = 200;
+        public const int CortexHeight = 200;
+
+        public const int MiniColumnVisibleDetectorsCount = 250;
+
+        public const int HashLength = 200;
+
+        public double DetectorsActivationScalarProduct0 { get; set; }
+        public double DetectorsActivationScalarProduct { get; set; }
+
+        public int CenterX { get; set; }
+        public int CenterXDelta { get; set; }
+        public int CenterY { get; set; }
+        public double AngleDelta { get; set; }
+        public double Angle { get; set; }
+
+        public Cortex Cortex { get; }
+
         public Image[] GetImages(double positionK, double angleK)
         {
-            // Создаем изображение размером 280x280
-            int width = 280;
-            int height = 280;
+            // Создаем изображение размером 280x280           
 
-            int centerX = (int)(width / 2.0 + positionK * width);
-            int centerY = (int)(height / 2.0);
+            CenterXDelta = (int)(positionK * GeneratedImageWidth / 2.0); 
+            CenterX = (int)(GeneratedImageWidth / 2.0) + CenterXDelta;
+            CenterY = (int)(GeneratedImageHeight / 2.0);
 
-            double angle = Math.PI / 2 + angleK * 2 * Math.PI;
+            AngleDelta = angleK * 2.0 * Math.PI;
+            Angle = Math.PI / 2 + AngleDelta;
 
             // Длина линии
             int lineLength = 100;
 
             // Рассчитываем конечные координаты линии
-            int endX = (int)(centerX + lineLength * Math.Cos(angle));
-            int endY = (int)(centerY + lineLength * Math.Sin(angle));
+            int endX = (int)(CenterX + lineLength * Math.Cos(Angle));
+            int endY = (int)(CenterY + lineLength * Math.Sin(Angle));
 
             // Рассчитываем начальные координаты линии (в противоположном направлении)
-            int startX = (int)(centerX - lineLength * Math.Cos(angle));
-            int startY = (int)(centerY - lineLength * Math.Sin(angle));
+            int startX = (int)(CenterX - lineLength * Math.Cos(Angle));
+            int startY = (int)(CenterY - lineLength * Math.Sin(Angle));
 
-            Bitmap originalBitmap = new Bitmap(width, height);
+            Bitmap originalBitmap = new Bitmap(GeneratedImageWidth, GeneratedImageHeight);
             using (Graphics g = Graphics.FromImage(originalBitmap))
             {
                 // Устанавливаем черный фон
@@ -98,7 +144,7 @@ namespace Ssz.AI.Models
             // Уменьшаем изображение до размера 28x28
 
             // Создаем пустое изображение 28x28
-            Bitmap resizedBitmap = new Bitmap(MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
             using (Graphics g = Graphics.FromImage(resizedBitmap))
             {
                 // Устанавливаем черный фон
@@ -111,18 +157,39 @@ namespace Ssz.AI.Models
                 g.CompositingQuality = CompositingQuality.HighQuality;
 
                 // Масштабируем изображение
-                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.ImageWidth, MNISTHelper.ImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
             }
 
             // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
             List<Detector> activatedDetectors = _detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();
 
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            if (positionK == 0.0 && angleK == 0.0)
+            {
+                _detectorsActivationBitmap0 = detectorsActivationBitmap;
+            }
 
-            //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            double detectorsActivationScalarProduct = 0.0;
+            for (int y = 0; y < _detectorsActivationBitmap0.Height; y += 1)
+            {
+                for (int x = 0; x < _detectorsActivationBitmap0.Width; x += 1)
+                {
+                    var p0 = _detectorsActivationBitmap0.GetPixel(x, y);
+                    var p = detectorsActivationBitmap.GetPixel(x, y);
+                    if (p0.R > 0 && p.R > 0)
+                        detectorsActivationScalarProduct += 1.0;
+                }
+            }
+            DetectorsActivationScalarProduct = detectorsActivationScalarProduct;
+
+            if (positionK == 0.0 && angleK == 0.0)
+            {
+                DetectorsActivationScalarProduct0 = detectorsActivationScalarProduct;
+            }
+            
             return [originalBitmap, resizedBitmap, gradientBitmap, detectorsActivationBitmap];
         }
 
@@ -181,6 +248,10 @@ namespace Ssz.AI.Models
         #region private fields
 
         private List<Detector> _detectors;
+        /// <summary>
+        ///     Начальная картина активации детекторов (до смещения).
+        /// </summary>
+        public Bitmap _detectorsActivationBitmap0 = null!;
 
         #endregion        
     }

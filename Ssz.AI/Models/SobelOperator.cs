@@ -26,9 +26,9 @@ namespace Ssz.AI.Models
         {
             GradientInPoint[,] gradientMatrix = new GradientInPoint[width, height];
 
-            for (int x = 1; x < width - 1; x += 1) 
+            for (int y = 1; y < height - 1; y += 1)                
             {
-                for (int y = 1; y < height - 1; y += 1)
+                for (int x = 1; x < width - 1; x += 1)
                 {
                     // Применяем фильтры Собеля для X и Y
                     int gradX = 0;
@@ -67,9 +67,9 @@ namespace Ssz.AI.Models
         {
             GradientInPoint[,] gradientMatrix = new GradientInPoint[width, height];
 
-            for (int x = 1; x < width - 1; x += 1)
+            for (int y = 1; y < height - 1; y += 1)                
             {
-                for (int y = 1; y < height - 1; y += 1)
+                for (int x = 1; x < width - 1; x += 1)
                 {
                     // Применяем фильтры Собеля для X и Y
                     int gradX = 0;
@@ -116,9 +116,9 @@ namespace Ssz.AI.Models
             int width = gradientMatrix.GetLength(0);
             int height = gradientMatrix.GetLength(1);
 
-            for (int x = 0; x < width; x += 1) 
+            for (int y = 0; y < height; y += 1)                
             {
-                for (int y = 0; y < height; y += 1)
+                for (int x = 0; x < width; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
                     if (magnitudeInt < Detector.GradientMagnitudeMinimum)

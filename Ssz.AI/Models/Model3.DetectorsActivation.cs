@@ -35,7 +35,7 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
                 //gradientMatricesCollection.Add(gradientMatrix);
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
@@ -43,9 +43,9 @@ namespace Ssz.AI.Models
             List<Detector> detectors = DetectorsGenerator.Generate(gradientDistribution);
 
             // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);
+            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
             List<Detector> activatedDetectors = detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();            
-            var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.ImageWidth, MNISTHelper.ImageHeight);            
+            var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);            
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);            
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 

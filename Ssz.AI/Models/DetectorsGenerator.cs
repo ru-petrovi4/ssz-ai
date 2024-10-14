@@ -18,10 +18,10 @@ namespace Ssz.AI.Models
             UInt64[] angleAccumulativeDistribution = GetAccumulativeDistribution(gradientDistribution.AngleData);
 
             Random random = new();
-            List<Detector> detectors = new(MNISTHelper.ImageWidth * MNISTHelper.ImageHeight * 100);
-            foreach (int i in Enumerable.Range(0, (MNISTHelper.ImageWidth - 1) * 10))
+            List<Detector> detectors = new(MNISTHelper.MNISTImageWidth * MNISTHelper.MNISTImageHeight * 100);
+            foreach (int i in Enumerable.Range(0, (MNISTHelper.MNISTImageWidth - 1) * 10))
             {
-                foreach (int j in Enumerable.Range(0, (MNISTHelper.ImageHeight - 1) * 10))
+                foreach (int j in Enumerable.Range(0, (MNISTHelper.MNISTImageHeight - 1) * 10))
                 {
                     var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = GetLimitsIndices(magnitudeAccumulativeDistribution, random, MagnitudeRangesCount);                       
 
