@@ -25,11 +25,7 @@ namespace Ssz.AI.Models
 
             var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
-            GradientDistribution gradientDistribution = new()
-            {
-                MagnitudeData = new UInt64[SobelOperator.MagnitudeUpperLimit],
-                AngleData = new UInt64[360]
-            };
+            GradientDistribution gradientDistribution = new();
 
             //List<GradientInPoint[,]> gradientMatricesCollection = new(images.Length);
             foreach (int i in Enumerable.Range(0, images.Length))
@@ -40,17 +36,23 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            List<Detector> detectors = DetectorsGenerator.Generate(gradientDistribution);
+            List<Detector> detectors = DetectorsGenerator.Generate(gradientDistribution, AngleRangesCount, MagnitudeRangesCount, HashLength);
 
             // Применяем оператор Собеля к первому изображению
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
-            List<Detector> activatedDetectors = detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();            
+            List<Detector> activatedDetectors = detectors.Where(d => d.GetIsActivated(gradientMatrix)).ToList();            
             var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);            
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);            
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
             //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             VisualisationHelper.ShowImages([originalBitmap, gradientBitmap, detectorsActivationBitmap]);
-        }            
+        }
+
+        public const int AngleRangesCount = 4;
+
+        public const int MagnitudeRangesCount = 4;
+
+        public const int HashLength = 200;
     }
 }

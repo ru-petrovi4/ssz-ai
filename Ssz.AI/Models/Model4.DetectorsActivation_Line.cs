@@ -9,6 +9,8 @@ using System.Collections.Generic;
 using System.DrawingCore;
 using System.DrawingCore.Drawing2D;
 using System.Linq;
+using System.Numerics.Tensors;
+using System.Threading.Tasks;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -18,7 +20,7 @@ namespace Ssz.AI.Models
         #region construction and destruction
 
         /// <summary>
-        ///     Построение графика распределения венлечин градиентов
+        ///     Построение графика распределения велечин градиентов
         /// </summary>
         public Model4()
         {
@@ -27,11 +29,7 @@ namespace Ssz.AI.Models
 
             var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
-            GradientDistribution gradientDistribution = new()
-            {
-                MagnitudeData = new UInt64[SobelOperator.MagnitudeUpperLimit],
-                AngleData = new UInt64[360]
-            };
+            GradientDistribution gradientDistribution = new();
 
             List<GradientInPoint[,]> gradientMatricesCollection = new(images.Length);
             foreach (int i in Enumerable.Range(0, images.Length))
@@ -42,51 +40,40 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            _detectors = DetectorsGenerator.Generate(gradientDistribution);
+            _detectors = DetectorsGenerator.Generate(gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
 
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
 
-            Cortex = new(
-                CortexWidth,
-                CortexHeight,
-                MNISTHelper.MNISTImageWidth,
-                MNISTHelper.MNISTImageHeight,
-                MiniColumnVisibleDetectorsCount,
-                0.01,
-                HashLength,
-                _detectors
-                );
+            Cortex = new Cortex(Constants, _detectors);
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             foreach (var gradientMatrix in gradientMatricesCollection)
             {
-                List<Detector> activatedDetectors = _detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();
+                Parallel.For(
+                    fromInclusive: 0,
+                    toExclusive: _detectors.Count,
+                    i =>
+                    {
+                        var d = _detectors[i];
+                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                    });               
 
                 foreach (var miniColumn in Cortex.MiniColumns)
-                {                    
-                    dataToDisplayHolder.MiniColumsActiveBitsDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+                {
+                    miniColumn.CalculateHash(miniColumn.Temp_Hash);
+                    int bitsCountInHash = (int)TensorPrimitives.Sum(miniColumn.Temp_Hash);
+                    //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+                    dataToDisplayHolder.MiniColumsBitsCountInHashDistribution[bitsCountInHash] += 1;
                 }                
             }
         }
 
         #endregion
 
-        #region public functions
+        #region public functions       
 
-        public const int AngleRangesCount = 4;
-
-        public const int MagnitudeRangesCount = 4;
-
-        public const int GeneratedImageWidth = 280;
-        public const int GeneratedImageHeight = 280;
-
-        public const int CortexWidth = 200;
-        public const int CortexHeight = 200;
-
-        public const int MiniColumnVisibleDetectorsCount = 250;
-
-        public const int HashLength = 200;
+        public readonly ModelConstants Constants = new();
 
         public double DetectorsActivationScalarProduct0 { get; set; }
         public double DetectorsActivationScalarProduct { get; set; }
@@ -103,9 +90,9 @@ namespace Ssz.AI.Models
         {
             // Создаем изображение размером 280x280           
 
-            CenterXDelta = (int)(positionK * GeneratedImageWidth / 2.0); 
-            CenterX = (int)(GeneratedImageWidth / 2.0) + CenterXDelta;
-            CenterY = (int)(GeneratedImageHeight / 2.0);
+            CenterXDelta = (int)(positionK * Constants.GeneratedImageWidth / 2.0); 
+            CenterX = (int)(Constants.GeneratedImageWidth / 2.0) + CenterXDelta;
+            CenterY = (int)(Constants.GeneratedImageHeight / 2.0);
 
             AngleDelta = angleK * 2.0 * Math.PI;
             Angle = Math.PI / 2 + AngleDelta;
@@ -121,7 +108,7 @@ namespace Ssz.AI.Models
             int startX = (int)(CenterX - lineLength * Math.Cos(Angle));
             int startY = (int)(CenterY - lineLength * Math.Sin(Angle));
 
-            Bitmap originalBitmap = new Bitmap(GeneratedImageWidth, GeneratedImageHeight);
+            Bitmap originalBitmap = new Bitmap(Constants.GeneratedImageWidth, Constants.GeneratedImageHeight);
             using (Graphics g = Graphics.FromImage(originalBitmap))
             {
                 // Устанавливаем черный фон
@@ -163,7 +150,7 @@ namespace Ssz.AI.Models
             // Применяем оператор Собеля к первому изображению
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
-            List<Detector> activatedDetectors = _detectors.Where(d => d.IsActivated(gradientMatrix)).ToList();
+            List<Detector> activatedDetectors = _detectors.Where(d => d.GetIsActivated(gradientMatrix)).ToList();
 
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
@@ -193,57 +180,7 @@ namespace Ssz.AI.Models
             return [originalBitmap, resizedBitmap, gradientBitmap, detectorsActivationBitmap];
         }
 
-        #endregion
-
-        #region private functions
-
-        private UInt64[] GetAccumulativeDistribution(UInt64[] distribution)
-        {
-            UInt64[] result = new UInt64[distribution.Length];
-            UInt64 value = 0;
-            foreach (int i in Enumerable.Range(0, distribution.Length))
-            {
-                value += distribution[i];
-                result[i] = value;
-            }
-            return result;
-        }
-
-        /// <summary>
-        ///     Returns highLimitIndex > lowLimitIndex
-        /// </summary>
-        /// <param name="accumulativeDistribution"></param>
-        /// <param name="random"></param>
-        /// <param name="rangesCount"></param>
-        /// <returns></returns>
-        private (int lowLimitIndex, int highLimitIndex) GetLimitsIndices(UInt64[] accumulativeDistribution, Random random, int rangesCount)
-        {
-            UInt64 maxSamples = accumulativeDistribution[^1]; // Последний элемент массиваж
-            UInt64 rangeSamples = (maxSamples / (UInt64)rangesCount);
-            UInt64 lowLimitSamples = (UInt64)(random.NextDouble() * maxSamples);
-            UInt64 hightLimitSamples = lowLimitSamples + rangeSamples;
-            int lowLimitIndex = 0;
-            foreach (int i in Enumerable.Range(0, accumulativeDistribution.Length))
-            {
-                if (lowLimitSamples < accumulativeDistribution[i])
-                {
-                    lowLimitIndex = i;
-                    break;
-                }
-            }
-            int highLimitIndex = accumulativeDistribution.Length;
-            foreach (int i in Enumerable.Range(lowLimitIndex + 1, accumulativeDistribution.Length - lowLimitIndex - 1))
-            {
-                if (hightLimitSamples < accumulativeDistribution[i])
-                {
-                    highLimitIndex = i;
-                    break;
-                }
-            }
-            return (lowLimitIndex, highLimitIndex);
-        }
-
-        #endregion
+        #endregion        
 
         #region private fields
 
@@ -253,6 +190,59 @@ namespace Ssz.AI.Models
         /// </summary>
         public Bitmap _detectorsActivationBitmap0 = null!;
 
-        #endregion        
+        #endregion
+
+        /// <summary>        
+        ///     Константы данной модели
+        /// </summary>
+        public class ModelConstants : ICortexConstants
+        {            
+            public int ImageWidth => MNISTHelper.MNISTImageWidth;
+
+            public int ImageHeight => MNISTHelper.MNISTImageHeight;
+
+            public int AngleRangesCount => 4;
+
+            public int MagnitudeRangesCount => 4;
+
+            public int GeneratedImageWidth => 280;
+            public int GeneratedImageHeight => 280;
+
+            public int CortexWidth => 200;
+            public int CortexHeight => 200;
+
+            /// <summary>
+            ///     Площадь одного детектрора   
+            /// </summary>
+            public double DetectorArea => 0.01;
+
+            /// <summary>
+            ///     Количество детекторов, видимых одной миниколонкой
+            /// </summary>
+            public int MiniColumnVisibleDetectorsCount => 250;
+
+            public int HashLength => 200;
+
+            public int? SubAreaMiniColumnsCount => null;
+            public int SubAreaCenter_Cx => 0;
+            public int SubAreaCenter_Cy => 0;
+
+            /// <summary>
+            ///     Количество бит в хэше в первоначальном случайном воспоминании миниколонки.
+            /// </summary>
+            public int InitialMemoryBitsCount => 11;
+
+            /// <summary>
+            ///     Минимальное число бит в хэше, что бы быть сохраненным в память
+            /// </summary>
+            public int MinBitsInHashForMemory => 7;
+
+            /// <summary>
+            ///     Максимальное расстояние до ближайших миниколонок
+            /// </summary>
+            public int NearestMiniColumnsDelta => 5;
+
+            public double NearestMiniColumnsK => 5;
+        }
     }
 }

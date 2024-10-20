@@ -248,7 +248,7 @@ namespace Ssz.AI.Grafana
             var jsonElement = (JObject)queryRequestTarget.Payload!;
             //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
 
-            var data = _dataToDisplayHolder.MiniColumsActiveBitsDistribution;
+            var data = _dataToDisplayHolder.MiniColumsBitsCountInHashDistribution;
             
             List<object[]> rows = new List<object[]>(data.Length);            
             for (int i = 0; i < 50; i += 1)

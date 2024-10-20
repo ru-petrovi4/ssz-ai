@@ -7,12 +7,8 @@ using System.Linq;
 namespace Ssz.AI.Models
 {
     public static class DetectorsGenerator
-    {
-        public const int AngleRangesCount = 4;
-
-        public const int MagnitudeRangesCount = 4;
-
-        public static List<Detector> Generate(GradientDistribution gradientDistribution)
+    {        
+        public static List<Detector> Generate(GradientDistribution gradientDistribution, int angleRangesCount, int magnitudeRangesCount, int hashLength)
         {
             UInt64[] magnitudeAccumulativeDistribution = GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = GetAccumulativeDistribution(gradientDistribution.AngleData);
@@ -23,10 +19,10 @@ namespace Ssz.AI.Models
             {
                 foreach (int j in Enumerable.Range(0, (MNISTHelper.MNISTImageHeight - 1) * 10))
                 {
-                    var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = GetLimitsIndices(magnitudeAccumulativeDistribution, random, MagnitudeRangesCount);                       
+                    var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = GetLimitsIndices(magnitudeAccumulativeDistribution, random, magnitudeRangesCount);                       
 
                     double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
-                    double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / AngleRangesCount;
+                    double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / angleRangesCount;
                     if (gradientAngleHighLimit > Math.PI)
                         gradientAngleHighLimit = gradientAngleHighLimit - 2 * Math.PI;
 
@@ -38,6 +34,7 @@ namespace Ssz.AI.Models
                         GradientMagnitudeHighLimit = gradientMagnitudeHighLimitIndex,
                         GradientAngleLowLimit = gradientAngleLowLimit,
                         GradientAngleHighLimit = gradientAngleHighLimit,
+                        BitIndexInHash = random.Next(hashLength)
                     };
                     detectors.Add(detector);
                 }

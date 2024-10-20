@@ -11,7 +11,14 @@ namespace Ssz.AI.Models
         /// </summary>
         public const double GradientMagnitudeMinimum = 5.0;
 
+        /// <summary>
+        ///     [0..MNISTImageWidth]
+        /// </summary>
         public double CenterX { get; init; }
+
+        /// <summary>
+        ///     [0..MNISTImageHeight]
+        /// </summary>
         public double CenterY { get; init; }
         //public double Width { get; init; }
         public double GradientMagnitudeLowLimit { get; init; }
@@ -23,9 +30,11 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     [-pi, pi]
         /// </summary>
-        public double GradientAngleHighLimit { get; init; }          
+        public double GradientAngleHighLimit { get; init; }
 
-        public bool IsActivated(GradientInPoint[,] gradientMatrix)
+        public int BitIndexInHash;
+
+        public bool GetIsActivated(GradientInPoint[,] gradientMatrix)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX, CenterY, gradientMatrix);            
 
@@ -42,6 +51,8 @@ namespace Ssz.AI.Models
                 activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
             return activated;
         }
+
+        public bool Temp_IsActivated;
     }
 }
 

@@ -7,7 +7,7 @@ namespace Ssz.AI.Models
 {
     public static class SobelOperator
     {
-        public const int MagnitudeUpperLimit = 1449;
+        public const int MagnitudeMaxValue = 1449;
 
         // Операторы Собеля для X и Y
         private static int[,] sobelX = {

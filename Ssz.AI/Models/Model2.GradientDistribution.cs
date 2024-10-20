@@ -25,11 +25,7 @@ namespace Ssz.AI.Models
 
             var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
-            GradientDistribution gradientDistribution = new()
-            {
-                MagnitudeData = new UInt64[SobelOperator.MagnitudeUpperLimit],
-                AngleData = new UInt64[360]
-            };            
+            GradientDistribution gradientDistribution = new();            
 
             foreach (int i in Enumerable.Range(0, images.Length))
             {
