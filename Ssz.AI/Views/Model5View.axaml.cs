@@ -27,6 +27,16 @@ public partial class Model5View : UserControl
         Refresh();
     }
 
+    private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        Refresh();
+    }
+
+    private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
+    {
+        Refresh();
+    }
+
     private void Refresh()
     {
         double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;

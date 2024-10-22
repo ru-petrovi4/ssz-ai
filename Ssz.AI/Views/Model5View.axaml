@@ -19,10 +19,10 @@
 		</Grid.RowDefinitions>
 		<TextBlock Text="Смещение (пиксели):" />
 		<TextBlock Name="PositionTextBlock" Grid.Column="1" />
-		<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" />
+		<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
 		<TextBlock Text="Угол (градусы):" Grid.Row="1" />
 		<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
-		<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" />
+		<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />
 		<TextBlock Text="Скалярное произведение:" Grid.Row="2" />
 		<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
 

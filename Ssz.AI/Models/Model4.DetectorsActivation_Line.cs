@@ -1,4 +1,5 @@
 ﻿using Avalonia.Layout;
+using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
@@ -40,23 +41,26 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            _detectors = DetectorsGenerator.Generate(gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
+            _retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
 
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
 
-            Cortex = new Cortex(Constants, _detectors);
+            Cortex = new Cortex(Constants, _retina);
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             foreach (var gradientMatrix in gradientMatricesCollection)
             {
                 Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: _detectors.Count,
-                    i =>
+                    toExclusive: _retina.Detectors.GetLength(1),
+                    dy =>
                     {
-                        var d = _detectors[i];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        foreach (int dx in Enumerable.Range(0, _retina.Detectors.GetLength(0)))
+                        {
+                            var d = _retina.Detectors[dx, dy];
+                            d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        }                            
                     });               
 
                 foreach (var miniColumn in Cortex.MiniColumns)
@@ -150,7 +154,14 @@ namespace Ssz.AI.Models
             // Применяем оператор Собеля к первому изображению
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
-            List<Detector> activatedDetectors = _detectors.Where(d => d.GetIsActivated(gradientMatrix)).ToList();
+            List<Detector> activatedDetectors = new List<Detector>(_retina.Detectors.GetLength(0) * _retina.Detectors.GetLength(1));
+            foreach (int dy in Enumerable.Range(0, _retina.Detectors.GetLength(1)))
+                foreach (int dx in Enumerable.Range(0, _retina.Detectors.GetLength(0)))
+                {
+                    Detector d = _retina.Detectors[dx, dy];
+                    if (d.GetIsActivated(gradientMatrix))
+                        activatedDetectors.Add(d);
+                }            
 
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
@@ -184,7 +195,7 @@ namespace Ssz.AI.Models
 
         #region private fields
 
-        private List<Detector> _detectors;
+        private Retina _retina;
         /// <summary>
         ///     Начальная картина активации детекторов (до смещения).
         /// </summary>
@@ -212,9 +223,9 @@ namespace Ssz.AI.Models
             public int CortexHeight => 200;
 
             /// <summary>
-            ///     Площадь одного детектрора   
+            ///     Расстояние между детекторами по коризонтали и вертикали  
             /// </summary>
-            public double DetectorArea => 0.01;
+            public double DetectorDelta => 0.1;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой

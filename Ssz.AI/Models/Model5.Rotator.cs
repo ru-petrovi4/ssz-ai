@@ -41,13 +41,13 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            _detectors = DetectorsGenerator.Generate(gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
+            Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
 
-            Cortex = new Cortex(Constants, _detectors);
+            Cortex = new Cortex(Constants, Retina);
 
             // Прогон всех картинок
             int gmi = 0;
-            foreach (var gradientMatrix in gradientMatricesCollection.Take(10000))
+            foreach (var gradientMatrix in gradientMatricesCollection.Take(2000))
             {
                 SuperActivitiyMaxInfo finalSuperActivitiyMaxInfo = GetFinalSuperActivitiyMaxInfo(gradientMatrix);
 
@@ -66,9 +66,11 @@ namespace Ssz.AI.Models
 
         #region public functions
 
-        public readonly ModelConstants Constants = new();        
+        public readonly ModelConstants Constants = new();
 
-        public Cortex Cortex { get; }
+        public readonly Retina Retina;
+
+        public readonly Cortex Cortex; 
 
         public int CenterX { get; set; }
         public int CenterXDelta { get; set; }
@@ -138,16 +140,22 @@ namespace Ssz.AI.Models
             }
 
             // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
-
-            List<Detector> activatedDetectors = _detectors.Where(d => d.GetIsActivated(gradientMatrix)).ToList();
+            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);           
+                    
 
             var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
-
 
             SuperActivitiyMaxInfo finalSuperActivitiyMaxInfo = GetFinalSuperActivitiyMaxInfo(gradientMatrix);
 
+            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.GetLength(0) * Retina.Detectors.GetLength(1));
+            foreach (int dy in Enumerable.Range(0, Retina.Detectors.GetLength(1)))
+                foreach (int dx in Enumerable.Range(0, Retina.Detectors.GetLength(0)))
+                {
+                    Detector d = Retina.Detectors[dx, dy];
+                    if (d.Temp_IsActivated)
+                        activatedDetectors.Add(d);
+                }
+            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
             var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex);
 
@@ -209,12 +217,6 @@ namespace Ssz.AI.Models
             return finalSuperActivitiyMaxInfo;
         }
 
-        #region private fields
-
-        private List<Detector> _detectors;        
-
-        #endregion
-
         private class SuperActivitiyMaxInfo
         {
             public MiniColumn? MiniColumn = null;
@@ -255,9 +257,9 @@ namespace Ssz.AI.Models
             public int CortexHeight => 200;
 
             /// <summary>
-            ///     Площадь одного детектрора   
+            ///     Расстояние между детекторами по коризонтали и вертикали  
             /// </summary>
-            public double DetectorArea => 0.01;
+            public double DetectorDelta => 0.1;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
@@ -269,7 +271,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 400;
+            public int? SubAreaMiniColumnsCount => 10000;
 
             /// <summary>
             ///     Индекс X центра подобласти

@@ -16,48 +16,50 @@ namespace Ssz.AI.Models
         /// <param name="detectors"></param>
         public Cortex(
             ICortexConstants constants,            
-            List<Detector> detectors)
+            Retina retina)
         {
             Random random = new();
 
-            double visibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorArea / Math.PI);
+            double detectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
             MiniColumns = new MiniColumn[constants.CortexWidth, constants.CortexHeight];
-            double minCenterX = visibleRadius;
-            double maxCenterX = constants.ImageWidth - visibleRadius;
+            double minCenterX = detectorsVisibleRadius;
+            double maxCenterX = constants.ImageWidth - detectorsVisibleRadius;
             double deltaCenterX = (maxCenterX - minCenterX) / (constants.CortexWidth - 1);
-            double minCenterY = visibleRadius;
-            double maxCenterY = constants.ImageHeight - visibleRadius;
+            double minCenterY = detectorsVisibleRadius;
+            double maxCenterY = constants.ImageHeight - detectorsVisibleRadius;
             double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);
 
 
-            double subAreaRadius;
+            double subAreaMiniColumnsRadius;
             if (constants.SubAreaMiniColumnsCount is not null)
-                subAreaRadius = Math.Sqrt(constants.SubAreaMiniColumnsCount.Value / Math.PI);
+                subAreaMiniColumnsRadius = Math.Sqrt(constants.SubAreaMiniColumnsCount.Value / Math.PI);
             else
-                subAreaRadius = 0.0;
+                subAreaMiniColumnsRadius = 0.0;
 
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: constants.CortexHeight,
                 mcy =>
                 {
-                    for (int mcx = 0; mcx < constants.CortexWidth; mcx += 1)
+                    foreach (int mcx in Enumerable.Range(0, constants.CortexWidth))
                     {
-                        if (subAreaRadius == 0.0 ||
-                            Math.Sqrt(Math.Pow(mcx - constants.SubAreaCenter_Cx, 2) + Math.Pow(mcy - constants.SubAreaCenter_Cy, 2)) < subAreaRadius)
+                        if (subAreaMiniColumnsRadius == 0.0 ||
+                            Math.Sqrt(Math.Pow(mcx - constants.SubAreaCenter_Cx, 2) + Math.Pow(mcy - constants.SubAreaCenter_Cy, 2)) < subAreaMiniColumnsRadius)
                         {
                             double centerX = minCenterX + mcx * deltaCenterX;
                             double centerY = minCenterY + mcy * deltaCenterY;
 
                             List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                            foreach (var detector in detectors)
-                            {
-                                double r = Math.Sqrt(Math.Pow(detector.CenterX - centerX, 2) + Math.Pow(detector.CenterY - centerY, 2));
-                                if (r < visibleRadius)
-                                    miniColumnDetectors.Add(detector);
-                            }
+                            for (int dy = (int)((centerY - detectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + detectorsVisibleRadius) / constants.DetectorDelta); dy += 1)
+                                for (int dx = (int)((centerX - detectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + detectorsVisibleRadius) / constants.DetectorDelta); dx += 1)
+                                {
+                                    Detector detector = retina.Detectors[dx, dy];
+                                    double r = Math.Sqrt(Math.Pow(detector.CenterX - centerX, 2) + Math.Pow(detector.CenterY - centerY, 2));
+                                    if (r < detectorsVisibleRadius)
+                                        miniColumnDetectors.Add(detector);
+                                }
 
                             MiniColumn miniColumn = new MiniColumn(
                                 constants,
@@ -73,10 +75,11 @@ namespace Ssz.AI.Models
                     }
                 });
 
-            HashSet<Detector> subArea_DetectorsHashSet = new(detectors.Count);
+            HashSet<Detector> subArea_DetectorsHashSet = new(retina.Detectors.GetLength(0) * retina.Detectors.GetLength(1));
             List<MiniColumn> subArea_MiniColums = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.GetLength(0) * MiniColumns.GetLength(1)));
-            for (int mcy = 0; mcy < MiniColumns.GetLength(1); mcy += 1)
-                for (int mcx = 0; mcx < MiniColumns.GetLength(0); mcx += 1)
+
+            foreach (int mcy in Enumerable.Range(0, MiniColumns.GetLength(1)))
+                foreach (int mcx in Enumerable.Range(0, MiniColumns.GetLength(0)))
                 {
                     var mc = MiniColumns[mcx, mcy];
                     if (mc is not null)
@@ -144,6 +147,8 @@ namespace Ssz.AI.Models
                 hash0[random.Next(hash0.Length)] = 1.0f;
             }
             Temp_Memories = new() { hash0 };
+
+            NearestMiniColumns = new(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4);
         }
 
         public readonly ICortexConstants Constants;
@@ -163,7 +168,7 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     (Величина, обратно пропорциональная расстоянию; MiniColumn)
         /// </summary>
-        public readonly List<(double, MiniColumn)> NearestMiniColumns = new();
+        public readonly List<(double, MiniColumn)> NearestMiniColumns;
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -265,9 +270,9 @@ namespace Ssz.AI.Models
         int MiniColumnVisibleDetectorsCount { get; }
 
         /// <summary>
-        ///     Площадь одного детектрора   
+        ///     Расстояние между детекторами по коризонтали и вертикали  
         /// </summary>
-        double DetectorArea { get; }    
+        double DetectorDelta { get; }    
         
         /// <summary>
         ///     Количество миниколонок в подобласти

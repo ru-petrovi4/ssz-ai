@@ -65,7 +65,7 @@ namespace Ssz.AI.Models
 
             Bitmap gradientBitmap = new Bitmap(width, height);
 
-            double maxActivity = Double.MinValue;
+            double maxActivity = 0.0;
             for (int y = 0; y < height; y += 1)
             {
                 for (int x = 0; x < width; x += 1)
@@ -89,9 +89,8 @@ namespace Ssz.AI.Models
                         gradientBitmap.SetPixel(x, y, Color.FromArgb(255, 0, 0, 0));
                     }
                     else
-                    {
-                        // Преобразуем магнитуду в яркость
-                        int brightness = (int)(255 * mc.Temp_Activity / maxActivity);
+                    {                        
+                        int brightness = maxActivity == 0.0 ? 0 : (int)(255 * mc.Temp_Activity / maxActivity);
 
                         gradientBitmap.SetPixel(x, y, Color.FromArgb(brightness, brightness, brightness));
                     }

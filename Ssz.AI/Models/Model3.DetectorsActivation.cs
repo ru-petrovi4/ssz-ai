@@ -36,17 +36,26 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            List<Detector> detectors = DetectorsGenerator.Generate(gradientDistribution, AngleRangesCount, MagnitudeRangesCount, HashLength);
+            //Retina retina = new(gradientDistribution, AngleRangesCount, MagnitudeRangesCount, HashLength);
 
-            // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
-            List<Detector> activatedDetectors = detectors.Where(d => d.GetIsActivated(gradientMatrix)).ToList();            
-            var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);            
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);            
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            //// Применяем оператор Собеля к первому изображению
+            //GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
-            //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
-            VisualisationHelper.ShowImages([originalBitmap, gradientBitmap, detectorsActivationBitmap]);
+            //List<Detector> activatedDetectors = new List<Detector>(retina.Detectors.GetLength(0) * retina.Detectors.GetLength(1));
+            //foreach (int dy in Enumerable.Range(0, retina.Detectors.GetLength(1)))
+            //    foreach (int dx in Enumerable.Range(0, retina.Detectors.GetLength(0)))
+            //    {
+            //        Detector d = retina.Detectors[dx, dy];
+            //        if (d.GetIsActivated(gradientMatrix))
+            //            activatedDetectors.Add(d);
+            //    }
+
+            //var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);            
+            //var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);            
+            //var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+
+            ////DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            //VisualisationHelper.ShowImages([originalBitmap, gradientBitmap, detectorsActivationBitmap]);
         }
 
         public const int AngleRangesCount = 4;
