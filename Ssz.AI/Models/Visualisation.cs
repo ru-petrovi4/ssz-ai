@@ -58,7 +58,50 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
-        internal static Bitmap GetGradientBigBitmap(GradientInPoint[,] gradientMatrix)
+        public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex)
+        {
+            int width = cortex.MiniColumns.GetLength(0);
+            int height = cortex.MiniColumns.GetLength(1);
+
+            Bitmap gradientBitmap = new Bitmap(width, height);
+
+            double maxActivity = Double.MinValue;
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    MiniColumn mc = cortex.MiniColumns[x, y];
+                    if (mc is not null)
+                    {
+                        if (mc.Temp_Activity > maxActivity)
+                            maxActivity = mc.Temp_Activity;
+                    }
+                }
+            }
+
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    MiniColumn mc = cortex.MiniColumns[x, y];
+                    if (mc is null || mc.Temp_Activity < 0.0f)
+                    {
+                        gradientBitmap.SetPixel(x, y, Color.FromArgb(255, 0, 0, 0));
+                    }
+                    else
+                    {
+                        // Преобразуем магнитуду в яркость
+                        int brightness = (int)(255 * mc.Temp_Activity / maxActivity);
+
+                        gradientBitmap.SetPixel(x, y, Color.FromArgb(brightness, brightness, brightness));
+                    }
+                }
+            }
+
+            return gradientBitmap;
+        }
+
+        public static Bitmap GetGradientBigBitmap(GradientInPoint[,] gradientMatrix)
         {
             int width = MNISTHelper.MNISTImageWidth * 10;
             int height = MNISTHelper.MNISTImageHeight * 10;
