@@ -254,6 +254,8 @@ namespace Ssz.AI.Models
             public int NearestMiniColumnsDelta => 5;
 
             public double NearestMiniColumnsK => 5;
+
+            public float MiniColumnMinimumActivity => 0.66f;
         }
     }
 }

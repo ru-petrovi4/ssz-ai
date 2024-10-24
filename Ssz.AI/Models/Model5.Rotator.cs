@@ -47,15 +47,24 @@ namespace Ssz.AI.Models
 
             // Прогон всех картинок
             int gmi = 0;
+            int memoriesCount = 0;
+            HashSet<MiniColumn> withMemoriesAdded_MiniColums = new();
             foreach (var gradientMatrix in gradientMatricesCollection.Take(2000))
             {
+                //if (gmi % 100 == 0)
+                //{
+
+                //}
+
                 SuperActivitiyMaxInfo finalSuperActivitiyMaxInfo = GetFinalSuperActivitiyMaxInfo(gradientMatrix);
 
                 // Сохраняем воспоминание в миниколонке-победителе.
                 var miniColumn = finalSuperActivitiyMaxInfo.MiniColumn;
                 if (miniColumn is not null)
                 {
-                    miniColumn.Temp_Memories.Add(miniColumn.Temp_Hash);
+                    miniColumn.Memories.Add(miniColumn.Temp_Hash);
+                    memoriesCount += 1;
+                    withMemoriesAdded_MiniColums.Add(miniColumn);
                 }
 
                 gmi += 1;
@@ -217,11 +226,7 @@ namespace Ssz.AI.Models
             return finalSuperActivitiyMaxInfo;
         }
 
-        private class SuperActivitiyMaxInfo
-        {
-            public MiniColumn? MiniColumn = null;
-            public float SuperActivity = float.MinValue;
-        }
+        
 
         /// <summary>        
         ///     Константы данной модели
@@ -238,7 +243,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public int ImageHeight => MNISTHelper.MNISTImageHeight;
 
-            public int AngleRangesCount => 4;
+            public int AngleRangesCount => 6;
 
             public int MagnitudeRangesCount => 4;
 
@@ -271,7 +276,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 10000;
+            public int? SubAreaMiniColumnsCount => 300;
 
             /// <summary>
             ///     Индекс X центра подобласти
@@ -286,7 +291,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество бит в хэше в первоначальном случайном воспоминании миниколонки.
             /// </summary>
-            public int InitialMemoryBitsCount => 11;
+            public int InitialMemoryBitsCount => 20;
 
             /// <summary>
             ///     Минимальное число бит в хэше, что бы быть сохраненным в память
@@ -298,7 +303,9 @@ namespace Ssz.AI.Models
             /// </summary>
             public int NearestMiniColumnsDelta => 5;
 
-            public double NearestMiniColumnsK => 5;
+            public double NearestMiniColumnsK => 1 / (2 * Math.PI);
+
+            public float MiniColumnMinimumActivity => 0.2f;
         }        
     }
 }
