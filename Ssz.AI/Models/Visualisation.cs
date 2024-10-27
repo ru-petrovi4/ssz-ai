@@ -60,55 +60,59 @@ namespace Ssz.AI.Models
 
         public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex)
         {
-            var miniColumns = cortex.MiniColumns;
-            float miniColumnMinimumActivity = cortex.Constants.MiniColumnMinimumActivity;
+            var miniColumns = cortex.MiniColumns;            
 
             int width = miniColumns.GetLength(0);
             int height = miniColumns.GetLength(1);
 
             Bitmap gradientBitmap = new Bitmap(width, height);
 
-            //double maxActivity = 0.0;
-            //for (int y = 0; y < height; y += 1)
-            //{
-            //    for (int x = 0; x < width; x += 1)
-            //    {
-            //        MiniColumn mc = miniColumns[x, y];
-            //        if (mc is not null)
-            //        {
-            //            if (mc.Temp_Activity > maxActivity)
-            //                maxActivity = mc.Temp_Activity;
-            //        }
-            //    }
-            //}
+            double maxActivity = Double.MinValue;
+            double minActivity = Double.MaxValue;
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    MiniColumn mc = miniColumns[x, y];
+                    if (mc is not null)
+                    {
+                        if (mc.Temp_Activity > maxActivity)
+                            maxActivity = mc.Temp_Activity;
+                        if (mc.Temp_Activity < minActivity)
+                            minActivity = mc.Temp_Activity;
+                    }
+                }
+            }
 
-            SuperActivitiyMaxInfo superActivitiyMaxInfo = new();
+            minActivity = -0.2f;
+
+            ActivitiyMaxInfo activitiyMaxInfo = new();
 
             for (int y = 0; y < height; y += 1)
             {
                 for (int x = 0; x < width; x += 1)
                 {
                     MiniColumn mc = miniColumns[x, y];
-                    if (mc is null || mc.Temp_Activity < miniColumnMinimumActivity)
+                    if (mc is null || maxActivity == minActivity || Double.IsNaN(mc.Temp_Activity) || mc.Temp_Activity <= minActivity) // || mc.Temp_Activity < miniColumnMinimumActivity
                     {
                         gradientBitmap.SetPixel(x, y, Color.FromArgb(255, 0, 0, 0));
                     }
                     else
                     {            
-                        if (mc.Temp_Activity > superActivitiyMaxInfo.SuperActivity)
+                        if (mc.Temp_Activity > activitiyMaxInfo.MaxActivity)
                         {
-                            superActivitiyMaxInfo.SuperActivity = mc.Temp_Activity;
-                            superActivitiyMaxInfo.MiniColumn = mc;
+                            activitiyMaxInfo.MaxActivity = mc.Temp_Activity;
+                            activitiyMaxInfo.ActivityMax_MiniColumn = mc;
                         }
 
-                        int brightness = (int)(255 * (mc.Temp_Activity - miniColumnMinimumActivity) / (1 - miniColumnMinimumActivity));
+                        int brightness = (int)(255 * (mc.Temp_Activity - minActivity) / (maxActivity - minActivity));
 
                         gradientBitmap.SetPixel(x, y, Color.FromArgb(brightness, brightness, brightness));
                     }
                 }
             }
 
-            MiniColumn? maxActivityMiniColumn = superActivitiyMaxInfo.MiniColumn;
+            MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.ActivityMax_MiniColumn;
             if (maxActivityMiniColumn is not null)
                 gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.FromArgb(255, 0, 0));
 

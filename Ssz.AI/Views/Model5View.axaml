@@ -16,6 +16,7 @@
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="*" />
+			<RowDefinition Height="*" />
 		</Grid.RowDefinitions>
 		<TextBlock Text="Смещение (пиксели):" />
 		<TextBlock Name="PositionTextBlock" Grid.Column="1" />
@@ -26,10 +27,11 @@
 		<TextBlock Text="Скалярное произведение:" Grid.Row="2" />
 		<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
 
-		<Button Name="RefreshButton" Grid.Row="3" Grid.Column="0" Content="Refresh" Click="RefreshButton_OnClick" />
+		<Button Grid.Row="3" Grid.Column="0" Content="Step" Click="StepButton_OnClick" />
 		<TextBlock Text="Info:"  Grid.Row="3" Grid.Column="1" />
 		<TextBlock Name="InfoTextBlock"  Grid.Row="3" Grid.Column="2" />
 
-		<StackPanel Name="MainStackPanel" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>		
+		<StackPanel Name="StackPanel1" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
+		<StackPanel Name="StackPanel2" Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
 	</Grid>	
 </UserControl>

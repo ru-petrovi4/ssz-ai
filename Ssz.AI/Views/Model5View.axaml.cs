@@ -20,30 +20,51 @@ public partial class Model5View : UserControl
         //DataContext = new Model5ViewModel();
 
         _model5 = new Model5();
+
+        Refresh_StackPanel1();
     }
 
-    private void RefreshButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        Refresh();
+    private void StepButton_OnClick(object? sender, RoutedEventArgs args)
+    {   
+        Refresh_StackPanel2();
     }
 
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        Refresh();
+        Refresh_StackPanel1();
     }
 
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        Refresh();
+        Refresh_StackPanel1();
     }
 
-    private void Refresh()
+    private void Refresh_StackPanel1()
     {
         double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
-        var images = _model5.GetImages(position, angle);
+        var images = _model5.GetImages1(position, angle);
 
-        var panel = this.FindControl<StackPanel>("MainStackPanel")!;
+        var panel = this.FindControl<StackPanel>("StackPanel1")!;
+        panel.Children.Clear();
+        foreach (var image in images)
+        {
+            var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
+            var imageControl = new Avalonia.Controls.Image
+            {
+                Source = bitmap,
+                //Width = 150,
+                //Height = 150
+            };
+            panel.Children.Add(imageControl);
+        }
+    }
+
+    private void Refresh_StackPanel2()
+    {        
+        var images = _model5.GetImages2(1);
+
+        var panel = this.FindControl<StackPanel>("StackPanel2")!;
         panel.Children.Clear();
         foreach (var image in images)
         {
