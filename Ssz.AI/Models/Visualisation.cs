@@ -85,7 +85,7 @@ namespace Ssz.AI.Models
                 }
             }
 
-            minActivity = -1.0f; //minActivity + (maxActivity - minActivity) * 0.9;            
+            minActivity = minActivity + (maxActivity - minActivity) * 0.95;            
 
             for (int y = 0; y < height; y += 1)
             {

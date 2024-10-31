@@ -110,7 +110,7 @@ namespace Ssz.AI.Models
 
                     foreach (int r in Enumerable.Range(0, constants.NearestMiniColumnsDelta))
                     {
-                        mc.NearestMiniColumnInfos.Add((1.0f / (r + 3.0f), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
+                        mc.NearestMiniColumnInfos.Add((1.0f / (r + 2.0f), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
                     }
 
                     for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy < mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
@@ -166,12 +166,12 @@ namespace Ssz.AI.Models
             CenterX = centerX;
             CenterY = centerY;
             Temp_Hash = new float[constants.HashLength];
-            var hash0 = new float[constants.HashLength];
-            foreach (var _ in Enumerable.Range(0, constants.InitialMemoryBitsCount))
-            {
-                hash0[random.Next(hash0.Length)] = 1.0f;
-            }
-            Memories = new(constants.MemoriesMaxCount) { new Memory { Hash = hash0 } };
+            //var hash0 = new float[constants.HashLength];
+            //foreach (var _ in Enumerable.Range(0, constants.InitialMemoryBitsCount))
+            //{
+            //    hash0[random.Next(hash0.Length)] = 1.0f;
+            //}
+            Memories = new(constants.MemoriesMaxCount); // { new Memory { Hash = hash0 } };
             Temp_Memories = new(constants.MemoriesMaxCount);
 
             NearestMiniColumnInfos = new List<(float, List<MiniColumn>)>();
@@ -239,6 +239,7 @@ namespace Ssz.AI.Models
                 return float.NaN;
 
             float activity = 0.0f;
+            int memoryCount = 0;
 
             foreach (var mi in Enumerable.Range(0, Memories.Count))
             {
@@ -246,7 +247,11 @@ namespace Ssz.AI.Models
                 if (memory.IsDeleted)
                     continue;
                 activity += TensorPrimitives.CosineSimilarity(hash, memory.Hash) - Constants.MiniColumnMinimumActivity;
-            }            
+                memoryCount += 1;
+            }
+
+            if (memoryCount == 0)
+                return 1000000;
 
             return activity;
         }        
