@@ -49,6 +49,33 @@ namespace Ssz.AI.Helpers
             }
         }
 
+        public static Bitmap GetSubBitmap(Bitmap bitmap, int centerX, int centerY, double radius)
+        {
+            Bitmap subBitmap = new Bitmap((int)(radius * 2), (int)(radius * 2));
+
+            // Проходим по каждому пикселю и устанавливаем его в Bitmap
+            for (int y = (int)(centerY - radius); y < (int)(centerY + radius); y += 1)
+            {
+                for (int x = (int)(centerX - radius); x < (int)(centerX + radius); x += 1)
+                {
+                    var r = Math.Sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
+                    if (r > radius)
+                    {
+                        subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), Color.FromArgb(0, 0, 0));
+                    }
+                    else
+                    {                        
+                        Color color = bitmap.GetPixel(x, y);
+
+                        // Устанавливаем пиксель в изображении
+                        subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), color);
+                    }
+                }
+            }
+
+            return subBitmap;
+        }
+
         private static Bitmap ToBitmap(this Mat src)
         {
             var bitmap = new Bitmap(src.Width, src.Height, src.Channels() switch

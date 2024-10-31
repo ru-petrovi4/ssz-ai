@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.DrawingCore;
 using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
@@ -22,14 +23,14 @@ namespace Ssz.AI.Models
 
             Random random = new();
 
-            double detectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
+            DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
             MiniColumns = new MiniColumn[constants.CortexWidth, constants.CortexHeight];
-            double minCenterX = detectorsVisibleRadius;
-            double maxCenterX = constants.ImageWidth - detectorsVisibleRadius;
+            double minCenterX = DetectorsVisibleRadius;
+            double maxCenterX = constants.ImageWidth - DetectorsVisibleRadius;
             double deltaCenterX = (maxCenterX - minCenterX) / (constants.CortexWidth - 1);
-            double minCenterY = detectorsVisibleRadius;
-            double maxCenterY = constants.ImageHeight - detectorsVisibleRadius;
+            double minCenterY = DetectorsVisibleRadius;
+            double maxCenterY = constants.ImageHeight - DetectorsVisibleRadius;
             double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);
 
 
@@ -46,7 +47,7 @@ namespace Ssz.AI.Models
                 {
                     foreach (int mcx in Enumerable.Range(0, constants.CortexWidth))
                     {
-                        double miniColumnR = Math.Sqrt(Math.Pow(mcx - constants.SubAreaCenter_Cx, 2) + Math.Pow(mcy - constants.SubAreaCenter_Cy, 2));
+                        double miniColumnR = Math.Sqrt((mcx - constants.SubAreaCenter_Cx) * (mcx - constants.SubAreaCenter_Cx) + (mcy - constants.SubAreaCenter_Cy) * (mcy - constants.SubAreaCenter_Cy));
                         if (subAreaMiniColumnsRadius == 0.0 || miniColumnR < subAreaMiniColumnsRadius)
                         {
                             double centerX = minCenterX + mcx * deltaCenterX;
@@ -54,12 +55,12 @@ namespace Ssz.AI.Models
 
                             List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                            for (int dy = (int)((centerY - detectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + detectorsVisibleRadius) / constants.DetectorDelta); dy += 1)
-                                for (int dx = (int)((centerX - detectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + detectorsVisibleRadius) / constants.DetectorDelta); dx += 1)
+                            for (int dy = (int)((centerY - DetectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + DetectorsVisibleRadius) / constants.DetectorDelta); dy += 1)
+                                for (int dx = (int)((centerX - DetectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + DetectorsVisibleRadius) / constants.DetectorDelta); dx += 1)
                                 {
                                     Detector detector = retina.Detectors[dx, dy];
-                                    double r = Math.Sqrt(Math.Pow(detector.CenterX - centerX, 2) + Math.Pow(detector.CenterY - centerY, 2));
-                                    if (r < detectorsVisibleRadius)
+                                    double r = Math.Sqrt((detector.CenterX - centerX) * (detector.CenterX - centerX) + (detector.CenterY - centerY) * (detector.CenterY - centerY));
+                                    if (r < DetectorsVisibleRadius)
                                         miniColumnDetectors.Add(detector);
                                 }
 
@@ -109,7 +110,7 @@ namespace Ssz.AI.Models
 
                     foreach (int r in Enumerable.Range(0, constants.NearestMiniColumnsDelta))
                     {
-                        mc.NearestMiniColumnInfos.Add((1.0f / (2 * (r + 1)), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
+                        mc.NearestMiniColumnInfos.Add((1.0f / (r + 3.0f), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
                     }
 
                     for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy < mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
@@ -125,45 +126,21 @@ namespace Ssz.AI.Models
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
                                 continue;
-                            double r = Math.Sqrt(Math.Pow(mcx - mc.MCX, 2) + Math.Pow(mcy - mc.MCY, 2));
+                            double r = Math.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
                             if (r < constants.NearestMiniColumnsDelta)
                             {
                                 mc.NearestMiniColumnInfos[(int)(r - 0.5f)].Item2.Add(nearestMc);
                             }
                         }
-                });
+                });            
 
-            // TEMPCODE
-            //foreach (int mci in Enumerable.Range(0, SubArea_MiniColumns.Length))
-            //{
-            //    MiniColumn mc = SubArea_MiniColumns[mci];
-
-            //    foreach (int r in Enumerable.Range(0, constants.NearestMiniColumnsDelta))
-            //    {
-            //        mc.NearestMiniColumnInfos.Add((1.0f / (2 * (r + 1)), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
-            //    }
-
-            //    for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy < mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
-            //        for (int mcx = mc.MCX - constants.NearestMiniColumnsDelta; mcx < mc.MCX + constants.NearestMiniColumnsDelta; mcx += 1)
-            //        {
-            //            if (mcx < 0 ||                                
-            //                    mcx >= constants.CortexWidth ||
-            //                    mcy < 0 ||                                
-            //                    mcy >= constants.CortexHeight ||
-            //                    (mcx == mc.MCX && mcy == mc.MCY))
-            //                continue;
-
-            //            MiniColumn nearestMc = MiniColumns[mcx, mcy];
-            //            if (nearestMc is null)
-            //                continue;
-            //            double r = Math.Sqrt(Math.Pow(mcx - mc.MCX, 2) + Math.Pow(mcy - mc.MCY, 2));
-            //            if (r < constants.NearestMiniColumnsDelta)
-            //            {
-            //                mc.NearestMiniColumnInfos[(int)(r - 0.5f)].Item2.Add(nearestMc);
-            //            }
-            //        }
-            //}
+            VisualizationTableItems = new(1000);
         }
+
+        /// <summary>
+        ///     In big picture coordinates
+        /// </summary>
+        public double DetectorsVisibleRadius { get; }
 
         public ICortexConstants Constants { get; }
 
@@ -173,6 +150,9 @@ namespace Ssz.AI.Models
 
         public MiniColumn[] SubArea_MiniColumns { get; } = null!;
         public Detector[] SubArea_Detectors { get; } = null!;
+
+        public List<VisualizationTableItem> VisualizationTableItems { get; }
+
     }
 
     public class MiniColumn
@@ -192,9 +172,10 @@ namespace Ssz.AI.Models
                 hash0[random.Next(hash0.Length)] = 1.0f;
             }
             Memories = new(constants.MemoriesMaxCount) { new Memory { Hash = hash0 } };
+            Temp_Memories = new(constants.MemoriesMaxCount);
 
             NearestMiniColumnInfos = new List<(float, List<MiniColumn>)>();
-        }
+        }        
 
         public readonly ICortexConstants Constants;
 
@@ -209,7 +190,7 @@ namespace Ssz.AI.Models
         ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
         /// </summary>
         public readonly int MCY;
-
+        
         /// <summary>
         ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
         /// </summary>
@@ -228,7 +209,12 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Сохраненные хэш-коды
         /// </summary>
-        public readonly List<Memory> Memories;
+        public List<Memory> Memories;
+
+        /// <summary>
+        ///     Временный список для сохраненных хэш-кодов
+        /// </summary>
+        public List<Memory> Temp_Memories;
 
         /// <summary>
         ///     Текущая активность миниколонки при подаче примера
@@ -245,10 +231,12 @@ namespace Ssz.AI.Models
         /// </summary>
         public readonly float[] Temp_Hash;
 
+        public Color Temp_Color;
+
         public float GetActivity(float[] hash)
         {
             if (TensorPrimitives.Sum(hash) < Constants.MinBitsInHashForMemory)
-                return -Constants.MiniColumnMinimumActivity;
+                return float.NaN;
 
             float activity = 0.0f;
 
@@ -266,24 +254,32 @@ namespace Ssz.AI.Models
         public float GetSuperActivity()
         {
             float superActivity = Temp_Activity;
+            float totalK = 1.0f;
             
             foreach (var r in Enumerable.Range(0, NearestMiniColumnInfos.Count))
             {
-                if (NearestMiniColumnInfos[r].Item2.Count == 0)
-                    continue;
+                var nearestMiniColumnInfosForR = NearestMiniColumnInfos[r];
 
+                int nearestMiniColumnsForRCount = 0;
                 float localSuperActivity = 0.0f;
-                foreach (var mci in Enumerable.Range(0, NearestMiniColumnInfos[r].Item2.Count))
+                foreach (var mci in Enumerable.Range(0, nearestMiniColumnInfosForR.Item2.Count))
                 {
-                    var nearestMiniColumnInfo = NearestMiniColumnInfos[r].Item2[mci];
-                    localSuperActivity += nearestMiniColumnInfo.Temp_Activity;
-                    //sumK += nearestMiniColumnInfo.Item1;
+                    var nearestMiniColumnInfo = nearestMiniColumnInfosForR.Item2[mci];
+                    if (!float.IsNaN(nearestMiniColumnInfo.Temp_Activity))
+                    {
+                        localSuperActivity += nearestMiniColumnInfo.Temp_Activity;
+                        nearestMiniColumnsForRCount += 1;
+                    }                    
                 }
 
-                superActivity += NearestMiniColumnInfos[r].Item1 * localSuperActivity / NearestMiniColumnInfos[r].Item2.Count;
+                if (nearestMiniColumnsForRCount == 0)
+                    continue;
+
+                superActivity += nearestMiniColumnInfosForR.Item1 * localSuperActivity / nearestMiniColumnsForRCount;
+                totalK += nearestMiniColumnInfosForR.Item1;
             }
 
-            return superActivity;            
+            return superActivity / totalK;            
         }
 
         public void CalculateHash(float[] hash)

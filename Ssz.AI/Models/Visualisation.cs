@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.DrawingCore;
+using System.Linq;
 
 namespace Ssz.AI.Models
 {
@@ -18,7 +19,7 @@ namespace Ssz.AI.Models
             {
                 for (int x = 0; x < width; x += 1)
                 {
-                    bitmap.SetPixel(x, y, Color.FromArgb(255, 0, 0, 0));
+                    bitmap.SetPixel(x, y, Color.Black);
                 }
             }
 
@@ -58,7 +59,7 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
-        public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex)
+        public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex, ActivitiyMaxInfo activitiyMaxInfo)
         {
             var miniColumns = cortex.MiniColumns;            
 
@@ -84,27 +85,19 @@ namespace Ssz.AI.Models
                 }
             }
 
-            minActivity = -0.2f;
-
-            ActivitiyMaxInfo activitiyMaxInfo = new();
+            minActivity = -1.0f; //minActivity + (maxActivity - minActivity) * 0.9;            
 
             for (int y = 0; y < height; y += 1)
             {
                 for (int x = 0; x < width; x += 1)
                 {
                     MiniColumn mc = miniColumns[x, y];
-                    if (mc is null || maxActivity == minActivity || Double.IsNaN(mc.Temp_Activity) || mc.Temp_Activity <= minActivity) // || mc.Temp_Activity < miniColumnMinimumActivity
+                    if (mc is null || maxActivity == minActivity || float.IsNaN(mc.Temp_Activity) || mc.Temp_Activity <= minActivity) // || mc.Temp_Activity < miniColumnMinimumActivity
                     {
-                        gradientBitmap.SetPixel(x, y, Color.FromArgb(255, 0, 0, 0));
+                        gradientBitmap.SetPixel(x, y, Color.Black);
                     }
                     else
-                    {            
-                        if (mc.Temp_Activity > activitiyMaxInfo.MaxActivity)
-                        {
-                            activitiyMaxInfo.MaxActivity = mc.Temp_Activity;
-                            activitiyMaxInfo.ActivityMax_MiniColumn = mc;
-                        }
-
+                    {   
                         int brightness = (int)(255 * (mc.Temp_Activity - minActivity) / (maxActivity - minActivity));
 
                         gradientBitmap.SetPixel(x, y, Color.FromArgb(brightness, brightness, brightness));
@@ -114,7 +107,11 @@ namespace Ssz.AI.Models
 
             MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.ActivityMax_MiniColumn;
             if (maxActivityMiniColumn is not null)
-                gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.FromArgb(255, 0, 0));
+                gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.Red);
+
+            MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+            if (maxSuperActivityMiniColumn is not null)
+                gradientBitmap.SetPixel(maxSuperActivityMiniColumn.MCX, maxSuperActivityMiniColumn.MCY, Color.Blue);
 
             return gradientBitmap;
         }
@@ -148,7 +145,7 @@ namespace Ssz.AI.Models
         }        
 
         // Преобразование HSV в RGB (используется для цветового кодирования угла градиента)
-        private static Color ColorFromHSV(double hue, double saturation, double value)
+        public static Color ColorFromHSV(double hue, double saturation, double value)
         {
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
@@ -171,6 +168,27 @@ namespace Ssz.AI.Models
                 return Color.FromArgb(255, t, p, v);
             else
                 return Color.FromArgb(255, v, p, q);
+        }
+
+        public static Image GetBitmapFromMiniColumsColor(Cortex cortex)
+        {
+            Bitmap bitmap = new Bitmap(cortex.MiniColumns.GetLength(0), cortex.MiniColumns.GetLength(1));
+
+            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.GetLength(1)))
+                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.GetLength(0)))
+                {
+                    var mc = cortex.MiniColumns[mcx, mcy];
+                    if (mc is not null)
+                    {
+                        bitmap.SetPixel(mcx, mcy, mc.Temp_Color);
+                    }
+                    else
+                    {
+                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(0, 0, 0));
+                    }
+                }
+
+            return bitmap;
         }
     }
 }

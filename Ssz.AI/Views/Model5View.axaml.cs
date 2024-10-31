@@ -29,6 +29,11 @@ public partial class Model5View : UserControl
         Refresh_StackPanel2();
     }
 
+    private void VisualizeButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Refresh_StackPanel3();
+    }
+
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         Refresh_StackPanel1();
@@ -65,6 +70,25 @@ public partial class Model5View : UserControl
         var images = _model5.GetImages2(1);
 
         var panel = this.FindControl<StackPanel>("StackPanel2")!;
+        panel.Children.Clear();
+        foreach (var image in images)
+        {
+            var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
+            var imageControl = new Avalonia.Controls.Image
+            {
+                Source = bitmap,
+                //Width = 150,
+                //Height = 150
+            };
+            panel.Children.Add(imageControl);
+        }
+    }
+
+    private void Refresh_StackPanel3()
+    {
+        var images = _model5.GetImages3();
+
+        var panel = this.FindControl<StackPanel>("StackPanel3")!;
         panel.Children.Clear();
         foreach (var image in images)
         {

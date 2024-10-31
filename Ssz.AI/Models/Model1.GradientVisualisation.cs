@@ -62,7 +62,7 @@ namespace Ssz.AI.Models
                 double gradientMagnitudeRange = rand.NextDouble() * 255;
 
                 bool isOverlap = detectors.Exists(d =>
-                    Math.Sqrt(Math.Pow(centerX - d.CenterX, 2) + Math.Pow(centerY - d.CenterY, 2)) < receptiveWidth);
+                    Math.Sqrt((centerX - d.CenterX) * (centerX - d.CenterX) + (centerY - d.CenterY) * (centerY - d.CenterY)) < receptiveWidth);
 
                 if (!isOverlap)
                 {

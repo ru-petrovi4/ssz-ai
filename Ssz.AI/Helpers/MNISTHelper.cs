@@ -46,13 +46,13 @@ namespace Ssz.AI.Helpers
             }
 
             return bitmap;
-        }
+        }        
 
         #endregion
 
         #region private functions
 
-            private static byte[] ReadLabels(string path)
+        private static byte[] ReadLabels(string path)
         {
             using (var fs = new FileStream(path, FileMode.Open))
             using (var br = new BinaryReader(fs))
