@@ -1,4 +1,5 @@
-﻿using System.DrawingCore;
+﻿using System.Collections.Generic;
+using System.DrawingCore;
 
 namespace Ssz.AI.Models
 {
@@ -9,5 +10,7 @@ namespace Ssz.AI.Models
         public Color Color { get; set; }
 
         public Bitmap Image { get; set; } = null!;
-    }
+
+        public float[][] SubArea_MiniColumns_Hashes { get; init; } = null!;
+    }    
 }

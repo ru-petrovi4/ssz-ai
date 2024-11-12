@@ -24,10 +24,13 @@
 		<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
 		<TextBlock Text="Угол (градусы):" Grid.Row="1" />
 		<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
-		<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />		
+		<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />
 
-		<Button Grid.Row="3" Grid.Column="0" Content="Step" Click="StepButton_OnClick" />
-		<Button Grid.Row="3" Grid.Column="1" Content="Visualize" Click="VisualizeButton_OnClick" />		
+		<StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal">
+			<Button Content="Step MNIST" Click="StepMnistButton_OnClick" />
+			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />
+			<Button Content="Visualize" Click="VisualizeButton_OnClick" />
+		</StackPanel>
 
 		<StackPanel Name="StackPanel1" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
 		<StackPanel Name="StackPanel2" Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>

@@ -61,7 +61,7 @@ namespace Ssz.AI.Helpers
                     var r = Math.Sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
                     if (r > radius)
                     {
-                        subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), Color.FromArgb(0, 0, 0));
+                        subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), Color.Black);
                     }
                     else
                     {                        

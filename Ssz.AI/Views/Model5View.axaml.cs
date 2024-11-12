@@ -24,8 +24,20 @@ public partial class Model5View : UserControl
         Refresh_StackPanel1();
     }
 
-    private void StepButton_OnClick(object? sender, RoutedEventArgs args)
-    {   
+    private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _model5.DoSteps_MNIST(1);
+
+        Refresh_StackPanel2();
+    }
+
+    private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
+        double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
+        _model5.DoStep_GeneratedLine(position, angle);
+
+        Refresh_StackPanel1();
         Refresh_StackPanel2();
     }
 
@@ -66,8 +78,8 @@ public partial class Model5View : UserControl
     }
 
     private void Refresh_StackPanel2()
-    {        
-        var images = _model5.GetImages2(1);
+    {   
+        var images = _model5.GetImages2();
 
         var panel = this.FindControl<StackPanel>("StackPanel2")!;
         panel.Children.Clear();

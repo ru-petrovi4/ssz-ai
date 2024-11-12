@@ -163,7 +163,7 @@ namespace Ssz.AI.Models
                         activatedDetectors.Add(d);
                 }            
 
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
             if (positionK == 0.0 && angleK == 0.0)
             {

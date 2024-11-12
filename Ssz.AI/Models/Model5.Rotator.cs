@@ -12,6 +12,7 @@ using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
+using Ude.Core;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -48,7 +49,7 @@ namespace Ssz.AI.Models
             CurrentMnistImageIndex = -1; // Перед первым элементом
 
             // Прогон картинок
-            DoSteps(10000);
+            DoSteps_MNIST(2000);
         }        
 
         #endregion
@@ -73,6 +74,36 @@ namespace Ssz.AI.Models
         public double Generated_Angle { get; set; }        
 
         public Image[] GetImages1(double positionK, double angleK)
+        {   
+            (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
+
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
+
+            ActivitiyMaxInfo activitiyMaxInfo = new();
+                
+            GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
+
+            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.GetLength(0) * Retina.Detectors.GetLength(1));
+            foreach (int dy in Enumerable.Range(0, Retina.Detectors.GetLength(1)))
+                foreach (int dx in Enumerable.Range(0, Retina.Detectors.GetLength(0)))
+                {
+                    Detector d = Retina.Detectors[dx, dy];
+                    if (d.Temp_IsActivated)
+                        activatedDetectors.Add(d);
+                }
+            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+
+            var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
+                Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
+                Cortex.MiniColumns.GetLength(0) / 2,
+                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+            //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
+
+            return [resizedBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
+        }
+
+        private (GradientInPoint[,], Bitmap) GetGeneratedLine_gradientMatrix(double positionK, double angleK)
         {
             // Создаем изображение размером 280x280           
 
@@ -133,38 +164,15 @@ namespace Ssz.AI.Models
                 g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
             }
 
-            // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);           
-                    
-
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
-
-            ActivitiyMaxInfo activitiyMaxInfo = new();
-                
-            GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
-
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.GetLength(0) * Retina.Detectors.GetLength(1));
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.GetLength(1)))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.GetLength(0)))
-                {
-                    Detector d = Retina.Detectors[dx, dy];
-                    if (d.Temp_IsActivated)
-                        activatedDetectors.Add(d);
-                }
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
-
-            var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
-
-            return [resizedBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
+            // Применяем оператор Собеля к первому изображению            
+            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), resizedBitmap);
         }
 
-        public Image[] GetImages2(int stepsCount)
+        public Image[] GetImages2()
         {
-            DoSteps(stepsCount);
-
             var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
 
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
             ActivitiyMaxInfo activitiyMaxInfo = new();
 
@@ -180,7 +188,12 @@ namespace Ssz.AI.Models
                 }
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
-            var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
+            var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
+                Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
+                Cortex.MiniColumns.GetLength(0) / 2,
+                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+            //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
             var originalBitmap = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
@@ -196,11 +209,11 @@ namespace Ssz.AI.Models
             //    hash0[random.Next(hash0.Length)] = 1.0f;
             //}            
 
-            int currentMnistImageIndex = 0;
+            //int currentMnistImageIndex = 0;
             var centerMiniColumn_Hash = new float[Constants.HashLength];
-            foreach (var _ in Enumerable.Range(0, 10000))
+            foreach (var currentMnistImageIndex in Enumerable.Range(0, 2000))
             {
-                currentMnistImageIndex += 1;
+                //currentMnistImageIndex += 1;
 
                 var gradientMatrix = GradientMatricesCollection[currentMnistImageIndex];
 
@@ -228,7 +241,7 @@ namespace Ssz.AI.Models
                     {
                         var visualizationTableItem = Cortex.VisualizationTableItems[di];
                         var cosineSimilarity = TensorPrimitives.CosineSimilarity(centerMiniColumn_Hash, visualizationTableItem.Hash);
-                        if (cosineSimilarity > 0.9)
+                        if (cosineSimilarity > 0.90)
                         {
                             found = true;
                             pls.Stop();
@@ -237,14 +250,14 @@ namespace Ssz.AI.Models
 
                 if (!found)
                 {
-                    var bitmap = Visualisation.GetBitmap(gradientMatrix);
+                    //var bitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
-                    var subBitmap = BitmapHelper.GetSubBitmap(
-                        bitmap, 
-                        (int)(centerMiniColumn.CenterX / Constants.DetectorDelta),
-                        (int)(centerMiniColumn.CenterY / Constants.DetectorDelta),
-                        Cortex.DetectorsVisibleRadius);
-                    //Bitmap image = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight, );
+                    //var subBitmap = BitmapHelper.GetSubBitmap(
+                    //    bitmap, 
+                    //    (int)(centerMiniColumn.CenterX / Constants.DetectorDelta),
+                    //    (int)(centerMiniColumn.CenterY / Constants.DetectorDelta),
+                    //    Cortex.DetectorsVisibleRadius + 2);
+                    // //Bitmap image = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight, );
 
                     Color color;
                     if (Cortex.VisualizationTableItems.Count == 0)
@@ -252,20 +265,31 @@ namespace Ssz.AI.Models
                     else
                         color = Visualisation.ColorFromHSV(360 * TensorPrimitives.CosineSimilarity(Cortex.VisualizationTableItems[0].Hash, centerMiniColumn_Hash), 1, 1);
 
-                    Cortex.VisualizationTableItems.Add(new VisualizationTableItem
+                    VisualizationTableItem visualizationTableItem = new()
                     {
                         Hash = (float[])centerMiniColumn_Hash.Clone(),
                         Color = color,
-                        Image = subBitmap
-                    });
+                        //Image = subBitmap
+                        SubArea_MiniColumns_Hashes = new float[Cortex.SubArea_MiniColumns.Length][]
+                    };
+                    foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+                    {
+                        float[] hash = new float[Constants.HashLength];
+                        MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+                        mc.CalculateHash(hash);
+                        visualizationTableItem.SubArea_MiniColumns_Hashes[mci] = hash;
+                    }
+                    Cortex.VisualizationTableItems.Add(visualizationTableItem);
                 }
             }
 
+            SetColors_VisualizationTableItems(Cortex);
 
             foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
                 MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
-                mc.Temp_Color = Color.Black;
+                mc.Temp_ActivityColor = Color.Black;
+                mc.Temp_SuperActivityColor = Color.Black;
             }
 
             ActivitiyMaxInfo activitiyMaxInfo = new();                        
@@ -273,112 +297,165 @@ namespace Ssz.AI.Models
             {
                 var visualizationTableItem = Cortex.VisualizationTableItems[vti];                
 
-                GetSuperActivitiyMaxInfo(visualizationTableItem.Hash, activitiyMaxInfo);
-
-                // Сохраняем воспоминание в миниколонке-победителе.
-                MiniColumn? winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+                GetSuperActivitiyMaxInfo2(visualizationTableItem, activitiyMaxInfo);
+                
+                MiniColumn? winnerMiniColumn = activitiyMaxInfo.ActivityMax_MiniColumn;
                 if (winnerMiniColumn is not null)
                 {
-                    winnerMiniColumn.Temp_Color = visualizationTableItem.Color;
+                    winnerMiniColumn.Temp_ActivityColor = visualizationTableItem.Color;
+                }
+
+                winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+                if (winnerMiniColumn is not null)
+                {
+                    winnerMiniColumn.Temp_SuperActivityColor = visualizationTableItem.Color;
                 }
             }
 
+            var image0 = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
+                Cortex.MiniColumns.GetLength(0) / 2,
+                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
 
-            var image = Visualisation.GetBitmapFromMiniColumsColor(Cortex);
+            var image1 = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex),
+                Cortex.MiniColumns.GetLength(0) / 2,
+                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
 
-            return [ image ];
+            var image2 = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColumsMemoriesCount(Cortex),
+                Cortex.MiniColumns.GetLength(0) / 2,
+                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+
+            return [ image0, image1, image2];
         }
 
-        #endregion        
-
-        private void DoSteps(int stepsCount)
+        public void DoSteps_MNIST(int stepsCount)
         {
             ActivitiyMaxInfo activitiyMaxInfo = new();
-            MiniColumn? winnerMiniColumn;
-            
-            HashSet<MiniColumn> withMemoriesAdded_MiniColums = new();
+
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
                 CurrentMnistImageIndex += 1;
 
                 var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
 
-                // Sleep and refresh all minicolumns
-                if (CurrentMnistImageIndex > 0 && CurrentMnistImageIndex % 1000 == 0)
+                DoStep(gradientMatrix, activitiyMaxInfo);
+            }
+        }
+
+        public void DoStep_GeneratedLine(double positionK, double angleK)
+        {
+            ActivitiyMaxInfo activitiyMaxInfo = new();
+
+            (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
+            
+            DoStep(gradientMatrix, activitiyMaxInfo);            
+        }
+
+        #endregion
+
+        private void DoStep(GradientInPoint[,] gradientMatrix, ActivitiyMaxInfo activitiyMaxInfo)
+        {
+            MiniColumn? winnerMiniColumn;
+
+            // Sleep and refresh all minicolumns
+            if (CurrentMnistImageIndex > 0 && CurrentMnistImageIndex % 1000 == 0)
+            {
+                foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
                 {
-                    foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+                    MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+
+                    foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                     {
-                        MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+                        Memory memory = mc.Memories[mi];
+                        if (memory.IsDeleted)
+                            continue;
 
-                        foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
+                        memory.IsDeleted = true;
+                        mc.Memories[mi] = memory;
+
+                        GetSuperActivitiyMaxInfo(memory.Hash, activitiyMaxInfo);
+
+                        // Сохраняем воспоминание в миниколонке-победителе.
+                        winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+                        if (winnerMiniColumn is not null)
                         {
-                            Memory memory = mc.Memories[mi];
-                            if (memory.IsDeleted)
-                                continue;
-
-                            memory.IsDeleted = true;
-                            mc.Memories[mi] = memory;
-
-                            GetSuperActivitiyMaxInfo(memory.Hash, activitiyMaxInfo);
-
-                            // Сохраняем воспоминание в миниколонке-победителе.
-                            winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
-                            if (winnerMiniColumn is not null)
+                            if (!ReferenceEquals(winnerMiniColumn, mc))
+                            {                                
+                                memory.IsDeleted = false;
+                                winnerMiniColumn.Memories.Add(memory);
+                            }
+                            else
                             {
                                 memory.IsDeleted = false;
-                                if (ReferenceEquals(winnerMiniColumn, mc))
-                                    mc.Memories[mi] = memory;
-                                else
-                                    winnerMiniColumn.Memories.Add(memory);
+                                mc.Memories[mi] = memory;
                             }
                         }
-                    }
 
-                    foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
-                    {
-                        MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+                        //Memory memory = mc.Memories[mi];
+                        //if (memory.IsDeleted)
+                        //    continue;
 
-                        mc.Temp_Memories.Clear();
+                        //memory.IsDeleted = true;
+                        //mc.Memories[mi] = memory;
 
-                        foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
-                        {
-                            Memory memory = mc.Memories[mi];
-                            if (memory.IsDeleted)
-                                continue;
+                        //GetSuperActivitiyMaxInfo(memory.Hash, activitiyMaxInfo);
 
-                            mc.Temp_Memories.Add(memory);
-                        }
-
-                        (mc.Memories, mc.Temp_Memories) = (mc.Temp_Memories, mc.Memories);
+                        //// Сохраняем воспоминание в миниколонке-победителе.
+                        //winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+                        //if (winnerMiniColumn is not null)
+                        //{
+                        //    memory.IsDeleted = false;
+                        //    if (ReferenceEquals(winnerMiniColumn, mc))
+                        //        mc.Memories[mi] = memory;
+                        //    else
+                        //        winnerMiniColumn.Memories.Add(memory);
+                        //}
                     }
                 }
 
-                GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
-
-                // Сохраняем воспоминание в миниколонке-победителе.
-                winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
-                if (winnerMiniColumn is not null)
+                foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
                 {
-                    if (TensorPrimitives.Sum(winnerMiniColumn.Temp_Hash) >= Constants.MinBitsInHashForMemory)
+                    MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+
+                    mc.Temp_Memories.Clear();
+
+                    foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                     {
-                        winnerMiniColumn.Memories.Add(new Memory { Hash = (float[])winnerMiniColumn.Temp_Hash.Clone() });
-                        withMemoriesAdded_MiniColums.Add(winnerMiniColumn);
+                        Memory memory = mc.Memories[mi];
+                        if (memory.IsDeleted)
+                            continue;
+
+                        mc.Temp_Memories.Add(memory);
                     }
-                    else
-                    {
-                        // Не должно быть
-                    }
-                }                
+
+                    (mc.Memories, mc.Temp_Memories) = (mc.Temp_Memories, mc.Memories);
+                }
+            }
+
+            GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
+
+            // Сохраняем воспоминание в миниколонке-победителе.
+            winnerMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+            if (winnerMiniColumn is not null)
+            {
+                winnerMiniColumn.Memories.Add(new Memory { Hash = (float[])winnerMiniColumn.Temp_Hash.Clone() });
+                //if (TensorPrimitives.Sum(winnerMiniColumn.Temp_Hash) >= Constants.MinBitsInHashForMemory)
+                //{                                                
+                //}
+                //else
+                //{
+                //    // Не должно быть
+                //}
             }
         }
 
         private void GetSuperActivitiyMaxInfo(GradientInPoint[,] gradientMatrix, ActivitiyMaxInfo activitiyMaxInfo)
-        {            
-            activitiyMaxInfo.MaxSuperActivity = float.MinValue;
-            activitiyMaxInfo.MaxActivity = float.MinValue;
-            activitiyMaxInfo.SuperActivityMax_MiniColumn = null;
-            activitiyMaxInfo.ActivityMax_MiniColumn = null;
-
+        {
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
@@ -386,7 +463,7 @@ namespace Ssz.AI.Models
                     {
                         var d = Cortex.SubArea_Detectors[di];
                         d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
-                    });
+                    });            
 
             Parallel.For(
                 fromInclusive: 0,
@@ -397,56 +474,12 @@ namespace Ssz.AI.Models
                     mc.CalculateHash(mc.Temp_Hash);
                     mc.Temp_Activity = mc.GetActivity(mc.Temp_Hash);
                 });
-            
-            Parallel.For(
-                    fromInclusive: 0,
-                    toExclusive: Cortex.SubArea_MiniColumns.Length,
-                    () => new ActivitiyMaxInfo(), // method to initialize the local variable
-                    (mci, loopState, localActivitiyMaxInfo) => // method invoked by the loop on each iteration
-                    {
-                        var mc = Cortex.SubArea_MiniColumns[mci];
-                        mc.Temp_SuperActivity = mc.GetSuperActivity();
 
-                        if (mc.Temp_Activity > localActivitiyMaxInfo.MaxActivity)
-                        {
-                            localActivitiyMaxInfo.MaxActivity = mc.Temp_Activity;
-                            localActivitiyMaxInfo.ActivityMax_MiniColumn = mc;
-                        }
-
-                        if (mc.Temp_SuperActivity > localActivitiyMaxInfo.MaxSuperActivity)
-                        {
-                            localActivitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
-                            localActivitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
-                        }
-
-                        return localActivitiyMaxInfo; // value to be passed to next iteration
-                    },
-                    localActivitiyMaxInfo => // Method to be executed when each partition has completed.
-                    {
-                        lock (activitiyMaxInfo)
-                        {
-                            if (localActivitiyMaxInfo.MaxActivity > activitiyMaxInfo.MaxActivity)
-                            {
-                                activitiyMaxInfo.MaxActivity = localActivitiyMaxInfo.MaxActivity;
-                                activitiyMaxInfo.ActivityMax_MiniColumn = localActivitiyMaxInfo.ActivityMax_MiniColumn;
-                            }
-
-                            if (localActivitiyMaxInfo.MaxSuperActivity > activitiyMaxInfo.MaxSuperActivity)
-                            {
-                                activitiyMaxInfo.MaxSuperActivity = localActivitiyMaxInfo.MaxSuperActivity;
-                                activitiyMaxInfo.SuperActivityMax_MiniColumn = localActivitiyMaxInfo.SuperActivityMax_MiniColumn;
-                            }
-                        }
-                    });
-        }
+            GetSuperActivitiyMaxInfo(activitiyMaxInfo);            
+        }        
 
         private void GetSuperActivitiyMaxInfo(float[] hash, ActivitiyMaxInfo activitiyMaxInfo)
-        {
-            activitiyMaxInfo.MaxSuperActivity = float.MinValue;
-            activitiyMaxInfo.MaxActivity = float.MinValue;
-            activitiyMaxInfo.SuperActivityMax_MiniColumn = null;
-            activitiyMaxInfo.ActivityMax_MiniColumn = null;
-
+        {            
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
@@ -456,47 +489,232 @@ namespace Ssz.AI.Models
                     mc.Temp_Activity = mc.GetActivity(hash);
                 });
 
+            GetSuperActivitiyMaxInfo(activitiyMaxInfo);
+        }
+
+        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, ActivitiyMaxInfo activitiyMaxInfo)
+        {
             Parallel.For(
-                    fromInclusive: 0,
-                    toExclusive: Cortex.SubArea_MiniColumns.Length,
-                    () => new ActivitiyMaxInfo(), // method to initialize the local variable
-                    (i, loopState, localActivitiyMaxInfo) => // method invoked by the loop on each iteration
+                fromInclusive: 0,
+                toExclusive: Cortex.SubArea_MiniColumns.Length,
+                mci =>
+                {
+                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    mc.Temp_Activity = mc.GetActivity(visualizationTableItem.SubArea_MiniColumns_Hashes[mci]);
+                });
+
+            GetSuperActivitiyMaxInfo(activitiyMaxInfo);
+        }
+
+        private void GetSuperActivitiyMaxInfo(ActivitiyMaxInfo activitiyMaxInfo)
+        {
+            activitiyMaxInfo.MaxSuperActivity = float.MinValue;
+            activitiyMaxInfo.MaxActivity = float.MinValue;
+            activitiyMaxInfo.SuperActivityMax_MiniColumn = null;
+            activitiyMaxInfo.ActivityMax_MiniColumn = null;
+
+            foreach (var mc in Cortex.SubArea_MiniColumns)
+            {
+                mc.Temp_SuperActivity = mc.GetSuperActivity();
+
+                float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+                if (a > activitiyMaxInfo.MaxActivity)
+                {
+                    activitiyMaxInfo.MaxActivity = a;
+                    activitiyMaxInfo.ActivityMax_MiniColumn = mc;
+                }
+
+                if (mc.Temp_SuperActivity > activitiyMaxInfo.MaxSuperActivity)
+                {
+                    activitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
+                    activitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
+                }
+            }
+
+            //Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: Cortex.SubArea_MiniColumns.Length,
+            //        () => new ActivitiyMaxInfo(), // method to initialize the local variable
+            //        (mci, loopState, localActivitiyMaxInfo) => // method invoked by the loop on each iteration
+            //        {
+            //            var mc = Cortex.SubArea_MiniColumns[mci];
+            //            mc.Temp_SuperActivity = mc.GetSuperActivity();
+
+            //            float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+            //            if (a > localActivitiyMaxInfo.MaxActivity)
+            //            {
+            //                localActivitiyMaxInfo.MaxActivity = a;
+            //                localActivitiyMaxInfo.ActivityMax_MiniColumn = mc;
+            //            }
+
+            //            if (mc.Temp_SuperActivity > localActivitiyMaxInfo.MaxSuperActivity)
+            //            {
+            //                localActivitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
+            //                localActivitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
+            //            }
+
+            //            return localActivitiyMaxInfo; // value to be passed to next iteration
+            //        },
+            //        localActivitiyMaxInfo => // Method to be executed when each partition has completed.
+            //        {
+            //            lock (activitiyMaxInfo)
+            //            {
+            //                if (localActivitiyMaxInfo.MaxActivity > activitiyMaxInfo.MaxActivity)
+            //                {
+            //                    activitiyMaxInfo.MaxActivity = localActivitiyMaxInfo.MaxActivity;
+            //                    activitiyMaxInfo.ActivityMax_MiniColumn = localActivitiyMaxInfo.ActivityMax_MiniColumn;
+            //                }
+
+            //                if (localActivitiyMaxInfo.MaxSuperActivity > activitiyMaxInfo.MaxSuperActivity)
+            //                {
+            //                    activitiyMaxInfo.MaxSuperActivity = localActivitiyMaxInfo.MaxSuperActivity;
+            //                    activitiyMaxInfo.SuperActivityMax_MiniColumn = localActivitiyMaxInfo.SuperActivityMax_MiniColumn;
+            //                }
+            //            }
+            //        });
+        }
+
+        private void SetColors_VisualizationTableItems(Cortex cortex)
+        {
+            Random random = new();
+
+            VisualizationTableItemsCluster r_VisualizationTableItemsCluster = new()
+            {
+                Hash = new float[Constants.HashLength],
+                TempHash = new float[Constants.HashLength],
+                VisualizationTableItems = new(1000),
+                MinCosineSimilarity = float.MaxValue,
+                MaxCosineSimilarity = float.MinValue,
+            };
+            VisualizationTableItemsCluster g_VisualizationTableItemsCluster = new()
+            {
+                Hash = new float[Constants.HashLength],
+                TempHash = new float[Constants.HashLength],
+                VisualizationTableItems = new(1000),
+                MinCosineSimilarity = float.MaxValue,
+                MaxCosineSimilarity = float.MinValue,
+            };
+            VisualizationTableItemsCluster b_VisualizationTableItemsCluster = new()
+            {
+                Hash = new float[Constants.HashLength],
+                TempHash = new float[Constants.HashLength],
+                VisualizationTableItems = new(1000),
+                MinCosineSimilarity = float.MaxValue,
+                MaxCosineSimilarity = float.MinValue,
+            };
+            VisualizationTableItemsCluster[] clusters = [ r_VisualizationTableItemsCluster, g_VisualizationTableItemsCluster, b_VisualizationTableItemsCluster ];
+
+            // Случайные начальные центры
+            foreach (var cluster in clusters)
+            {
+                foreach (var _ in Enumerable.Range(0, Constants.InitialMemoryBitsCount))
+                {
+                    cluster.Hash[random.Next(Constants.HashLength)] = 1.0f;
+                }
+            }
+
+            // Находим центры кластеров (EM)
+            foreach (var _ in Enumerable.Range(0, 10))
+            {
+                foreach (var cluster in clusters)
+                {
+                    cluster.VisualizationTableItems.Clear();
+                }
+                
+                foreach (VisualizationTableItem visualizationTableItem in cortex.VisualizationTableItems)
+                {
+                    var max = clusters.MaxBy(c => TensorPrimitives.CosineSimilarity(visualizationTableItem.Hash, c.Hash));
+                    if (max is null)
                     {
-                        var mc = Cortex.SubArea_MiniColumns[i];
-                        mc.Temp_SuperActivity = mc.GetSuperActivity();
-
-                        if (mc.Temp_Activity > localActivitiyMaxInfo.MaxActivity)
-                        {
-                            localActivitiyMaxInfo.MaxActivity = mc.Temp_Activity;
-                            localActivitiyMaxInfo.ActivityMax_MiniColumn = mc;
-                        }
-
-                        if (mc.Temp_SuperActivity > localActivitiyMaxInfo.MaxSuperActivity)
-                        {
-                            localActivitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
-                            localActivitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
-                        }
-
-                        return localActivitiyMaxInfo; // value to be passed to next iteration
-                    },
-                    localActivitiyMaxInfo => // Method to be executed when each partition has completed.
+                        throw new Exception();
+                    }
+                    else
                     {
-                        lock (activitiyMaxInfo)
-                        {
-                            if (localActivitiyMaxInfo.MaxActivity > activitiyMaxInfo.MaxActivity)
-                            {
-                                activitiyMaxInfo.MaxActivity = localActivitiyMaxInfo.MaxActivity;
-                                activitiyMaxInfo.ActivityMax_MiniColumn = localActivitiyMaxInfo.ActivityMax_MiniColumn;
-                            }
+                        max.VisualizationTableItems.Add(visualizationTableItem);
+                    }
+                }
 
-                            if (localActivitiyMaxInfo.MaxSuperActivity > activitiyMaxInfo.MaxSuperActivity)
-                            {
-                                activitiyMaxInfo.MaxSuperActivity = localActivitiyMaxInfo.MaxSuperActivity;
-                                activitiyMaxInfo.SuperActivityMax_MiniColumn = localActivitiyMaxInfo.SuperActivityMax_MiniColumn;
-                            }
-                        }
-                    });
-        }        
+                foreach (var cluster in clusters)
+                {
+                    Array.Clear(cluster.Hash);
+                    if (cluster.VisualizationTableItems.Count == 0)
+                        throw new Exception();
+                    foreach (VisualizationTableItem visualizationTableItem in cluster.VisualizationTableItems)
+                    {
+                        TensorPrimitives.Add(cluster.Hash, visualizationTableItem.Hash, cluster.Hash);
+                    }
+                    TensorPrimitives.Divide(cluster.Hash, cluster.VisualizationTableItems.Count, cluster.Hash);
+                }
+            }
+
+            //// Находим максимально удаленные точки от цетров кластеров
+            //foreach (var cluster in clusters)
+            //{
+            //    var otherClusters = clusters.Where(c => !ReferenceEquals(c, cluster)).ToArray();
+            //    float min = float.MaxValue;
+            //    VisualizationTableItem? minVisualizationTableItem = null;
+            //    foreach (VisualizationTableItem visualizationTableItem in cluster.VisualizationTableItems)
+            //    {
+            //        float d = 0.0f;
+            //        foreach (var otherCluster in otherClusters)
+            //        {
+            //            d += TensorPrimitives.CosineSimilarity(otherCluster.Hash, visualizationTableItem.Hash);
+            //        }
+            //        if (d < min)
+            //            minVisualizationTableItem = visualizationTableItem;
+            //    }
+            //    cluster.TempHash = minVisualizationTableItem!.Hash;
+            //}
+
+            //foreach (var cluster in clusters)
+            //{
+            //    Array.Copy(cluster.TempHash, cluster.Hash, cluster.TempHash.Length);
+            //}
+
+            foreach (VisualizationTableItem visualizationTableItem in cortex.VisualizationTableItems)
+            {
+                foreach (var cluster in clusters)
+                {
+                    var d = TensorPrimitives.CosineSimilarity(visualizationTableItem.Hash, cluster.Hash);
+                    if (d < cluster.MinCosineSimilarity)
+                        cluster.MinCosineSimilarity = d;
+                    if (d > cluster.MaxCosineSimilarity)
+                        cluster.MaxCosineSimilarity = d;
+                }
+            }
+            foreach (VisualizationTableItem visualizationTableItem in cortex.VisualizationTableItems)
+            {
+                var r_d = TensorPrimitives.CosineSimilarity(visualizationTableItem.Hash, r_VisualizationTableItemsCluster.Hash);
+                int r = 1 + (int)(254 * (r_d - r_VisualizationTableItemsCluster.MinCosineSimilarity) /
+                    (r_VisualizationTableItemsCluster.MaxCosineSimilarity - r_VisualizationTableItemsCluster.MinCosineSimilarity));
+                var g_d = TensorPrimitives.CosineSimilarity(visualizationTableItem.Hash, g_VisualizationTableItemsCluster.Hash);
+                int g = 1 + (int)(254 * (g_d - g_VisualizationTableItemsCluster.MinCosineSimilarity) /
+                    (g_VisualizationTableItemsCluster.MaxCosineSimilarity - g_VisualizationTableItemsCluster.MinCosineSimilarity));
+                var b_d = TensorPrimitives.CosineSimilarity(visualizationTableItem.Hash, b_VisualizationTableItemsCluster.Hash);
+                int b = 1 + (int)(254 * (b_d - b_VisualizationTableItemsCluster.MinCosineSimilarity) /
+                    (b_VisualizationTableItemsCluster.MaxCosineSimilarity - b_VisualizationTableItemsCluster.MinCosineSimilarity));
+
+                float k = 255.0f / Math.Max(r, Math.Max(g, b));
+                if (float.IsInfinity(k) || float.IsNaN(k))
+                    throw new Exception();
+                if (r == 1 && g == 1 && b == 1)
+                    throw new Exception();
+                visualizationTableItem.Color = Color.FromArgb((int)(k * r), (int)(k * g), (int)(k * b));
+            }
+        }
+
+        private class VisualizationTableItemsCluster
+        {
+            public float[] Hash = null!;
+
+            public float[] TempHash = null!;
+
+            public List<VisualizationTableItem> VisualizationTableItems = null!;
+
+            public float MinCosineSimilarity;
+
+            public float MaxCosineSimilarity;            
+        }
 
         /// <summary>        
         ///     Константы данной модели
@@ -566,12 +784,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Минимальное число бит в хэше, что бы быть сохраненным в память
             /// </summary>
-            public int MinBitsInHashForMemory => 6;
+            public int MinBitsInHashForMemory => 8;
 
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 5;            
+            public int NearestMiniColumnsDelta => 7;            
 
             public float MiniColumnMinimumActivity => 0.66f;
 
