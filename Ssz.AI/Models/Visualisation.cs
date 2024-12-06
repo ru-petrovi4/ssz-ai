@@ -31,7 +31,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBitmap(GradientInPoint[,] gradientMatrix)
+        public static Bitmap GetGradientBitmap(GradientInPoint[,] gradientMatrix)
         {
             int width = gradientMatrix.GetLength(0);
             int height = gradientMatrix.GetLength(1);
@@ -61,6 +61,8 @@ namespace Ssz.AI.Models
 
         public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex, ActivitiyMaxInfo activitiyMaxInfo)
         {
+            var random = new Random();
+
             var miniColumns = cortex.MiniColumns;            
 
             int width = miniColumns.GetLength(0);
@@ -106,11 +108,11 @@ namespace Ssz.AI.Models
                 }
             }
 
-            MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.ActivityMax_MiniColumn;
+            MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.GetActivityMax_MiniColumn(random);
             if (maxActivityMiniColumn is not null)
                 gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.Red);
 
-            MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumn;
+            MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
             if (maxSuperActivityMiniColumn is not null)
                 gradientBitmap.SetPixel(maxSuperActivityMiniColumn.MCX, maxSuperActivityMiniColumn.MCY, Color.Blue);
 
@@ -132,6 +134,8 @@ namespace Ssz.AI.Models
 
                     // Преобразуем магнитуду в яркость
                     int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
+                    if (brightness > 255)
+                        brightness = 255;
 
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);

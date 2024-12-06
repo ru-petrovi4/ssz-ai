@@ -25,7 +25,7 @@ namespace Ssz.AI.Models
             // Применяем оператор Собеля к первому изображению
             var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
-            var gradientBitmap = Visualisation.GetBitmap(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBitmap(gradientMatrix);
             // Сохраняем результат
             //gradientImage.Save("sobel_gradient_image.png");
 

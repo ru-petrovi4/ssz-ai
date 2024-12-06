@@ -37,8 +37,7 @@ public partial class Model5View : UserControl
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
         _model5.DoStep_GeneratedLine(position, angle);
 
-        Refresh_StackPanel1();
-        Refresh_StackPanel2();
+        Refresh_StackPanel1();        
     }
 
     private void VisualizeButton_OnClick(object? sender, RoutedEventArgs args)
