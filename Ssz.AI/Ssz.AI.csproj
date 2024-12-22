@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -24,7 +24,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.10.0.20240616" />
-    <PackageReference Include="System.Numerics.Tensors" Version="8.0.0" />
+    <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.16.0" />
+    <PackageReference Include="System.Numerics.Tensors" Version="9.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +36,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\Model7View.axaml.cs">
+      <DependentUpon>Model7View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model6View.axaml.cs">
+      <DependentUpon>Model6View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\Model5View.axaml.cs">
       <DependentUpon>Model5View.axaml</DependentUpon>
     </Compile>

@@ -21,7 +21,7 @@ namespace Ssz.AI.Models
         #region construction and destruction
 
         /// <summary>
-        ///     Построение графика распределения велечин градиентов
+        ///     Построение графика распределения величин градиентов
         /// </summary>
         public Model4()
         {
@@ -252,8 +252,6 @@ namespace Ssz.AI.Models
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
             public int NearestMiniColumnsDelta => 5;            
-
-            public float MiniColumnMinimumActivity => 0.66f;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

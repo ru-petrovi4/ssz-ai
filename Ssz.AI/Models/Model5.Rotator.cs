@@ -212,9 +212,11 @@ namespace Ssz.AI.Models
             //    hash0[random.Next(hash0.Length)] = 1.0f;
             //}            
 
+            Cortex.VisualizationTableItems.Clear();
+
             //int currentMnistImageIndex = 0;
             var centerMiniColumn_Hash = new float[Constants.HashLength];
-            foreach (var currentMnistImageIndex in Enumerable.Range(0, 10000))
+            foreach (var currentMnistImageIndex in Enumerable.Range(500, 2000))
             {
                 //currentMnistImageIndex += 1;
 
@@ -262,11 +264,7 @@ namespace Ssz.AI.Models
                     //    Cortex.DetectorsVisibleRadius + 2);
                     // //Bitmap image = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight, );
 
-                    Color color;
-                    if (Cortex.VisualizationTableItems.Count == 0)
-                        color = Visualisation.ColorFromHSV(0, 1, 1);
-                    else
-                        color = Visualisation.ColorFromHSV(360 * TensorPrimitives.CosineSimilarity(Cortex.VisualizationTableItems[0].Hash, centerMiniColumn_Hash), 1, 1);
+                    Color color = Color.Black;                    
 
                     VisualizationTableItem visualizationTableItem = new()
                     {
@@ -370,7 +368,7 @@ namespace Ssz.AI.Models
             MiniColumn? winnerMiniColumn;
 
             // Sleep and refresh all minicolumns
-            if (CurrentMnistImageIndex > 0 && CurrentMnistImageIndex % 1000 == 0)
+            if (CurrentMnistImageIndex > 0 && CurrentMnistImageIndex % 100 == 0)
             {
                 foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
                 {
@@ -511,10 +509,11 @@ namespace Ssz.AI.Models
 
         private void GetSuperActivitiyMaxInfo(ActivitiyMaxInfo activitiyMaxInfo)
         {
-            activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.MaxActivity = float.MinValue;
-            activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
+
+            activitiyMaxInfo.MaxSuperActivity = float.MinValue;
+            activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();            
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
@@ -923,9 +922,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 7;            
-
-            public float MiniColumnMinimumActivity => 0.66f;
+            public int NearestMiniColumnsDelta => 7;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

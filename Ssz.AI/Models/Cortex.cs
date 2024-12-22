@@ -108,7 +108,7 @@ namespace Ssz.AI.Models
 
                     foreach (int r in Enumerable.Range(0, constants.NearestMiniColumnsDelta))
                     {
-                        mc.NearestMiniColumnInfos.Add(((4.0f / ((r + 1.0f)), 1.0f / ((r + 1.0f))), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
+                        mc.NearestMiniColumnInfos.Add(((2.0f / ((r + 2.0f)), 1.0f / ((r + 2.0f))), new List<MiniColumn>(constants.NearestMiniColumnsDelta * constants.NearestMiniColumnsDelta * 4)));
                     }
 
                     for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy < mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
@@ -247,8 +247,9 @@ namespace Ssz.AI.Models
                 return (float.NaN, float.NaN);
 
             float positiveActivity = 0.0f;
-            float negativeActivity = 0.0f;
             int positive_MemoryCount = 0;
+
+            float negativeActivity = 0.0f;            
             int negative_MemoryCount = 0;
 
             foreach (var mi in Enumerable.Range(0, Memories.Count))
@@ -256,13 +257,13 @@ namespace Ssz.AI.Models
                 var memory = Memories[mi];
                 if (memory.IsDeleted)
                     continue;
-                float a = TensorPrimitives.CosineSimilarity(hash, memory.Hash) - Constants.MiniColumnMinimumActivity;
+                float a = TensorPrimitives.CosineSimilarity(hash, memory.Hash) - 0.66f;
                 if (a > 0.0f)
                 {
                     positiveActivity += a;
                     positive_MemoryCount += 1;
                 }
-                else
+                else if (a > -0.33)
                 {
                     negativeActivity += a;
                     negative_MemoryCount += 1;
@@ -273,10 +274,11 @@ namespace Ssz.AI.Models
                     throw new Exception();
             }
 
-            if (positive_MemoryCount > 0)
-                positiveActivity = positiveActivity / positive_MemoryCount;
-            if (negative_MemoryCount > 0)
-                negativeActivity = negativeActivity / negative_MemoryCount;
+            //if (positive_MemoryCount > 0)
+            //    positiveActivity = positiveActivity / positive_MemoryCount;
+
+            //if (negative_MemoryCount > 0)
+            //    negativeActivity = negativeActivity / negative_MemoryCount;
 
             return (positiveActivity, negativeActivity);
         }        
@@ -285,8 +287,9 @@ namespace Ssz.AI.Models
         {
             //float superActivity = Temp_Activity.Item1 + Temp_Activity.Item2;
             float positiveActivitySum = Temp_Activity.Item1;
-            float negativeActivitySum = Temp_Activity.Item2;            
             float positiveActivitySum_TotalK = 1.0f;
+
+            float negativeActivitySum = Temp_Activity.Item2;
             float negativeActivitySum_TotalK = 1.0f;
 
             foreach (var r in Enumerable.Range(0, NearestMiniColumnInfos.Count))
@@ -431,9 +434,7 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Максимальное расстояние до ближайших миниколонок
         /// </summary>
-        int NearestMiniColumnsDelta { get; }        
-
-        float MiniColumnMinimumActivity { get; }
+        int NearestMiniColumnsDelta { get; }                
 
         /// <summary>
         ///     Верхний предел количества воспоминаний (для кэширования)

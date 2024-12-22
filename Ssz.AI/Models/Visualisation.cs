@@ -88,7 +88,8 @@ namespace Ssz.AI.Models
                 }
             }
 
-            minActivity = minActivity + (maxActivity - minActivity) * 0.9;            
+            //minActivity = minActivity + (maxActivity - minActivity) * 0.66;            
+            minActivity = 0.0;
 
             for (int y = 0; y < height; y += 1)
             {
@@ -243,7 +244,7 @@ namespace Ssz.AI.Models
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.GetLength(0)))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null)
+                    if (mc is not null && maxMemoriesCount != minMemoriesCount)
                     {
                         int brightness = (int)(255 * ((float)(mc.Memories.Count - minMemoriesCount)) / (maxMemoriesCount - minMemoriesCount));
 

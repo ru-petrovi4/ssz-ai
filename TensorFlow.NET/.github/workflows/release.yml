@@ -1,0 +1,62 @@
+name: auto-release
+
+on:
+  workflow_run:
+    workflows: ["release-prepare"]
+    types:
+      - completed
+
+env:
+  MYGET_API_TOKEN: ${{ SECRETS.MYGET_API_KEY }}
+  GITHUB_TOKEN: ${{ SECRETS.RINNE_GITHUB_TOKEN }}
+
+jobs:
+  release_to_myget:
+    runs-on: windows-latest
+#     needs: run-semantic-release
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET 6.0.x SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+
+    - name: Check .NET info
+      run: dotnet --info
+
+    - name: Install dependencies
+      run: dotnet restore
+
+    - name: Build solution
+      run: dotnet build -c Release --no-restore
+
+    - name: Pack packages
+      run: |
+        git fetch --unshallow;
+        git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*";
+        git fetch origin;
+        $LastTag = git describe --tags;
+        $DroppedTag = ($LastTag).TrimStart('v');
+        echo "Last tag is: $DroppedTag";
+        $Suffix = "-nightly"
+        $Version = "${DroppedTag}${Suffix}";
+        echo "Publishing version: $Version";
+        dotnet pack ./src/TensorFlowNET.Core/Tensorflow.Binding.csproj -c Release -o packages /p:PackageVersion=$Version /p:Version=$Version;
+        dotnet pack ./src/TensorFlowNET.Keras/Tensorflow.Keras.csproj -c Release -o packages /p:PackageVersion=$Version /p:Version=$Version;
+        dotnet pack ./src/TensorflowNET.Hub/Tensorflow.Hub.csproj -c Release -o packages /p:PackageVersion=$Version /p:Version=$Version;
+
+        if($LastExitCode -ne 0)
+        {
+            Write-Warning -Message "Pack packages warming, last exit code is ${LastExitCode}."
+            $LastExitCode = 0;
+        }
+
+    - name: Upload packages artifacts
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: "drop-ci-packages"
+        path: './packages'
+
+    - name: Push TensorFlow.NET to myget.org
+      run: dotnet nuget push .\packages\TensorFlow*.nupkg --source https://www.myget.org/F/scisharp/api/v3/index.json -k ${{ secrets.MYGET_API_KEY }} --skip-duplicate

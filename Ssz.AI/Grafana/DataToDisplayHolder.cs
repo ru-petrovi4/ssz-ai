@@ -10,6 +10,11 @@ namespace Ssz.AI.Grafana
         public ulong[] MiniColumsActivatedDetectorsCountDistribution { get; set; } = new ulong[new Model4.ModelConstants().MiniColumnVisibleDetectorsCount];
 
         public ulong[] MiniColumsBitsCountInHashDistribution { get; set; } = new ulong[new Model4.ModelConstants().HashLength];
+
+        /// <summary>
+        ///     [mcx, mcy, bits count]
+        /// </summary>
+        public ulong[,,] MiniColumsBitsCountInHashDistribution2 { get; set; } = new ulong[0, 0, 0];
     }
 
     public class GradientDistribution

@@ -1,0 +1,84 @@
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Linq;
+using Tensorflow;
+using Tensorflow.NumPy;
+using static Tensorflow.Binding;
+
+namespace TensorFlowNET.UnitTest.ManagedAPI
+{
+    [TestClass]
+    public class MathApiTest : EagerModeTestBase
+    {
+        // A constant vector of size 6
+        Tensor a = tf.constant(new float[] { 1.0f, -0.5f, 3.4f, -2.1f, 0.0f, -6.5f });
+        Tensor b = tf.constant(new float[,] { { 1.0f, -0.5f, 3.4f }, { -2.1f, 0.0f, -6.5f } });
+
+        [TestMethod]
+        public void Sin()
+        {
+            var b = tf.sin(a, name: "Sin");
+            var expected = new float[] { 0.84147096f, -0.47942555f, -0.2555412f, -0.86320937f, 0f, -0.21511999f };
+            var actual = b.ToArray<float>();
+            Assert.IsTrue(Equal(expected, actual));
+        }
+
+        [TestMethod]
+        public void Tan()
+        {
+            var b = tf.tan(a, name: "Tan");
+            var expected = new float[] { 1.5574077f, -0.5463025f, 0.264317f, 1.709847f, 0f, -0.2202772f };
+            var actual = b.ToArray<float>();
+            Assert.IsTrue(Equal(expected, actual));
+        }
+
+        [TestMethod]
+        public void ReduceSum()
+        {
+            var x1 = tf.reduce_sum(b);
+            Assert.AreEqual(-4.7f, (float)x1);
+
+            var x2 = tf.reduce_sum(b, 0);
+            Assert.IsTrue(Enumerable.SequenceEqual(new[] { -1.0999999f, -0.5f, -3.1f }, x2.ToArray<float>()));
+
+            var x3 = tf.reduce_sum(b, 1);
+            Assert.IsTrue(Enumerable.SequenceEqual(new[] { 3.9f, -8.6f }, x3.ToArray<float>()));
+
+            var x4 = tf.reduce_sum(b, 1, keepdims: true);
+            Assert.AreEqual((2, 1), x4.shape);
+
+            var x5 = tf.reduce_sum(b, (0, 1));
+            Assert.AreEqual(-4.7f, (float)x5);
+        }
+
+        [TestMethod]
+        public void Erf()
+        {
+            var erf = tf.math.erf(a, name: "erf");
+            var expected = new float[] { 0.8427007f, -0.5204999f, 0.99999845f, -0.9970206f, 0f, -1f };
+            var actual = erf.ToArray<float>();
+            Assert.IsTrue(Equal(expected, actual));
+        }
+
+        [TestMethod]
+        public void ReduceEuclideanNorm()
+        {
+            var x = tf.constant(new[,] { { 1, 2, 3 }, { 1, 1, 1 } });
+            Assert.AreEqual(tf.math.reduce_euclidean_norm(x).numpy(), 4);
+
+            var y = tf.constant(new[,] { { 1, 2, 3 }, { 1, 1, 1 } }, dtype: tf.float32);
+            Assert.IsTrue(Equal(tf.math.reduce_euclidean_norm(y).numpy(), 4.1231055f));
+
+            Assert.IsTrue(Equal(tf.math.reduce_euclidean_norm(y, 0).ToArray<float>(), 
+                new float[] { np.sqrt(2f), np.sqrt(5f), np.sqrt(10f) }));
+
+            Assert.IsTrue(Equal(tf.math.reduce_euclidean_norm(y, 1).ToArray<float>(),
+                new float[] { np.sqrt(14f), np.sqrt(3f) }));
+
+            Assert.IsTrue(Equal(tf.math.reduce_euclidean_norm(y, 1, keepdims: true).ToArray<float>(),
+                new float[] { np.sqrt(14f), np.sqrt(3f) }));
+
+            Assert.AreEqual(tf.math.reduce_euclidean_norm(y, (0, 1)).numpy(), np.sqrt(17f));
+        }
+    }
+}

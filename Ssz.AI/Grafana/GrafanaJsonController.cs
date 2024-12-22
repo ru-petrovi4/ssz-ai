@@ -33,6 +33,8 @@ namespace Ssz.AI.Grafana
 
         public const string MiniColumsActiveBitsHisogram_Metric = @"MiniColumsActiveBitsHisogram";
 
+        public const string MiniColumsActiveBitsHisogram2_Metric = @"MiniColumsActiveBitsHisogram2";
+
         /// <summary>
         ///     Used for "Test connection" on the datasource config page.
         /// </summary>
@@ -65,6 +67,14 @@ namespace Ssz.AI.Grafana
                         {
                             Label = "Гистограмма количества активных бит детекторов",
                             Value = MiniColumsActiveBitsHisogram_Metric,
+                            Payloads = new List<ListMetricsResponsePayload>
+                            {
+                            }
+                        },
+                        new ListMetricsResponse
+                        {
+                            Label = "Гистограмма количества активных бит миниколонок",
+                            Value = MiniColumsActiveBitsHisogram2_Metric,
                             Payloads = new List<ListMetricsResponsePayload>
                             {
                             }
@@ -138,6 +148,9 @@ namespace Ssz.AI.Grafana
                         break;
                     case MiniColumsActiveBitsHisogram_Metric:
                         result.Add(await Query_MiniColumsActiveBitsHisogram(queryRequest, target));
+                        break;
+                    case MiniColumsActiveBitsHisogram2_Metric:
+                        result.Add(await Query_MiniColumsActiveBitsHisogram2(queryRequest, target));
                         break;
                 }
             }
@@ -254,6 +267,36 @@ namespace Ssz.AI.Grafana
             for (int i = 0; i < 50; i += 1)
             {
                 rows.Add([i.ToString(), data[i]]);
+            }
+
+            var queryResponse =
+                new QueryResponse
+                {
+                    Target = GradientHisogram_Metric,
+                    //Datapoints = datapoints,
+                    Type = QueryResponse.TypeEnum.Table,
+                    Columns = new List<QueryResponseColumn>
+                    {
+                                new QueryResponseColumn { Text = @"Количество бит", Type = QueryResponseColumn.TypeEnum.String },
+                                new QueryResponseColumn { Text = @"Количество примеров", Type = QueryResponseColumn.TypeEnum.Number },
+                    },
+                    Rows = rows,
+                };
+
+            return Task.FromResult(queryResponse);
+        }
+
+        private Task<QueryResponse> Query_MiniColumsActiveBitsHisogram2(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
+        {
+            var jsonElement = (JObject)queryRequestTarget.Payload!;
+            //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
+
+            var data = _dataToDisplayHolder.MiniColumsBitsCountInHashDistribution2;
+
+            List<object[]> rows = new List<object[]>(data.Length);
+            for (int i = 0; i < 50; i += 1)
+            {
+                rows.Add([i.ToString(), data[50, 50, i]]);
             }
 
             var queryResponse =

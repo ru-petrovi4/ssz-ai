@@ -1,0 +1,192 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <AssemblyName>Tensorflow.Binding</AssemblyName>
+    <RootNamespace>Tensorflow</RootNamespace>
+    <TargetTensorFlow>2.15.0</TargetTensorFlow>
+    <Version>0.150.0</Version>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Authors>Haiping Chen, Eli Belash, Yaohui Liu, Meinrad Recheis</Authors>
+    <Company>SciSharp STACK</Company>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <Copyright>Apache 2.0, Haiping Chen since 2018</Copyright>
+    <RepositoryUrl>https://github.com/SciSharp/TensorFlow.NET</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>http://scisharpstack.org</PackageProjectUrl>
+    <PackageIconUrl>https://avatars3.githubusercontent.com/u/44989469?s=200&amp;v=4</PackageIconUrl>
+    <PackageTags>TensorFlow, SciSharp, Machine Learning, TensorFlow.NET, TF.NET, AI</PackageTags>
+    <Description>Google's TensorFlow full binding in .NET Standard.
+Building, training and infering deep learning models.
+https://tensorflownet.readthedocs.io</Description>
+    <AssemblyVersion>0.150.0.0</AssemblyVersion>
+    <PackageReleaseNotes>
+		tf.net 0.150.x and above are based on tensorflow native 2.15.0
+		* Support BERT model.
+		
+		tf.net 0.110.x and above are based on tensorflow native 2.11.0
+		* Support RNN, LSTM model.
+		* Support Transformer model.
+		* Added IMDB dataset.
+
+		tf.net 0.100.x and above are based on tensorflow native 2.10.0
+
+		* Eager Mode is added finally.
+		* tf.keras is partially working.
+		* tf.data is added.
+		* Autograph works partially.
+		* Improve memory usage.
+
+		TensorFlow .NET v0.3x is focused on making more Keras API works.
+		Keras API is a separate package released as TensorFlow.Keras.
+
+		tf.net 0.4x.x aligns with TensorFlow v2.4.1 native library.
+		tf.net 0.6x.x aligns with TensorFlow v2.6.x native library.
+		tf.net 0.7x.x aligns with TensorFlow v2.7.x native library.
+		tf.net 0.10x.x aligns with TensorFlow v2.10.x native library.
+		tf.net 0.11x.x aligns with TensorFlow v2.11.x native library.
+		tf.net 0.15x.x aligns with TensorFlow v2.15.x native library.
+	</PackageReleaseNotes>
+    <FileVersion>0.150.0.0</FileVersion>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+    <PackageOutputPath>packages</PackageOutputPath>
+    <SignAssembly>true</SignAssembly>
+    <Platforms>AnyCPU;x64</Platforms>
+    <PackageId>TensorFlow.NET</PackageId>
+    <Configurations>Debug;Release;GPU</Configurations>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;DEBUG;TRACK_TENSOR_LIFE_1</DefineConstants>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GPU|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;DEBUG;TRACK_TENSOR_LIFE_1</DefineConstants>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;DEBUG;TRACK_TENSOR_LIFE1</DefineConstants>
+    <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>TensorFlow.NET.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='GPU|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;DEBUG;TRACK_TENSOR_LIFE1</DefineConstants>
+    <PlatformTarget>x64</PlatformTarget>
+    <DocumentationFile>TensorFlow.NET.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants />
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|netstandard2.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='GPU|netstandard2.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='GPU|netstandard2.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='GPU|net6.0|AnyCPU'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='GPU|net6.0|x64'">
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>$(NoWarn),1570,1573,1591,1712,8603,8604,8625,CS0612</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Distribute\**" />
+    <Compile Remove="Models\**" />
+    <Compile Remove="runtimes\**" />
+    <EmbeddedResource Remove="Distribute\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <EmbeddedResource Remove="runtimes\**" />
+    <None Remove="Distribute\**" />
+    <None Remove="Models\**" />
+    <None Remove="runtimes\**" />
+    <Compile Remove="Util\BindingArray2.cs" />
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="FodyWeavers.xml" />
+    <None Remove="FodyWeavers.xsd" />
+    <None Remove="Protobuf\README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MethodBoundaryAspect.Fody" Version="2.0.149" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="OneOf" Version="3.0.263" />
+    <PackageReference Include="Protobuf.Text" Version="0.7.2" />
+    <PackageReference Include="Razorvine.Pickle" Version="1.4.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" />
+    <PackageReference Include="System.Memory" Version="4.5.5" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

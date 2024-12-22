@@ -19,14 +19,14 @@ public partial class Model5View : UserControl
 
         //DataContext = new Model5ViewModel();
 
-        _model5 = new Model5();
+        _model = new Model5();
 
         Refresh_StackPanel1();
     }
 
     private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model5.DoSteps_MNIST(1);
+        _model.DoSteps_MNIST(1);
 
         Refresh_StackPanel2();
     }
@@ -35,7 +35,7 @@ public partial class Model5View : UserControl
     {
         double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
-        _model5.DoStep_GeneratedLine(position, angle);
+        _model.DoStep_GeneratedLine(position, angle);
 
         Refresh_StackPanel1();        
     }
@@ -59,7 +59,7 @@ public partial class Model5View : UserControl
     {
         double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
-        var images = _model5.GetImages1(position, angle);
+        var images = _model.GetImages1(position, angle);
 
         var panel = this.FindControl<StackPanel>("StackPanel1")!;
         panel.Children.Clear();
@@ -78,7 +78,7 @@ public partial class Model5View : UserControl
 
     private void Refresh_StackPanel2()
     {   
-        var images = _model5.GetImages2();
+        var images = _model.GetImages2();
 
         var panel = this.FindControl<StackPanel>("StackPanel2")!;
         panel.Children.Clear();
@@ -97,7 +97,7 @@ public partial class Model5View : UserControl
 
     private void Refresh_StackPanel3()
     {
-        var images = _model5.GetImages3();
+        var images = _model.GetImages3();
 
         var panel = this.FindControl<StackPanel>("StackPanel3")!;
         panel.Children.Clear();
@@ -114,5 +114,5 @@ public partial class Model5View : UserControl
         }
     }
 
-    private Model5 _model5;
+    private Model5 _model;
 }
