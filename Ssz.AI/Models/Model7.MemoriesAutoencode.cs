@@ -50,7 +50,7 @@ namespace Ssz.AI.Models
             CurrentMnistImageIndex = -1; // Перед первым элементом
 
             // Прогон картинок
-            DoSteps_MNIST(2000);
+            DoSteps_MNIST(5000);
 
             FindAutoencoder(Cortex.MiniColumns[Cortex.MiniColumns.GetLength(0) / 2, Cortex.MiniColumns.GetLength(1) / 2]);
         }        
@@ -276,12 +276,15 @@ namespace Ssz.AI.Models
         {            
             var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: 50, maxActiveUnits: 7);
 
-            float binaryCrossEntropy = 1.0f;
+            float prevBinaryCrossEntropy = float.MaxValue;
+            float binaryCrossEntropy;
+            float binaryCrossEntropyDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
 
             int iterationsCount = 0;
-            while (binaryCrossEntropy > 0.01f)
+            int stopIterationsCount = 0;
+            while (stopIterationsCount < 5)
             {
                 binaryCrossEntropy = 0.0f;
 
@@ -294,17 +297,33 @@ namespace Ssz.AI.Models
 
                 binaryCrossEntropy = binaryCrossEntropy / miniColumn.Memories.Count;
 
-                iterationsCount += 1;
-            }           
+                binaryCrossEntropyDelta = prevBinaryCrossEntropy - binaryCrossEntropy;
+                if (binaryCrossEntropyDelta > -0.00001f && binaryCrossEntropyDelta < 0.00001f)
+                    stopIterationsCount += 1;
+                else
+                    stopIterationsCount = 0;
 
+                iterationsCount += 1;
+
+                prevBinaryCrossEntropy = binaryCrossEntropy;                
+            }
+
+            binaryCrossEntropy = 0.0f;
+
+            int memoriesCount = 0;
             foreach (var memory in miniColumn.Memories.Skip(trainCount))
             {
                 var input = new DenseTensor<float>(memory.Hash);
 
-                binaryCrossEntropy = autoencoder.ComputeBinaryCrossEntropy(input);
+                binaryCrossEntropy += autoencoder.ComputeBinaryCrossEntropy(input);
 
                 float sum = TensorPrimitives.Sum(autoencoder.EncoderOutput.Buffer);
+
+                memoriesCount += 1;
             }
+
+            if (memoriesCount > 0)
+                binaryCrossEntropy = binaryCrossEntropy / memoriesCount;
         }
 
         public static readonly Color[] DefaultColors =
