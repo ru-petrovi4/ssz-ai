@@ -52,7 +52,7 @@ namespace Ssz.AI.Models
             // Прогон картинок
             DoSteps_MNIST(5000);
 
-            FindAutoencoder(Cortex.MiniColumns[Cortex.MiniColumns.GetLength(0) / 2, Cortex.MiniColumns.GetLength(1) / 2]);
+            FindAutoencoder(Cortex.MiniColumns[Cortex.MiniColumns.GetLength(0) / 3, Cortex.MiniColumns.GetLength(1) / 3]);
         }        
 
         #endregion
@@ -274,10 +274,10 @@ namespace Ssz.AI.Models
 
         private void FindAutoencoder(MiniColumn miniColumn)
         {            
-            var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: 50, maxActiveUnits: 7);
+            var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: 3, maxActiveUnits: 1);
 
             float prevBinaryCrossEntropy = float.MaxValue;
-            float binaryCrossEntropy;
+            float binaryCrossEntropy = 1.0f;
             float binaryCrossEntropyDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
@@ -317,7 +317,7 @@ namespace Ssz.AI.Models
 
                 binaryCrossEntropy += autoencoder.ComputeBinaryCrossEntropy(input);
 
-                float sum = TensorPrimitives.Sum(autoencoder.EncoderOutput.Buffer);
+                float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
 
                 memoriesCount += 1;
             }

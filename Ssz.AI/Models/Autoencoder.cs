@@ -21,8 +21,8 @@ namespace Ssz.AI.Models
             _biasesDecoder = new DenseTensor<float>(new[] { inputSize });
 
             // Буферы для временных данных
-            _encoderOutput = new DenseTensor<float>(new[] { bottleneckSize });
-            _decoderOutput = new DenseTensor<float>(new[] { inputSize });
+            _bottleneck = new DenseTensor<float>(new[] { bottleneckSize });
+            _output = new DenseTensor<float>(new[] { inputSize });
 
             _gradientBuffer = new DenseTensor<float>(new[] { inputSize });            
             _gradientBuffer2 = new DenseTensor<float>(new[] { inputSize });
@@ -34,27 +34,27 @@ namespace Ssz.AI.Models
 
         #region public functions
 
-        public DenseTensor<float> EncoderOutput => _encoderOutput;
-        public DenseTensor<float> DecoderOutput => _decoderOutput;
+        public DenseTensor<float> Bottleneck => _bottleneck;
+        public DenseTensor<float> Output => _output;
 
         public float Train(DenseTensor<float> input, float learningRate)
         {
             ForwardPass(input);
 
-            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal(input);
+            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal();
 
             #region BackwardPass
 
             // Вычисление ошибки
             //ComputeBCEGradient(input.Buffer, _decoderOutput.Buffer, _gradientBuffer.Buffer); // Не работает
-            TensorPrimitives.Subtract(input.Buffer, _decoderOutput.Buffer, _gradientBuffer.Buffer);
+            TensorPrimitives.Subtract(input.Buffer, _output.Buffer, _gradientBuffer.Buffer);
 
             // Градиенты для декодера
-            MatrixMultiplyGradient(_encoderOutput.Buffer, _gradientBuffer.Buffer, learningRate, _weightsDecoder);
+            MatrixMultiplyGradient(_bottleneck.Buffer, _gradientBuffer.Buffer, learningRate, _weightsDecoder);
             AddScaled(_gradientBuffer.Buffer, _gradientBuffer2.Buffer, learningRate, _biasesDecoder.Buffer);
 
             // Градиенты для энкодера
-            PropagateError(_gradientBuffer.Buffer, _weightsDecoder, _encoderOutput.Buffer, _gradientBuffer3.Buffer);
+            PropagateError(_gradientBuffer.Buffer, _weightsDecoder, _bottleneck.Buffer, _gradientBuffer3.Buffer);
             MatrixMultiplyGradient(input.Buffer, _gradientBuffer3.Buffer, learningRate, _weightsEncoder);
             AddScaled(_gradientBuffer3.Buffer, _gradientBuffer4.Buffer, learningRate, _biasesEncoder.Buffer);
 
@@ -67,7 +67,7 @@ namespace Ssz.AI.Models
         {
             ForwardPass(input);
 
-            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal(input);
+            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal();
 
             return binaryCrossEntropy;
         }
@@ -76,17 +76,19 @@ namespace Ssz.AI.Models
 
         private void ForwardPass(DenseTensor<float> input)
         {
+            _input = input;
+
             // Прямой проход: Input -> Bottleneck -> Reconstruction
-            MatrixMultiply(input.Buffer, _weightsEncoder, _encoderOutput.Buffer);
-            TensorPrimitives.Add(_encoderOutput.Buffer, _biasesEncoder.Buffer, _encoderOutput.Buffer);
-            ApplyActivation(_encoderOutput.Buffer);
+            MatrixMultiply(input.Buffer, _weightsEncoder, _bottleneck.Buffer);
+            TensorPrimitives.Add(_bottleneck.Buffer, _biasesEncoder.Buffer, _bottleneck.Buffer);
+            ApplyActivation(_bottleneck.Buffer);
 
             // Ограничение на количество активных единиц
-            ApplyKSparseConstraint(_encoderOutput.Buffer, _maxActiveUnits);
+            ApplyKSparseConstraint(_bottleneck.Buffer, _maxActiveUnits);
 
-            MatrixMultiply(_encoderOutput.Buffer, _weightsDecoder, _decoderOutput.Buffer);
-            TensorPrimitives.Add(_decoderOutput.Buffer, _biasesDecoder.Buffer, _decoderOutput.Buffer);
-            ApplyActivation(_decoderOutput.Buffer);
+            MatrixMultiply(_bottleneck.Buffer, _weightsDecoder, _output.Buffer);
+            TensorPrimitives.Add(_output.Buffer, _biasesDecoder.Buffer, _output.Buffer);
+            ApplyActivation(_output.Buffer);
         }
 
         private void ApplyKSparseConstraint(float[] activations, int maxActiveUnits)
@@ -106,11 +108,11 @@ namespace Ssz.AI.Models
             }
         }
 
-        private float ComputeBinaryCrossEntropyInternal(DenseTensor<float> input)
+        private float ComputeBinaryCrossEntropyInternal()
         {
             float loss = 0f;
-            var inputBuffer = input.Buffer;
-            var outputBuffer = _decoderOutput.Buffer;
+            var inputBuffer = _input!.Buffer;
+            var outputBuffer = _output.Buffer;
 
             for (int i = 0; i < inputBuffer.Length; i++)
             {
@@ -220,8 +222,9 @@ namespace Ssz.AI.Models
         private readonly DenseTensor<float> _biasesDecoder;
 
         // Буферы для временных данных
-        private readonly DenseTensor<float> _encoderOutput;
-        private readonly DenseTensor<float> _decoderOutput;
+        private DenseTensor<float>? _input;
+        private readonly DenseTensor<float> _bottleneck;
+        private readonly DenseTensor<float> _output;
         private readonly DenseTensor<float> _gradientBuffer;
         private readonly DenseTensor<float> _gradientBuffer2;
         private readonly DenseTensor<float> _gradientBuffer3;
