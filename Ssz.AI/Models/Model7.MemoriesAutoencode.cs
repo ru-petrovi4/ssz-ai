@@ -274,56 +274,72 @@ namespace Ssz.AI.Models
 
         private void FindAutoencoder(MiniColumn miniColumn)
         {            
-            var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: 3, maxActiveUnits: 1);
+            var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: 150, maxActiveUnits: 15);
 
-            float prevBinaryCrossEntropy = float.MaxValue;
-            float binaryCrossEntropy = 1.0f;
-            float binaryCrossEntropyDelta = 1.0f;
+            float prevCosineSimilarity = float.MaxValue;
+            float cosineSimilarity = 1.0f;
+            float cosineSimilarityDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
+            int memoriesCount = 0;
 
             int iterationsCount = 0;
             int stopIterationsCount = 0;
             while (stopIterationsCount < 5)
             {
-                binaryCrossEntropy = 0.0f;
-
+                cosineSimilarity = 0.0f;
+                
+                memoriesCount = 0;
                 foreach (var memory in miniColumn.Memories.Take(trainCount))
                 {
                     var input = new DenseTensor<float>(memory.Hash);
 
-                    binaryCrossEntropy += autoencoder.Train(input, learningRate: 0.01f);
+                    float cs = autoencoder.Train(input, learningRate: 0.01f);
+                    if (!float.IsNaN(cs))
+                    {
+                        cosineSimilarity += cs;
+                        memoriesCount += 1;
+                    }
+                    else
+                    {
+                    }
                 }
 
-                binaryCrossEntropy = binaryCrossEntropy / miniColumn.Memories.Count;
+                if (memoriesCount > 0)
+                    cosineSimilarity = cosineSimilarity / memoriesCount;
 
-                binaryCrossEntropyDelta = prevBinaryCrossEntropy - binaryCrossEntropy;
-                if (binaryCrossEntropyDelta > -0.00001f && binaryCrossEntropyDelta < 0.00001f)
+                cosineSimilarityDelta = cosineSimilarity - prevCosineSimilarity;
+                if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
                     stopIterationsCount += 1;
                 else
                     stopIterationsCount = 0;
 
                 iterationsCount += 1;
 
-                prevBinaryCrossEntropy = binaryCrossEntropy;                
+                prevCosineSimilarity = cosineSimilarity;                
             }
 
-            binaryCrossEntropy = 0.0f;
+            cosineSimilarity = 0.0f;
 
-            int memoriesCount = 0;
+            memoriesCount = 0;
             foreach (var memory in miniColumn.Memories.Skip(trainCount))
             {
                 var input = new DenseTensor<float>(memory.Hash);
 
-                binaryCrossEntropy += autoencoder.ComputeBinaryCrossEntropy(input);
-
-                float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
-
-                memoriesCount += 1;
+                float cs = autoencoder.ComputeCosineSimilarity(input);
+                if (!float.IsNaN(cs))
+                {
+                    cosineSimilarity += cs;
+                    memoriesCount += 1;
+                }
+                else
+                {
+                }
+                //float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
             }
 
             if (memoriesCount > 0)
-                binaryCrossEntropy = binaryCrossEntropy / memoriesCount;
+                cosineSimilarity = cosineSimilarity / memoriesCount;
         }
 
         public static readonly Color[] DefaultColors =

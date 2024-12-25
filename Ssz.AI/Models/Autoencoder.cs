@@ -23,6 +23,7 @@ namespace Ssz.AI.Models
             // Буферы для временных данных
             _bottleneck = new DenseTensor<float>(new[] { bottleneckSize });
             _output = new DenseTensor<float>(new[] { inputSize });
+            _outputNormalized = new DenseTensor<float>(new[] { inputSize });
 
             _gradientBuffer = new DenseTensor<float>(new[] { inputSize });            
             _gradientBuffer2 = new DenseTensor<float>(new[] { inputSize });
@@ -41,7 +42,7 @@ namespace Ssz.AI.Models
         {
             ForwardPass(input);
 
-            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal();
+            float cosineSimilarity = ComputeCosineSimilarityInternal();
 
             #region BackwardPass
 
@@ -60,16 +61,16 @@ namespace Ssz.AI.Models
 
             #endregion
 
-            return binaryCrossEntropy;
+            return cosineSimilarity;
         }
 
-        public float ComputeBinaryCrossEntropy(DenseTensor<float> input)
+        public float ComputeCosineSimilarity(DenseTensor<float> input)
         {
             ForwardPass(input);
 
-            float binaryCrossEntropy = ComputeBinaryCrossEntropyInternal();
+            float cosineSimilarity = ComputeCosineSimilarityInternal();
 
-            return binaryCrossEntropy;
+            return cosineSimilarity;
         }
 
         #endregion
@@ -108,21 +109,18 @@ namespace Ssz.AI.Models
             }
         }
 
-        private float ComputeBinaryCrossEntropyInternal()
-        {
-            float loss = 0f;
+        private float ComputeCosineSimilarityInternal()
+        {            
             var inputBuffer = _input!.Buffer;
             var outputBuffer = _output.Buffer;
+            var outputBufferNormalized = _outputNormalized.Buffer;
 
             for (int i = 0; i < inputBuffer.Length; i++)
-            {
-                float yTrue = inputBuffer[i];
-                float yPred = outputBuffer[i];
-                yPred = MathF.Max(MathF.Min(yPred, 1 - 1e-7f), 1e-7f); // Стабильность чисел
-                loss += -yTrue * MathF.Log(yPred) - (1 - yTrue) * MathF.Log(1 - yPred);
+            {                
+                outputBufferNormalized[i] = outputBuffer[i] > 0.5 ? 1.0f : 0.0f;                
             }
-
-            return loss / inputBuffer.Length;
+            
+            return TensorPrimitives.CosineSimilarity(inputBuffer, outputBufferNormalized);
         }
 
         //private void ComputeBCEGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> output, Span<float> gradient)
@@ -225,6 +223,7 @@ namespace Ssz.AI.Models
         private DenseTensor<float>? _input;
         private readonly DenseTensor<float> _bottleneck;
         private readonly DenseTensor<float> _output;
+        private readonly DenseTensor<float> _outputNormalized;
         private readonly DenseTensor<float> _gradientBuffer;
         private readonly DenseTensor<float> _gradientBuffer2;
         private readonly DenseTensor<float> _gradientBuffer3;
