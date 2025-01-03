@@ -12,7 +12,7 @@ namespace Ssz.AI.Models
         /// </summary>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public static (float, float) GetActivity(Cortex_WithSubarea.MiniColumn miniColumn, float[] hash)
+        public static (float, float) GetActivity(Cortex.MiniColumn miniColumn, float[] hash)
         {
             if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
                 //return (0.0f, 0.0f);
@@ -55,7 +55,7 @@ namespace Ssz.AI.Models
             return (positiveActivity, negativeActivity);
         }
 
-        public static float GetSuperActivity(Cortex_WithSubarea.MiniColumn miniColumn)
+        public static float GetSuperActivity(Cortex.MiniColumn miniColumn)
         {
             //float superActivity = Temp_Activity.Item1 + Temp_Activity.Item2;
             float positiveActivitySum = miniColumn.Temp_Activity.Item1;
@@ -101,8 +101,8 @@ namespace Ssz.AI.Models
         public class ActivitiyMaxInfo
         {
             public float MaxActivity = float.MinValue;
-            public readonly List<Cortex_WithSubarea.MiniColumn> ActivityMax_MiniColumns = new();
-            public Cortex_WithSubarea.MiniColumn? GetActivityMax_MiniColumn(Random random)
+            public readonly List<Cortex.MiniColumn> ActivityMax_MiniColumns = new();
+            public Cortex.MiniColumn? GetActivityMax_MiniColumn(Random random)
             {
                 if (ActivityMax_MiniColumns.Count == 0)
                     return null;
@@ -112,8 +112,8 @@ namespace Ssz.AI.Models
             }
 
             public float MaxSuperActivity = float.MinValue;
-            public readonly List<Cortex_WithSubarea.MiniColumn> SuperActivityMax_MiniColumns = new();
-            public Cortex_WithSubarea.MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+            public readonly List<Cortex.MiniColumn> SuperActivityMax_MiniColumns = new();
+            public Cortex.MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
             {
                 if (SuperActivityMax_MiniColumns.Count == 0)
                     return null;

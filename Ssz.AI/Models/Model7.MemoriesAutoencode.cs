@@ -18,7 +18,7 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex_WithSubarea;
+using static Ssz.AI.Models.Cortex;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -52,12 +52,12 @@ namespace Ssz.AI.Models
 
             Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
 
-            Cortex = new Cortex_WithSubarea(Constants, Retina);            
+            Cortex = new Cortex(Constants, Retina);            
             
             CurrentMnistImageIndex = -1; // Перед первым элементом
 
             // Прогон картинок
-            CollectMemories_MNIST(2000);
+            CollectMemories_MNIST(5000);
 
             Task.Factory.StartNew(() =>
             {
@@ -81,7 +81,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex_WithSubarea Cortex;        
+        public readonly Cortex Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -293,6 +293,8 @@ namespace Ssz.AI.Models
                         
                     MiniColumn miniColumn = miniColumnsToProcess[mci];
                     miniColumn.Autoencoder = FindAutoencoder(miniColumn);
+
+                    Logger.LogInformation($"FindAutoencoder(...) finished; {mci + 1}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
                 });
 
             Logger.LogInformation($"CalculateAutoencoders(...) ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Count: {miniColumnsToProcess.Length}");
@@ -473,7 +475,7 @@ namespace Ssz.AI.Models
                 autoencoder.ControlCosineSimilarity = 0;
 
             sw.Stop();
-            autoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;
+            autoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
 
             return autoencoder;
         }        

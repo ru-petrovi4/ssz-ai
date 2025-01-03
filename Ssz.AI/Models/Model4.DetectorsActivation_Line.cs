@@ -12,7 +12,7 @@ using System.DrawingCore.Drawing2D;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
-using static Ssz.AI.Models.Cortex_WithSubarea;
+using static Ssz.AI.Models.Cortex;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -47,7 +47,7 @@ namespace Ssz.AI.Models
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
 
-            Cortex = new Cortex_WithSubarea(Constants, _retina);
+            Cortex = new Cortex(Constants, _retina);
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             foreach (var gradientMatrix in gradientMatricesCollection)
@@ -89,7 +89,7 @@ namespace Ssz.AI.Models
         public double AngleDelta { get; set; }
         public double Angle { get; set; }
 
-        public Cortex_WithSubarea Cortex { get; }
+        public Cortex Cortex { get; }
 
         public Image[] GetImages(double positionK, double angleK)
         {

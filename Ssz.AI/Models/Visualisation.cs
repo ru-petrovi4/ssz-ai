@@ -59,7 +59,7 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
-        public static Bitmap GetMiniColumsActivityBitmap(Cortex_WithSubarea cortex, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+        public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
         {
             var random = new Random();
 
@@ -76,7 +76,7 @@ namespace Ssz.AI.Models
             {
                 for (int x = 0; x < width; x += 1)
                 {
-                    Cortex_WithSubarea.MiniColumn mc = miniColumns[x, y];
+                    Cortex.MiniColumn mc = miniColumns[x, y];
                     if (mc is not null)
                     {
                         float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
@@ -95,7 +95,7 @@ namespace Ssz.AI.Models
             {
                 for (int x = 0; x < width; x += 1)
                 {
-                    Cortex_WithSubarea.MiniColumn mc = miniColumns[x, y];
+                    Cortex.MiniColumn mc = miniColumns[x, y];
                     if (mc is null || maxActivity == minActivity || float.IsNaN(mc.Temp_Activity.Item1) || (mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2) <= minActivity) // || mc.Temp_Activity < miniColumnMinimumActivity
                     {
                         gradientBitmap.SetPixel(x, y, Color.Black);
@@ -109,11 +109,11 @@ namespace Ssz.AI.Models
                 }
             }
 
-            Cortex_WithSubarea.MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.GetActivityMax_MiniColumn(random);
+            Cortex.MiniColumn? maxActivityMiniColumn = activitiyMaxInfo.GetActivityMax_MiniColumn(random);
             if (maxActivityMiniColumn is not null)
                 gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.Red);
 
-            Cortex_WithSubarea.MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+            Cortex.MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
             if (maxSuperActivityMiniColumn is not null)
                 gradientBitmap.SetPixel(maxSuperActivityMiniColumn.MCX, maxSuperActivityMiniColumn.MCY, Color.Blue);
 
@@ -176,7 +176,7 @@ namespace Ssz.AI.Models
                 return Color.FromArgb(255, v, p, q);
         }
 
-        public static Bitmap GetBitmapFromMiniColums_ActivityColor(Cortex_WithSubarea cortex)
+        public static Bitmap GetBitmapFromMiniColums_ActivityColor(Cortex cortex)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -197,7 +197,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex_WithSubarea cortex)
+        public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -218,7 +218,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBitmapFromMiniColumsMemoriesCount(Cortex_WithSubarea cortex)
+        public static Bitmap GetBitmapFromMiniColumsMemoriesCount(Cortex cortex)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -258,46 +258,48 @@ namespace Ssz.AI.Models
 
             return bitmap;
         }
-
-        public static Bitmap GetBitmapFromMiniColumsMemoriesCount(Cortex cortex)
-        {
-            Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
-
-            int minMemoriesCount = int.MaxValue;
-            int maxMemoriesCount = int.MinValue;
-
-            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
-                {
-                    var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null)
-                    {
-                        if (mc.Memories.Count > maxMemoriesCount)
-                            maxMemoriesCount = mc.Memories.Count;
-                        if (mc.Memories.Count < minMemoriesCount)
-                            minMemoriesCount = mc.Memories.Count;
-                    }
-                }
-
-            minMemoriesCount = 0;
-
-            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
-                {
-                    var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null && maxMemoriesCount != minMemoriesCount)
-                    {
-                        int brightness = (int)(255 * ((float)(mc.Memories.Count - minMemoriesCount)) / (maxMemoriesCount - minMemoriesCount));
-
-                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, brightness));
-                    }
-                    else
-                    {
-                        bitmap.SetPixel(mcx, mcy, Color.Black);
-                    }
-                }
-
-            return bitmap;
-        }
     }
 }
+
+
+
+//public static Bitmap GetBitmapFromMiniColumsMemoriesCount(Cortex cortex)
+//{
+//    Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
+
+//    int minMemoriesCount = int.MaxValue;
+//    int maxMemoriesCount = int.MinValue;
+
+//    foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+//        foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+//        {
+//            var mc = cortex.MiniColumns[mcx, mcy];
+//            if (mc is not null)
+//            {
+//                if (mc.Memories.Count > maxMemoriesCount)
+//                    maxMemoriesCount = mc.Memories.Count;
+//                if (mc.Memories.Count < minMemoriesCount)
+//                    minMemoriesCount = mc.Memories.Count;
+//            }
+//        }
+
+//    minMemoriesCount = 0;
+
+//    foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+//        foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+//        {
+//            var mc = cortex.MiniColumns[mcx, mcy];
+//            if (mc is not null && maxMemoriesCount != minMemoriesCount)
+//            {
+//                int brightness = (int)(255 * ((float)(mc.Memories.Count - minMemoriesCount)) / (maxMemoriesCount - minMemoriesCount));
+
+//                bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, brightness));
+//            }
+//            else
+//            {
+//                bitmap.SetPixel(mcx, mcy, Color.Black);
+//            }
+//        }
+
+//    return bitmap;
+//}
