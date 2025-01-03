@@ -69,13 +69,15 @@ namespace Ssz.AI.Models
             TensorPrimitives.Subtract(input.Data, _output.Data, _temp_Input.Data);
 
             // Градиенты для декодера
-            MatrixMultiplyGradient(_bottleneck.Data, _temp_Input.Data, _temp_Input2.Data, learningRate, _weightsDecoder);            
-            AddScaled(_temp_Input.Data, _temp_Input2.Data, learningRate, _biasesDecoder.Data);
+            MatrixMultiplyGradient(_bottleneck.Data, _temp_Input.Data, _temp_Bottleneck4.Data, learningRate, _weightsDecoder);
+            TensorPrimitives.Multiply(_temp_Input.Data, learningRate, _temp_Input2.Data);
+            TensorPrimitives.Add(_biasesDecoder.Data, _temp_Input2.Data, _biasesDecoder.Data);            
 
             // Градиенты для энкодера
             PropagateError(_temp_Input.Data, _weightsDecoder, _bottleneck.Data, _temp_Bottleneck3.Data);
-            MatrixMultiplyGradient(input.Data, _temp_Bottleneck3.Data, _temp_Bottleneck4.Data, learningRate, _weightsEncoder);
-            AddScaled(_temp_Bottleneck3.Data, _temp_Bottleneck4.Data, learningRate, _biasesEncoder.Data);
+            MatrixMultiplyGradient(input.Data, _temp_Bottleneck3.Data, _temp_Input2.Data, learningRate, _weightsEncoder);
+            TensorPrimitives.Multiply(_temp_Bottleneck3.Data, learningRate, _temp_Bottleneck4.Data);
+            TensorPrimitives.Add(_biasesEncoder.Data, _temp_Bottleneck4.Data, _biasesEncoder.Data);            
 
             #endregion
 
@@ -205,52 +207,41 @@ namespace Ssz.AI.Models
         //        yPred = MathF.Max(MathF.Min(yPred, 1 - 1e-7f), 1e-7f); // Стабильность чисел
         //        gradient[i] = (yPred - yTrue) / (yPred * (1 - yPred));
         //    }
-        //}
-
-        private static void AddScaled(ReadOnlySpan<float> source, Span<float> temp_source, float scale, Span<float> target)
-        {
-            TensorPrimitives.Multiply(source, scale, temp_source);
-            TensorPrimitives.Add(target, temp_source, target);            
-
-            //for (int i = 0; i < target.Length; i++)
-            //{
-            //    target[i] += source[i] * scale;
-            //}
-        }
+        //}        
 
         private static void MatrixMultiply(float[] input, DenseTensor<float> weights, float[] output)
-        {   
-            for (int j = 0; j < weights.Dimensions[1]; j++)
-            {
-                output[j] = TensorPrimitives.Dot(input, weights.GetColumn(j));                
-            }
-
-            //Array.Clear(output);
-            //for (int j = 0; j < weights.Dimensions[1]; j++) // 200
+        {
+            //for (int j = 0; j < weights.Dimensions[1]; j++)
             //{
-            //    for (int i = 0; i < weights.Dimensions[0]; i++) // 50
-            //    {
-            //        output[j] += input[i] * weights[i, j];
-            //    }
+            //    output[j] = TensorPrimitives.Dot(input, weights.GetColumn(j));                
             //}
+
+            Array.Clear(output);
+            for (int j = 0; j < weights.Dimensions[1]; j++) // 200
+            {
+                for (int i = 0; i < weights.Dimensions[0]; i++) // 50
+                {
+                    output[j] += input[i] * weights[i, j];
+                }
+            }
         }
 
         private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient, Span<float> temp_input, float learningRate, DenseTensor<float> weights)
         {
-            for (int j = 0; j < weights.Dimensions[1]; j++)
-            {
-                TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
-                var weightsColumn = weights.GetColumn(j);
-                TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);                
-            }
-
-            //for (int i = 0; i < weights.Dimensions[0]; i++)
+            //for (int j = 0; j < weights.Dimensions[1]; j++)
             //{
-            //    for (int j = 0; j < weights.Dimensions[1]; j++)
-            //    {
-            //        weights[i, j] += input[i] * gradient[j] * learningRate;
-            //    }
+            //    TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
+            //    var weightsColumn = weights.GetColumn(j);
+            //    TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);                
             //}
+
+            for (int i = 0; i < weights.Dimensions[0]; i++)
+            {
+                for (int j = 0; j < weights.Dimensions[1]; j++)
+                {
+                    weights[i, j] += input[i] * gradient[j] * learningRate;
+                }
+            }
         }
 
         private static void PropagateError(ReadOnlySpan<float> gradient, DenseTensor<float> weights, ReadOnlySpan<float> activations, Span<float> outputBuffer)
@@ -324,6 +315,17 @@ namespace Ssz.AI.Models
         #endregion
     }
 }
+
+//private static void AddScaled(ReadOnlySpan<float> source, Span<float> temp_source, float scale, Span<float> target)
+//{
+//    TensorPrimitives.Multiply(source, scale, temp_source);
+//    TensorPrimitives.Add(target, temp_source, target);            
+
+//    //for (int i = 0; i < target.Length; i++)
+//    //{
+//    //    target[i] += source[i] * scale;
+//    //}
+//}
 
 //private DenseTensor<float> _temp_Input = null!;
 //private DenseTensor<float> _temp_Bottleneck = null!;
