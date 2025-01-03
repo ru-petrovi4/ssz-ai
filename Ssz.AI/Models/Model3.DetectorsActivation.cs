@@ -41,9 +41,9 @@ namespace Ssz.AI.Models
             //// Применяем оператор Собеля к первому изображению
             //GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[2], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
-            //List<Detector> activatedDetectors = new List<Detector>(retina.Detectors.GetLength(0) * retina.Detectors.GetLength(1));
-            //foreach (int dy in Enumerable.Range(0, retina.Detectors.GetLength(1)))
-            //    foreach (int dx in Enumerable.Range(0, retina.Detectors.GetLength(0)))
+            //List<Detector> activatedDetectors = new List<Detector>(retina.Detectors.Dimensions[0] * retina.Detectors.Dimensions[1]);
+            //foreach (int dy in Enumerable.Range(0, retina.Detectors.Dimensions[1]))
+            //    foreach (int dx in Enumerable.Range(0, retina.Detectors.Dimensions[0]))
             //    {
             //        Detector d = retina.Detectors[dx, dy];
             //        if (d.GetIsActivated(gradientMatrix))

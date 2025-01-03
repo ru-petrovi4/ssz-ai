@@ -38,6 +38,36 @@ namespace Tensorflow
         }
 
         /// <summary>
+        ///     VALFIX
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="ArrayTypeMismatchException"></exception>
+        public virtual unsafe T[] ToArray<T>(T[] ret) where T : unmanaged
+        {
+            //Are the types matching?
+            if (typeof(T).as_tf_dtype() != dtype)
+                throw new ArrayTypeMismatchException($"Required dtype {dtype} mismatch with {typeof(T).as_tf_dtype()}.");
+
+            if (ndim == 0 && size == 1)  //is it a scalar?
+            {
+                unsafe
+                {
+                    return new T[] { *(T*)buffer };
+                }
+            }
+
+            //types match, no need to perform cast            
+            var len = (long)(size * dtypesize);
+            var src = (T*)buffer;
+
+            fixed (T* dst = ret)
+                System.Buffer.MemoryCopy(src, dst, len, len);
+
+            return ret;
+        }
+
+        /// <summary>
         /// Copy of the contents of this Tensor into a NumPy array or scalar.
         /// </summary>
         /// <returns>
@@ -70,6 +100,6 @@ namespace Tensorflow
                 System.Buffer.MemoryCopy(buffer.ToPointer(), dst, bytesize, bytesize);
 
             return data;
-        }
+        }        
     }
 }

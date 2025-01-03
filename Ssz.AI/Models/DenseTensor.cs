@@ -1,53 +1,88 @@
-﻿using System;
+﻿using Ssz.Utils.Serialization;
+using System;
 using System.Collections.Generic;
 
 namespace Ssz.AI.Models
 {
-    public class DenseTensor<T>
+    public class DenseTensor<T> : IOwnedDataSerializable
     {
         #region construction and destruction
 
-        public DenseTensor(int[] dimensions)
+        public DenseTensor(params int[] dimensions)
         {
             if (dimensions == null || dimensions.Length == 0)
                 throw new ArgumentException("Размерности тензора не могут быть пустыми.");
 
             Dimensions = dimensions;
-            _data = new T[GetTotalSize(dimensions)];
+            Data = new T[GetTotalSize(dimensions)];
         }        
 
         public DenseTensor(T[] data)
         {
             Dimensions = [ data.Length ];
-            _data = data;
+            Data = data;
+        }
+
+        /// <summary>
+        ///     Используется только для десериализации.
+        /// </summary>
+        public DenseTensor()
+        {            
         }
 
         #endregion
 
         #region public functions
 
-        public int[] Dimensions { get; }
+        public int[] Dimensions { get; private set; } = null!;
 
-        public int Length => _data.Length;        
+        public T[] Data { get; private set; } = null!;
 
         public T this[params int[] indices]
         {
-            get => _data[GetFlatIndex(indices)];
-            set => _data[GetFlatIndex(indices)] = value;
+            get => Data[GetFlatIndex(indices)];
+            set => Data[GetFlatIndex(indices)] = value;
         }
 
-        public T[] Buffer => _data;
+        public Span<T> GetColumn(int j)
+        {
+            var d = Dimensions[0];
+            return new Span<T>(Data, j * d, d);
+        }        
 
         public DenseTensor<T> Clone()
         {
             var clone = new DenseTensor<T>(Dimensions);
-            Array.Copy(_data, clone._data, _data.Length);
+            Array.Copy(Data, clone.Data, Data.Length);
             return clone;
         }
 
         public override string ToString()
         {
             return $"DenseTensor<{typeof(T).Name}>({string.Join(", ", Dimensions)})";
+        }
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            using (writer.EnterBlock(1))
+            {
+                writer.WriteArray(Dimensions);
+                writer.WriteArray(Data);                
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            using (Block block = reader.EnterBlock())
+            {
+                switch (block.Version)
+                {
+                    case 1:
+                        Dimensions = reader.ReadArray<int>()!;
+                        Data = reader.ReadArray<T>()!;
+                        break;
+                }
+            }
         }
 
         #endregion
@@ -75,13 +110,7 @@ namespace Ssz.AI.Models
             foreach (var dim in dimensions)
                 size *= dim;
             return size;
-        }
-
-        #endregion
-
-        #region private fields
-
-        private readonly T[] _data;        
+        }        
 
         #endregion
     }

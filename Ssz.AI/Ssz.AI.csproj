@@ -31,7 +31,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Ssz.Utils\Ssz.Utils\Ssz.Utils.csproj" />
     <ProjectReference Include="..\..\Ssz.Utils\ThirdParties\ZKWeb.System.Drawing\ZKWeb.System.Drawing.csproj" />
-    <ProjectReference Include="..\Ssz.AI.Core\Ssz.AI.Core.csproj" />    
+    <ProjectReference Include="..\Ssz.AI.Core\Ssz.AI.Core.csproj" />
+    <ProjectReference Include="..\TensorFlow.NET\src\TensorFlowNET.Core\Tensorflow.Binding.csproj" />
+    <ProjectReference Include="..\TensorFlow.NET\src\TensorFlowNET.Keras\Tensorflow.Keras.csproj" />    
     <ProjectReference Include="..\ThirdParties\oxyplot-avalonia\Source\OxyPlot.Avalonia\OxyPlot.Avalonia.csproj" />
   </ItemGroup>
 

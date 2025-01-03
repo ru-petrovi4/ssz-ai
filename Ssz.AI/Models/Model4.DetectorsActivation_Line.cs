@@ -12,6 +12,7 @@ using System.DrawingCore.Drawing2D;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
+using static Ssz.AI.Models.Cortex_WithSubarea;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -46,24 +47,24 @@ namespace Ssz.AI.Models
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
 
-            Cortex = new Cortex(Constants, _retina);
+            Cortex = new Cortex_WithSubarea(Constants, _retina);
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             foreach (var gradientMatrix in gradientMatricesCollection)
             {
                 Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: _retina.Detectors.GetLength(1),
+                    toExclusive: _retina.Detectors.Dimensions[1],
                     dy =>
                     {
-                        foreach (int dx in Enumerable.Range(0, _retina.Detectors.GetLength(0)))
+                        foreach (int dx in Enumerable.Range(0, _retina.Detectors.Dimensions[0]))
                         {
                             var d = _retina.Detectors[dx, dy];
                             d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
                         }                            
                     });               
 
-                foreach (var miniColumn in Cortex.MiniColumns)
+                foreach (var miniColumn in Cortex.MiniColumns.Data)
                 {
                     miniColumn.CalculateHash(miniColumn.Temp_Hash);
                     int bitsCountInHash = (int)TensorPrimitives.Sum(miniColumn.Temp_Hash);
@@ -88,7 +89,7 @@ namespace Ssz.AI.Models
         public double AngleDelta { get; set; }
         public double Angle { get; set; }
 
-        public Cortex Cortex { get; }
+        public Cortex_WithSubarea Cortex { get; }
 
         public Image[] GetImages(double positionK, double angleK)
         {
@@ -154,9 +155,9 @@ namespace Ssz.AI.Models
             // Применяем оператор Собеля к первому изображению
             GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
 
-            List<Detector> activatedDetectors = new List<Detector>(_retina.Detectors.GetLength(0) * _retina.Detectors.GetLength(1));
-            foreach (int dy in Enumerable.Range(0, _retina.Detectors.GetLength(1)))
-                foreach (int dx in Enumerable.Range(0, _retina.Detectors.GetLength(0)))
+            List<Detector> activatedDetectors = new List<Detector>(_retina.Detectors.Dimensions[0] * _retina.Detectors.Dimensions[1]);
+            foreach (int dy in Enumerable.Range(0, _retina.Detectors.Dimensions[1]))
+                foreach (int dx in Enumerable.Range(0, _retina.Detectors.Dimensions[0]))
                 {
                     Detector d = _retina.Detectors[dx, dy];
                     if (d.GetIsActivated(gradientMatrix))

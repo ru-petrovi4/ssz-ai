@@ -81,5 +81,11 @@ namespace Tensorflow.Eager
             Resolve();
             return base.ToArray<T>();
         }
+
+        public override T[] ToArray<T>(T[] ret)
+        {
+            Resolve();
+            return base.ToArray<T>(ret);
+        }
     }
 }

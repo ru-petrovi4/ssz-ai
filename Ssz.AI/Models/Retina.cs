@@ -8,16 +8,16 @@ namespace Ssz.AI.Models
 {
     public class Retina
     {        
-        public Retina(ICortexConstants constants, GradientDistribution gradientDistribution, int angleRangesCount, int magnitudeRangesCount, int hashLength)
+        public Retina(IRetinaConstants constants, GradientDistribution gradientDistribution, int angleRangesCount, int magnitudeRangesCount, int hashLength)
         {
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);            
 
             Random random = new();
 
-            Detectors = new Detector[(int)((MNISTHelper.MNISTImageWidth - 1) / constants.DetectorDelta), (int)((MNISTHelper.MNISTImageHeight - 1) / constants.DetectorDelta)];
-            foreach (int dy in Enumerable.Range(0, Detectors.GetLength(1)))
-                foreach (int dx in Enumerable.Range(0, Detectors.GetLength(0)))
+            Detectors = new DenseTensor<Detector>((int)((MNISTHelper.MNISTImageWidth - 1) / constants.DetectorDelta), (int)((MNISTHelper.MNISTImageHeight - 1) / constants.DetectorDelta));
+            foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
+                foreach (int dx in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
                     var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, magnitudeRangesCount);                       
 
@@ -40,7 +40,7 @@ namespace Ssz.AI.Models
                 }                        
         }
 
-        public readonly Detector[,] Detectors;
+        public readonly DenseTensor<Detector> Detectors;
     }
 
     public class Detector
@@ -92,5 +92,13 @@ namespace Ssz.AI.Models
         }
 
         public bool Temp_IsActivated;
+    }
+
+    public interface IRetinaConstants
+    {
+        /// <summary>
+        ///     Расстояние между детекторами по коризонтали и вертикали  
+        /// </summary>
+        double DetectorDelta { get; }
     }
 }

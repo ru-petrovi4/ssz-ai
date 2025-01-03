@@ -30,6 +30,7 @@
 			<Button Content="Step MNIST" Click="StepMnistButton_OnClick" />
 			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />
 			<Button Content="Visualize" Click="VisualizeButton_OnClick" />
+			<Button Content="Stop Autoencoders Finding" Click="StopAutoencoderFindingButton_OnClick" />
 		</StackPanel>
 
 		<StackPanel Name="StackPanel1" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>

@@ -14,6 +14,7 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
+using static Ssz.AI.Models.Cortex_WithSubarea;
 using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
@@ -45,7 +46,7 @@ namespace Ssz.AI.Models
 
             Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
 
-            Cortex = new Cortex(Constants, Retina);            
+            Cortex = new Cortex_WithSubarea(Constants, Retina);            
             
             CurrentMnistImageIndex = -1; // Перед первым элементом
 
@@ -66,7 +67,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex Cortex;        
+        public readonly Cortex_WithSubarea Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -80,13 +81,13 @@ namespace Ssz.AI.Models
 
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
-            ActivitiyMaxInfo activitiyMaxInfo = new();
+            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
                 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.GetLength(0) * Retina.Detectors.GetLength(1));
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.GetLength(1)))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.GetLength(0)))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
+            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
                 {
                     Detector d = Retina.Detectors[dx, dy];
                     if (d.Temp_IsActivated)
@@ -96,8 +97,8 @@ namespace Ssz.AI.Models
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
                 Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
-                Cortex.MiniColumns.GetLength(0) / 2,
-                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
@@ -177,13 +178,13 @@ namespace Ssz.AI.Models
 
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
-            ActivitiyMaxInfo activitiyMaxInfo = new();
+            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.GetLength(0) * Retina.Detectors.GetLength(1));
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.GetLength(1)))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.GetLength(0)))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
+            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
                 {
                     Detector d = Retina.Detectors[dx, dy];
                     if (d.Temp_IsActivated)
@@ -193,8 +194,8 @@ namespace Ssz.AI.Models
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
                 Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
-                Cortex.MiniColumns.GetLength(0) / 2,
-                Cortex.MiniColumns.GetLength(1) / 2,
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
@@ -232,7 +233,7 @@ namespace Ssz.AI.Models
         {
             var random = new Random();
 
-            ActivitiyMaxInfo activitiyMaxInfo = new();
+            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
 
             (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
             
@@ -271,7 +272,7 @@ namespace Ssz.AI.Models
                 });
         }        
 
-        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, ActivitiyMaxInfo activitiyMaxInfo)
+        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
         {
             Parallel.For(
                 fromInclusive: 0,
@@ -279,13 +280,13 @@ namespace Ssz.AI.Models
                 mci =>
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.Temp_Activity = mc.GetActivity(visualizationTableItem.SubArea_MiniColumns_Hashes[mci]);
+                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci]);
                 });
 
             GetSuperActivitiyMaxInfo(activitiyMaxInfo);
         }
 
-        private void GetSuperActivitiyMaxInfo(ActivitiyMaxInfo activitiyMaxInfo)
+        private void GetSuperActivitiyMaxInfo(MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
         {
             activitiyMaxInfo.MaxActivity = float.MinValue;
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
@@ -295,7 +296,7 @@ namespace Ssz.AI.Models
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
-                mc.Temp_SuperActivity = mc.GetSuperActivity();
+                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc);
 
                 float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
                 if (a > activitiyMaxInfo.MaxActivity)
@@ -364,7 +365,7 @@ namespace Ssz.AI.Models
             //        });
         }
 
-        private void SetColors_VisualizationTableItems(Cortex cortex)
+        private void SetColors_VisualizationTableItems(Cortex_WithSubarea cortex)
         {
             Random random = new();
 
@@ -493,7 +494,7 @@ namespace Ssz.AI.Models
             }
         }
 
-        private void SetColors_VisualizationTableItems2(Cortex cortex)
+        private void SetColors_VisualizationTableItems2(Cortex_WithSubarea cortex)
         {
             Random random = new();            
 

@@ -24,7 +24,7 @@ public partial class Model7View : UserControl
 
     private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.DoSteps_MNIST(1);
+        _model.CollectMemories_MNIST(1);
 
         Refresh_StackPanel2();
     }
@@ -36,6 +36,12 @@ public partial class Model7View : UserControl
         _model.DoStep_GeneratedLine(position, angle);
 
         Refresh_StackPanel1();        
+    }
+
+    private void StopAutoencoderFindingButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _model.Temp_StopAutoencoderFinding_CancellationTokenSource.Cancel();
+        _model.Temp_StopAutoencoderFinding_CancellationTokenSource = new System.Threading.CancellationTokenSource();
     }
 
     private void VisualizeButton_OnClick(object? sender, RoutedEventArgs args)
@@ -112,5 +118,5 @@ public partial class Model7View : UserControl
         }
     }
 
-    private Model7 _model;
+    private Model7 _model;   
 }

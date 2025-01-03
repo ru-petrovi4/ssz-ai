@@ -1,17 +1,15 @@
 ﻿Logging:
   # задается уровень логирования событий в файлы журналов
   LogLevel: 
-    Default: "Warning"
-    Grpc: "Warning"
-    System: "Warning"
-    Microsoft: "Warning"
-    Microsoft.Hosting.Lifetime: "Information"
+    Default: "Error"    
+    Ssz.AI.Models.Model7: "Debug"
     # Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware: "None"
   SszLogger: 
     # путь до директории где будут храниться файлы журналов событий
-    LogsDirectory: "%ProgramData%\\SSZ\\Logs"
+    LogsDirectory: "Data"
     # базовое имя файлов журналов
     LogFileName: "AI.log"
+    DeleteOldFilesAtStart: "true"
     # Флаг указывающий на необходимость дублирования события в стандартный поток вывода приложения
     DuplicateInConsole: "true"
     # количество дней которое должны храниться файлы журналов

@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Ssz.Utils.Serialization;
+using System;
 using System.Linq;
 using System.Numerics.Tensors;
+using Tensorflow;
+using static Tensorflow.Binding;
 
 namespace Ssz.AI.Models
 {
-    public class Autoencoder
+    public class Autoencoder : IOwnedDataSerializable
     {
         #region construction and destruction
 
@@ -16,19 +19,26 @@ namespace Ssz.AI.Models
 
             // Инициализация весов и смещений
             _weightsEncoder = CreateRandomTensor(inputSize, bottleneckSize);
-            _biasesEncoder = new DenseTensor<float>(new[] { bottleneckSize });
+            _biasesEncoder = new DenseTensor<float>(bottleneckSize);
             _weightsDecoder = CreateRandomTensor(bottleneckSize, inputSize);
-            _biasesDecoder = new DenseTensor<float>(new[] { inputSize });
+            _biasesDecoder = new DenseTensor<float>(inputSize);
 
             // Буферы для временных данных
-            _bottleneck = new DenseTensor<float>(new[] { bottleneckSize });
-            _output = new DenseTensor<float>(new[] { inputSize });
-            _outputNormalized = new DenseTensor<float>(new[] { inputSize });
+            _bottleneck = new DenseTensor<float>(bottleneckSize);
+            _output = new DenseTensor<float>(inputSize);
+            _outputNormalized = new DenseTensor<float>(inputSize);
+            
+            _temp_Input = new DenseTensor<float>(inputSize);            
+            _temp_Input2 = new DenseTensor<float>(inputSize);
+            _temp_Bottleneck3 = new DenseTensor<float>(bottleneckSize);
+            _temp_Bottleneck4 = new DenseTensor<float>(bottleneckSize);
+        }
 
-            _gradientBuffer = new DenseTensor<float>(new[] { inputSize });            
-            _gradientBuffer2 = new DenseTensor<float>(new[] { inputSize });
-            _gradientBuffer3 = new DenseTensor<float>(new[] { bottleneckSize });
-            _gradientBuffer4 = new DenseTensor<float>(new[] { bottleneckSize });
+        /// <summary>
+        ///     Используется только для десериализации.
+        /// </summary>
+        public Autoencoder()
+        {            
         }
 
         #endregion
@@ -37,6 +47,14 @@ namespace Ssz.AI.Models
 
         public DenseTensor<float> Bottleneck => _bottleneck;
         public DenseTensor<float> Output => _output;
+
+        public long TrainingDurationMilliseconds { get; set; }
+
+        public float CosineSimilarity;
+
+        public int IterationsCount;
+
+        public float ControlCosineSimilarity;
 
         public float Train(DenseTensor<float> input, float learningRate)
         {
@@ -48,16 +66,16 @@ namespace Ssz.AI.Models
 
             // Вычисление ошибки
             //ComputeBCEGradient(input.Buffer, _decoderOutput.Buffer, _gradientBuffer.Buffer); // Не работает
-            TensorPrimitives.Subtract(input.Buffer, _output.Buffer, _gradientBuffer.Buffer);
+            TensorPrimitives.Subtract(input.Data, _output.Data, _temp_Input.Data);
 
             // Градиенты для декодера
-            MatrixMultiplyGradient(_bottleneck.Buffer, _gradientBuffer.Buffer, learningRate, _weightsDecoder);
-            AddScaled(_gradientBuffer.Buffer, _gradientBuffer2.Buffer, learningRate, _biasesDecoder.Buffer);
+            MatrixMultiplyGradient(_bottleneck.Data, _temp_Input.Data, _temp_Input2.Data, learningRate, _weightsDecoder);            
+            AddScaled(_temp_Input.Data, _temp_Input2.Data, learningRate, _biasesDecoder.Data);
 
             // Градиенты для энкодера
-            PropagateError(_gradientBuffer.Buffer, _weightsDecoder, _bottleneck.Buffer, _gradientBuffer3.Buffer);
-            MatrixMultiplyGradient(input.Buffer, _gradientBuffer3.Buffer, learningRate, _weightsEncoder);
-            AddScaled(_gradientBuffer3.Buffer, _gradientBuffer4.Buffer, learningRate, _biasesEncoder.Buffer);
+            PropagateError(_temp_Input.Data, _weightsDecoder, _bottleneck.Data, _temp_Bottleneck3.Data);
+            MatrixMultiplyGradient(input.Data, _temp_Bottleneck3.Data, _temp_Bottleneck4.Data, learningRate, _weightsEncoder);
+            AddScaled(_temp_Bottleneck3.Data, _temp_Bottleneck4.Data, learningRate, _biasesEncoder.Data);
 
             #endregion
 
@@ -73,6 +91,61 @@ namespace Ssz.AI.Models
             return cosineSimilarity;
         }
 
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            using (writer.EnterBlock(1))
+            {
+                writer.Write(_inputSize);
+                writer.Write(_bottleneckSize);
+                writer.Write(_maxActiveUnits);
+
+                writer.WriteOwnedDataSerializableAndRecreatable(_weightsEncoder, null);
+                writer.WriteOwnedDataSerializableAndRecreatable(_biasesEncoder, null);
+                writer.WriteOwnedDataSerializableAndRecreatable(_weightsDecoder, null);
+                writer.WriteOwnedDataSerializableAndRecreatable(_biasesDecoder, null);
+
+                writer.Write(TrainingDurationMilliseconds);
+                writer.Write(CosineSimilarity);
+                writer.Write(IterationsCount);
+                writer.Write(ControlCosineSimilarity);
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            using (Block block = reader.EnterBlock())
+            {
+                switch (block.Version)
+                {
+                    case 1:
+                        _inputSize = reader.ReadInt32();
+                        _bottleneckSize = reader.ReadInt32();
+                        _maxActiveUnits = reader.ReadInt32();
+
+                        _weightsEncoder = reader.ReadOwnedDataSerializableAndRecreatable<DenseTensor<float>>(null)!;
+                        _biasesEncoder = reader.ReadOwnedDataSerializableAndRecreatable<DenseTensor<float>>(null)!;
+                        _weightsDecoder = reader.ReadOwnedDataSerializableAndRecreatable<DenseTensor<float>>(null)!;
+                        _biasesDecoder = reader.ReadOwnedDataSerializableAndRecreatable<DenseTensor<float>>(null)!;
+
+                        TrainingDurationMilliseconds = reader.ReadInt64();
+                        CosineSimilarity = reader.ReadSingle();
+                        IterationsCount = reader.ReadInt32();
+                        ControlCosineSimilarity = reader.ReadSingle();
+
+                        _input = null;
+                        _bottleneck = new DenseTensor<float>(_bottleneckSize);
+                        _output = new DenseTensor<float>(_inputSize);
+                        _outputNormalized = new DenseTensor<float>(_inputSize);
+
+                        _temp_Input = new DenseTensor<float>(_inputSize);
+                        _temp_Input2 = new DenseTensor<float>(_inputSize);
+                        _temp_Bottleneck3 = new DenseTensor<float>(_bottleneckSize);
+                        _temp_Bottleneck4 = new DenseTensor<float>(_bottleneckSize);
+                        break;
+                }
+            }
+        }
+
         #endregion
 
         private void ForwardPass(DenseTensor<float> input)
@@ -80,16 +153,16 @@ namespace Ssz.AI.Models
             _input = input;
 
             // Прямой проход: Input -> Bottleneck -> Reconstruction
-            MatrixMultiply(input.Buffer, _weightsEncoder, _bottleneck.Buffer);
-            TensorPrimitives.Add(_bottleneck.Buffer, _biasesEncoder.Buffer, _bottleneck.Buffer);
-            ApplyActivation(_bottleneck.Buffer);
+            MatrixMultiply(input.Data, _weightsEncoder, _bottleneck.Data);
+            TensorPrimitives.Add(_bottleneck.Data, _biasesEncoder.Data, _bottleneck.Data);
+            ApplyActivation(_bottleneck.Data);
 
             // Ограничение на количество активных единиц
-            ApplyKSparseConstraint(_bottleneck.Buffer, _maxActiveUnits);
+            ApplyKSparseConstraint(_bottleneck.Data, _maxActiveUnits);
 
-            MatrixMultiply(_bottleneck.Buffer, _weightsDecoder, _output.Buffer);
-            TensorPrimitives.Add(_output.Buffer, _biasesDecoder.Buffer, _output.Buffer);
-            ApplyActivation(_output.Buffer);
+            MatrixMultiply(_bottleneck.Data, _weightsDecoder, _output.Data);
+            TensorPrimitives.Add(_output.Data, _biasesDecoder.Data, _output.Data);
+            ApplyActivation(_output.Data);
         }
 
         private void ApplyKSparseConstraint(float[] activations, int maxActiveUnits)
@@ -111,16 +184,16 @@ namespace Ssz.AI.Models
 
         private float ComputeCosineSimilarityInternal()
         {            
-            var inputBuffer = _input!.Buffer;
-            var outputBuffer = _output.Buffer;
-            var outputBufferNormalized = _outputNormalized.Buffer;
+            var inputData = _input!.Data;
+            var outputData = _output.Data;
+            var outputNormalizedData = _outputNormalized.Data;
 
-            for (int i = 0; i < inputBuffer.Length; i++)
+            for (int i = 0; i < inputData.Length; i++)
             {                
-                outputBufferNormalized[i] = outputBuffer[i] > 0.5 ? 1.0f : 0.0f;                
+                outputNormalizedData[i] = outputData[i] > 0.5 ? 1.0f : 0.0f;                
             }
             
-            return TensorPrimitives.CosineSimilarity(inputBuffer, outputBufferNormalized);
+            return TensorPrimitives.CosineSimilarity(inputData, outputNormalizedData);
         }
 
         //private void ComputeBCEGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> output, Span<float> gradient)
@@ -134,37 +207,50 @@ namespace Ssz.AI.Models
         //    }
         //}
 
-        private static void AddScaled(ReadOnlySpan<float> source, Span<float> source_temp, float scale, Span<float> target)
+        private static void AddScaled(ReadOnlySpan<float> source, Span<float> temp_source, float scale, Span<float> target)
         {
-            TensorPrimitives.Multiply(source, scale, source_temp);
-            TensorPrimitives.Add(target, source_temp, target);
+            TensorPrimitives.Multiply(source, scale, temp_source);
+            TensorPrimitives.Add(target, temp_source, target);            
+
             //for (int i = 0; i < target.Length; i++)
             //{
             //    target[i] += source[i] * scale;
             //}
         }
 
-        private static void MatrixMultiply(ReadOnlySpan<float> input, DenseTensor<float> weights, Span<float> output)
-        {
-            output.Clear();
-            for (int i = 0; i < weights.Dimensions[1]; i++)
+        private static void MatrixMultiply(float[] input, DenseTensor<float> weights, float[] output)
+        {   
+            for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                for (int j = 0; j < weights.Dimensions[0]; j++)
-                {
-                    output[i] += input[j] * weights[j, i];
-                }
+                output[j] = TensorPrimitives.Dot(input, weights.GetColumn(j));                
             }
+
+            //Array.Clear(output);
+            //for (int j = 0; j < weights.Dimensions[1]; j++) // 200
+            //{
+            //    for (int i = 0; i < weights.Dimensions[0]; i++) // 50
+            //    {
+            //        output[j] += input[i] * weights[i, j];
+            //    }
+            //}
         }
 
-        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient, float learningRate, DenseTensor<float> weights)
+        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient, Span<float> temp_input, float learningRate, DenseTensor<float> weights)
         {
-            for (int i = 0; i < weights.Dimensions[0]; i++)
+            for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                for (int j = 0; j < weights.Dimensions[1]; j++)
-                {
-                    weights[i, j] += input[i] * gradient[j] * learningRate;
-                }
+                TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
+                var weightsColumn = weights.GetColumn(j);
+                TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);                
             }
+
+            //for (int i = 0; i < weights.Dimensions[0]; i++)
+            //{
+            //    for (int j = 0; j < weights.Dimensions[1]; j++)
+            //    {
+            //        weights[i, j] += input[i] * gradient[j] * learningRate;
+            //    }
+            //}
         }
 
         private static void PropagateError(ReadOnlySpan<float> gradient, DenseTensor<float> weights, ReadOnlySpan<float> activations, Span<float> outputBuffer)
@@ -187,6 +273,7 @@ namespace Ssz.AI.Models
         private static void ApplyActivation(Span<float> values)
         {
             TensorPrimitives.Sigmoid(values, values);
+
             //for (int i = 0; i < values.Length; i++)
             //{
             //    values[i] = Sigmoid(values[i]);
@@ -200,7 +287,7 @@ namespace Ssz.AI.Models
 
         private static DenseTensor<float> CreateRandomTensor(int rows, int columns)
         {
-            var tensor = new DenseTensor<float>(new[] { rows, columns });
+            var tensor = new DenseTensor<float>(rows, columns);
             var random = new Random();
             for (int i = 0; i < rows; i++)
             {
@@ -214,25 +301,34 @@ namespace Ssz.AI.Models
 
         #region private fields
 
-        private readonly DenseTensor<float> _weightsEncoder;
-        private readonly DenseTensor<float> _biasesEncoder;
-        private readonly DenseTensor<float> _weightsDecoder;
-        private readonly DenseTensor<float> _biasesDecoder;
+        private int _inputSize;
+        private int _bottleneckSize;
+        private int _maxActiveUnits;
+
+        private DenseTensor<float> _weightsEncoder = null!;
+        private DenseTensor<float> _biasesEncoder = null!;
+        private DenseTensor<float> _weightsDecoder = null!;
+        private DenseTensor<float> _biasesDecoder = null!;
 
         // Буферы для временных данных
         private DenseTensor<float>? _input;
-        private readonly DenseTensor<float> _bottleneck;
-        private readonly DenseTensor<float> _output;
-        private readonly DenseTensor<float> _outputNormalized;
-        private readonly DenseTensor<float> _gradientBuffer;
-        private readonly DenseTensor<float> _gradientBuffer2;
-        private readonly DenseTensor<float> _gradientBuffer3;
-        private readonly DenseTensor<float> _gradientBuffer4;
+        private DenseTensor<float> _bottleneck = null!;
+        private DenseTensor<float> _output = null!;
+        private DenseTensor<float> _outputNormalized = null!;
 
-        private readonly int _inputSize;
-        private readonly int _bottleneckSize;
-        private readonly int _maxActiveUnits;
+        private DenseTensor<float> _temp_Input = null!;
+        private DenseTensor<float> _temp_Input2 = null!;
+        private DenseTensor<float> _temp_Bottleneck3 = null!;
+        private DenseTensor<float> _temp_Bottleneck4 = null!;        
 
         #endregion
     }
 }
+
+//private DenseTensor<float> _temp_Input = null!;
+//private DenseTensor<float> _temp_Bottleneck = null!;
+
+//var vector = tf.constant(input, shape: new Shape(1, input.Length));
+//var matrix = tf.constant(weights.Data, shape: new Shape(weights.Dimensions[0], weights.Dimensions[1]));
+//var result = tf.linalg.matmul(vector, matrix);
+//result.ToArray<float>(output);
