@@ -32,6 +32,7 @@ namespace Ssz.AI.Models
             _temp_Input2 = new DenseTensor<float>(inputSize);
             _temp_Bottleneck3 = new DenseTensor<float>(bottleneckSize);
             _temp_Bottleneck4 = new DenseTensor<float>(bottleneckSize);
+            _temp_Bottleneck5 = new DenseTensor<float>(bottleneckSize);
         }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace Ssz.AI.Models
             TensorPrimitives.Add(_biasesDecoder.Data, _temp_Input2.Data, _biasesDecoder.Data);            
 
             // Градиенты для энкодера
-            PropagateError(_temp_Input.Data, _weightsDecoder, _bottleneck.Data, _temp_Bottleneck3.Data);
+            PropagateError(_temp_Input.Data, _weightsDecoder, _bottleneck.Data, _temp_Bottleneck4.Data, _temp_Bottleneck5.Data, _temp_Bottleneck3.Data);
             MatrixMultiplyGradient(input.Data, _temp_Bottleneck3.Data, _temp_Input2.Data, learningRate, _weightsEncoder);
             TensorPrimitives.Multiply(_temp_Bottleneck3.Data, learningRate, _temp_Bottleneck4.Data);
             TensorPrimitives.Add(_biasesEncoder.Data, _temp_Bottleneck4.Data, _biasesEncoder.Data);            
@@ -143,6 +144,7 @@ namespace Ssz.AI.Models
                         _temp_Input2 = new DenseTensor<float>(_inputSize);
                         _temp_Bottleneck3 = new DenseTensor<float>(_bottleneckSize);
                         _temp_Bottleneck4 = new DenseTensor<float>(_bottleneckSize);
+                        _temp_Bottleneck5 = new DenseTensor<float>(_bottleneckSize);
                         break;
                 }
             }
@@ -244,21 +246,32 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void PropagateError(ReadOnlySpan<float> gradient, DenseTensor<float> weights, ReadOnlySpan<float> activations, Span<float> outputBuffer)
+        private static void PropagateError(ReadOnlySpan<float> gradient, DenseTensor<float> weights, ReadOnlySpan<float> activations, Span<float> temp_output, Span<float> temp_output2, Span<float> output)
         {
-            outputBuffer.Clear();
-            for (int i = 0; i < weights.Dimensions[0]; i++)
+            output.Clear();
+            for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                for (int j = 0; j < weights.Dimensions[1]; j++)
-                {
-                    outputBuffer[i] += gradient[j] * weights[i, j];
-                }
+                TensorPrimitives.Multiply(weights.GetColumn(j), gradient[j], temp_output);
+                TensorPrimitives.Add(output, temp_output, output);
             }
 
-            for (int i = 0; i < activations.Length; i++)
-            {
-                outputBuffer[i] *= activations[i] * (1 - activations[i]); // Производная сигмоиды
-            }
+            //output.Clear();
+            //for (int i = 0; i < weights.Dimensions[0]; i++)
+            //{
+            //    for (int j = 0; j < weights.Dimensions[1]; j++)
+            //    {
+            //        output[i] += gradient[j] * weights[i, j];
+            //    }
+            //}
+
+            TensorPrimitives.Multiply(output, activations, temp_output);
+            TensorPrimitives.Multiply(temp_output, activations, temp_output2);
+            TensorPrimitives.Subtract(temp_output, temp_output2, output);
+
+            //for (int i = 0; i < activations.Length; i++)
+            //{
+            //    output[i] *= activations[i] * (1 - activations[i]); // Производная сигмоиды
+            //}
         }
 
         private static void ApplyActivation(Span<float> values)
@@ -310,7 +323,8 @@ namespace Ssz.AI.Models
         private DenseTensor<float> _temp_Input = null!;
         private DenseTensor<float> _temp_Input2 = null!;
         private DenseTensor<float> _temp_Bottleneck3 = null!;
-        private DenseTensor<float> _temp_Bottleneck4 = null!;        
+        private DenseTensor<float> _temp_Bottleneck4 = null!;
+        private DenseTensor<float> _temp_Bottleneck5 = null!;
 
         #endregion
     }
