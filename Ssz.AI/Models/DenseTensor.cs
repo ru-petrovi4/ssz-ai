@@ -36,13 +36,7 @@ namespace Ssz.AI.Models
 
         public int[] Dimensions { get; private set; } = null!;
 
-        public T[] Data { get; private set; } = null!;
-
-        public Span<T> GetColumn(int j)
-        {
-            var d = Dimensions[0];
-            return new Span<T>(Data, j * d, d);
-        }
+        public T[] Data { get; private set; } = null!;        
 
         public T this[params int[] indices]
         {

@@ -297,7 +297,7 @@ namespace Ssz.AI.Models
                     miniColumn.Autoencoder = FindAutoencoder(miniColumn);
 
                     processedCount += 1;
-                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: mci; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
+                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
                 });
 
             Logger.LogInformation($"CalculateAutoencoders(...) finished; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}");
@@ -426,7 +426,7 @@ namespace Ssz.AI.Models
                 memoriesCount = 0;
                 foreach (var memory in miniColumn.Memories.Take(trainCount))
                 {
-                    var input = new DenseTensor<float>(memory.Hash);
+                    var input = memory.Hash;
 
                     float cs = autoencoder.Train(input, learningRate: 0.01f);
                     if (!float.IsNaN(cs))
@@ -458,7 +458,7 @@ namespace Ssz.AI.Models
             memoriesCount = 0;
             foreach (var memory in miniColumn.Memories.Skip(trainCount))
             {
-                var input = new DenseTensor<float>(memory.Hash);
+                var input = memory.Hash;
 
                 float cs = autoencoder.ComputeCosineSimilarity(input);
                 if (!float.IsNaN(cs))
