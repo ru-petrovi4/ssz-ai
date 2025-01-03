@@ -38,17 +38,17 @@ namespace Ssz.AI.Models
 
         public T[] Data { get; private set; } = null!;
 
-        public T this[params int[] indices]
-        {
-            get => Data[GetFlatIndex(indices)];
-            set => Data[GetFlatIndex(indices)] = value;
-        }
-
         public Span<T> GetColumn(int j)
         {
             var d = Dimensions[0];
             return new Span<T>(Data, j * d, d);
-        }        
+        }
+
+        public T this[params int[] indices]
+        {
+            get => Data[GetFlatIndex(indices)];
+            set => Data[GetFlatIndex(indices)] = value;
+        }             
 
         public DenseTensor<T> Clone()
         {

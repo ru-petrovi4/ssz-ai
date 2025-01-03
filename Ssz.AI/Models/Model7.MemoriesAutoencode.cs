@@ -276,9 +276,11 @@ namespace Ssz.AI.Models
 
             var miniColumnsToProcess = Cortex.MiniColumns.Data.Where(mc => mc is not null && mc.Autoencoder is null).ToArray();
 
-            Logger.LogInformation($"CalculateAutoencoders(...) started; Count: {miniColumnsToProcess.Length}");
+            Logger.LogInformation($"CalculateAutoencoders(...) started; Count to Process: {miniColumnsToProcess.Length}");
 
             Stopwatch sw = Stopwatch.StartNew();
+
+            int processedCount = 0;
 
             Parallel.For(
                 fromInclusive: 0,
@@ -294,10 +296,11 @@ namespace Ssz.AI.Models
                     MiniColumn miniColumn = miniColumnsToProcess[mci];
                     miniColumn.Autoencoder = FindAutoencoder(miniColumn);
 
-                    Logger.LogInformation($"FindAutoencoder(...) finished; {mci + 1}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
+                    processedCount += 1;
+                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: mci; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
                 });
 
-            Logger.LogInformation($"CalculateAutoencoders(...) ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Count: {miniColumnsToProcess.Length}");
+            Logger.LogInformation($"CalculateAutoencoders(...) finished; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}");
 
             using (var memoryStream = new MemoryStream(1024 * 1024))
             {
@@ -568,7 +571,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 1;
+            public int? SubAreaMiniColumnsCount => null;
 
             /// <summary>
             ///     Индекс X центра подобласти [0..CortexWidth]
