@@ -211,37 +211,37 @@ namespace Ssz.AI.Models
 
         private static void MatrixMultiply(float[] input, DenseTensor<float> weights, float[] output)
         {
-            //for (int j = 0; j < weights.Dimensions[1]; j++)
-            //{
-            //    output[j] = TensorPrimitives.Dot(input, weights.GetColumn(j));                
-            //}
-
-            Array.Clear(output);
-            for (int j = 0; j < weights.Dimensions[1]; j++) // 200
+            for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                for (int i = 0; i < weights.Dimensions[0]; i++) // 50
-                {
-                    output[j] += input[i] * weights[i, j];
-                }
+                output[j] = TensorPrimitives.Dot(input, weights.GetColumn(j));
             }
+
+            //Array.Clear(output);
+            //for (int j = 0; j < weights.Dimensions[1]; j++) // 200
+            //{
+            //    for (int i = 0; i < weights.Dimensions[0]; i++) // 50
+            //    {
+            //        output[j] += input[i] * weights[i, j];
+            //    }
+            //}
         }
 
         private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient, Span<float> temp_input, float learningRate, DenseTensor<float> weights)
         {
-            //for (int j = 0; j < weights.Dimensions[1]; j++)
-            //{
-            //    TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
-            //    var weightsColumn = weights.GetColumn(j);
-            //    TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);                
-            //}
-
-            for (int i = 0; i < weights.Dimensions[0]; i++)
+            for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                for (int j = 0; j < weights.Dimensions[1]; j++)
-                {
-                    weights[i, j] += input[i] * gradient[j] * learningRate;
-                }
+                TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
+                var weightsColumn = weights.GetColumn(j);
+                TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);
             }
+
+            //for (int i = 0; i < weights.Dimensions[0]; i++)
+            //{
+            //    for (int j = 0; j < weights.Dimensions[1]; j++)
+            //    {
+            //        weights[i, j] += input[i] * gradient[j] * learningRate;
+            //    }
+            //}
         }
 
         private static void PropagateError(ReadOnlySpan<float> gradient, DenseTensor<float> weights, ReadOnlySpan<float> activations, Span<float> outputBuffer)

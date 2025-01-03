@@ -96,7 +96,7 @@ namespace Ssz.AI.Models
 
             int flatIndex = 0;
             int multiplier = 1;
-            for (int i = Dimensions.Length - 1; i >= 0; i--)
+            for (int i = 0; i < Dimensions.Length; i += 1)
             {
                 flatIndex += indices[i] * multiplier;
                 multiplier *= Dimensions[i];
