@@ -64,7 +64,7 @@ namespace Ssz.AI.Models
             {                
                 LoadOrCalculateAutoencoders();
 
-                FindHyperColumn();
+                //FindHyperColumn();
             }, TaskCreationOptions.LongRunning);            
         }        
 
@@ -192,7 +192,7 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages2()
         {            
-            var image = Visualisation.GetContextSyncingMatrixFloatBitmap(DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix);
+            var image = Visualisation.GetContextSyncingMatrixFloatBitmap(DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix, DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix_TrainingCount);
             if (image is null)
                 return [];
             return [ image ];
@@ -217,7 +217,7 @@ namespace Ssz.AI.Models
 
                 var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
 
-                DoStep_CollectMemories_MNIST(gradientMatrix, random);
+                DoStep_CollectMemories_MNIST(gradientMatrix);
             }
         }
 
@@ -321,7 +321,7 @@ namespace Ssz.AI.Models
 
         private void FindHyperColumn()
         {
-            MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns.First(mc => mc is not null);
+            MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[0];
             foreach (int mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
                 var mc = Cortex.SubArea_MiniColumns[mci];                
@@ -342,8 +342,6 @@ namespace Ssz.AI.Models
 
             // Кэш свободных матриц
             Stack<MatrixFloat> freeMatrixFloatsStack = new(100);
-
-            var random = new Random();
 
             // TEMPCODE
             //while (true)
@@ -375,14 +373,19 @@ namespace Ssz.AI.Models
                     if (syncedMiniColumnsToProcess.Count == 0)
                         break;
 
-                    Parallel.For(
-                        fromInclusive: 0,
-                        toExclusive: Cortex.SubArea_Detectors.Length,
-                        di =>
-                        {
-                            var d = Cortex.SubArea_Detectors[di];
-                            d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
-                        });
+                    for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
+                    {
+                        var d = Cortex.SubArea_Detectors[di];
+                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                    }
+                    //Parallel.For(
+                    //    fromInclusive: 0,
+                    //    toExclusive: Cortex.SubArea_Detectors.Length,
+                    //    di =>
+                    //    {
+                    //        var d = Cortex.SubArea_Detectors[di];
+                    //        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                    //    });
 
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
@@ -425,7 +428,7 @@ namespace Ssz.AI.Models
                                     }
                                     nearestMiniColumn.Temp_ShortHashConversionMatrix_TrainingCount = 0;
                                 }
-                                bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, nearestMiniColumn.Temp_ShortHash, miniColumn.Temp_ShortHashConverted); // miniColumn.Temp_ShortHashConverted
+                                bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, nearestMiniColumn.Temp_ShortHash); // miniColumn.Temp_ShortHashConverted
                                 if (synced)
                                 {
                                     nearestMiniColumn.Temp_IsSynced = true;
@@ -442,8 +445,13 @@ namespace Ssz.AI.Models
             }
         }
 
-        private void DoStep_CollectMemories_MNIST(GradientInPoint[,] gradientMatrix, Random random)
+        private void DoStep_CollectMemories_MNIST(GradientInPoint[,] gradientMatrix)
         {
+            //for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
+            //{
+            //    var d = Cortex.SubArea_Detectors[di];
+            //    d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+            //}
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
@@ -453,6 +461,19 @@ namespace Ssz.AI.Models
                         d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
                     });
 
+            //for (int mci = 0; mci < Cortex.SubArea_MiniColumns.Length; mci += 1)
+            //{
+            //    var mc = Cortex.SubArea_MiniColumns[mci];
+            //    mc.CalculateHash(mc.Temp_Hash);
+
+            //    int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
+            //    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
+
+            //    if (bitsCountInHash >= Constants.MinBitsInHashForMemory)
+            //    {
+            //        mc.Memories.Add(new Memory { Hash = (float[])mc.Temp_Hash.Clone() });
+            //    }
+            //}
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,

@@ -33,14 +33,14 @@ public partial class Model7View : UserControl
 
     private void Timer_Tick(object? sender, EventArgs e)
     {
-        Refresh_StackPanel2();
+        //Refresh_StackPanel2();
     }
 
     private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
     {
         //_model.CollectMemories_MNIST(1);
 
-        //Refresh_StackPanel2();
+        Refresh_StackPanel2();
     }
 
     private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)

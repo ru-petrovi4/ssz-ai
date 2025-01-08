@@ -21,8 +21,6 @@ namespace Ssz.AI.Models
         {
             Constants = constants;
 
-            Random random = new();
-
             DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
             MiniColumns = new DenseTensor<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
@@ -69,8 +67,7 @@ namespace Ssz.AI.Models
                                 mcy,
                                 miniColumnDetectors,
                                 centerX,
-                                centerY,                                
-                                random);
+                                centerY);
 
                             MiniColumns[mcx, mcy] = miniColumn;
 
@@ -112,8 +109,8 @@ namespace Ssz.AI.Models
                         mc.NearestMiniColumnInfos.Add(((1.0f, 1.0f), new List<MiniColumn>(constants.NearestMiniColumnsDelta * 8)));
                     }
 
-                    for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy < mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
-                        for (int mcx = mc.MCX - constants.NearestMiniColumnsDelta; mcx < mc.MCX + constants.NearestMiniColumnsDelta; mcx += 1)
+                    for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy <= mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
+                        for (int mcx = mc.MCX - constants.NearestMiniColumnsDelta; mcx <= mc.MCX + constants.NearestMiniColumnsDelta; mcx += 1)
                         {
                             if (mcx < 0 ||
                                     mcx >= constants.CortexWidth ||
@@ -201,7 +198,7 @@ namespace Ssz.AI.Models
 
         public class MiniColumn : IOwnedDataSerializable
         {
-            public MiniColumn(ICortexConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY, Random random)
+            public MiniColumn(ICortexConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
             {
                 Constants = constants;
                 Detectors = detectors;
@@ -286,6 +283,12 @@ namespace Ssz.AI.Models
             public Color Temp_SuperActivityColor;
 
             public bool Temp_IsSynced;
+
+            public float Temp_SyncQuality;
+
+            public float Temp_SyncQualitySum;
+
+            public int Temp_SyncQualitySumCount;
 
             /// <summary>
             ///     Handle in ObjectMamager: SyncedMiniColumnsToProcess

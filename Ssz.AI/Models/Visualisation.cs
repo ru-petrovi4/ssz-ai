@@ -59,39 +59,99 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
-        public static Bitmap? GetContextSyncingMatrixFloatBitmap(MatrixFloat? contextSyncingMatrixFloat)
+        public static Bitmap? GetContextSyncingMatrixFloatBitmap(
+            MatrixFloat? contextSyncingMatrixFloat,
+            int? syncingMatrixFloat_TrainingCount)
         {
             if (contextSyncingMatrixFloat is null)
                 return null;            
 
             Bitmap bitmap = new Bitmap(contextSyncingMatrixFloat.Dimensions[1], contextSyncingMatrixFloat.Dimensions[0]);
             
-            foreach (int i in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[0]))
+            try
             {
-                float max = Single.MinValue;
-                foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
+                foreach (int i in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[0]))
                 {
-                    float v = contextSyncingMatrixFloat[i, j];
-                    if (v > max)
-                        max = v;
-                }
-
-                foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
-                {
-                    int brightness;
-                    if (max > 0)
+                    //float max = 0.1f;
+                    float max = Single.MinValue;
+                    foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
                     {
                         float v = contextSyncingMatrixFloat[i, j];
-                        brightness = (int)(255 * v / max);
-                        if (brightness < 0)
-                            brightness = 0;
+                        if (v > max)
+                            max = v;
                     }
-                    else
+
+                    foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
                     {
-                        brightness = 0;
+                        int brightness;
+                        if (max > 0)
+                        {
+                            float v = contextSyncingMatrixFloat[i, j];
+                            brightness = (int)(255 * v / max);
+                            if (brightness < 0)
+                                brightness = 0;
+                            else if (brightness > 255)
+                                brightness = 255;
+                        }
+                        else
+                        {
+                            brightness = 0;
+                        }
+                        bitmap.SetPixel(j, i, Color.FromArgb(brightness, brightness, brightness));
                     }
-                    bitmap.SetPixel(j, i, Color.FromArgb(brightness, brightness, brightness));
                 }
+            }
+            catch
+            {
+            }            
+
+            return bitmap;
+        }
+
+        public static Bitmap? GetContextSyncingMatrixFloatBitmap2(
+            MatrixFloat? contextSyncingMatrixFloat,
+            int? syncingMatrixFloat_TrainingCount)
+        {
+            if (contextSyncingMatrixFloat is null)
+                return null;
+
+            Bitmap bitmap = new Bitmap(contextSyncingMatrixFloat.Dimensions[1], contextSyncingMatrixFloat.Dimensions[0]);
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+            }
+
+            try
+            {
+                foreach (int i in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[0]))
+                {
+                    int jMax = 0;
+                    float max = contextSyncingMatrixFloat[i, 0];    
+                    
+                    //foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
+                    //{
+                    //    float v = contextSyncingMatrixFloat[i, j];
+                    //    if (v > max)
+                    //        max = v;
+                    //}
+
+                    foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
+                    {
+                        float v = contextSyncingMatrixFloat[i, j];                        
+                        if (v > max)
+                        {
+                            max = v;
+                            jMax = j;                            
+                        }                        
+                    }
+
+                    bitmap.SetPixel(jMax, i, Color.FromArgb(255, 255, 255));
+                }
+            }
+            catch
+            {
+
             }
 
             return bitmap;

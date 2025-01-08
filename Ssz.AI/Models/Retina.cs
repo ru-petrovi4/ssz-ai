@@ -15,7 +15,7 @@ namespace Ssz.AI.Models
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);            
 
-            Random random = new();
+            Random random = new(1); // Always the same numbers
 
             Detectors = new DenseTensor<Detector>((int)((MNISTHelper.MNISTImageWidth - 1) / constants.DetectorDelta), (int)((MNISTHelper.MNISTImageHeight - 1) / constants.DetectorDelta));
             foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
