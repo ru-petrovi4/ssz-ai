@@ -164,8 +164,11 @@ namespace Ssz.AI.Models
                     writer.Write(MiniColumns.Data.Length);
                     for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
                     {
-                        MiniColumn miniColumn = MiniColumns.Data[mci];
-                        writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
+                        using (writer.EnterBlock(1))
+                        {
+                            MiniColumn miniColumn = MiniColumns.Data[mci];
+                            writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
+                        }
                     }
                 }
             }
@@ -182,8 +185,13 @@ namespace Ssz.AI.Models
                         case 1:
                             int miniColumnsDataLength = reader.ReadInt32();
                             for (int mci = 0; mci < miniColumnsDataLength; mci += 1)
-                            {                                
-                                reader.ReadOwnedDataSerializableAndRecreatable<MiniColumn>(() => MiniColumns.Data[mci], context);                                
+                            {
+                                using (Block block2 = reader.EnterBlock())
+                                {
+                                    MiniColumn? miniColumn = MiniColumns.Data[mci];
+                                    if (miniColumn is not null)
+                                        reader.ReadOwnedDataSerializableAndRecreatable<MiniColumn>(() => miniColumn, context);
+                                }
                             }
                             break;
                     }
@@ -204,6 +212,9 @@ namespace Ssz.AI.Models
                 Temp_Hash = new float[constants.HashLength];                
                 Memories = new(constants.MemoriesMaxCount);
                 Temp_Memories = new(constants.MemoriesMaxCount);
+                Temp_ShortHash = new float[constants.ShortHashLength];                
+                Temp_ShortHashConverted = new float[constants.ShortHashLength];
+                ShortHashConversion = new int[constants.ShortHashLength];
 
                 NearestMiniColumnInfos = new List<((float, float), List<MiniColumn>)>();
             }
@@ -250,6 +261,11 @@ namespace Ssz.AI.Models
             public Autoencoder? Autoencoder;
 
             /// <summary>
+            ///     Преобразование из индекса Temp_ShortHash в индекс в Temp_ShortHashConverted
+            /// </summary>
+            public readonly int[] ShortHashConversion;
+
+            /// <summary>
             ///     Текущая активность миниколонки при подаче примера.
             ///     Активность по похожести (положительная величина), активность по непохожести (отрицательная величина).
             /// </summary>
@@ -267,7 +283,24 @@ namespace Ssz.AI.Models
 
             public Color Temp_ActivityColor;
 
-            public Color Temp_SuperActivityColor;                    
+            public Color Temp_SuperActivityColor;
+
+            public bool Temp_IsSynced;
+
+            /// <summary>
+            ///     Handle in ObjectMamager: SyncedMiniColumnsToProcess
+            /// </summary>
+            public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;
+
+            public readonly float[] Temp_ShortHash;
+
+            public MatrixFloat? Temp_ShortHashConversionMatrix;
+
+            public int Temp_ShortHashConversionMatrix_TrainingCount;
+
+            public readonly float[] Temp_ShortHashConverted;
+
+            public bool Temp_IsShortHashMustBeCalculated;
 
             public void CalculateHash(float[] hash)
             {
@@ -277,6 +310,14 @@ namespace Ssz.AI.Models
                 {
                     if (detector.Temp_IsActivated)
                         hash[detector.BitIndexInHash] = 1.0f;
+                }
+            }
+
+            public void CalculateShortHashConverted(float[] shortHash, float[] shortHashConverted)
+            {                
+                for (int i = 0; i < ShortHashConversion.Length; i++)
+                {
+                    shortHashConverted[ShortHashConversion[i]] = shortHash[i];
                 }
             }
 
@@ -305,7 +346,7 @@ namespace Ssz.AI.Models
                         }
                     }
                 }
-            }
+            }            
         }
 
         public struct Memory
@@ -362,9 +403,14 @@ namespace Ssz.AI.Models
             int HashLength { get; }
 
             /// <summary>
-            ///     Количество бит в хэше в первоначальном случайном воспоминании миниколонки.
+            ///     Длина короткого хэш-вектора
             /// </summary>
-            int InitialMemoryBitsCount { get; }
+            int ShortHashLength { get; }
+
+            /// <summary>
+            ///     Количество бит в коротком хэш-векторе
+            /// </summary>
+            int ShortHashBitsCount { get; }            
 
             /// <summary>
             ///     Минимальное число бит в хэше, что бы быть сохраненным в память

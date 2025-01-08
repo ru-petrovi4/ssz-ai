@@ -929,6 +929,16 @@ namespace Ssz.AI.Models
             ///     Верхний предел количества воспоминаний (для кэширования)
             /// </summary>
             public int MemoriesMaxCount => 1000;
+
+            /// <summary>
+            ///     Длина короткого хэш-вектора
+            /// </summary>
+            public int ShortHashLength => 50;
+
+            /// <summary>
+            ///     Количество бит в коротком хэш-векторе
+            /// </summary>
+            public int ShortHashBitsCount => 11;
         }        
     }
 }

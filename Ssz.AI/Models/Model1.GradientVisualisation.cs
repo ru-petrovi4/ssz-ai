@@ -81,7 +81,7 @@ namespace Ssz.AI.Models
         //    var smallImage = new Mat();
         //    Cv2.Resize(image, smallImage, new Size(28, 28));
 
-        //    // TEMPCODE
+        //    
         //    images.Add(smallImage);
         //    //for (int i = 0; i < 100; i++)
         //    //{

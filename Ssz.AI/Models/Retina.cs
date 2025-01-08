@@ -2,7 +2,9 @@
 using Ssz.AI.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Numerics;
 
 namespace Ssz.AI.Models
 {
@@ -73,9 +75,9 @@ namespace Ssz.AI.Models
 
         public int BitIndexInHash;
 
-        public bool GetIsActivated(GradientInPoint[,] gradientMatrix)
+        public bool GetIsActivated(GradientInPoint[,] gradientMatrix, Vector2 offset = default)
         {
-            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX, CenterY, gradientMatrix);
+            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
             if (magnitude < GradientMagnitudeMinimum)
                 return false;

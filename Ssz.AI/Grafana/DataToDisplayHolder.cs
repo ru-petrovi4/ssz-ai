@@ -1,5 +1,7 @@
 ﻿using Ssz.AI.Models;
 using System;
+using System.DrawingCore;
+using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Grafana
 {
@@ -15,6 +17,10 @@ namespace Ssz.AI.Grafana
         ///     [mcx, mcy, bits count]
         /// </summary>
         public ulong[,,] MiniColumsBitsCountInHashDistribution2 { get; set; } = new ulong[0, 0, 0];
+
+        public MiniColumn? ContextSyncingMiniColumn { get; set; }
+        //public MatrixFloat? ContextSyncingMatrixFloat { get; set; }
+        //public Image? ContextSyncingImage { get; set; }
     }
 
     public class GradientDistribution

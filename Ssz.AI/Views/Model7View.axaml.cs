@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
 using Ssz.AI.ViewModels;
@@ -20,13 +21,26 @@ public partial class Model7View : UserControl
         //DataContext = new Model5ViewModel();
 
         _model = new Model7();
+
+        var timer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1) // Интервал в 1 секунду
+        };
+
+        timer.Tick += Timer_Tick;
+        timer.Start();
+    }
+
+    private void Timer_Tick(object? sender, EventArgs e)
+    {
+        Refresh_StackPanel2();
     }
 
     private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.CollectMemories_MNIST(1);
+        //_model.CollectMemories_MNIST(1);
 
-        Refresh_StackPanel2();
+        //Refresh_StackPanel2();
     }
 
     private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)

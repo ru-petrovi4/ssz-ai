@@ -59,6 +59,44 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
+        public static Bitmap? GetContextSyncingMatrixFloatBitmap(MatrixFloat? contextSyncingMatrixFloat)
+        {
+            if (contextSyncingMatrixFloat is null)
+                return null;            
+
+            Bitmap bitmap = new Bitmap(contextSyncingMatrixFloat.Dimensions[1], contextSyncingMatrixFloat.Dimensions[0]);
+            
+            foreach (int i in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[0]))
+            {
+                float max = Single.MinValue;
+                foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
+                {
+                    float v = contextSyncingMatrixFloat[i, j];
+                    if (v > max)
+                        max = v;
+                }
+
+                foreach (int j in Enumerable.Range(0, contextSyncingMatrixFloat.Dimensions[1]))
+                {
+                    int brightness;
+                    if (max > 0)
+                    {
+                        float v = contextSyncingMatrixFloat[i, j];
+                        brightness = (int)(255 * v / max);
+                        if (brightness < 0)
+                            brightness = 0;
+                    }
+                    else
+                    {
+                        brightness = 0;
+                    }
+                    bitmap.SetPixel(j, i, Color.FromArgb(brightness, brightness, brightness));
+                }
+            }
+
+            return bitmap;
+        }
+
         public static Bitmap GetMiniColumsActivityBitmap(Cortex cortex, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
         {
             var random = new Random();
@@ -66,9 +104,7 @@ namespace Ssz.AI.Models
             var miniColumns = cortex.MiniColumns;            
 
             int width = miniColumns.Dimensions[0];
-            int height = miniColumns.Dimensions[1];
-
-            Bitmap gradientBitmap = new Bitmap(width, height);
+            int height = miniColumns.Dimensions[1];            
 
             double maxActivity = Double.MinValue;
             double minActivity = Double.MaxValue;
@@ -90,6 +126,8 @@ namespace Ssz.AI.Models
 
             //minActivity = minActivity + (maxActivity - minActivity) * 0.66;            
             minActivity = 0.0;
+
+            Bitmap gradientBitmap = new Bitmap(width, height);
 
             for (int y = 0; y < height; y += 1)
             {
@@ -257,7 +295,7 @@ namespace Ssz.AI.Models
                 }
 
             return bitmap;
-        }
+        }        
     }
 }
 

@@ -26,7 +26,7 @@ namespace Ssz.AI.Models
 
         #endregion
 
-        #region public functions
+        #region public functions        
 
         public int[] Dimensions { get; private set; } = null!;
 

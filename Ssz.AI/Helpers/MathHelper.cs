@@ -16,6 +16,12 @@ namespace Ssz.AI.Helpers
         {
             int x = (int)centerX;
             int y = (int)centerY;
+            if (x < 0 ||
+                    y < 0 ||
+                    x + 1 >= gradientMatrix.GetLength(0) ||
+                    y + 1 >= gradientMatrix.GetLength(1))
+                return (0.0, 0.0);
+
             double tx = centerX - x;
             double ty = centerY - y;
             double gradX = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradX +
