@@ -43,8 +43,9 @@ namespace Ssz.AI.Models
                 GradientMatricesCollection.Add(gm);
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
-
-            Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
+            
+            Retina = new Retina(Constants);
+            Retina.GenereateOwnedData(Constants, gradientDistribution);
 
             Cortex = new Cortex(Constants, Retina);            
             
@@ -233,7 +234,7 @@ namespace Ssz.AI.Models
                     });
 
                 var centerMiniColumn = Cortex.CenterMiniColumn!;
-                centerMiniColumn.CalculateHash(centerMiniColumn_Hash);
+                centerMiniColumn.GetHash(centerMiniColumn_Hash);
 
                 if (TensorPrimitives.Sum(centerMiniColumn_Hash) < Constants.MinBitsInHashForMemory)
                     continue;
@@ -278,7 +279,7 @@ namespace Ssz.AI.Models
                     {
                         float[] hash = new float[Constants.HashLength];
                         MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
-                        mc.CalculateHash(hash);
+                        mc.GetHash(hash);
                         visualizationTableItem.SubArea_MiniColumns_Hashes[mci] = hash;
                     }
                     Cortex.VisualizationTableItems.Add(visualizationTableItem);
@@ -473,7 +474,7 @@ namespace Ssz.AI.Models
                 mci =>
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.CalculateHash(mc.Temp_Hash);
+                    mc.GetHash(mc.Temp_Hash);
                     mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash);
                 });
 

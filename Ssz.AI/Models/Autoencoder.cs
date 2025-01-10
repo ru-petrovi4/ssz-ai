@@ -7,34 +7,9 @@ using static Tensorflow.Binding;
 
 namespace Ssz.AI.Models
 {
-    public class Autoencoder : IOwnedDataSerializable
+    public class Autoencoder : ISerializableModelObject
     {
-        #region construction and destruction
-
-        public Autoencoder(int inputSize, int bottleneckSize, int maxActiveUnits)
-        {
-            _inputSize = inputSize;
-            _bottleneckSize = bottleneckSize;
-            _maxActiveUnits = maxActiveUnits;
-
-            // Инициализация весов и смещений
-            _weightsEncoder = CreateRandomMatrixFloat(inputSize, bottleneckSize);
-            _biasesEncoder = new float[bottleneckSize];
-            _weightsDecoder = CreateRandomMatrixFloat(bottleneckSize, inputSize);
-            _biasesDecoder = new float[inputSize];
-
-            _bottleneck = new float[bottleneckSize];
-
-            // Буферы для временных данных            
-            _temp_Input = new float[_inputSize];
-            _temp_Input2 = new float[_inputSize];
-            _temp_Bottleneck3 = new float[_bottleneckSize];
-            _temp_Bottleneck4 = new float[_bottleneckSize];
-            _temp_Bottleneck5 = new float[_bottleneckSize];
-
-            _temp_Output = new float[_inputSize];
-            _temp_OutputNormalized = new float[_inputSize];
-        }
+        #region construction and destruction        
 
         /// <summary>
         ///     Используется только для десериализации.
@@ -45,89 +20,139 @@ namespace Ssz.AI.Models
 
         #endregion
 
-        #region public functions
+        #region public functions         
 
-        public float[] Bottleneck => _bottleneck;        
+        public long State_TrainingDurationMilliseconds { get; set; }
 
-        public long TrainingDurationMilliseconds { get; set; }
+        public float State_CosineSimilarity;
 
-        public float CosineSimilarity;
+        public int State_IterationsCount;
 
-        public int IterationsCount;
+        public float State_ControlCosineSimilarity;
 
-        public float ControlCosineSimilarity;        
+        public float[] Temp_ShortHash = null!;
 
-        public float Train(float[] input, float learningRate)
+        public float[] Temp_Output_Hash = null!;
+
+        public void GenereateOwnedData(int inputSize, int bottleneckSize, int maxActiveUnits)
         {
-            ForwardPass(input);
+            _inputSize = inputSize;
+            _bottleneckSize = bottleneckSize;
+            _maxActiveUnits = maxActiveUnits;
 
-            float cosineSimilarity = ComputeCosineSimilarityInternal();
+            // Инициализация весов и смещений
+            _state_WeightsEncoder = CreateRandomMatrixFloat(inputSize, bottleneckSize);
+            _state_BiasesEncoder = new float[bottleneckSize];
+            _state_WeightsDecoder = CreateRandomMatrixFloat(_bottleneckSize, inputSize);
+            _state_BiasesDecoder = new float[inputSize];
+        }       
+
+        public void Prepare()
+        {
+            Temp_ShortHash = new float[_bottleneckSize];
+            Temp_Output_Hash = new float[_inputSize];
+
+            _temp_BottleneckFloat = new float[_bottleneckSize];
+
+            // Буферы для временных данных            
+            _temp_Input2 = new float[_inputSize];
+            _temp_Input3 = new float[_inputSize];
+            _temp_Bottleneck3 = new float[_bottleneckSize];
+            _temp_Bottleneck4 = new float[_bottleneckSize];
+            _temp_Bottleneck5 = new float[_bottleneckSize];
+
+            _temp_OutputFloat = new float[_inputSize];            
+        }
+
+        public float Calculate(float[] input_Hash, float learningRate)
+        {
+            Calculate_ForwardPass(input_Hash);
+
+            float cosineSimilarity = TensorPrimitives.CosineSimilarity(input_Hash, Temp_Output_Hash);
 
             #region BackwardPass
 
             // Вычисление ошибки
             //ComputeBCEGradient(input.Buffer, _decoderOutput.Buffer, _gradientBuffer.Buffer); // Не работает
-            TensorPrimitives.Subtract(input, _temp_Output, _temp_Input);
+            TensorPrimitives.Subtract(input_Hash, _temp_OutputFloat, _temp_Input2);
 
             // Градиенты для декодера
-            MatrixMultiplyGradient(_bottleneck, _temp_Input, _temp_Bottleneck4, learningRate, _weightsDecoder);
-            TensorPrimitives.Multiply(_temp_Input, learningRate, _temp_Input2);
-            TensorPrimitives.Add(_biasesDecoder, _temp_Input2, _biasesDecoder);            
+            MatrixMultiplyGradient(_temp_BottleneckFloat, _temp_Input2, _temp_Bottleneck4, learningRate, _state_WeightsDecoder);
+            TensorPrimitives.Multiply(_temp_Input2, learningRate, _temp_Input3);
+            TensorPrimitives.Add(_state_BiasesDecoder, _temp_Input3, _state_BiasesDecoder);            
 
             // Градиенты для энкодера
-            PropagateError(_temp_Input, _weightsDecoder, _bottleneck, _temp_Bottleneck4, _temp_Bottleneck5, _temp_Bottleneck3);
-            MatrixMultiplyGradient(input, _temp_Bottleneck3, _temp_Input2, learningRate, _weightsEncoder);
+            PropagateError(_temp_Input2, _state_WeightsDecoder, _temp_BottleneckFloat, _temp_Bottleneck4, _temp_Bottleneck5, _temp_Bottleneck3);
+            MatrixMultiplyGradient(input_Hash, _temp_Bottleneck3, _temp_Input3, learningRate, _state_WeightsEncoder);
             TensorPrimitives.Multiply(_temp_Bottleneck3, learningRate, _temp_Bottleneck4);
-            TensorPrimitives.Add(_biasesEncoder, _temp_Bottleneck4, _biasesEncoder);            
+            TensorPrimitives.Add(_state_BiasesEncoder, _temp_Bottleneck4, _state_BiasesEncoder);            
 
             #endregion
 
             return cosineSimilarity;
         }
 
-        public void CalculateShortHash(float[] input, float[] shortHash)
+        public void Calculate_ForwardPass(float[] input_Hash)
         {
-            _input = input;
-
             // Прямой проход: Input -> Bottleneck -> Reconstruction
-            MatrixMultiply(input, _weightsEncoder, _bottleneck);
-            TensorPrimitives.Add(_bottleneck, _biasesEncoder, _bottleneck);           
+            MatrixMultiply(input_Hash, _state_WeightsEncoder, _temp_BottleneckFloat);
+            TensorPrimitives.Add(_temp_BottleneckFloat, _state_BiasesEncoder, _temp_BottleneckFloat);
+            ApplyActivation(_temp_BottleneckFloat);
 
-            Array.Clear(shortHash);
-            foreach (var i in _bottleneck
-                .Select((value, index) => (value, index))
-                .OrderByDescending(item => item.value)
-                .Take(_maxActiveUnits)
-                .Select(item => item.index))
+            // Ограничение на количество активных единиц
+            ApplyKSparseConstraint(_temp_BottleneckFloat, _maxActiveUnits);
+
+            for (int i = 0; i < Temp_ShortHash.Length; i++)
             {
-                shortHash[i] = 1.0f;
+                Temp_ShortHash[i] = _temp_BottleneckFloat[i] > 0.5 ? 1.0f : 0.0f;
+            }
+
+            MatrixMultiply(_temp_BottleneckFloat, _state_WeightsDecoder, _temp_OutputFloat);
+            TensorPrimitives.Add(_temp_OutputFloat, _state_BiasesDecoder, _temp_OutputFloat);
+            ApplyActivation(_temp_OutputFloat);
+
+            for (int i = 0; i < Temp_Output_Hash.Length; i++)
+            {
+                Temp_Output_Hash[i] = _temp_OutputFloat[i] > 0.5 ? 1.0f : 0.0f;
             }
         }
 
-        public float ComputeCosineSimilarity(float[] input)
-        {
-            ForwardPass(input);
+        //public void GetShortHash(float[] input, float[] shortHash)
+        //{
+        //    Temp_Input_Hash = input;
 
-            float cosineSimilarity = ComputeCosineSimilarityInternal();
+        //    // Прямой проход: Input -> Bottleneck -> Reconstruction
+        //    MatrixMultiply(input, _state_WeightsEncoder, Temp_ShortHash);
+        //    TensorPrimitives.Add(Temp_ShortHash, _state_BiasesEncoder, Temp_ShortHash);           
 
-            return cosineSimilarity;
-        }
+        //    Array.Clear(shortHash);
+        //    foreach (var i in Temp_ShortHash
+        //        .Select((value, index) => (value, index))
+        //        .OrderByDescending(item => item.value)
+        //        .Take(_maxActiveUnits)
+        //        .Select(item => item.index))
+        //    {
+        //        shortHash[i] = 1.0f;
+        //    }
+        //}        
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(2))
+            using (writer.EnterBlock(1))
             {
                 writer.Write(_inputSize);
                 writer.Write(_bottleneckSize);
                 writer.Write(_maxActiveUnits);
 
-                _weightsEncoder.SerializeOwnedData(writer, null);
-                writer.WriteArrayOfSingle(_biasesEncoder);                
+                _state_WeightsEncoder.SerializeOwnedData(writer, null);
+                writer.WriteArrayOfSingle(_state_BiasesEncoder);
+                _state_WeightsDecoder.SerializeOwnedData(writer, null);
+                writer.WriteArrayOfSingle(_state_BiasesDecoder);
 
-                writer.Write(TrainingDurationMilliseconds);
-                writer.Write(CosineSimilarity);
-                writer.Write(IterationsCount);
-                writer.Write(ControlCosineSimilarity);
+                writer.Write(State_TrainingDurationMilliseconds);
+                writer.Write(State_CosineSimilarity);
+                writer.Write(State_IterationsCount);
+                writer.Write(State_ControlCosineSimilarity);
             }
         }
 
@@ -137,47 +162,22 @@ namespace Ssz.AI.Models
             {
                 switch (block.Version)
                 {
-                    case 1:
+                    case 1:                        
                         _inputSize = reader.ReadInt32();
                         _bottleneckSize = reader.ReadInt32();
                         _maxActiveUnits = reader.ReadInt32();
 
-                        _weightsEncoder = new();
-                        _weightsEncoder.DeserializeOwnedData(reader, null);
-                        _biasesEncoder = reader.ReadArrayOfSingle();
-                        
-                        if (_temp_WeightsDecoder is null)
-                            _temp_WeightsDecoder = new MatrixFloat(0, 0);
-                        _temp_WeightsDecoder!.DeserializeOwnedData(reader, null);
-                        reader.ReadArrayOfSingle();
-                        //_weightsDecoder = new();
-                        //_weightsDecoder.DeserializeOwnedData(reader, null);
-                        //_biasesDecoder = reader.ReadArrayOfSingle();
+                        _state_WeightsEncoder = new();
+                        _state_WeightsEncoder.DeserializeOwnedData(reader, null);
+                        _state_BiasesEncoder = reader.ReadArrayOfSingle();
+                        _state_WeightsDecoder = new();
+                        _state_WeightsDecoder.DeserializeOwnedData(reader, null);
+                        _state_BiasesDecoder = reader.ReadArrayOfSingle();
 
-                        TrainingDurationMilliseconds = reader.ReadInt64();
-                        CosineSimilarity = reader.ReadSingle();
-                        IterationsCount = reader.ReadInt32();
-                        ControlCosineSimilarity = reader.ReadSingle();
-
-                        _input = null;
-                        _bottleneck = new float[_bottleneckSize];                        
-                        break;
-                    case 2:
-                        _inputSize = reader.ReadInt32();
-                        _bottleneckSize = reader.ReadInt32();
-                        _maxActiveUnits = reader.ReadInt32();
-
-                        _weightsEncoder = new();
-                        _weightsEncoder.DeserializeOwnedData(reader, null);
-                        _biasesEncoder = reader.ReadArrayOfSingle();                        
-
-                        TrainingDurationMilliseconds = reader.ReadInt64();
-                        CosineSimilarity = reader.ReadSingle();
-                        IterationsCount = reader.ReadInt32();
-                        ControlCosineSimilarity = reader.ReadSingle();
-
-                        _input = null;
-                        _bottleneck = new float[_bottleneckSize];
+                        State_TrainingDurationMilliseconds = reader.ReadInt64();
+                        State_CosineSimilarity = reader.ReadSingle();
+                        State_IterationsCount = reader.ReadInt32();
+                        State_ControlCosineSimilarity = reader.ReadSingle();                        
                         break;
                 }
             }
@@ -185,49 +185,22 @@ namespace Ssz.AI.Models
 
         #endregion
 
-        private void ForwardPass(float[] input)
-        {
-            _input = input;
-
-            // Прямой проход: Input -> Bottleneck -> Reconstruction
-            MatrixMultiply(input, _weightsEncoder, _bottleneck);
-            TensorPrimitives.Add(_bottleneck, _biasesEncoder, _bottleneck);
-            ApplyActivation(_bottleneck);
-
-            // Ограничение на количество активных единиц
-            ApplyKSparseConstraint(_bottleneck, _maxActiveUnits);
-
-            MatrixMultiply(_bottleneck, _weightsDecoder, _temp_Output);
-            TensorPrimitives.Add(_temp_Output, _biasesDecoder, _temp_Output);
-            ApplyActivation(_temp_Output);
-        }
-
-        private void ApplyKSparseConstraint(float[] activations, int maxActiveUnits)
+        private void ApplyKSparseConstraint(float[] shortHash, int maxActiveUnits)
         {
             // Сохраняем только maxActive наибольших значений, остальные обнуляем
-            var indices = activations
+            var indices = shortHash
                 .Select((value, index) => (value, index))
                 .OrderByDescending(item => item.value)
                 .Take(maxActiveUnits)
                 .Select(item => item.index)
                 .ToHashSet();
 
-            for (int i = 0; i < activations.Length; i++)
+            for (int i = 0; i < shortHash.Length; i++)
             {
                 if (!indices.Contains(i))
-                    activations[i] = 0;
+                    shortHash[i] = 0.0f;                
             }
-        }
-
-        private float ComputeCosineSimilarityInternal()
-        {            
-            for (int i = 0; i < _input!.Length; i++)
-            {
-                _temp_OutputNormalized[i] = _temp_Output[i] > 0.5 ? 1.0f : 0.0f;                
-            }
-            
-            return TensorPrimitives.CosineSimilarity(_input!, _temp_OutputNormalized);
-        }
+        }        
 
         //private void ComputeBCEGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> output, Span<float> gradient)
         //{
@@ -338,26 +311,20 @@ namespace Ssz.AI.Models
         private int _bottleneckSize;
         private int _maxActiveUnits;
 
-        private MatrixFloat _weightsEncoder = null!;
-        private float[] _biasesEncoder = null!;
-        private MatrixFloat _weightsDecoder = null!;
-        private float[] _biasesDecoder = null!;
-
-        private float[]? _input;
-        private float[] _bottleneck = null!;        
+        private MatrixFloat _state_WeightsEncoder = null!;
+        private float[] _state_BiasesEncoder = null!;
+        private MatrixFloat _state_WeightsDecoder = null!;
+        private float[] _state_BiasesDecoder = null!;
 
         // Буферы для временных данных       
+        private float[] _temp_BottleneckFloat = null!;
+        private float[] _temp_OutputFloat = null!;        
 
-        private float[] _temp_Output = null!;
-        private float[] _temp_OutputNormalized = null!;
-
-        private float[] _temp_Input = null!;
         private float[] _temp_Input2 = null!;
+        private float[] _temp_Input3 = null!;
         private float[] _temp_Bottleneck3 = null!;
         private float[] _temp_Bottleneck4 = null!;
         private float[] _temp_Bottleneck5 = null!;
-
-        public static MatrixFloat? _temp_WeightsDecoder;
 
         #endregion
     }

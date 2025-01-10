@@ -44,7 +44,8 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
+            Retina = new Retina(Constants);
+            Retina.GenereateOwnedData(Constants, gradientDistribution);
 
             Cortex = new Cortex(Constants, Retina);            
             
@@ -259,7 +260,7 @@ namespace Ssz.AI.Models
                 mci =>
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.CalculateHash(mc.Temp_Hash);
+                    mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
                     //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;

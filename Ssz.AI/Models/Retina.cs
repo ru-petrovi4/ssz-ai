@@ -1,48 +1,116 @@
 ﻿using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Numerics;
+using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Models
 {
-    public class Retina
-    {        
-        public Retina(IRetinaConstants constants, GradientDistribution gradientDistribution, int angleRangesCount, int magnitudeRangesCount, int hashLength)
+    public class Retina : ISerializableModelObject
+    {
+        #region construction and destruction
+
+        public Retina(ICortexConstants constants)
         {
-            UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
-            UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);            
-
-            Random random = new(1); // Always the same numbers
-
-            Detectors = new DenseTensor<Detector>((int)((MNISTHelper.MNISTImageWidth - 1) / constants.DetectorDelta), (int)((MNISTHelper.MNISTImageHeight - 1) / constants.DetectorDelta));
+            Detectors = new DenseTensor<Detector>((int)(MNISTHelper.MNISTImageWidth / constants.DetectorDelta), (int)(MNISTHelper.MNISTImageHeight / constants.DetectorDelta));
             foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
                 foreach (int dx in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
-                    var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, magnitudeRangesCount);                       
-
-                    double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
-                    double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / angleRangesCount;
-                    if (gradientAngleHighLimit > Math.PI)
-                        gradientAngleHighLimit = gradientAngleHighLimit - 2 * Math.PI;
-
                     Detector detector = new()
                     {
                         CenterX = dx * constants.DetectorDelta,
                         CenterY = dy * constants.DetectorDelta,
-                        GradientMagnitudeLowLimit = gradientMagnitudeLowLimitIndex,
-                        GradientMagnitudeHighLimit = gradientMagnitudeHighLimitIndex,
-                        GradientAngleLowLimit = gradientAngleLowLimit,
-                        GradientAngleHighLimit = gradientAngleHighLimit,
-                        BitIndexInHash = random.Next(hashLength)
                     };
                     Detectors[dx, dy] = detector;
-                }                        
+                }
         }
 
+        #endregion
+
+        #region public functions
+
         public readonly DenseTensor<Detector> Detectors;
+
+        /// <summary>
+        ///     Generates model data after construction.
+        /// </summary>
+        public void GenereateOwnedData(ICortexConstants constants, GradientDistribution gradientDistribution)
+        {
+            UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
+            UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
+
+            Random random = new();
+            
+            foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+            {
+                var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, constants.MagnitudeRangesCount);
+
+                double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
+                double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / constants.AngleRangesCount;
+                if (gradientAngleHighLimit > Math.PI)
+                    gradientAngleHighLimit = gradientAngleHighLimit - 2 * Math.PI;
+
+                Detector detector = Detectors.Data[di];
+
+                detector.GradientMagnitudeLowLimit = gradientMagnitudeLowLimitIndex;
+                detector.GradientMagnitudeHighLimit = gradientMagnitudeHighLimitIndex;
+                detector.GradientAngleLowLimit = gradientAngleLowLimit;
+                detector.GradientAngleHighLimit = gradientAngleHighLimit;
+                detector.BitIndexInHash = random.Next(constants.HashLength);
+            }
+        }
+
+        /// <summary>
+        ///     Prepares for calculation after DeserializeOwnedData or GenereateOwnedData
+        /// </summary>
+        public void Prepare()
+        {
+        }
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            using (writer.EnterBlock(1))
+            {
+                foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+                {
+                    Detector detector = Detectors.Data[di];
+
+                    writer.Write(detector.GradientMagnitudeLowLimit);
+                    writer.Write(detector.GradientMagnitudeHighLimit);
+                    writer.Write(detector.GradientAngleLowLimit);
+                    writer.Write(detector.GradientAngleHighLimit);
+                    writer.Write(detector.BitIndexInHash);
+                }
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            using (Block block = reader.EnterBlock())
+            {
+                switch (block.Version)
+                {
+                    case 1:
+                        foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+                        {
+                            Detector detector = Detectors.Data[di];
+
+                            detector.GradientMagnitudeLowLimit = reader.ReadDouble();
+                            detector.GradientMagnitudeHighLimit = reader.ReadDouble();
+                            detector.GradientAngleLowLimit = reader.ReadDouble();
+                            detector.GradientAngleHighLimit = reader.ReadDouble();
+                            detector.BitIndexInHash = reader.ReadInt32();
+                        }
+                        break;
+                }
+            }
+        }
+
+        #endregion        
     }
 
     public class Detector
@@ -61,17 +129,20 @@ namespace Ssz.AI.Models
         ///     [0..MNISTImageHeight]
         /// </summary>
         public double CenterY { get; init; }
-        //public double Width { get; init; }
-        public double GradientMagnitudeLowLimit { get; init; }
-        public double GradientMagnitudeHighLimit { get; init; }
+        
+        public double GradientMagnitudeLowLimit;
+
+        public double GradientMagnitudeHighLimit;
+
         /// <summary>
         ///     [-pi, pi]
         /// </summary>
-        public double GradientAngleLowLimit { get; init; }
+        public double GradientAngleLowLimit;
+
         /// <summary>
         ///     [-pi, pi]
         /// </summary>
-        public double GradientAngleHighLimit { get; init; }
+        public double GradientAngleHighLimit;
 
         public int BitIndexInHash;
 
@@ -94,13 +165,5 @@ namespace Ssz.AI.Models
         }
 
         public bool Temp_IsActivated;
-    }
-
-    public interface IRetinaConstants
-    {
-        /// <summary>
-        ///     Расстояние между детекторами по коризонтали и вертикали  
-        /// </summary>
-        double DetectorDelta { get; }
-    }
+    }    
 }

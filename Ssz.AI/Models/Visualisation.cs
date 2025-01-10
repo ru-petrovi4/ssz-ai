@@ -89,9 +89,7 @@ namespace Ssz.AI.Models
                             float v = contextSyncingMatrixFloat[i, j];
                             brightness = (int)(255 * v / max);
                             if (brightness < 0)
-                                brightness = 0;
-                            else if (brightness > 255)
-                                brightness = 255;
+                                brightness = 0;                            
                         }
                         else
                         {

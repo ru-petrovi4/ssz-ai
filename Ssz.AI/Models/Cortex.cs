@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models
 {
-    public class Cortex : IOwnedDataSerializable
+    public class Cortex : ISerializableModelObject
     {
         /// <summary>
         ///     Если задано SubAreaMiniColumnsCount, то генерируется только подмножество миниколонок с центром SubAreaCenter_Cx, SubAreaCenter_Cy и количеством SubAreaMiniColumnsCount
@@ -78,7 +78,7 @@ namespace Ssz.AI.Models
                 });
 
             HashSet<Detector> subArea_DetectorsHashSet = new(retina.Detectors.Dimensions[0] * retina.Detectors.Dimensions[1]);
-            List<MiniColumn> subArea_MiniColums = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
+            List<MiniColumn> subArea_MiniColumns = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
 
             foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
@@ -86,14 +86,14 @@ namespace Ssz.AI.Models
                     var mc = MiniColumns[mcx, mcy];
                     if (mc is not null)
                     {
-                        subArea_MiniColums.Add(mc);
+                        subArea_MiniColumns.Add(mc);
                         foreach (var d in mc.Detectors)
                         {
                             subArea_DetectorsHashSet.Add(d);
                         }
                     }
                 }
-            SubArea_MiniColumns = subArea_MiniColums.ToArray();
+            SubArea_MiniColumns = subArea_MiniColumns.ToArray();
             SubArea_Detectors = subArea_DetectorsHashSet.ToArray();
 
             // Находим ближайшие миниколонки для каждой миниколонки
@@ -196,7 +196,7 @@ namespace Ssz.AI.Models
             }
         }
 
-        public class MiniColumn : IOwnedDataSerializable
+        public class MiniColumn : ISerializableModelObject
         {
             public MiniColumn(ICortexConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
             {
@@ -208,10 +208,8 @@ namespace Ssz.AI.Models
                 CenterY = centerY;
                 Temp_Hash = new float[constants.HashLength];                
                 Memories = new(constants.MemoriesMaxCount);
-                Temp_Memories = new(constants.MemoriesMaxCount);
-                Temp_ShortHash = new float[constants.ShortHashLength];                
-                Temp_ShortHashConverted = new float[constants.ShortHashLength];
-                ShortHashConversion = new int[constants.ShortHashLength];
+                Temp_Memories = new(constants.MemoriesMaxCount);                       
+                Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
                 NearestMiniColumnInfos = new List<((float, float), List<MiniColumn>)>();
             }
@@ -260,7 +258,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Преобразование из индекса Temp_ShortHash в индекс в Temp_ShortHashConverted
             /// </summary>
-            public readonly int[] ShortHashConversion;
+            public int[]? ShortHashConversion;
 
             /// <summary>
             ///     Текущая активность миниколонки при подаче примера.
@@ -284,18 +282,28 @@ namespace Ssz.AI.Models
 
             public bool Temp_IsSynced;
 
-            public float Temp_SyncQuality;
+            public float Temp_ShortHashConverted_SyncQuality;
 
-            public float Temp_SyncQualitySum;
+            public float Temp_ShortHashConverted_SyncQualitySum;
 
-            public int Temp_SyncQualitySumCount;
+            public int Temp_ShortHashConverted_SyncQualitySumCount;
+
+            public float Temp_Hash_SyncQuality;
+
+            public float Temp_Hash_SyncQualitySum;
+
+            public int Temp_Hash_SyncQualitySumCount;
+
+            public float Temp_ShortHash_AutoencoderSyncQuality;
+
+            public float Temp_ShortHash_AutoencoderSyncQualitySum;
+
+            public int Temp_ShortHash_AutoencoderSyncQualitySumCount;
 
             /// <summary>
             ///     Handle in ObjectMamager: SyncedMiniColumnsToProcess
             /// </summary>
-            public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;
-
-            public readonly float[] Temp_ShortHash;
+            public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;            
 
             public MatrixFloat? Temp_ShortHashConversionMatrix;
 
@@ -305,7 +313,7 @@ namespace Ssz.AI.Models
 
             public bool Temp_IsShortHashMustBeCalculated;
 
-            public void CalculateHash(float[] hash)
+            public void GetHash(float[] hash)
             {
                 Array.Clear(hash);
 
@@ -316,11 +324,44 @@ namespace Ssz.AI.Models
                 }
             }
 
-            public void CalculateShortHashConverted(float[] shortHash, float[] shortHashConverted)
-            {                
-                for (int i = 0; i < ShortHashConversion.Length; i++)
+            public void GetShortHashConverted(float[] shortHash, float[] shortHashConverted)
+            {
+                if (ShortHashConversion is not null)
                 {
-                    shortHashConverted[ShortHashConversion[i]] = shortHash[i];
+                    for (int i = 0; i < ShortHashConversion.Length; i++)
+                    {
+                        shortHashConverted[ShortHashConversion[i]] = shortHash[i];
+                    }
+                }
+                else
+                {
+                    Array.Clear(shortHashConverted);
+                    int onesCount = 0;
+                    foreach (int i in Enumerable.Range(0, shortHash.Length))
+                    {
+                        if (shortHash[i] == 1.0f)
+                        {
+                            foreach (int j in Enumerable.Range(0, shortHashConverted.Length))
+                            {
+                                shortHashConverted[j] += Temp_ShortHashConversionMatrix![i, j];
+                            }
+                            onesCount += 1;
+                        }
+                    }
+                    var indices = shortHashConverted
+                        .Select((value, index) => (value, index))
+                        .OrderByDescending(item => item.value)
+                        .Take(onesCount)
+                        .Select(item => item.index)
+                        .ToHashSet();
+
+                    for (int i = 0; i < shortHashConverted.Length; i++)
+                    {
+                        if (!indices.Contains(i))
+                            shortHashConverted[i] = 0.0f;
+                        else
+                            shortHashConverted[i] = 1.0f;
+                    }
                 }
             }
 
@@ -358,8 +399,17 @@ namespace Ssz.AI.Models
             public bool IsDeleted;
         }        
 
-        public interface ICortexConstants : IRetinaConstants
+        public interface ICortexConstants
         {
+            /// <summary>
+            ///     Расстояние между детекторами по коризонтали и вертикали  
+            /// </summary>
+            double DetectorDelta { get; }
+
+            int AngleRangesCount { get; }
+
+            int MagnitudeRangesCount { get; }
+
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси X
             /// </summary>

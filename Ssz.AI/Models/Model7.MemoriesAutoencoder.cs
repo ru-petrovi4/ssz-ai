@@ -40,7 +40,7 @@ namespace Ssz.AI.Models
 
             (Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
-            GradientDistribution gradientDistribution = new();
+            //GradientDistribution gradientDistribution = new();
 
             GradientMatricesCollection = new(Images.Length);
             foreach (int i in Enumerable.Range(0, Images.Length))
@@ -48,24 +48,28 @@ namespace Ssz.AI.Models
                 // Применяем оператор Собеля
                 GradientInPoint[,] gm = SobelOperator.ApplySobel(Images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
                 GradientMatricesCollection.Add(gm);
-                SobelOperator.CalculateDistribution(gm, gradientDistribution);
+                
+                //SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            Retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
+            Retina = new Retina(Constants);
+            //Retina.GenereateOwnedData(Constants, gradientDistribution);
+            //Helpers.SerializationHelper.SaveToFile("retina.bin", Retina, null);
+            Helpers.SerializationHelper.LoadFormFileIfExists("retina.bin", Retina, null);
 
-            Cortex = new Cortex(Constants, Retina);            
-            
+            Cortex = new Cortex(Constants, Retina);
+
             CurrentMnistImageIndex = -1; // Перед первым элементом
 
             // Прогон картинок
             CollectMemories_MNIST(5000);
 
             Task.Factory.StartNew(() =>
-            {                
+            {
                 LoadOrCalculateAutoencoders();
 
-                //FindHyperColumn();
-            }, TaskCreationOptions.LongRunning);            
+                FindHyperColumn();
+            }, TaskCreationOptions.LongRunning);
         }        
 
         #endregion
@@ -207,8 +211,6 @@ namespace Ssz.AI.Models
 
         public void CollectMemories_MNIST(int stepsCount)
         {
-            var random = new Random();            
-
             DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2 = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
@@ -223,8 +225,6 @@ namespace Ssz.AI.Models
 
         public void DoStep_GeneratedLine(double positionK, double angleK)
         {
-            var random = new Random();            
-
             (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
             
             //DoStep(gradientMatrix, activitiyMaxInfo, random);            
@@ -236,16 +236,14 @@ namespace Ssz.AI.Models
         {
             var cancellationToken =  Temp_StopAutoencoderFinding_CancellationTokenSource.Token;
 
-            const string fileName = @"Data\autoencoders.bin";
+            const string fileName = @"autoencoders.bin";
 
-            if (File.Exists(fileName))
+            Helpers.SerializationHelper.LoadFormFileIfExists(fileName, Cortex, "autoencoders");
+
+            foreach (int mci in Enumerable.Range(0, Cortex.MiniColumns.Data.Length))
             {
-                using (var stream = new FileStream(fileName, FileMode.Open))
-                using (var reader = new SerializationReader(stream))
-                {
-                    reader.ReadOwnedDataSerializable(Cortex, "autoencoders");
-                }
-            }            
+                Cortex.MiniColumns.Data[mci]?.Autoencoder?.Prepare();
+            }
 
             var miniColumnsToProcess = Cortex.SubArea_MiniColumns.Where(mc => mc.Autoencoder is null).ToArray();
 
@@ -268,56 +266,52 @@ namespace Ssz.AI.Models
                     }
                         
                     MiniColumn miniColumn = miniColumnsToProcess[mci];
-                    miniColumn.Autoencoder = FindAutoencoder(miniColumn);
+                    miniColumn.Autoencoder = FindAutoencoder(miniColumn);                    
 
                     int processedCountLocal = Interlocked.Increment(ref processedCount);                    
-                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCountLocal}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
+                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCountLocal}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.State_TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.State_ControlCosineSimilarity}");
                 });
 
             Logger.LogInformation($"CalculateAutoencoders(...) finished; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}");
             
             if (processedCount > 0)
             {
-                using (FileStream stream = File.Create(fileName))
-                using (var writer = new SerializationWriter(stream, true))
-                {
-                    writer.WriteOwnedDataSerializable(Cortex, "autoencoders");
-                }
+                Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoders");
             }            
         }
 
-        private void TestSerialization()
-        {
-            const string fileName = @"Data\cortex_test.bin";
+        //private void TestSerialization()
+        //{
+        //    const string fileName = @"Data\cortex_test.bin";
 
-            Autoencoder autoencoder = new(inputSize: 200, bottleneckSize: 50, maxActiveUnits: 11);           
+        //    Autoencoder autoencoder = new(inputSize: 200, bottleneckSize: 50, maxActiveUnits: 11);           
 
-            using (var memoryStream = new MemoryStream(1024 * 1024))
-            {
-                var isEmpty = false;
-                using (var writer = new SerializationWriter(memoryStream, true))
-                {
-                    writer.WriteOwnedDataSerializableAndRecreatable(autoencoder, null);
-                }
+        //    using (var memoryStream = new MemoryStream(1024 * 1024))
+        //    {
+        //        var isEmpty = false;
+        //        using (var writer = new SerializationWriter(memoryStream, true))
+        //        {
+        //            writer.WriteOwnedDataSerializableAndRecreatable(autoencoder, null);
+        //        }
 
-                if (!isEmpty)
-                    using (FileStream fileStream = File.Create(fileName))
-                    {
-                        memoryStream.WriteTo(fileStream);
-                    }
-            }
+        //        if (!isEmpty)
+        //            using (FileStream fileStream = File.Create(fileName))
+        //            {
+        //                memoryStream.WriteTo(fileStream);
+        //            }
+        //    }
 
-            Autoencoder? deserializedAutoencoder;
+        //    Autoencoder? deserializedAutoencoder;
 
-            if (File.Exists(fileName))
-            {
-                using (var stream = new FileStream(fileName, FileMode.Open))
-                using (var reader = new SerializationReader(stream))
-                {
-                    deserializedAutoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
-                }
-            }
-        }
+        //    if (File.Exists(fileName))
+        //    {
+        //        using (var stream = new FileStream(fileName, FileMode.Open))
+        //        using (var reader = new SerializationReader(stream))
+        //        {
+        //            deserializedAutoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
+        //        }
+        //    }
+        //}
 
         private void FindHyperColumn()
         {
@@ -333,6 +327,7 @@ namespace Ssz.AI.Models
             winnerMiniColumn.Temp_IsSynced = true;
             ObjectManager<MiniColumn> syncedMiniColumnsToProcess = new ObjectManager<MiniColumn>(1000);
             winnerMiniColumn.Temp_SyncedMiniColumnsToProcess_Handle = syncedMiniColumnsToProcess.Add(winnerMiniColumn);
+            winnerMiniColumn.ShortHashConversion = new int[Constants.ShortHashLength];
             foreach (int i in Enumerable.Range(0, Constants.ShortHashLength))
             {
                 winnerMiniColumn.ShortHashConversion[i] = i; // No Conversion
@@ -347,7 +342,7 @@ namespace Ssz.AI.Models
             //while (true)
             {
                 CurrentMnistImageIndex = -1; // Перед первым элементом
-                foreach (var _ in Enumerable.Range(0, 2000))
+                foreach (var _ in Enumerable.Range(0, 5000))
                 {
                     CurrentMnistImageIndex += 1;
 
@@ -389,11 +384,11 @@ namespace Ssz.AI.Models
 
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
-                        miniColumn.CalculateHash(miniColumn.Temp_Hash);
+                        miniColumn.GetHash(miniColumn.Temp_Hash);
                         if (TensorPrimitives.Sum(miniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
                             continue;
-                        miniColumn.Autoencoder!.CalculateShortHash(miniColumn.Temp_Hash, miniColumn.Temp_ShortHash);
-                        miniColumn.CalculateShortHashConverted(miniColumn.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
+                        miniColumn.Autoencoder!.Calculate_ForwardPass(miniColumn.Temp_Hash);
+                        miniColumn.GetShortHashConverted(miniColumn.Autoencoder!.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
 
                         foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0].Item2)
                         {
@@ -403,10 +398,10 @@ namespace Ssz.AI.Models
                                 {
                                     nearestMiniColumn.Temp_IsShortHashMustBeCalculated = false;
 
-                                    nearestMiniColumn.CalculateHash(nearestMiniColumn.Temp_Hash);
+                                    nearestMiniColumn.GetHash(nearestMiniColumn.Temp_Hash);
                                     if (TensorPrimitives.Sum(nearestMiniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
                                         continue;
-                                    nearestMiniColumn.Autoencoder!.CalculateShortHash(nearestMiniColumn.Temp_Hash, nearestMiniColumn.Temp_ShortHash);
+                                    nearestMiniColumn.Autoencoder!.Calculate_ForwardPass(nearestMiniColumn.Temp_Hash);
                                 }
                                 else
                                 {
@@ -428,7 +423,16 @@ namespace Ssz.AI.Models
                                     }
                                     nearestMiniColumn.Temp_ShortHashConversionMatrix_TrainingCount = 0;
                                 }
-                                bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, nearestMiniColumn.Temp_ShortHash); // miniColumn.Temp_ShortHashConverted
+
+                                nearestMiniColumn.Temp_Hash_SyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, miniColumn.Temp_Hash);
+                                nearestMiniColumn.Temp_Hash_SyncQualitySumCount += 1;
+                                nearestMiniColumn.Temp_Hash_SyncQuality = nearestMiniColumn.Temp_Hash_SyncQualitySum / nearestMiniColumn.Temp_Hash_SyncQualitySumCount;
+
+                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, nearestMiniColumn.Autoencoder!.Temp_Output_Hash);
+                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount += 1;
+                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQuality = nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum / nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount;
+
+                                bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, miniColumn.Temp_ShortHashConverted); // nearestMiniColumn.Temp_ShortHash miniColumn.Temp_ShortHashConverted
                                 if (synced)
                                 {
                                     nearestMiniColumn.Temp_IsSynced = true;
@@ -480,7 +484,7 @@ namespace Ssz.AI.Models
                 mci =>
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.CalculateHash(mc.Temp_Hash);
+                    mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
                     DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
@@ -493,19 +497,21 @@ namespace Ssz.AI.Models
         }        
 
         private Autoencoder FindAutoencoder(MiniColumn miniColumn)
-        {            
-            var autoencoder = new Autoencoder(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, maxActiveUnits: Constants.ShortHashBitsCount);
-
+        {
             Stopwatch sw = Stopwatch.StartNew();
 
-            autoencoder.CosineSimilarity = float.MaxValue;
+            var autoencoder = new Autoencoder();
+            autoencoder.GenereateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, maxActiveUnits: Constants.ShortHashBitsCount);
+            autoencoder.Prepare();
+
+            autoencoder.State_CosineSimilarity = float.MaxValue;
             float cosineSimilarity = 1.0f;
             float cosineSimilarityDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
             int memoriesCount = 0;
 
-            autoencoder.IterationsCount = 0;
+            autoencoder.State_IterationsCount = 0;
             int stopIterationsCount = 0;
             while (stopIterationsCount < 5)
             {
@@ -516,7 +522,7 @@ namespace Ssz.AI.Models
                 {
                     var input = memory.Hash;
 
-                    float cs = autoencoder.Train(input, learningRate: 0.01f);
+                    float cs = autoencoder.Calculate(input, learningRate: 0.01f);
                     if (!float.IsNaN(cs))
                     {
                         cosineSimilarity += cs;
@@ -530,15 +536,15 @@ namespace Ssz.AI.Models
                 if (memoriesCount > 0)
                     cosineSimilarity = cosineSimilarity / memoriesCount;
 
-                cosineSimilarityDelta = cosineSimilarity - autoencoder.CosineSimilarity;
+                cosineSimilarityDelta = cosineSimilarity - autoencoder.State_CosineSimilarity;
                 if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
                     stopIterationsCount += 1;
                 else
                     stopIterationsCount = 0;
 
-                autoencoder.IterationsCount += 1;
+                autoencoder.State_IterationsCount += 1;
 
-                autoencoder.CosineSimilarity = cosineSimilarity;                
+                autoencoder.State_CosineSimilarity = cosineSimilarity;                
             }
 
             cosineSimilarity = 0.0f;
@@ -546,9 +552,11 @@ namespace Ssz.AI.Models
             memoriesCount = 0;
             foreach (var memory in miniColumn.Memories.Skip(trainCount))
             {
-                var input = memory.Hash;
+                var input_Hash = memory.Hash;
 
-                float cs = autoencoder.ComputeCosineSimilarity(input);
+                autoencoder.Calculate_ForwardPass(input_Hash);
+
+                float cs = TensorPrimitives.CosineSimilarity(input_Hash, autoencoder.Temp_Output_Hash);                
                 if (!float.IsNaN(cs))
                 {
                     cosineSimilarity += cs;
@@ -561,12 +569,12 @@ namespace Ssz.AI.Models
             }
 
             if (memoriesCount > 0)
-                autoencoder.ControlCosineSimilarity = cosineSimilarity / memoriesCount;
+                autoencoder.State_ControlCosineSimilarity = cosineSimilarity / memoriesCount;
             else
-                autoencoder.ControlCosineSimilarity = 0;
+                autoencoder.State_ControlCosineSimilarity = 0;
 
             sw.Stop();
-            autoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
+            autoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
 
             return autoencoder;
         }        
@@ -602,6 +610,15 @@ namespace Ssz.AI.Models
         public class ModelConstants : ICortexConstants
         {
             /// <summary>
+            ///     Расстояние между детекторами по коризонтали и вертикали  
+            /// </summary>
+            public double DetectorDelta => 0.1;
+
+            public int AngleRangesCount => 6;
+
+            public int MagnitudeRangesCount => 4;
+
+            /// <summary>
             ///     Ширина основного изображения
             /// </summary>
             public int ImageWidth => MNISTHelper.MNISTImageWidth;
@@ -609,11 +626,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            public int ImageHeight => MNISTHelper.MNISTImageHeight;
-
-            public int AngleRangesCount => 6;
-
-            public int MagnitudeRangesCount => 4;
+            public int ImageHeight => MNISTHelper.MNISTImageHeight;            
 
             public int GeneratedImageWidth => 280;
 
@@ -627,12 +640,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси Y
             /// </summary>
-            public int CortexHeight => 200;
-
-            /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
-            /// </summary>
-            public double DetectorDelta => 0.1;
+            public int CortexHeight => 200;            
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
@@ -658,7 +666,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => null;
+            public int? SubAreaMiniColumnsCount => 400;
 
             /// <summary>
             ///     Индекс X центра подобласти [0..CortexWidth]
