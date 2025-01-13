@@ -132,6 +132,8 @@ namespace Ssz.AI.Models
                 });            
 
             VisualizationTableItems = new(1000);
+
+            InputAutoencoder = new OptimizedAutoencoder();
         }
 
         public double SubAreaMiniColumnsRadius;
@@ -150,7 +152,19 @@ namespace Ssz.AI.Models
         public MiniColumn[] SubArea_MiniColumns { get; } = null!;
         public Detector[] SubArea_Detectors { get; } = null!;
 
+        public OptimizedAutoencoder InputAutoencoder { get; } = null!;
+
         public List<VisualizationTableItem> VisualizationTableItems { get; }
+
+        public void GenereateOwnedData(Retina retina)
+        {
+            InputAutoencoder.GenereateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
+        }
+
+        public void Prepare()
+        {
+            InputAutoencoder.Prepare();
+        }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
@@ -167,6 +181,13 @@ namespace Ssz.AI.Models
                             writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
                         }
                     }
+                }
+            }
+            else if (context as string == "autoencoder")
+            {
+                using (writer.EnterBlock(1))
+                {
+                    InputAutoencoder.SerializeOwnedData(writer, null);
                 }
             }
         }
@@ -194,7 +215,19 @@ namespace Ssz.AI.Models
                     }
                 }
             }
-        }
+            else if (context as string == "autoencoder")
+            {
+                using (Block block = reader.EnterBlock())
+                {
+                    switch (block.Version)
+                    {
+                        case 1:
+                            InputAutoencoder.DeserializeOwnedData(reader, null);
+                            break;
+                    }
+                }
+            }
+        }        
 
         public class MiniColumn : ISerializableModelObject
         {

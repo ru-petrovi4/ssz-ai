@@ -23,16 +23,16 @@ using Size = System.DrawingCore.Size;
 
 namespace Ssz.AI.Models
 {
-    public class Model7
+    public class Model8
     {
         #region construction and destruction
 
         /// <summary>
         ///     Гистограммы для миниколонок
         /// </summary>
-        public Model7()
+        public Model8()
         {
-            Logger = ActivatorUtilities.CreateInstance<Logger<Model7>>(Program.Host.Services);
+            Logger = ActivatorUtilities.CreateInstance<Logger<Model8>>(Program.Host.Services);
             DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
             string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
@@ -59,17 +59,16 @@ namespace Ssz.AI.Models
             Retina.Prepare();
 
             Cortex = new Cortex(Constants, Retina);
-
-            CurrentMnistImageIndex = -1; // Перед первым элементом
-
-            // Прогон картинок
-            CollectMemories_MNIST(5000);
+            Cortex.GenereateOwnedData(Retina);            
+            //Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", Cortex, "autoencoder");
+            Cortex.Prepare();
+            //Helpers.SerializationHelper.SaveToFile(@"autoencoder.bin", Cortex, "autoencoder");
 
             Task.Factory.StartNew(() =>
             {
-                LoadOrCalculateAutoencoders();
+                LoadOrCalculateAutoencoder();
 
-                FindHyperColumn();
+                //FindHyperColumn();
             }, TaskCreationOptions.LongRunning);
         }        
 
@@ -196,11 +195,56 @@ namespace Ssz.AI.Models
         }
 
         public Image[] GetImages2()
-        {            
-            var image = Visualisation.GetContextSyncingMatrixFloatBitmap(DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix, DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix_TrainingCount);
-            if (image is null)
-                return [];
-            return [ image ];
+        {
+            //float[] inputHash = new float[Retina.Detectors.Data.Length];
+
+            //float cosineSimilarity = 0.0f;
+
+            //int calculateCountLocal = 0;
+            //CurrentMnistImageIndex = 100;
+            //foreach (var _ in Enumerable.Range(0, 10))
+            //{
+            //    CurrentMnistImageIndex += 1;
+
+            //    var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+
+            //    Array.Clear(inputHash);
+
+            //    Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: Cortex.SubArea_Detectors.Length,
+            //        di =>
+            //        {
+            //            var d = Cortex.SubArea_Detectors[di];
+            //            inputHash[di] = d.GetIsActivated(gradientMatrix) ? 1.0f : 0.0f;
+            //        });
+
+            //    float cs = Cortex.InputAutoencoder.Calculate(inputHash, learningRate: 0.01f);
+            //    if (!float.IsNaN(cs))
+            //    {
+            //        cosineSimilarity += cs;
+            //        calculateCountLocal += 1;
+            //    }
+            //    else
+            //    {
+            //    }
+            //    //float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
+            //}
+
+            //if (calculateCountLocal > 0)
+            //    Cortex.InputAutoencoder.State_ControlCosineSimilarity = cosineSimilarity / calculateCountLocal;
+            //else
+            //    Cortex.InputAutoencoder.State_ControlCosineSimilarity = 0;
+
+            //var image = Visualisation.GetContextSyncingMatrixFloatBitmap(DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix, DataToDisplayHolder.ContextSyncingMiniColumn?.Temp_ShortHashConversionMatrix_TrainingCount);
+
+            //var image = Visualisation.GetBigMatrixFloatBitmap(Cortex.InputAutoencoder.State_WeightsEncoder, 10, 100);
+
+            //if (image is null)
+            //    return [];
+            //return [ image ];
+
+            return [];
         }        
 
         public Image[] GetImages3()
@@ -233,86 +277,124 @@ namespace Ssz.AI.Models
 
         #endregion
 
-        private void LoadOrCalculateAutoencoders()
+        private void LoadOrCalculateAutoencoder()
         {
-            var cancellationToken =  Temp_StopAutoencoderFinding_CancellationTokenSource.Token;
+            var cancellationToken = Temp_StopAutoencoderFinding_CancellationTokenSource.Token;
 
-            const string fileName = @"autoencoders.bin";
+            const string fileName = @"autoencoder.bin";
 
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, Cortex, "autoencoders");
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, Cortex, "autoencoder");
 
-            foreach (int mci in Enumerable.Range(0, Cortex.MiniColumns.Data.Length))
-            {
-                Cortex.MiniColumns.Data[mci]?.Autoencoder?.Prepare();
-            }
-
-            var miniColumnsToProcess = Cortex.SubArea_MiniColumns.Where(mc => mc.Autoencoder is null).ToArray();
-
-            Logger.LogInformation($"CalculateAutoencoders(...) started; Count to Process: {miniColumnsToProcess.Length}");
+            Logger.LogInformation($"CalculateAutoencoder(...) started;");
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            int processedCount = 0;
+            float[] input_Hash = new float[Retina.Detectors.Data.Length];
 
-            Parallel.For(
-                fromInclusive: 0,
-                toExclusive: miniColumnsToProcess.Length,
-                (mci, s) =>
-                {
-                    if (cancellationToken.IsCancellationRequested)
-                    {
-                        s.Stop();
-                        Logger.LogInformation($"FindAutoencoder(...) stopped; Index: {mci}");                        
-                        return;
-                    }
-                        
-                    MiniColumn miniColumn = miniColumnsToProcess[mci];
-                    miniColumn.Autoencoder = FindAutoencoder(miniColumn);                    
+            Cortex.InputAutoencoder.State_CosineSimilarity = float.MaxValue;
+            float cosineSimilarity;
 
-                    int processedCountLocal = Interlocked.Increment(ref processedCount);                    
-                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCountLocal}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.State_TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.State_ControlCosineSimilarity}");
-                });
-
-            Logger.LogInformation($"CalculateAutoencoders(...) finished; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}");
-            
-            if (processedCount > 0)
+            try
             {
-                Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoders");
-            }            
-        }
+                Cortex.InputAutoencoder.State_IterationsCount = 0;
+                int stopIterationsCount = 0;
+                while (stopIterationsCount < 5)
+                {   
+                    CurrentMnistImageIndex = -1;
+                    foreach (var _ in Enumerable.Range(0, 5000))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (stopIterationsCount >= 5)
+                            break;
 
-        //private void TestSerialization()
-        //{
-        //    const string fileName = @"Data\cortex_test.bin";
+                        CurrentMnistImageIndex += 1;
 
-        //    Autoencoder autoencoder = new(inputSize: 200, bottleneckSize: 50, maxActiveUnits: 11);           
+                        var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
 
-        //    using (var memoryStream = new MemoryStream(1024 * 1024))
-        //    {
-        //        var isEmpty = false;
-        //        using (var writer = new SerializationWriter(memoryStream, true))
-        //        {
-        //            writer.WriteOwnedDataSerializableAndRecreatable(autoencoder, null);
-        //        }
+                        Array.Clear(input_Hash);
 
-        //        if (!isEmpty)
-        //            using (FileStream fileStream = File.Create(fileName))
-        //            {
-        //                memoryStream.WriteTo(fileStream);
-        //            }
-        //    }
+                        Stopwatch swLocal = Stopwatch.StartNew();
 
-        //    Autoencoder? deserializedAutoencoder;
+                        Parallel.For(
+                            fromInclusive: 0,
+                            toExclusive: Retina.Detectors.Data.Length,
+                            di =>
+                            {
+                                var d = Retina.Detectors.Data[di];
+                                input_Hash[di] = d.GetIsActivated(gradientMatrix) ? 1.0f : 0.0f;
+                            });
 
-        //    if (File.Exists(fileName))
-        //    {
-        //        using (var stream = new FileStream(fileName, FileMode.Open))
-        //        using (var reader = new SerializationReader(stream))
-        //        {
-        //            deserializedAutoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
-        //        }
-        //    }
-        //}
+                        cosineSimilarity = Cortex.InputAutoencoder.Calculate(input_Hash, learningRate: 0.01f);
+                        if (!float.IsNaN(cosineSimilarity))
+                        {
+                            float cosineSimilarityDelta = cosineSimilarity - Cortex.InputAutoencoder.State_CosineSimilarity;
+                            if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
+                                stopIterationsCount += 1;
+                            else
+                                stopIterationsCount = 0;
+                        }
+
+                        Cortex.InputAutoencoder.State_CosineSimilarity = cosineSimilarity;
+                        Cortex.InputAutoencoder.State_IterationsCount += 1;
+
+                        swLocal.Stop();
+
+                        Logger.LogInformation($"Image Processed: {CurrentMnistImageIndex}; CosineSimilarity: {Cortex.InputAutoencoder.State_CosineSimilarity}; ElapsedMilliseconds: {swLocal.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");                        
+                    }                    
+                }
+            }
+            catch
+            {
+            }
+
+            cosineSimilarity = 0.0f;
+            int calculateCountLocal = 0;
+
+            foreach (var _ in Enumerable.Range(0, 10))
+            {
+                CurrentMnistImageIndex += 1;
+
+                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+
+                Array.Clear(input_Hash);
+
+                Parallel.For(
+                    fromInclusive: 0,
+                    toExclusive: Retina.Detectors.Data.Length,
+                    di =>
+                    {
+                        var d = Retina.Detectors.Data[di];
+                        input_Hash[di] = d.GetIsActivated(gradientMatrix) ? 1.0f : 0.0f;
+                    });
+
+                Cortex.InputAutoencoder.Calculate_ForwardPass(input_Hash);
+                float cs = TensorPrimitives.CosineSimilarity(input_Hash, Cortex.InputAutoencoder.Temp_Output_Hash);
+                if (!float.IsNaN(cs))
+                {
+                    cosineSimilarity += cs;
+                    calculateCountLocal += 1;
+                }
+                else
+                {
+                }
+                //float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
+            }
+
+            if (calculateCountLocal > 0)
+                Cortex.InputAutoencoder.State_ControlCosineSimilarity = cosineSimilarity / calculateCountLocal;
+            else
+                Cortex.InputAutoencoder.State_ControlCosineSimilarity = 0;
+
+            sw.Stop();
+            Cortex.InputAutoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;
+
+            Logger.LogInformation($"CalculateAutoencoder(...) finished; ControlCosineSimilarity: {Cortex.InputAutoencoder.State_ControlCosineSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");
+
+            if (Cortex.InputAutoencoder.State_IterationsCount > 0)
+            {
+                Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoder");
+            }
+        }        
 
         private void FindHyperColumn()
         {

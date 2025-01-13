@@ -38,6 +38,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\Model8View.axaml.cs">
+      <DependentUpon>Model8View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\Model7View.axaml.cs">
       <DependentUpon>Model7View.axaml</DependentUpon>
     </Compile>

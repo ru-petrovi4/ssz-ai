@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.DrawingCore;
+using System.DrawingCore.Drawing2D;
 using System.Linq;
 
 namespace Ssz.AI.Models
@@ -353,7 +354,65 @@ namespace Ssz.AI.Models
                 }
 
             return bitmap;
-        }        
+        }
+
+        public static Bitmap GetBigMatrixFloatBitmap(MatrixFloat bigMatrixFloat, int j)
+        {            
+            Bitmap bitmap = new Bitmap((int)(bigMatrixFloat.Dimensions[1]), (int)(bigMatrixFloat.Dimensions[0]));
+
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+            }
+
+            foreach (int mcx in Enumerable.Range(0, bigMatrixFloat.Dimensions[1]))
+            {
+                float min = float.MaxValue;
+                float max = float.MinValue;
+
+                var columnFloat = bigMatrixFloat.GetColumn(mcx);
+
+                foreach (int mcy in Enumerable.Range(0, columnFloat.Length))
+                {
+                    var v = columnFloat[mcy];
+                    if (v > max)
+                        max = v;
+                    if (v < min)
+                        min = v;
+                }                
+
+                if (max != min)
+                {
+                    foreach (int mcy in Enumerable.Range(0, columnFloat.Length))
+                    {
+                        var v = columnFloat[mcy];
+
+                        int brightness = (int)(255 * ((v - min) / (max - min)));
+
+                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, brightness));
+                    }                    
+                }
+            } 
+            
+            //Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+            //using (Graphics g = Graphics.FromImage(resizedBitmap))
+            //{
+            //    // Устанавливаем черный фон
+            //    g.Clear(Color.Black);
+
+            //    // Настраиваем высококачественные параметры для уменьшения
+            //    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+            //    g.SmoothingMode = SmoothingMode.HighQuality;
+            //    g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+            //    g.CompositingQuality = CompositingQuality.HighQuality;
+
+            //    // Масштабируем изображение
+            //    g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+            //}
+
+            return bitmap;
+        }
     }
 }
 

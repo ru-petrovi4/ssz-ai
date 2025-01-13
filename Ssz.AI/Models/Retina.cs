@@ -73,7 +73,7 @@ namespace Ssz.AI.Models
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(1))
+            using (writer.EnterBlock(2))
             {
                 foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
                 {
@@ -95,6 +95,18 @@ namespace Ssz.AI.Models
                 switch (block.Version)
                 {
                     case 1:
+                        foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+                        {
+                            Detector detector = Detectors.Data[di];
+
+                            detector.GradientMagnitudeLowLimit = reader.ReadDouble();
+                            detector.GradientMagnitudeHighLimit = reader.ReadDouble();
+                            detector.GradientAngleLowLimit = reader.ReadDouble();
+                            detector.GradientAngleHighLimit = reader.ReadDouble();
+                            detector.BitIndexInHash = reader.ReadOptimizedInt32();
+                        }
+                        break;
+                    case 2:
                         foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
                         {
                             Detector detector = Detectors.Data[di];
@@ -163,6 +175,7 @@ namespace Ssz.AI.Models
                 activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
             return activated;
         }
+        
 
         public bool Temp_IsActivated;
     }    

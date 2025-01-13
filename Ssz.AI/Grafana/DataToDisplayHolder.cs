@@ -16,7 +16,7 @@ namespace Ssz.AI.Grafana
         /// <summary>
         ///     [mcx, mcy, bits count]
         /// </summary>
-        public ulong[,,] MiniColumsBitsCountInHashDistribution2 { get; set; } = new ulong[0, 0, 0];
+        public ulong[,,] MiniColumsBitsCountInHashDistribution2 { get; set; } = new ulong[0, 0, 0];        
 
         public MiniColumn? ContextSyncingMiniColumn { get; set; }
         //public MatrixFloat? ContextSyncingMatrixFloat { get; set; }

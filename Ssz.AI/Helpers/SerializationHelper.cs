@@ -15,7 +15,7 @@ namespace Ssz.AI.Helpers
             }
         }
 
-        public static void LoadFormFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context)
+        public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context)
         {
             fileName = @"Data\" + fileName;
             if (File.Exists(fileName))
