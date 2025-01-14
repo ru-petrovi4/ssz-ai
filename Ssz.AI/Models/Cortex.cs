@@ -133,7 +133,7 @@ namespace Ssz.AI.Models
 
             VisualizationTableItems = new(1000);
 
-            InputAutoencoder = new OptimizedAutoencoder();
+            InputAutoencoder = new Autoencoder();
         }
 
         public double SubAreaMiniColumnsRadius;
@@ -152,12 +152,13 @@ namespace Ssz.AI.Models
         public MiniColumn[] SubArea_MiniColumns { get; } = null!;
         public Detector[] SubArea_Detectors { get; } = null!;
 
-        public OptimizedAutoencoder InputAutoencoder { get; } = null!;
+        public Autoencoder InputAutoencoder { get; } = null!;
 
         public List<VisualizationTableItem> VisualizationTableItems { get; }
 
         public void GenereateOwnedData(Retina retina)
         {
+            //InputAutoencoder.GenereateOwnedData(retina.Detectors.Dimensions[0], retina.Detectors.Dimensions[1], bottleneckK: 10.0f, inputSpotDiameterK: 10.0f);
             InputAutoencoder.GenereateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
         }
 

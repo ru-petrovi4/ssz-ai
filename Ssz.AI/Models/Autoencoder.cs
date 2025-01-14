@@ -2,8 +2,6 @@
 using System;
 using System.Linq;
 using System.Numerics.Tensors;
-using Tensorflow;
-using static Tensorflow.Binding;
 
 namespace Ssz.AI.Models
 {
@@ -55,9 +53,11 @@ namespace Ssz.AI.Models
             _temp_BottleneckFloat = new float[_bottleneckSize];
 
             // Буферы для временных данных            
-            _temp_Input2 = new float[_inputSize];
+            _temp_Gradient = new float[_inputSize];
+            _temp_Gradient_Rated = new float[_inputSize];            
+            _temp_BottleneckGradient = new float[_bottleneckSize];
+            _temp_BottleneckGradient_Rated = new float[_bottleneckSize];
             _temp_Input3 = new float[_inputSize];
-            _temp_Bottleneck3 = new float[_bottleneckSize];
             _temp_Bottleneck4 = new float[_bottleneckSize];
             _temp_Bottleneck5 = new float[_bottleneckSize];
 
@@ -74,18 +74,18 @@ namespace Ssz.AI.Models
 
             // Вычисление ошибки
             //ComputeBCEGradient(input.Buffer, _decoderOutput.Buffer, _gradientBuffer.Buffer); // Не работает
-            TensorPrimitives.Subtract(input_Hash, _temp_OutputFloat, _temp_Input2);
+            TensorPrimitives.Subtract(input_Hash, _temp_OutputFloat, _temp_Gradient);
 
             // Градиенты для декодера
-            MatrixMultiplyGradient(_temp_BottleneckFloat, _temp_Input2, _temp_Bottleneck4, learningRate, _state_WeightsDecoder);
-            TensorPrimitives.Multiply(_temp_Input2, learningRate, _temp_Input3);
-            TensorPrimitives.Add(_state_BiasesDecoder, _temp_Input3, _state_BiasesDecoder);            
+            TensorPrimitives.Multiply(_temp_Gradient, learningRate, _temp_Gradient_Rated);
+            MatrixMultiplyGradient(_temp_BottleneckFloat, _temp_Gradient_Rated, _temp_Bottleneck4, _state_WeightsDecoder);            
+            TensorPrimitives.Add(_state_BiasesDecoder, _temp_Gradient_Rated, _state_BiasesDecoder);            
 
             // Градиенты для энкодера
-            PropagateError(_temp_Input2, _state_WeightsDecoder, _temp_BottleneckFloat, _temp_Bottleneck4, _temp_Bottleneck5, _temp_Bottleneck3);
-            MatrixMultiplyGradient(input_Hash, _temp_Bottleneck3, _temp_Input3, learningRate, _state_WeightsEncoder);
-            TensorPrimitives.Multiply(_temp_Bottleneck3, learningRate, _temp_Bottleneck4);
-            TensorPrimitives.Add(_state_BiasesEncoder, _temp_Bottleneck4, _state_BiasesEncoder);            
+            PropagateError(_temp_Gradient, _state_WeightsDecoder, _temp_BottleneckFloat, _temp_Bottleneck4, _temp_Bottleneck5, _temp_BottleneckGradient);
+            TensorPrimitives.Multiply(_temp_BottleneckGradient, learningRate, _temp_BottleneckGradient_Rated);
+            MatrixMultiplyGradient(input_Hash, _temp_BottleneckGradient_Rated, _temp_Input3, _state_WeightsEncoder);            
+            TensorPrimitives.Add(_state_BiasesEncoder, _temp_BottleneckGradient_Rated, _state_BiasesEncoder);            
 
             #endregion
 
@@ -98,8 +98,8 @@ namespace Ssz.AI.Models
 
             // Прямой проход: Input -> Bottleneck -> Reconstruction
             MatrixMultiply(input_Hash, _state_WeightsEncoder, _temp_BottleneckFloat);
-            TensorPrimitives.Add(_temp_BottleneckFloat, _state_BiasesEncoder, _temp_BottleneckFloat);
-            ApplyActivation(_temp_BottleneckFloat);
+            TensorPrimitives.Add(_temp_BottleneckFloat, _state_BiasesEncoder, _temp_BottleneckFloat);            
+            TensorPrimitives.Sigmoid(_temp_BottleneckFloat, _temp_BottleneckFloat);
 
             // Ограничение на количество активных единиц
             if (_bottleneck_MaxBitsCount.HasValue)
@@ -113,8 +113,8 @@ namespace Ssz.AI.Models
             }
 
             MatrixMultiply(_temp_BottleneckFloat, _state_WeightsDecoder, _temp_OutputFloat);
-            TensorPrimitives.Add(_temp_OutputFloat, _state_BiasesDecoder, _temp_OutputFloat);
-            ApplyActivation(_temp_OutputFloat);            
+            TensorPrimitives.Add(_temp_OutputFloat, _state_BiasesDecoder, _temp_OutputFloat);            
+            TensorPrimitives.Sigmoid(_temp_OutputFloat, _temp_OutputFloat);
 
             for (int i = 0; i < Temp_Output_Hash.Length; i++)
             {
@@ -172,40 +172,40 @@ namespace Ssz.AI.Models
             {
                 switch (block.Version)
                 {
-                    case 1:                        
-                        _inputSize = reader.ReadOptimizedInt32();
-                        _bottleneckSize = reader.ReadOptimizedInt32();
-                        _bottleneck_MaxBitsCount = reader.ReadOptimizedInt32();
+                    //case 1:                        
+                    //    _inputSize = reader.ReadOptimizedInt32();
+                    //    _bottleneckSize = reader.ReadOptimizedInt32();
+                    //    _bottleneck_MaxBitsCount = reader.ReadOptimizedInt32();
 
-                        _state_WeightsEncoder = new();
-                        _state_WeightsEncoder.DeserializeOwnedData(reader, null);
-                        _state_BiasesEncoder = reader.ReadArrayOfSingle();
-                        _state_WeightsDecoder = new();
-                        _state_WeightsDecoder.DeserializeOwnedData(reader, null);
-                        _state_BiasesDecoder = reader.ReadArrayOfSingle();
+                    //    _state_WeightsEncoder = new();
+                    //    _state_WeightsEncoder.DeserializeOwnedData(reader, null);
+                    //    _state_BiasesEncoder = reader.ReadArrayOfSingle();
+                    //    _state_WeightsDecoder = new();
+                    //    _state_WeightsDecoder.DeserializeOwnedData(reader, null);
+                    //    _state_BiasesDecoder = reader.ReadArrayOfSingle();
 
-                        State_TrainingDurationMilliseconds = reader.ReadInt64();
-                        State_CosineSimilarity = reader.ReadSingle();
-                        State_IterationsCount = reader.ReadOptimizedInt32();
-                        State_ControlCosineSimilarity = reader.ReadSingle();                        
-                        break;
-                    case 2:
-                        _inputSize = reader.ReadOptimizedInt32();
-                        _bottleneckSize = reader.ReadOptimizedInt32();
-                        _bottleneck_MaxBitsCount = reader.ReadNullable<Int32>();
+                    //    State_TrainingDurationMilliseconds = reader.ReadInt64();
+                    //    State_CosineSimilarity = reader.ReadSingle();
+                    //    State_IterationsCount = reader.ReadOptimizedInt32();
+                    //    State_ControlCosineSimilarity = reader.ReadSingle();                        
+                    //    break;
+                    //case 2:
+                    //    _inputSize = reader.ReadOptimizedInt32();
+                    //    _bottleneckSize = reader.ReadOptimizedInt32();
+                    //    _bottleneck_MaxBitsCount = reader.ReadNullable<Int32>();
 
-                        _state_WeightsEncoder = new();
-                        _state_WeightsEncoder.DeserializeOwnedData(reader, null);
-                        _state_BiasesEncoder = reader.ReadArrayOfSingle();
-                        _state_WeightsDecoder = new();
-                        _state_WeightsDecoder.DeserializeOwnedData(reader, null);
-                        _state_BiasesDecoder = reader.ReadArrayOfSingle();
+                    //    _state_WeightsEncoder = new();
+                    //    _state_WeightsEncoder.DeserializeOwnedData(reader, null);
+                    //    _state_BiasesEncoder = reader.ReadArrayOfSingle();
+                    //    _state_WeightsDecoder = new();
+                    //    _state_WeightsDecoder.DeserializeOwnedData(reader, null);
+                    //    _state_BiasesDecoder = reader.ReadArrayOfSingle();
 
-                        State_TrainingDurationMilliseconds = reader.ReadInt64();
-                        State_CosineSimilarity = reader.ReadSingle();
-                        State_IterationsCount = reader.ReadOptimizedInt32();
-                        State_ControlCosineSimilarity = reader.ReadSingle();
-                        break;
+                    //    State_TrainingDurationMilliseconds = reader.ReadInt64();
+                    //    State_CosineSimilarity = reader.ReadSingle();
+                    //    State_IterationsCount = reader.ReadOptimizedInt32();
+                    //    State_ControlCosineSimilarity = reader.ReadSingle();
+                    //    break;
                     case 3:
                         _inputSize = reader.ReadInt32();
                         _bottleneckSize = reader.ReadInt32();
@@ -274,13 +274,13 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient, Span<float> temp_input, float learningRate, MatrixFloat weights)
+        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient_Rated, Span<float> temp_Input, MatrixFloat weights)
         {
             for (int j = 0; j < weights.Dimensions[1]; j++)
             {
-                TensorPrimitives.Multiply(input, gradient[j] * learningRate, temp_input);
+                TensorPrimitives.Multiply(input, gradient_Rated[j], temp_Input);
                 var weightsColumn = weights.GetColumn(j);
-                TensorPrimitives.Add(weightsColumn, temp_input, weightsColumn);
+                TensorPrimitives.Add(weightsColumn, temp_Input, weightsColumn);
             }
 
             //for (int i = 0; i < weights.Dimensions[0]; i++)
@@ -292,13 +292,13 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void PropagateError(ReadOnlySpan<float> gradient, MatrixFloat weights, ReadOnlySpan<float> activations, Span<float> temp_output, Span<float> temp_output2, Span<float> output)
+        private static void PropagateError(ReadOnlySpan<float> gradient, MatrixFloat weightsDecoder, ReadOnlySpan<float> bottleneckFloat, Span<float> temp_Bottleneck4, Span<float> temp_Bottleneck5, Span<float> bottleneckGradient)
         {
-            output.Clear();
-            for (int j = 0; j < weights.Dimensions[1]; j++)
+            bottleneckGradient.Clear();
+            for (int j = 0; j < weightsDecoder.Dimensions[1]; j++)
             {
-                TensorPrimitives.Multiply(weights.GetColumn(j), gradient[j], temp_output);
-                TensorPrimitives.Add(output, temp_output, output);
+                TensorPrimitives.Multiply(weightsDecoder.GetColumn(j), gradient[j], temp_Bottleneck4);
+                TensorPrimitives.Add(bottleneckGradient, temp_Bottleneck4, bottleneckGradient);
             }
 
             //output.Clear();
@@ -310,9 +310,9 @@ namespace Ssz.AI.Models
             //    }
             //}
 
-            TensorPrimitives.Multiply(output, activations, temp_output);
-            TensorPrimitives.Multiply(temp_output, activations, temp_output2);
-            TensorPrimitives.Subtract(temp_output, temp_output2, output);
+            TensorPrimitives.Multiply(bottleneckGradient, bottleneckFloat, temp_Bottleneck4);
+            TensorPrimitives.Multiply(temp_Bottleneck4, bottleneckFloat, temp_Bottleneck5);
+            TensorPrimitives.Subtract(temp_Bottleneck4, temp_Bottleneck5, bottleneckGradient);
 
             //for (int i = 0; i < activations.Length; i++)
             //{
@@ -320,15 +320,15 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void ApplyActivation(Span<float> values)
-        {
-            TensorPrimitives.Sigmoid(values, values);
+        //private static void ApplyActivation(Span<float> values)
+        //{
+        //    TensorPrimitives.Sigmoid(values, values);
 
-            //for (int i = 0; i < values.Length; i++)
-            //{
-            //    values[i] = Sigmoid(values[i]);
-            //}
-        }
+        //    //for (int i = 0; i < values.Length; i++)
+        //    //{
+        //    //    values[i] = Sigmoid(values[i]);
+        //    //}
+        //}
 
         //private static float Sigmoid(float x)
         //{
@@ -361,9 +361,11 @@ namespace Ssz.AI.Models
         private float[] _temp_BottleneckFloat = null!;
         private float[] _temp_OutputFloat = null!;        
 
-        private float[] _temp_Input2 = null!;
-        private float[] _temp_Input3 = null!;
-        private float[] _temp_Bottleneck3 = null!;
+        private float[] _temp_Gradient = null!;
+        private float[] _temp_Gradient_Rated = null!;
+        private float[] _temp_BottleneckGradient = null!;
+        private float[] _temp_BottleneckGradient_Rated = null!;
+        private float[] _temp_Input3 = null!;        
         private float[] _temp_Bottleneck4 = null!;
         private float[] _temp_Bottleneck5 = null!;
 
