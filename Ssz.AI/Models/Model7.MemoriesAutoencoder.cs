@@ -46,14 +46,14 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, Images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobel(Images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+                GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(Images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 GradientMatricesCollection.Add(gm);
                 
                 //SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
             Retina = new Retina(Constants);
-            //Retina.GenereateOwnedData(Constants, gradientDistribution);
+            //Retina.GenerateOwnedData(Constants, gradientDistribution);
             //Helpers.SerializationHelper.SaveToFile("retina.bin", Retina, null);
             Helpers.SerializationHelper.LoadFromFileIfExists("retina.bin", Retina, null);
             Retina.Prepare();
@@ -175,7 +175,7 @@ namespace Ssz.AI.Models
             // Уменьшаем изображение до размера 28x28
 
             // Создаем пустое изображение 28x28
-            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
             using (Graphics g = Graphics.FromImage(resizedBitmap))
             {
                 // Устанавливаем черный фон
@@ -188,11 +188,11 @@ namespace Ssz.AI.Models
                 g.CompositingQuality = CompositingQuality.HighQuality;
 
                 // Масштабируем изображение
-                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
             }
 
             // Применяем оператор Собеля к первому изображению            
-            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), resizedBitmap);
+            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
         }
 
         public Image[] GetImages2()
@@ -502,7 +502,7 @@ namespace Ssz.AI.Models
             Stopwatch sw = Stopwatch.StartNew();
 
             var autoencoder = new Autoencoder();
-            autoencoder.GenereateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, bottleneck_MaxBitsCount: Constants.ShortHashBitsCount);
+            autoencoder.GenerateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, bottleneck_MaxBitsCount: Constants.ShortHashBitsCount);
             autoencoder.Prepare();
 
             autoencoder.State_CosineSimilarity = float.MaxValue;
@@ -622,12 +622,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Ширина основного изображения
             /// </summary>
-            public int ImageWidth => MNISTHelper.MNISTImageWidth;
+            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
 
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            public int ImageHeight => MNISTHelper.MNISTImageHeight;            
+            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;            
 
             public int GeneratedImageWidth => 280;
 

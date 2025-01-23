@@ -11,8 +11,8 @@ namespace Ssz.AI.Models
     {
         public static Bitmap GetBitmap(List<Detector> activatedDetectors)
         {
-            int width = MNISTHelper.MNISTImageWidth * 10;
-            int height = MNISTHelper.MNISTImageHeight * 10;
+            int width = MNISTHelper.MNISTImageWidthPixels * 10;
+            int height = MNISTHelper.MNISTImageHeightPixels * 10;
 
             Bitmap bitmap = new Bitmap(width, height);
 
@@ -219,8 +219,8 @@ namespace Ssz.AI.Models
 
         public static Bitmap GetGradientBigBitmap(GradientInPoint[,] gradientMatrix)
         {
-            int width = MNISTHelper.MNISTImageWidth * 10;
-            int height = MNISTHelper.MNISTImageHeight * 10;
+            int width = MNISTHelper.MNISTImageWidthPixels * 10;
+            int height = MNISTHelper.MNISTImageHeightPixels * 10;
 
             Bitmap gradientBitmap = new Bitmap(width, height);
 

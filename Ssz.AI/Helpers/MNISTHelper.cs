@@ -10,9 +10,9 @@ namespace Ssz.AI.Helpers
     {
         #region public functions
 
-        public const int MNISTImageWidth = 28;
+        public const int MNISTImageWidthPixels = 28;
 
-        public const int MNISTImageHeight = 28;
+        public const int MNISTImageHeightPixels = 28;
 
         public static (byte[] labels, byte[][] images) ReadMNIST(string labelsPath, string imagesPath)
         {
@@ -46,7 +46,27 @@ namespace Ssz.AI.Helpers
             }
 
             return bitmap;
-        }        
+        }
+
+        public static byte GetInterpolatedValue(byte[] mnistImageData, float centerX, float centerY)
+        {
+            int x = (int)centerX;
+            int y = (int)centerY;
+            if (x < 0 ||
+                    y < 0 ||
+                    x + 1 >= MNISTImageWidthPixels ||
+                    y + 1 >= MNISTImageHeightPixels)
+                return 0;
+
+            double tx = centerX - x;
+            double ty = centerY - y;
+            double interpolatedValue = (1 - tx) * (1 - ty) * mnistImageData[x + MNISTImageWidthPixels * y] +
+                tx * (1 - ty) * mnistImageData[x + 1 + MNISTImageWidthPixels * y] +
+                (1 - tx) * ty * mnistImageData[x + MNISTImageWidthPixels * (y + 1)] +
+                tx * ty * mnistImageData[x + 1 + MNISTImageWidthPixels * (y + 1)];            
+
+            return (byte)interpolatedValue;
+        }
 
         #endregion
 

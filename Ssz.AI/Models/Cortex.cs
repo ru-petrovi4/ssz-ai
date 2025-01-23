@@ -23,12 +23,12 @@ namespace Ssz.AI.Models
 
             DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
-            MiniColumns = new DenseTensor<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
+            MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
             double minCenterX = DetectorsVisibleRadius;
-            double maxCenterX = constants.ImageWidth - DetectorsVisibleRadius;
+            double maxCenterX = constants.ImageWidthPixels - DetectorsVisibleRadius;
             double deltaCenterX = (maxCenterX - minCenterX) / (constants.CortexWidth - 1);
             double minCenterY = DetectorsVisibleRadius;
-            double maxCenterY = constants.ImageHeight - DetectorsVisibleRadius;
+            double maxCenterY = constants.ImageHeightPixels - DetectorsVisibleRadius;
             double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);
             
             if (constants.SubAreaMiniColumnsCount is not null)
@@ -145,7 +145,7 @@ namespace Ssz.AI.Models
 
         public ICortexConstants Constants { get; }
 
-        public DenseTensor<MiniColumn> MiniColumns { get; }
+        public DenseMatrix<MiniColumn> MiniColumns { get; }
 
         public MiniColumn? CenterMiniColumn { get; private set; }
 
@@ -156,10 +156,10 @@ namespace Ssz.AI.Models
 
         public List<VisualizationTableItem> VisualizationTableItems { get; }
 
-        public void GenereateOwnedData(Retina retina)
+        public void GenerateOwnedData(Retina retina)
         {
-            //InputAutoencoder.GenereateOwnedData(retina.Detectors.Dimensions[0], retina.Detectors.Dimensions[1], bottleneckK: 10.0f, inputSpotDiameterK: 10.0f);
-            InputAutoencoder.GenereateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
+            //InputAutoencoder.GenerateOwnedData(retina.Detectors.Dimensions[0], retina.Detectors.Dimensions[1], bottleneckK: 10.0f, inputSpotDiameterK: 10.0f);
+            InputAutoencoder.GenerateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
         }
 
         public void Prepare()
@@ -457,12 +457,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Ширина основного изображения
             /// </summary>
-            int ImageWidth { get; }
+            int ImageWidthPixels { get; }
 
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            int ImageHeight { get; }
+            int ImageHeightPixels { get; }
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой

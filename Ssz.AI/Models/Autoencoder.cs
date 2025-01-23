@@ -32,7 +32,7 @@ namespace Ssz.AI.Models
 
         public float[] Temp_Output_Hash = null!;
 
-        public void GenereateOwnedData(int inputSize, int bottleneckSize, int? bottleneck_MaxBitsCount)
+        public void GenerateOwnedData(int inputSize, int bottleneckSize, int? bottleneck_MaxBitsCount)
         {
             _inputSize = inputSize;
             _bottleneckSize = bottleneckSize;

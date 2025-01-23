@@ -37,14 +37,14 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+                GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 gradientMatricesCollection.Add(gm);
-                SobelOperator.CalculateDistribution(gm, gradientDistribution);
+                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
             }
 
             //_retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
             Retina = new Retina(Constants);
-            Retina.GenereateOwnedData(Constants, gradientDistribution);
+            Retina.GenerateOwnedData(Constants, gradientDistribution);
 
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
@@ -140,7 +140,7 @@ namespace Ssz.AI.Models
             // Уменьшаем изображение до размера 28x28
 
             // Создаем пустое изображение 28x28
-            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
             using (Graphics g = Graphics.FromImage(resizedBitmap))
             {
                 // Устанавливаем черный фон
@@ -153,11 +153,11 @@ namespace Ssz.AI.Models
                 g.CompositingQuality = CompositingQuality.HighQuality;
 
                 // Масштабируем изображение
-                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
             }
 
             // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
             foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
@@ -212,9 +212,9 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : ICortexConstants
         {            
-            public int ImageWidth => MNISTHelper.MNISTImageWidth;
+            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
 
-            public int ImageHeight => MNISTHelper.MNISTImageHeight;
+            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             public int AngleRangesCount => 4;
 

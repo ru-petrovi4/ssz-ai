@@ -31,9 +31,9 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
+                GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 //gradientMatricesCollection.Add(gradientMatrix);
-                SobelOperator.CalculateDistribution(gm, gradientDistribution);
+                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
             }
 
             //Retina retina = new(gradientDistribution, AngleRangesCount, MagnitudeRangesCount, HashLength);

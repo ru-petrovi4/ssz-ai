@@ -34,7 +34,7 @@ namespace Ssz.AI.Models
 
     //    public float[] Temp_Output_Hash = null!;
 
-    //    public void GenereateOwnedData(int width, int height, float bottleneckK, float inputSpotDiameterK)
+    //    public void GenerateOwnedData(int width, int height, float bottleneckK, float inputSpotDiameterK)
     //    {
     //        _inputSize = width * height;
     //        _bottleneckSize = (int)(_inputSize / bottleneckK);

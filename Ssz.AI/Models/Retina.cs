@@ -16,7 +16,7 @@ namespace Ssz.AI.Models
 
         public Retina(ICortexConstants constants)
         {
-            Detectors = new DenseTensor<Detector>((int)(MNISTHelper.MNISTImageWidth / constants.DetectorDelta), (int)(MNISTHelper.MNISTImageHeight / constants.DetectorDelta));
+            Detectors = new DenseMatrix<Detector>((int)(MNISTHelper.MNISTImageWidthPixels / constants.DetectorDelta), (int)(MNISTHelper.MNISTImageHeightPixels / constants.DetectorDelta));
             foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
                 foreach (int dx in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
@@ -33,12 +33,12 @@ namespace Ssz.AI.Models
 
         #region public functions
 
-        public readonly DenseTensor<Detector> Detectors;
+        public readonly DenseMatrix<Detector> Detectors;
 
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
-        public void GenereateOwnedData(ICortexConstants constants, GradientDistribution gradientDistribution)
+        public void GenerateOwnedData(ICortexConstants constants, GradientDistribution gradientDistribution)
         {
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
@@ -65,7 +65,7 @@ namespace Ssz.AI.Models
         }
 
         /// <summary>
-        ///     Prepares for calculation after DeserializeOwnedData or GenereateOwnedData
+        ///     Prepares for calculation after DeserializeOwnedData or GenerateOwnedData
         /// </summary>
         public void Prepare()
         {

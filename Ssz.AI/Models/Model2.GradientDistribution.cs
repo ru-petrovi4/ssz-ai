@@ -30,8 +30,8 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidth, MNISTHelper.MNISTImageHeight);
-                SobelOperator.CalculateDistribution(gradientMatrix, gradientDistribution);
+                GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+                SobelOperator.CalculateDistributionObsolete(gradientMatrix, gradientDistribution);
             }
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();

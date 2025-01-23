@@ -5,7 +5,7 @@ namespace Ssz.AI.Models
     /// <summary>
     ///     Typical life cycle:
     ///     -  Constructor
-    ///     -  GenereateOwnedData(...) or DeserializeOwnedData(...)
+    ///     -  GenerateOwnedData(...) or DeserializeOwnedData(...)
     ///     -  Prepare(...)
     ///     -  Calculate(...), Calculates variables with State_ prefix
     ///     -  SerializeOwnedData(...)
