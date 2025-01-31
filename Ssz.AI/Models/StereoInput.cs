@@ -24,6 +24,7 @@ namespace Ssz.AI.Models
         ///     Generates model data after construction.
         /// </summary>
         public void GenerateOwnedData(
+            Random random,
             Model9.ModelConstants constants,
             GradientDistribution leftEye_GradientDistribution,
             GradientDistribution rightEye_GradientDistribution,
@@ -32,8 +33,6 @@ namespace Ssz.AI.Models
             Eye leftEye,
             Eye rightEye)
         {
-            Random random = new Random();
-
             StereoInputItems = new StereoInputItem[images.Length];            
             foreach (int i in Enumerable.Range(0, images.Length))
             {
@@ -42,19 +41,19 @@ namespace Ssz.AI.Models
                 byte[] original_Image = images[i];
                 stereoInputItem.Label = labels[i];
                 stereoInputItem.Original_Image = original_Image;
-                Direction imageNormalDirection = new Direction();
-                imageNormalDirection.XRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
-                imageNormalDirection.YRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
+                stereoInputItem.ImageNormalDirection = new Direction();
+                stereoInputItem.ImageNormalDirection.XRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
+                stereoInputItem.ImageNormalDirection.YRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
 
-                stereoInputItem.LeftEye_Image = GetEyeImage(constants, original_Image, imageNormalDirection, leftEye);
-                stereoInputItem.RightEye_Image = GetEyeImage(constants, original_Image, imageNormalDirection, rightEye);
+                stereoInputItem.LeftEye_Image = GetEyeImage(constants, original_Image, stereoInputItem.ImageNormalDirection, leftEye);
+                stereoInputItem.RightEye_Image = GetEyeImage(constants, original_Image, stereoInputItem.ImageNormalDirection, rightEye);
 
                 // Применяем оператор Собеля
                 stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftEye_Image, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
-                SobelOperator.CalculateDistribution(stereoInputItem.LeftEye_GradientMatrix, leftEye_GradientDistribution);
+                SobelOperator.CalculateDistribution(stereoInputItem.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
 
                 stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightEye_Image, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
-                SobelOperator.CalculateDistribution(stereoInputItem.RightEye_GradientMatrix, rightEye_GradientDistribution);
+                SobelOperator.CalculateDistribution(stereoInputItem.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
             }
         }
 

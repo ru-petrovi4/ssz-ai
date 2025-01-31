@@ -33,47 +33,57 @@ namespace Ssz.AI.Models
 
             GradientDistribution gradientDistribution = new();
 
-            List<GradientInPoint[,]> gradientMatricesCollection = new(images.Length);
-            foreach (int i in Enumerable.Range(0, images.Length))
+            List<DenseMatrix<GradientInPoint>> gradientMatricesCollection = new(images.Length);
+            foreach (int i in Enumerable.Range(0, 5000))
             {
                 // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+                DenseMatrix<GradientInPoint> gm = SobelOperator.ApplySobel(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 gradientMatricesCollection.Add(gm);
-                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
+                SobelOperator.CalculateDistribution(gm, gradientDistribution, Constants);
             }
 
+            Random random = new(1);
+
             //_retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
-            Retina = new Retina(Constants);
-            Retina.GenerateOwnedData(Constants, gradientDistribution);
+            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            Retina.Prepare();
+
+            Cortex = new Cortex(Constants, Retina);            
+            Cortex.GenerateOwnedData(Retina);
+            //Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", Cortex, "autoencoder");
+            Cortex.Prepare();
+
+            DetectorsActivationHash = new float[Constants.HashLength];
 
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
 
-            Cortex = new Cortex(Constants, Retina);
+            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();            
 
-            DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
-            foreach (var gradientMatrix in gradientMatricesCollection)
-            {
-                Parallel.For(
-                    fromInclusive: 0,
-                    toExclusive: Retina.Detectors.Dimensions[1],
-                    dy =>
-                    {
-                        foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
-                        {
-                            var d = Retina.Detectors[dx, dy];
-                            d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
-                        }                            
-                    });               
+            //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            //foreach (var gradientMatrix in gradientMatricesCollection)
+            //{
+            //    Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: Retina.Detectors.Dimensions[1],
+            //        dy =>
+            //        {
+            //            foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            //            {
+            //                var d = Retina.Detectors[dx, dy];
+            //                d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
+            //            }                            
+            //        });               
 
-                foreach (var miniColumn in Cortex.MiniColumns.Data)
-                {
-                    miniColumn.GetHash(miniColumn.Temp_Hash);
-                    int bitsCountInHash = (int)TensorPrimitives.Sum(miniColumn.Temp_Hash);
-                    //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
-                    dataToDisplayHolder.MiniColumsBitsCountInHashDistribution[bitsCountInHash] += 1;
-                }                
-            }
+            //    foreach (var miniColumn in Cortex.MiniColumns.Data)
+            //    {
+            //        miniColumn.GetHash(miniColumn.Temp_Hash);
+            //        int bitsCountInHash = (int)TensorPrimitives.Sum(miniColumn.Temp_Hash);
+            //        //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+            //        dataToDisplayHolder.MiniColumsBitsCountInHashDistribution[bitsCountInHash] += 1;
+            //    }                
+            //}
         }
 
         #endregion
@@ -82,8 +92,8 @@ namespace Ssz.AI.Models
 
         public readonly ModelConstants Constants = new();
 
-        public double DetectorsActivationScalarProduct0 { get; set; }
-        public double DetectorsActivationScalarProduct { get; set; }
+        public float[] DetectorsActivationHash0 { get; set; }
+        public float[] DetectorsActivationHash { get; set; }
 
         public int CenterX { get; set; }
         public int CenterXDelta { get; set; }
@@ -157,53 +167,34 @@ namespace Ssz.AI.Models
             }
 
             // Применяем оператор Собеля к первому изображению
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-
+            DenseMatrix<GradientInPoint> gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
-                {
-                    Detector d = Retina.Detectors[dx, dy];
-                    if (d.GetIsActivated(gradientMatrix))
-                        activatedDetectors.Add(d);
-                }            
+            Parallel.For(
+                    fromInclusive: 0,
+                    toExclusive: Cortex.SubArea_Detectors.Length,
+                    di =>
+                    {
+                        var d = Cortex.SubArea_Detectors[di];
+                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        if (d.Temp_IsActivated)
+                        {                            
+                            activatedDetectors.Add(d);
+                        }
+                    });
+
+            Cortex.CenterMiniColumn!.GetHash(DetectorsActivationHash);
 
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
-            if (positionK == 0.0 && angleK == 0.0)
-            {
-                _detectorsActivationBitmap0 = detectorsActivationBitmap;
-            }
 
-            double detectorsActivationScalarProduct = 0.0;
-            for (int y = 0; y < _detectorsActivationBitmap0.Height; y += 1)
-            {
-                for (int x = 0; x < _detectorsActivationBitmap0.Width; x += 1)
-                {
-                    var p0 = _detectorsActivationBitmap0.GetPixel(x, y);
-                    var p = detectorsActivationBitmap.GetPixel(x, y);
-                    if (p0.R > 0 && p.R > 0)
-                        detectorsActivationScalarProduct += 1.0;
-                }
-            }
-            DetectorsActivationScalarProduct = detectorsActivationScalarProduct;
-
-            if (positionK == 0.0 && angleK == 0.0)
-            {
-                DetectorsActivationScalarProduct0 = detectorsActivationScalarProduct;
-            }
-            
-            return [originalBitmap, resizedBitmap, gradientBitmap, detectorsActivationBitmap];
+            return [resizedBitmap, gradientBitmap, detectorsActivationBitmap];
         }
 
         #endregion        
 
-        #region private fields
+        #region private fields        
         
-        /// <summary>
-        ///     Начальная картина активации детекторов (до смещения).
-        /// </summary>
-        public Bitmap _detectorsActivationBitmap0 = null!;
 
         #endregion
 
@@ -223,7 +214,14 @@ namespace Ssz.AI.Models
             public int GeneratedImageWidth => 280;
             public int GeneratedImageHeight => 280;
 
+            /// <summary>
+            ///     Количество миниколонок в зоне коры по оси X
+            /// </summary>
             public int CortexWidth => 200;
+
+            /// <summary>
+            ///     Количество миниколонок в зоне коры по оси Y
+            /// </summary>
             public int CortexHeight => 200;
 
             /// <summary>
@@ -238,9 +236,20 @@ namespace Ssz.AI.Models
 
             public int HashLength => 200;
 
-            public int? SubAreaMiniColumnsCount => null;
-            public int SubAreaCenter_Cx => 0;
-            public int SubAreaCenter_Cy => 0;
+            /// <summary>
+            ///     Количество миниколонок в подобласти
+            /// </summary>
+            public int? SubAreaMiniColumnsCount => 400;
+
+            /// <summary>
+            ///     Индекс X центра подобласти [0..CortexWidth]
+            /// </summary>
+            public int SubAreaCenter_Cx => 100;
+
+            /// <summary>
+            ///     Индекс Y центра подобласти [0..CortexHeight]
+            /// </summary>
+            public int SubAreaCenter_Cy => 100;
 
             /// <summary>
             ///     Количество бит в хэше в первоначальном случайном воспоминании миниколонки.

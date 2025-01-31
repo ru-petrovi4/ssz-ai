@@ -52,7 +52,7 @@ namespace Ssz.AI.Models
                 //SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            Retina = new Retina(Constants);
+            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
             //Retina.GenerateOwnedData(Constants, gradientDistribution);
             //Helpers.SerializationHelper.SaveToFile("retina.bin", Retina, null);
             Helpers.SerializationHelper.LoadFromFileIfExists("retina.bin", Retina, null);
@@ -192,7 +192,7 @@ namespace Ssz.AI.Models
             }
 
             // Применяем оператор Собеля к первому изображению            
-            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
+            return (SobelOperator.ApplySobelObsoslete(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
         }
 
         public Image[] GetImages2()
@@ -372,7 +372,7 @@ namespace Ssz.AI.Models
                     for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
                     }
                     //Parallel.For(
                     //    fromInclusive: 0,
@@ -463,7 +463,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
                     });
 
             //for (int mci = 0; mci < Cortex.SubArea_MiniColumns.Length; mci += 1)

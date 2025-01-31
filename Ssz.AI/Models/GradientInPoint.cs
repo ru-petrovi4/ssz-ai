@@ -1,6 +1,8 @@
-﻿namespace Ssz.AI.Models
+﻿using Ssz.Utils.Serialization;
+
+namespace Ssz.AI.Models
 {
-    public struct GradientInPoint
+    public struct GradientInPoint : IOwnedDataSerializable
     {
         public int GradX;
         public int GradY;
@@ -12,5 +14,32 @@
         ///     [-pi, pi]
         /// </summary>
         public double Angle;
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            using (writer.EnterBlock(1))
+            {
+                writer.Write(GradX);
+                writer.Write(GradY);
+                writer.Write(Magnitude);
+                writer.Write(Angle);
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            using (Block block = reader.EnterBlock())
+            {
+                switch (block.Version)
+                {
+                    case 1:
+                        GradX = reader.ReadInt32();
+                        GradY = reader.ReadInt32();
+                        Magnitude = reader.ReadDouble();
+                        Angle = reader.ReadDouble();
+                        break;
+                }
+            }
+        }
     }
 }

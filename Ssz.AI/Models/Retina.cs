@@ -14,14 +14,16 @@ namespace Ssz.AI.Models
     {
         #region construction and destruction
 
-        public Retina(ICortexConstants constants)
+        public Retina(ICortexConstants constants, int imageWidth, int imageHeight)
         {
-            Detectors = new DenseMatrix<Detector>((int)(MNISTHelper.MNISTImageWidthPixels / constants.DetectorDelta), (int)(MNISTHelper.MNISTImageHeightPixels / constants.DetectorDelta));
+            Detectors = new DenseMatrix<Detector>((int)(imageWidth / constants.DetectorDelta), (int)(imageHeight / constants.DetectorDelta));
             foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
                 foreach (int dx in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
                     Detector detector = new()
                     {
+                        X = dx,
+                        Y = dy,
                         CenterX = dx * constants.DetectorDelta,
                         CenterY = dy * constants.DetectorDelta,
                     };
@@ -38,12 +40,10 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
-        public void GenerateOwnedData(ICortexConstants constants, GradientDistribution gradientDistribution)
+        public void GenerateOwnedData(Random random, ICortexConstants constants, GradientDistribution gradientDistribution)
         {
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
-
-            Random random = new();
             
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
@@ -127,6 +127,10 @@ namespace Ssz.AI.Models
 
     public class Detector
     {
+        public int X;
+
+        public int Y;
+
         /// <summary>
         ///     Минимальная чувствительность к модулю градиента
         /// </summary>
@@ -158,7 +162,7 @@ namespace Ssz.AI.Models
 
         public int BitIndexInHash;
 
-        public bool GetIsActivated(GradientInPoint[,] gradientMatrix, Vector2 offset = default)
+        public bool GetIsActivated(DenseMatrix<GradientInPoint> gradientMatrix, Vector2 offset = default)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
@@ -175,7 +179,24 @@ namespace Ssz.AI.Models
                 activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
             return activated;
         }
-        
+
+        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, Vector2 offset = default)
+        {
+            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
+
+            if (magnitude < GradientMagnitudeMinimum)
+                return false;
+
+            bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeHighLimit);
+            if (!activated)
+                return false;
+
+            if (GradientAngleHighLimit > GradientAngleLowLimit)
+                activated = (angle >= GradientAngleLowLimit) && (angle < GradientAngleHighLimit);
+            else
+                activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
+            return activated;
+        }
 
         public bool Temp_IsActivated;
     }    

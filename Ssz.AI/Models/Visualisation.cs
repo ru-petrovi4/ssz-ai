@@ -217,7 +217,7 @@ namespace Ssz.AI.Models
             return gradientBitmap;
         }
 
-        public static Bitmap GetGradientBigBitmap(GradientInPoint[,] gradientMatrix)
+        public static Bitmap GetGradientBigBitmap(DenseMatrix<GradientInPoint> gradientMatrix)
         {
             int width = MNISTHelper.MNISTImageWidthPixels * 10;
             int height = MNISTHelper.MNISTImageHeightPixels * 10;
@@ -228,7 +228,37 @@ namespace Ssz.AI.Models
             {
                 for (int x = 0; x < width - 10; x += 1)
                 {
-                    (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(x / 10.0, y / 10.0, gradientMatrix);                    
+                    (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(x / 10.0, y / 10.0, gradientMatrix);
+
+                    // Преобразуем магнитуду в яркость
+                    int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
+                    if (brightness > 255)
+                        brightness = 255;
+
+                    // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
+                    double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                    // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
+                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+
+                    gradientBitmap.SetPixel(x, y, color);
+                }
+            }
+
+            return gradientBitmap;
+        }
+
+        public static Bitmap GetGradientBigBitmapObsolete(GradientInPoint[,] gradientMatrix)
+        {
+            int width = MNISTHelper.MNISTImageWidthPixels * 10;
+            int height = MNISTHelper.MNISTImageHeightPixels * 10;
+
+            Bitmap gradientBitmap = new Bitmap(width, height);
+
+            for (int y = 0; y < height - 10; y += 1)
+            {
+                for (int x = 0; x < width - 10; x += 1)
+                {
+                    (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(x / 10.0, y / 10.0, gradientMatrix);                    
 
                     // Преобразуем магнитуду в яркость
                     int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))

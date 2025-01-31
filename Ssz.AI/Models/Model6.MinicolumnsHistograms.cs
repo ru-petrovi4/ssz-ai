@@ -44,8 +44,10 @@ namespace Ssz.AI.Models
                 SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
             }
 
-            Retina = new Retina(Constants);
-            Retina.GenerateOwnedData(Constants, gradientDistribution);
+            Random random = new();
+
+            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
 
             Cortex = new Cortex(Constants, Retina);            
             
@@ -80,7 +82,7 @@ namespace Ssz.AI.Models
         {   
             (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
 
-            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
 
             MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
                 
@@ -168,7 +170,7 @@ namespace Ssz.AI.Models
             }
 
             // Применяем оператор Собеля к первому изображению            
-            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
+            return (SobelOperator.ApplySobelObsoslete(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
         }
 
         public Image[] GetImages2()
@@ -177,7 +179,7 @@ namespace Ssz.AI.Models
 
             var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
 
-            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
 
             MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
 
@@ -251,7 +253,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
                     });
 
             Parallel.For(
@@ -601,7 +603,7 @@ namespace Ssz.AI.Models
             //    }
             //}
 
-            return Visualisation.GetGradientBigBitmap(totalGradientMatrix);
+            return Visualisation.GetGradientBigBitmapObsolete(totalGradientMatrix);
         }
 
         public static readonly Color[] DefaultColors =

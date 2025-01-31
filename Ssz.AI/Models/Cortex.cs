@@ -159,12 +159,12 @@ namespace Ssz.AI.Models
         public void GenerateOwnedData(Retina retina)
         {
             //InputAutoencoder.GenerateOwnedData(retina.Detectors.Dimensions[0], retina.Detectors.Dimensions[1], bottleneckK: 10.0f, inputSpotDiameterK: 10.0f);
-            InputAutoencoder.GenerateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
+            //InputAutoencoder.GenerateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
         }
 
         public void Prepare()
         {
-            InputAutoencoder.Prepare();
+            //InputAutoencoder.Prepare();
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)

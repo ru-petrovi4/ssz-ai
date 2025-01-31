@@ -7,6 +7,7 @@ using Ssz.AI.Models;
 using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using System;
+using System.Numerics.Tensors;
 
 namespace Ssz.AI.Views;
 
@@ -15,8 +16,6 @@ public partial class Model4View : UserControl
     public Model4View()
     {
         InitializeComponent();
-
-        //DataContext = new Model4ViewModel();
 
         _model4 = new Model4();
 
@@ -35,18 +34,18 @@ public partial class Model4View : UserControl
 
     private void Refresh()
     {
-        double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
-        double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
+        double position = PositionScrollBar.Value;
+        double angle = AngleScrollBar.Value;
         var images = _model4.GetImages(position, angle);
 
-        this.FindControl<TextBlock>("PositionTextBlock")!.Text = 
+        PositionTextBlock.Text = 
             new Any(_model4.CenterXDelta).ValueAsString(false);
-        this.FindControl<TextBlock>("AngleTextBlock")!.Text = 
+        AngleTextBlock.Text = 
             new Any(180.0 * _model4.AngleDelta / Math.PI).ValueAsString(false);
-        this.FindControl<TextBlock>("ScalarProductTextBlock")!.Text = 
-            new Any(_model4.DetectorsActivationScalarProduct / _model4.DetectorsActivationScalarProduct0).ValueAsString(false);
+        ScalarProductTextBlock.Text = 
+            new Any(TensorPrimitives.CosineSimilarity(_model4.DetectorsActivationHash, _model4.DetectorsActivationHash0)).ValueAsString(false);
 
-        var panel = this.FindControl<StackPanel>("MainStackPanel")!;
+        var panel = MainStackPanel;
         panel.Children.Clear();
         foreach (var image in images)
         {

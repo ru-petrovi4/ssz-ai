@@ -53,43 +53,42 @@ namespace Ssz.AI.Models
             GradientDistribution rightEye_GradientDistribution = new();
 
             StereoInput = new StereoInput();
-            StereoInput.GenerateOwnedData(
-                Constants,
-                leftEye_GradientDistribution,
-                rightEye_GradientDistribution,
-                Labels,
-                Images,
-                LeftEye,
-                RightEye);
-            Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
-            //Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
+            //StereoInput.GenerateOwnedData(
+            //    random,
+            //    Constants,
+            //    leftEye_GradientDistribution,
+            //    rightEye_GradientDistribution,
+            //    Labels,
+            //    Images,
+            //    LeftEye,
+            //    RightEye);
+            Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
             StereoInput.Prepare();
+            //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
 
-            LeftEye.Retina = new Retina(Constants);
-            LeftEye.Retina.GenerateOwnedData(Constants, leftEye_GradientDistribution);
-            Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
-            //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
+            LeftEye.Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            //LeftEye.Retina.GenerateOwnedData(random, Constants, leftEye_GradientDistribution);            
+            Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
             LeftEye.Retina.Prepare();
+            //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
-            RightEye.Retina = new Retina(Constants);
-            RightEye.Retina.GenerateOwnedData(Constants, rightEye_GradientDistribution);
-            Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);
-            //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
+            RightEye.Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            //RightEye.Retina.GenerateOwnedData(random, Constants, rightEye_GradientDistribution);            
+            Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
             RightEye.Retina.Prepare();
+            //Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);
 
-            //Cortex = new Cortex(Constants, Retina);
-            //Cortex.GenerateOwnedData(Retina);            
-            ////Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", Cortex, "autoencoder");
-            //Cortex.Prepare();
-            ////Helpers.SerializationHelper.SaveToFile(@"autoencoder.bin", Cortex, "autoencoder");
+            PreCortex = new PreCortex(Constants, LeftEye, RightEye);
+            PreCortex.GenerateOwnedData();            
+            //Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", PreCortex, null);
+            PreCortex.Prepare();            
+            //Helpers.SerializationHelper.SaveToFile(@"PreCortex.bin", PreCortex, null);
 
-            //Task.Factory.StartNew(() =>
-            //{
-            //    LoadOrCalculateAutoencoder();
-
-            //    //FindHyperColumn();
-            //}, TaskCreationOptions.LongRunning);
-        }        
+            Task.Factory.StartNew(() =>
+            {
+                PreCortex.Calculate(StereoInput, LeftEye, RightEye);
+            }, TaskCreationOptions.LongRunning);
+        }
 
         #endregion
 
@@ -108,7 +107,7 @@ namespace Ssz.AI.Models
 
         public readonly Eye RightEye;        
 
-        public readonly Cortex Cortex;        
+        public readonly PreCortex PreCortex = null!;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -143,9 +142,9 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages3()
         {
-            var image = Visualisation.GetBitmapFromMiniColumsMemoriesCount(Cortex);
+            //var image = Visualisation.GetBitmapFromMiniColumsMemoriesCount(Cortex);
 
-            return [ image ];
+            return [ ];
         }
 
         //public void CollectMemories_MNIST(int stepsCount)
@@ -162,142 +161,7 @@ namespace Ssz.AI.Models
         //    }
         //}
         
-        #endregion
-
-        private void DoStep_CollectMemories_MNIST(GradientInPoint[,] gradientMatrix)
-        {
-            //for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
-            //{
-            //    var d = Cortex.SubArea_Detectors[di];
-            //    d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
-            //}
-            Parallel.For(
-                    fromInclusive: 0,
-                    toExclusive: Cortex.SubArea_Detectors.Length,
-                    di =>
-                    {
-                        var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
-                    });
-
-            //for (int mci = 0; mci < Cortex.SubArea_MiniColumns.Length; mci += 1)
-            //{
-            //    var mc = Cortex.SubArea_MiniColumns[mci];
-            //    mc.CalculateHash(mc.Temp_Hash);
-
-            //    int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
-            //    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
-
-            //    if (bitsCountInHash >= Constants.MinBitsInHashForMemory)
-            //    {
-            //        mc.Memories.Add(new Memory { Hash = (float[])mc.Temp_Hash.Clone() });
-            //    }
-            //}
-            Parallel.For(
-                fromInclusive: 0,
-                toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
-                {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.GetHash(mc.Temp_Hash);
-
-                    int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
-                    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
-
-                    if (bitsCountInHash >= Constants.MinBitsInHashForMemory)
-                    {
-                        mc.Memories.Add(new Memory { Hash = (float[])mc.Temp_Hash.Clone() });
-                    }
-                });
-        }        
-
-        private Autoencoder FindAutoencoder(MiniColumn miniColumn)
-        {
-            Stopwatch sw = Stopwatch.StartNew();
-
-            var autoencoder = new Autoencoder();
-            autoencoder.GenerateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, bottleneck_MaxBitsCount: Constants.ShortHashBitsCount);
-            autoencoder.Prepare();
-
-            autoencoder.State_CosineSimilarity = float.MaxValue;
-            float cosineSimilarity = 1.0f;
-            float cosineSimilarityDelta = 1.0f;
-
-            int trainCount = (int)(miniColumn.Memories.Count * 0.9);
-            int memoriesCount = 0;
-
-            autoencoder.State_IterationsCount = 0;
-            int stopIterationsCount = 0;
-            while (stopIterationsCount < 5)
-            {
-                cosineSimilarity = 0.0f;
-                
-                memoriesCount = 0;
-                foreach (var memory in miniColumn.Memories.Take(trainCount))
-                {
-                    var input = memory.Hash;
-
-                    float cs = autoencoder.Calculate(input, learningRate: 0.01f);
-                    if (!float.IsNaN(cs))
-                    {
-                        cosineSimilarity += cs;
-                        memoriesCount += 1;
-                    }
-                    else
-                    {
-                    }
-                }
-
-                if (memoriesCount > 0)
-                    cosineSimilarity = cosineSimilarity / memoriesCount;
-
-                cosineSimilarityDelta = cosineSimilarity - autoencoder.State_CosineSimilarity;
-                if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
-                    stopIterationsCount += 1;
-                else
-                    stopIterationsCount = 0;
-
-                autoencoder.State_IterationsCount += 1;
-
-                autoencoder.State_CosineSimilarity = cosineSimilarity;                
-            }
-
-            cosineSimilarity = 0.0f;
-
-            memoriesCount = 0;
-            foreach (var memory in miniColumn.Memories.Skip(trainCount))
-            {
-                var input_Hash = memory.Hash;
-
-                autoencoder.Calculate_ForwardPass(input_Hash);
-
-                float cs = TensorPrimitives.CosineSimilarity(input_Hash, autoencoder.Temp_Output_Hash);                
-                if (!float.IsNaN(cs))
-                {
-                    cosineSimilarity += cs;
-                    memoriesCount += 1;
-                }
-                else
-                {
-                }
-                //float sum = TensorPrimitives.Sum(autoencoder.Bottleneck.Buffer);
-            }
-
-            if (memoriesCount > 0)
-                autoencoder.State_ControlCosineSimilarity = cosineSimilarity / memoriesCount;
-            else
-                autoencoder.State_ControlCosineSimilarity = 0;
-
-            sw.Stop();
-            autoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
-
-            return autoencoder;
-        }
-
-        private static Direction GenerateRandomImageNormalDirection(Random random)
-        {
-            return new Direction() { XRadians = 80 * MathF.PI / 180, YRadians = 0 * MathF.PI / 180 };
-        }
+        #endregion                
 
         private Eye CreateEye(Vector3DFloat pupil)
         {
@@ -305,7 +169,7 @@ namespace Ssz.AI.Models
             float kY = (float)Constants.EyeImageHeightPixels / (float)MNISTHelper.MNISTImageHeightPixels;
             Eye eye = new();
             eye.Pupil = pupil;
-            eye.Retina = new Retina(Constants);
+            eye.Retina = new Retina(Constants, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels);
             eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
             eye.RetinaUpperLeftYRadians = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
             eye.RetinaBottomRightXRadians = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
@@ -403,6 +267,10 @@ namespace Ssz.AI.Models
             public int EyeImageWidthPixels = 32;
 
             public int EyeImageHeightPixels = 32;
+
+            public int DependantDetectorsRangeWidthCount = 50;
+
+            public int DependantDetectorsRangeHeightCount = 50;
         }        
     }
 }

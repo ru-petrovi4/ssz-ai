@@ -1,7 +1,11 @@
-﻿using Ssz.AI.Grafana;
+﻿using HDF.PInvoke;
+using Ssz.AI.Grafana;
+using Ssz.AI.Helpers;
 using System;
 using System.DrawingCore;
 using System.IO;
+using System.Linq;
+using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Models
 {
@@ -40,6 +44,54 @@ namespace Ssz.AI.Models
                         {
                             gradX += sobelX[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
                             gradY += sobelY[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
+                        }
+                    }
+
+                    // Вычисляем магнитуду и угол градиента
+                    double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                    // [-pi, pi]
+                    double angle = Math.Atan2(gradY, gradX); // Угол в радианах
+
+                    GradientInPoint gradientInPoint = new()
+                    {
+                        GradX = gradX,
+                        GradY = gradY,
+                        Magnitude = magnitude,
+                        Angle = angle,
+                    };
+
+                    gradientMatrix[x, y] = gradientInPoint;
+                }
+            }
+
+            return gradientMatrix;
+        }
+
+        public static DenseMatrix<GradientInPoint> ApplySobel(Bitmap bitmap, int width, int height)
+        {
+            DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
+
+            for (int y = 1; y < height - 1; y += 1)
+            {
+                for (int x = 1; x < width - 1; x += 1)
+                {
+                    // Применяем фильтры Собеля для X и Y
+                    int gradX = 0;
+                    int gradY = 0;
+
+                    for (int i = -1; i <= 1; i += 1)
+                    {
+                        for (int j = -1; j <= 1; j += 1)
+                        {
+                            Color pixelColor = bitmap.GetPixel(x + j, y + i);
+
+                            // Вычисляем яркость (от 0.0 до 1.0)
+                            float brightness = pixelColor.GetBrightness();
+
+                            int brightnessByte = (int)(brightness * 255);
+
+                            gradX += sobelX[i + 1, j + 1] * brightnessByte;
+                            gradY += sobelY[i + 1, j + 1] * brightnessByte;
                         }
                     }
 
@@ -104,7 +156,7 @@ namespace Ssz.AI.Models
             return gradientMatrix;
         }
 
-        public static GradientInPoint[,] ApplySobel(Bitmap bitmap, int width, int height)
+        public static GradientInPoint[,] ApplySobelObsoslete(Bitmap bitmap, int width, int height)
         {
             GradientInPoint[,] gradientMatrix = new GradientInPoint[width, height];
 
@@ -152,7 +204,7 @@ namespace Ssz.AI.Models
             return gradientMatrix;
         }
 
-        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution)
+        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, ICortexConstants constants)
         {
             int width = gradientMatrix.Dimensions[0];
             int height = gradientMatrix.Dimensions[1];
@@ -173,6 +225,24 @@ namespace Ssz.AI.Models
                     gradientDistribution.AngleData[angleDegree] += 1;
                 }
             }
+
+            //var detectors = new DenseMatrix<Detector>((int)(gradientMatrix.Dimensions[0] / constants.DetectorDelta), (int)(gradientMatrix.Dimensions[1] / constants.DetectorDelta));
+            //foreach (int dy in Enumerable.Range(0, detectors.Dimensions[1]))
+            //    foreach (int dx in Enumerable.Range(0, detectors.Dimensions[0]))
+            //    {
+            //        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(dx * constants.DetectorDelta, dy * constants.DetectorDelta, gradientMatrix);
+
+            //        var magnitudeInt = (int)magnitude;
+            //        if (magnitudeInt < Detector.GradientMagnitudeMinimum)
+            //            continue;
+
+            //        gradientDistribution.MagnitudeData[magnitudeInt] += 1;
+
+            //        int angleDegree = (int)(180.0 * angle / Math.PI + 180.0);
+            //        if (angleDegree == 360)
+            //            angleDegree = 0;
+            //        gradientDistribution.AngleData[angleDegree] += 1;
+            //    }            
         }
 
         public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, GradientDistribution gradientDistribution)

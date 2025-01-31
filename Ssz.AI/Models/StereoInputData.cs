@@ -9,7 +9,7 @@ namespace Ssz.AI.Models
 
         public byte[] Original_Image = null!;
 
-        public Direction ImageDirection;
+        public Direction ImageNormalDirection;
 
         public byte[] LeftEye_Image = null!;
 
@@ -25,8 +25,8 @@ namespace Ssz.AI.Models
             {
                 writer.Write(Label);
                 writer.WriteArray(Original_Image);
-                writer.Write(ImageDirection.XRadians);
-                writer.Write(ImageDirection.YRadians);
+                writer.Write(ImageNormalDirection.XRadians);
+                writer.Write(ImageNormalDirection.YRadians);
                 writer.WriteArray(LeftEye_Image);
                 writer.WriteArray(RightEye_Image);                
                 writer.WriteOwnedDataSerializable(LeftEye_GradientMatrix, null);
@@ -43,8 +43,8 @@ namespace Ssz.AI.Models
                     case 1:
                         Label = reader.ReadByte();
                         Original_Image = reader.ReadByteArray();
-                        ImageDirection.XRadians = reader.ReadSingle();
-                        ImageDirection.YRadians = reader.ReadSingle();
+                        ImageNormalDirection.XRadians = reader.ReadSingle();
+                        ImageNormalDirection.YRadians = reader.ReadSingle();
                         LeftEye_Image = reader.ReadByteArray();
                         RightEye_Image = reader.ReadByteArray();
                         LeftEye_GradientMatrix = new();
