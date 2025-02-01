@@ -7,6 +7,7 @@ using Ssz.AI.Views;
 using Ssz.Utils;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.DrawingCore;
 using System.DrawingCore.Drawing2D;
 using System.Linq;
@@ -28,44 +29,50 @@ namespace Ssz.AI.Models
         /// </summary>
         public Model5()
         {
+            Stopwatch sw = Stopwatch.StartNew();
             string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
             string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
 
-            (Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
+            var (Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
             GradientDistribution gradientDistribution = new();
 
-            GradientMatricesCollection = new(Images.Length);
-            foreach (int i in Enumerable.Range(0, Images.Length))
-            {
-                // Применяем оператор Собеля
-                GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(Images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-                GradientMatricesCollection.Add(gm);
-                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
-            }
+            MonoInput = new MonoInput();
+            MonoInput.GenerateOwnedData(
+                Constants,
+                gradientDistribution,
+                Labels,
+                Images);
+            //SerializationHelper.LoadFromFileIfExists("MonoInput.bin", MonoInput, null);
+            MonoInput.Prepare();
+            //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);
 
-            Random random = new();
+            var t = sw.ElapsedMilliseconds;
+
+            //Random random = new();
 
             Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            //Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
+            Retina.Prepare();
+            //SerializationHelper.SaveToFile("Retina.bin", Retina, null);
 
-            Cortex = new Cortex(Constants, Retina);            
+            //Cortex = new Cortex(Constants, Retina);            
             
-            CurrentMnistImageIndex = -1; // Перед первым элементом
+            //CurrentMnistImageIndex = -1; // Перед первым элементом
 
-            // Прогон картинок
-            DoSteps_MNIST(2000);
+            //// Прогон картинок
+            //DoSteps_MNIST(2000);
         }        
 
         #endregion
 
         #region public functions
 
-        public readonly ModelConstants Constants = new();
+        public readonly ModelConstants Constants = new();        
 
-        public readonly byte[] Labels;
-        public readonly byte[][] Images;
-        public readonly List<GradientInPoint[,]> GradientMatricesCollection;
+        public MonoInput MonoInput { get; set; } = null!;
+
         public int CurrentMnistImageIndex = 0;
 
         public readonly Retina Retina;
@@ -177,13 +184,13 @@ namespace Ssz.AI.Models
         {
             //var totalMnistBitmap = GetMnistTotalBitmap();
 
-            var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+            var gradientMatrix = MonoInput.MonoInputItems[CurrentMnistImageIndex].GradientMatrix;
 
-            var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
             MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
 
-            GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
+            //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
             foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
@@ -202,7 +209,10 @@ namespace Ssz.AI.Models
                 Cortex.SubAreaMiniColumnsRadius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
-            var originalBitmap = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            var originalBitmap = MNISTHelper.GetBitmap(
+                MonoInput.MonoInputItems[CurrentMnistImageIndex].Original_Image,
+                MNISTHelper.MNISTImageWidthPixels, 
+                MNISTHelper.MNISTImageHeightPixels);
 
             return [originalBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
         }        
@@ -224,7 +234,7 @@ namespace Ssz.AI.Models
             {
                 //currentMnistImageIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[currentMnistImageIndex];
+                var gradientMatrix = MonoInput.MonoInputItems[CurrentMnistImageIndex].GradientMatrix;
 
                 Parallel.For(
                     fromInclusive: 0,
@@ -232,7 +242,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
                     });
 
                 var centerMiniColumn = Cortex.CenterMiniColumn!;
@@ -348,9 +358,9 @@ namespace Ssz.AI.Models
             {
                 CurrentMnistImageIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                var gradientMatrix = MonoInput.MonoInputItems[CurrentMnistImageIndex].GradientMatrix;
 
-                DoStep(gradientMatrix, activitiyMaxInfo, random);
+                //DoStep(gradientMatrix, activitiyMaxInfo, random);
             }
         }
 
@@ -793,9 +803,9 @@ namespace Ssz.AI.Models
         private Image GetMnistTotalBitmap()
         {
             GradientInPoint[,] totalGradientMatrix = new GradientInPoint[MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels];
-            foreach (int i in Enumerable.Range(0, GradientMatricesCollection.Count))
+            foreach (int i in Enumerable.Range(0, MonoInput.MonoInputItems.Length))
             {
-                GradientInPoint[,] gm = GradientMatricesCollection[i];
+                DenseMatrix<GradientInPoint> gm = MonoInput.MonoInputItems[i].GradientMatrix;
                 for (int y = 1; y < MNISTHelper.MNISTImageHeightPixels - 1; y += 1)
                 {
                     for (int x = 1; x < MNISTHelper.MNISTImageWidthPixels - 1; x += 1)

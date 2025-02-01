@@ -9,7 +9,7 @@ namespace Ssz.AI.Helpers
         {
             fileName = @"Data\" + fileName;
             using (FileStream stream = File.Create(fileName))
-            using (var writer = new SerializationWriter(stream, true))
+            using (var writer = new SerializationWriter(stream, false))
             {
                 writer.WriteOwnedDataSerializable(ownedDataSerializable, context);
             }

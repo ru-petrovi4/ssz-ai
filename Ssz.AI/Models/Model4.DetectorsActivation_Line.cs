@@ -207,9 +207,9 @@ namespace Ssz.AI.Models
 
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
-            public int AngleRangesCount => 4;
+            public int AngleRangesCount => 3;
 
-            public int MagnitudeRangesCount => 4;
+            public int MagnitudeRangesCount => 3;
 
             public int GeneratedImageWidth => 280;
             public int GeneratedImageHeight => 280;

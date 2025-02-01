@@ -145,7 +145,7 @@ namespace Ssz.AI.Models
 
         public ICortexConstants Constants { get; }
 
-        public DenseMatrix<MiniColumn> MiniColumns { get; }
+        public DenseMatrix<MiniColumn> MiniColumns;
 
         public MiniColumn? CenterMiniColumn { get; private set; }
 

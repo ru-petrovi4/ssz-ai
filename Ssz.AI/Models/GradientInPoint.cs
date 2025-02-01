@@ -17,29 +17,18 @@ namespace Ssz.AI.Models
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(1))
-            {
-                writer.Write(GradX);
-                writer.Write(GradY);
-                writer.Write(Magnitude);
-                writer.Write(Angle);
-            }
+            writer.Write(GradX);
+            writer.Write(GradY);
+            writer.Write(Magnitude);
+            writer.Write(Angle);
         }
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            using (Block block = reader.EnterBlock())
-            {
-                switch (block.Version)
-                {
-                    case 1:
-                        GradX = reader.ReadInt32();
-                        GradY = reader.ReadInt32();
-                        Magnitude = reader.ReadDouble();
-                        Angle = reader.ReadDouble();
-                        break;
-                }
-            }
+            GradX = reader.ReadInt32();
+            GradY = reader.ReadInt32();
+            Magnitude = reader.ReadDouble();
+            Angle = reader.ReadDouble();
         }
     }
 }

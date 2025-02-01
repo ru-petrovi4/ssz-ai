@@ -35,7 +35,7 @@ namespace Ssz.AI.Models
 
         #region public functions
 
-        public readonly DenseMatrix<Detector> Detectors;
+        public DenseMatrix<Detector> Detectors;
 
         /// <summary>
         ///     Generates model data after construction.
@@ -44,6 +44,12 @@ namespace Ssz.AI.Models
         {
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
+
+            //int maxMagnitude;
+            //for (int i = gradientDistribution.MagnitudeData.Length; i >= 0; i -= 1)
+            //{
+            //    ulong count = gradientDistribution.MagnitudeData[i];
+            //}
             
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
