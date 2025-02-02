@@ -60,7 +60,7 @@ namespace Ssz.AI.Models
 
             Cortex = new Cortex(Constants, Retina);
 
-            CurrentMnistImageIndex = -1; // Перед первым элементом
+            CurrentInputIndex = -1; // Перед первым элементом
 
             // Прогон картинок
             CollectMemories_MNIST(5000);
@@ -82,7 +82,7 @@ namespace Ssz.AI.Models
         public readonly byte[] Labels;
         public readonly byte[][] Images;
         public readonly List<GradientInPoint[,]> GradientMatricesCollection;
-        public int CurrentMnistImageIndex = 0;
+        public int CurrentInputIndex = 0;
 
         public readonly Retina Retina;
 
@@ -216,9 +216,9 @@ namespace Ssz.AI.Models
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
-                CurrentMnistImageIndex += 1;
+                CurrentInputIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                 DoStep_CollectMemories_MNIST(gradientMatrix);
             }
@@ -342,17 +342,17 @@ namespace Ssz.AI.Models
             // TEMPCODE
             //while (true)
             {
-                CurrentMnistImageIndex = -1; // Перед первым элементом
+                CurrentInputIndex = -1; // Перед первым элементом
                 foreach (var _ in Enumerable.Range(0, 5000))
                 {
-                    CurrentMnistImageIndex += 1;
+                    CurrentInputIndex += 1;
 
-                    var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                    var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
                         bool anyToProcessNearestMiniColumn = false;
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0].Item2)
+                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
                         {
                             if (!nearestMiniColumn.Temp_IsSynced)
                             {
@@ -391,7 +391,7 @@ namespace Ssz.AI.Models
                         miniColumn.Autoencoder!.Calculate_ForwardPass(miniColumn.Temp_Hash);
                         miniColumn.GetShortHashConverted(miniColumn.Autoencoder!.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
 
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0].Item2)
+                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
                         {
                             if (!nearestMiniColumn.Temp_IsSynced)
                             {
@@ -682,7 +682,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 1;
+            public int MiniColumnsMaxDistance => 1;
         }        
     }
 }

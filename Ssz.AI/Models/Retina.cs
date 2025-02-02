@@ -168,22 +168,32 @@ namespace Ssz.AI.Models
 
         public int BitIndexInHash;
 
-        public bool GetIsActivated(DenseMatrix<GradientInPoint> gradientMatrix, Vector2 offset = default)
+        public bool Temp_IsActivated;
+
+        public GradientInPoint Temp_GradientInPoint;
+
+        public void CalculateIsActivated(DenseMatrix<GradientInPoint> gradientMatrix, Vector2 offset = default)
         {
-            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
+            Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
-            if (magnitude < GradientMagnitudeMinimum)
-                return false;
+            if (Temp_GradientInPoint.Magnitude < GradientMagnitudeMinimum)
+            {
+                Temp_IsActivated = false;
+                return;
+            }
 
-            bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeHighLimit);
+            bool activated = (Temp_GradientInPoint.Magnitude >= GradientMagnitudeLowLimit) && (Temp_GradientInPoint.Magnitude < GradientMagnitudeHighLimit);
             if (!activated)
-                return false;
+            {
+                Temp_IsActivated = false;
+                return;
+            }
 
             if (GradientAngleHighLimit > GradientAngleLowLimit)
-                activated = (angle >= GradientAngleLowLimit) && (angle < GradientAngleHighLimit);
+                activated = (Temp_GradientInPoint.Angle >= GradientAngleLowLimit) && (Temp_GradientInPoint.Angle < GradientAngleHighLimit);
             else
-                activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
-            return activated;
+                activated = (Temp_GradientInPoint.Angle >= GradientAngleLowLimit) || (Temp_GradientInPoint.Angle < GradientAngleHighLimit);
+            Temp_IsActivated = activated;
         }
 
         public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, Vector2 offset = default)
@@ -202,8 +212,6 @@ namespace Ssz.AI.Models
             else
                 activated = (angle >= GradientAngleLowLimit) || (angle < GradientAngleHighLimit);
             return activated;
-        }
-
-        public bool Temp_IsActivated;
+        }        
     }    
 }

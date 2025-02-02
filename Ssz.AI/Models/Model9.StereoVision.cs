@@ -99,7 +99,7 @@ namespace Ssz.AI.Models
         public readonly byte[] Labels;
         public readonly byte[][] Images;
 
-        public int CurrentMnistImageIndex = 0;
+        public int CurrentInputIndex = 0;
 
         public StereoInput StereoInput { get; set; } = null!;
 
@@ -153,9 +153,9 @@ namespace Ssz.AI.Models
 
         //    foreach (var _ in Enumerable.Range(0, stepsCount))
         //    {
-        //        CurrentMnistImageIndex += 1;
+        //        CurrentInputIndex += 1;
 
-        //        var gradientMatrix = LeftEye_GradientMatricesCollection[CurrentMnistImageIndex];
+        //        var gradientMatrix = LeftEye_GradientMatricesCollection[CurrentInputIndex];
 
         //        DoStep_CollectMemories_MNIST(gradientMatrix);
         //    }
@@ -254,7 +254,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 1;
+            public int MiniColumnsMaxDistance => 1;
 
             public float DistanceBetweenEyes => 0.064f;
 

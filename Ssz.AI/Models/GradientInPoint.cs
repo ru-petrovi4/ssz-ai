@@ -4,8 +4,8 @@ namespace Ssz.AI.Models
 {
     public struct GradientInPoint : IOwnedDataSerializable
     {
-        public int GradX;
-        public int GradY;
+        public double GradX;
+        public double GradY;
         /// <summary>
         ///     1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
         /// </summary>
@@ -25,8 +25,8 @@ namespace Ssz.AI.Models
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            GradX = reader.ReadInt32();
-            GradY = reader.ReadInt32();
+            GradX = reader.ReadDouble();
+            GradY = reader.ReadDouble();
             Magnitude = reader.ReadDouble();
             Angle = reader.ReadDouble();
         }

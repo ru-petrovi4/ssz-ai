@@ -55,11 +55,9 @@ namespace Ssz.AI.Models
             Cortex.Prepare();
 
             DetectorsActivationHash = new float[Constants.HashLength];
-
             // Вызываем для вычисления начального вектора активации детекторов
             GetImages(0.0, 0.0);
-
-            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();            
+            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
 
             //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             //foreach (var gradientMatrix in gradientMatricesCollection)
@@ -176,7 +174,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated(gradientMatrix);
+                        d.CalculateIsActivated(gradientMatrix);
                         if (d.Temp_IsActivated)
                         {                            
                             activatedDetectors.Add(d);
@@ -264,7 +262,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 5;            
+            public int MiniColumnsMaxDistance => 5;            
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

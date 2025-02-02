@@ -2,38 +2,74 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:Ssz.AI"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="Ssz.AI.Views.Model5View">
-	<Grid>
-		<Grid.ColumnDefinitions>
-			<ColumnDefinition Width="200" />
-			<ColumnDefinition Width="200" />
-			<ColumnDefinition Width="*" />
-		</Grid.ColumnDefinitions>
+	<Grid>		
 		<Grid.RowDefinitions>
-			<RowDefinition Height="auto" />
-			<RowDefinition Height="auto" />
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="*" />
 			<RowDefinition Height="*" />
 			<RowDefinition Height="*" />
 		</Grid.RowDefinitions>
-		<TextBlock Text="Смещение (пиксели):" />
-		<TextBlock Name="PositionTextBlock" Grid.Column="1" />
-		<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
-		<TextBlock Text="Угол (градусы):" Grid.Row="1" />
-		<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
-		<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />
-
-		<StackPanel Grid.Row="3" Grid.ColumnSpan="3" Orientation="Horizontal">
+		
+		<StackPanel Orientation="Horizontal">
 			<Button Content="Step MNIST" Click="StepMnistButton_OnClick" />
 			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />
-			<Button Content="Visualize" Click="VisualizeButton_OnClick" />
+			<Button Content="Process Samples" Click="ProcessSamplesButton_OnClick" />
 		</StackPanel>
 
-		<StackPanel Name="StackPanel1" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
-		<StackPanel Name="StackPanel2" Grid.Row="5" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
-		<StackPanel Name="StackPanel3" Grid.Row="6" Grid.ColumnSpan="3" Orientation="Horizontal"></StackPanel>
+		<Grid Grid.Row="1">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />				
+			</Grid.RowDefinitions>
+			<TextBlock Text="Смещение (пиксели):" />
+			<TextBlock Name="PositionTextBlock" Grid.Column="1" />
+			<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
+			<TextBlock Text="Угол (градусы):" Grid.Row="1" />
+			<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
+			<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />
+			<TextBlock Text="Косинусное расстояние:" Grid.Row="2" />
+			<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
+		</Grid>
+
+		<StackPanel Name="StackPanel1" Grid.Row="2" Orientation="Horizontal"></StackPanel>
+		
+		<Grid Grid.Row="3">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>				
+				<RowDefinition Height="*" />
+				<RowDefinition Height="*" />
+				<RowDefinition Height="auto" />
+			</Grid.RowDefinitions>
+			
+			<TextBlock Text="Притяжение:" />
+			<TextBlock Name="PositiveTextBlock" Grid.Column="1" />
+			<local:Sliders Name="PositiveSliders" Grid.Column="2" />
+
+			<TextBlock Text="Отталкивание:" Grid.Row="1" />
+			<TextBlock Name="NegativeTextBlock" Grid.Row="1" Grid.Column="1" />
+			<local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="2" />
+			
+			<TextBlock Text="Порог:" Grid.Row="2" />
+			<TextBlock Name="LevelTextBlock" Text="{Binding Value, ElementName=LevelScrollBar}" Grid.Row="2" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.66" Minimum="0" Maximum="1" />			
+		</Grid>		
+		
+		<StackPanel Name="StackPanel2" Grid.Row="4" Orientation="Horizontal"></StackPanel>
+		<!--
+		<StackPanel Name="StackPanel3" Grid.Row="5" Orientation="Horizontal"></StackPanel>-->
 	</Grid>	
 </UserControl>

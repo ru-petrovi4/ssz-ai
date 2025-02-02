@@ -51,7 +51,7 @@ namespace Ssz.AI.Helpers
 
         public static Bitmap GetSubBitmap(Bitmap bitmap, int centerX, int centerY, double radius)
         {
-            Bitmap subBitmap = new Bitmap((int)(radius * 2), (int)(radius * 2));
+            Bitmap subBitmap = new Bitmap((int)(radius * 2) + 1, (int)(radius * 2) + 1);
 
             // Проходим по каждому пикселю и устанавливаем его в Bitmap
             for (int y = (int)(centerY - radius); y < (int)(centerY + radius); y += 1)

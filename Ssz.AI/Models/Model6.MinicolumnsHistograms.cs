@@ -51,7 +51,7 @@ namespace Ssz.AI.Models
 
             Cortex = new Cortex(Constants, Retina);            
             
-            CurrentMnistImageIndex = -1; // Перед первым элементом
+            CurrentInputIndex = -1; // Перед первым элементом
 
             // Прогон картинок
             DoSteps_MNIST(2000);
@@ -66,7 +66,7 @@ namespace Ssz.AI.Models
         public readonly byte[] Labels;
         public readonly byte[][] Images;
         public readonly List<GradientInPoint[,]> GradientMatricesCollection;
-        public int CurrentMnistImageIndex = 0;
+        public int CurrentInputIndex = 0;
 
         public readonly Retina Retina;
 
@@ -177,7 +177,7 @@ namespace Ssz.AI.Models
         {
             //var totalMnistBitmap = GetMnistTotalBitmap();
 
-            var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+            var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
             var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
 
@@ -202,7 +202,7 @@ namespace Ssz.AI.Models
                 Cortex.SubAreaMiniColumnsRadius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
-            var originalBitmap = MNISTHelper.GetBitmap(Images[CurrentMnistImageIndex], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            var originalBitmap = MNISTHelper.GetBitmap(Images[CurrentInputIndex], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             return [originalBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
         }        
@@ -224,9 +224,9 @@ namespace Ssz.AI.Models
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
-                CurrentMnistImageIndex += 1;
+                CurrentInputIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                 DoStep(gradientMatrix, dataToDisplayHolder, random);
             }
@@ -283,7 +283,7 @@ namespace Ssz.AI.Models
                 mci =>
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci]);
+                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci], Cortex);
                 });
 
             GetSuperActivitiyMaxInfo(activitiyMaxInfo);
@@ -299,7 +299,7 @@ namespace Ssz.AI.Models
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
-                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc);
+                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Cortex);
 
                 float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
                 if (a > activitiyMaxInfo.MaxActivity)
@@ -704,7 +704,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 7;
+            public int MiniColumnsMaxDistance => 7;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

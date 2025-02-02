@@ -21,6 +21,9 @@ namespace Ssz.AI.Models
         {
             Constants = constants;
 
+            PositiveK = new float[Constants.MiniColumnsMaxDistance + 1];
+            NegativeK = new float[Constants.MiniColumnsMaxDistance + 1];
+
             DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
             MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
@@ -104,30 +107,29 @@ namespace Ssz.AI.Models
                 {
                     MiniColumn mc = SubArea_MiniColumns[mci];
 
-                    foreach (int r in Enumerable.Range(0, constants.NearestMiniColumnsDelta))
+                    foreach (int r in Enumerable.Range(0, constants.MiniColumnsMaxDistance + 1))
                     {
-                        mc.NearestMiniColumnInfos.Add(((1.0f, 1.0f), new List<MiniColumn>(constants.NearestMiniColumnsDelta * 8)));
+                        mc.NearestMiniColumnInfos.Add(new List<MiniColumn>(r * 8 + 1));
                     }
 
-                    for (int mcy = mc.MCY - constants.NearestMiniColumnsDelta; mcy <= mc.MCY + constants.NearestMiniColumnsDelta; mcy += 1)
-                        for (int mcx = mc.MCX - constants.NearestMiniColumnsDelta; mcx <= mc.MCX + constants.NearestMiniColumnsDelta; mcx += 1)
+                    for (int mcy = mc.MCY - constants.MiniColumnsMaxDistance; mcy <= mc.MCY + constants.MiniColumnsMaxDistance; mcy += 1)
+                        for (int mcx = mc.MCX - constants.MiniColumnsMaxDistance; mcx <= mc.MCX + constants.MiniColumnsMaxDistance; mcx += 1)
                         {
                             if (mcx < 0 ||
                                     mcx >= constants.CortexWidth ||
                                     mcy < 0 ||
-                                    mcy >= constants.CortexHeight ||
-                                    (mcx == mc.MCX && mcy == mc.MCY))
+                                    mcy >= constants.CortexHeight) // (mcx == mc.MCX && mcy == mc.MCY)
                                 continue;                            
 
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
                                 continue;
-                            mc.NearestMiniColumnInfos[0].Item2.Add(nearestMc);
-                            //double r = Math.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
-                            //if (r < constants.NearestMiniColumnsDelta)
-                            //{
-                            //    mc.NearestMiniColumnInfos[(int)(r - 0.5f)].Item2.Add(nearestMc);
-                            //}
+                            //mc.NearestMiniColumnInfos[0].Item2.Add(nearestMc);
+                            double r = Math.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY)) + 0.000001;
+                            if (r < constants.MiniColumnsMaxDistance + 0.00001)
+                            {
+                                mc.NearestMiniColumnInfos[(int)r].Add(nearestMc);
+                            }
                         }
                 });            
 
@@ -144,6 +146,12 @@ namespace Ssz.AI.Models
         public double DetectorsVisibleRadius { get; }
 
         public ICortexConstants Constants { get; }
+
+        public float[] PositiveK;
+
+        public float[] NegativeK;
+
+        public float PositiveCosineSimilarity = 0.66f;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -245,7 +253,7 @@ namespace Ssz.AI.Models
                 Temp_Memories = new(constants.MemoriesMaxCount);                       
                 Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
-                NearestMiniColumnInfos = new List<((float, float), List<MiniColumn>)>();
+                NearestMiniColumnInfos = new List<List<MiniColumn>>();
             }
 
             public readonly ICortexConstants Constants;
@@ -265,7 +273,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
             /// </summary>
-            public readonly List<((float, float), List<MiniColumn>)> NearestMiniColumnInfos;
+            public readonly List<List<MiniColumn>> NearestMiniColumnInfos;
 
             /// <summary>
             ///     [0..MNISTImageWidth]
@@ -399,6 +407,31 @@ namespace Ssz.AI.Models
                 }
             }
 
+            public GradientInPoint GetAverageGradientInPoint()
+            {                
+                double gradX = 0.0;
+                double gradY = 0.0;
+                foreach (var detector in Detectors)
+                {
+                    gradX += detector.Temp_GradientInPoint.GradX;
+                    gradY += detector.Temp_GradientInPoint.GradY;
+                }
+                if (Detectors.Count > 0)
+                {
+                    gradX /= Detectors.Count;
+                    gradY /= Detectors.Count;
+                }
+                double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+                return new GradientInPoint
+                {
+                    GradX = gradX,
+                    GradY = gradY,
+                    Angle = angle,
+                    Magnitude = magnitude
+                };
+            }
+
             public void SerializeOwnedData(SerializationWriter writer, object? context)
             {
                 if (context as string == "autoencoders")
@@ -430,7 +463,12 @@ namespace Ssz.AI.Models
         public struct Memory
         {
             public float[] Hash;
+
             public bool IsDeleted;
+
+            public GradientInPoint AverageGradientInPoint;
+
+            public int InputIndex;
         }        
 
         public interface ICortexConstants
@@ -507,7 +545,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            int NearestMiniColumnsDelta { get; }
+            int MiniColumnsMaxDistance { get; }
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

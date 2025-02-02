@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:local="clr-namespace:Ssz.AI"
+			 x:DataType="local:SlidersViewModel"
+             x:Class="Ssz.AI.Sliders">
+	<!-- Устанавливаем DataContext равным ViewModel -->
+	<UserControl.DataContext>
+		<local:SlidersViewModel/>
+	</UserControl.DataContext>
+
+	<Grid>
+		<!-- ItemsControl создаёт слайдер для каждого элемента из SlidersItems -->
+		<ItemsControl ItemsSource="{Binding SlidersItems}">
+			<!-- Определяем панель для размещения элементов по горизонтали -->
+			<ItemsControl.ItemsPanel>
+				<ItemsPanelTemplate>
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+				</ItemsPanelTemplate>
+			</ItemsControl.ItemsPanel>
+
+			<!-- Шаблон элемента: вертикальное расположение слайдера и метки частоты -->
+			<ItemsControl.ItemTemplate>
+				<DataTemplate>
+					<Grid RowDefinitions="Auto,Auto,*">						
+						<TextBlock Text="{Binding Label}" />
+						<TextBlock Grid.Row="1" Text="{Binding Value, StringFormat=F02}" />
+						<!-- Слайдер, привязанный к значению Value -->
+						<Slider Grid.Row="2" Minimum="0" Maximum="1"
+								Value="{Binding Value}"
+								Orientation="Vertical" />
+					</Grid>
+				</DataTemplate>
+			</ItemsControl.ItemTemplate>
+		</ItemsControl>
+	</Grid>
+</UserControl>

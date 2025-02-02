@@ -26,7 +26,7 @@ namespace Ssz.AI.Models
         /// </summary>
         public void GenerateOwnedData(
             ICortexConstants constants,
-            GradientDistribution gradientDistribution,
+            GradientDistribution? gradientDistribution,
             byte[] labels, 
             byte[][] images)
         {
@@ -40,7 +40,8 @@ namespace Ssz.AI.Models
 
                 // Применяем оператор Собеля
                 monoInputItem.GradientMatrix = SobelOperator.ApplySobel(original_Image, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);                
-                SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
+                if (gradientDistribution is not null)
+                    SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
 
                 MonoInputItems[i] = monoInputItem;
             }

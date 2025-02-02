@@ -228,15 +228,15 @@ namespace Ssz.AI.Models
             {
                 for (int x = 0; x < width - 10; x += 1)
                 {
-                    (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(x / 10.0, y / 10.0, gradientMatrix);
+                    GradientInPoint gradientInPoint = MathHelper.GetInterpolatedGradient(x / 10.0, y / 10.0, gradientMatrix);
 
                     // Преобразуем магнитуду в яркость
-                    int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
+                    int brightness = (int)(255 * gradientInPoint.Magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
                     if (brightness > 255)
                         brightness = 255;
 
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
-                    double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                    double normalizedAngle = (gradientInPoint.Angle + Math.PI) / (2 * Math.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
                     Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
 
@@ -376,6 +376,52 @@ namespace Ssz.AI.Models
                         int brightness = (int)(255 * ((float)(mc.Memories.Count - minMemoriesCount)) / (maxMemoriesCount - minMemoriesCount));
 
                         bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, brightness));
+                    }
+                    else
+                    {
+                        bitmap.SetPixel(mcx, mcy, Color.Black);
+                    }
+                }
+
+            return bitmap;
+        }
+
+        public static Bitmap GetBitmapFromMiniColumsMemoriesColor(Cortex cortex)
+        {
+            Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);            
+
+            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+                {
+                    var mc = cortex.MiniColumns[mcx, mcy];
+                    if (mc is not null && mc.Memories.Count > 0)
+                    {
+                        double gradX = 0.0;
+                        double gradY = 0.0;
+                        foreach (var memory in mc.Memories)
+                        {
+                            gradX += memory.AverageGradientInPoint.GradX;
+                            gradY += memory.AverageGradientInPoint.GradY;
+                        }
+                        if (mc.Memories.Count > 0)
+                        {
+                            gradX /= mc.Memories.Count;
+                            gradY /= mc.Memories.Count;
+                        }
+                        double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                        double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+                        // Преобразуем магнитуду в яркость
+                        int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
+                        if (brightness > 255)
+                            brightness = 255;
+
+                        // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
+                        double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                        // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
+                        Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+
+                        bitmap.SetPixel(mcx, mcy, color);
                     }
                     else
                     {

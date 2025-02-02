@@ -81,7 +81,7 @@ namespace Ssz.AI.Models
         public readonly byte[] Labels;
         public readonly byte[][] Images;
         public readonly List<GradientInPoint[,]> GradientMatricesCollection;
-        public int CurrentMnistImageIndex = 0;
+        public int CurrentInputIndex = 0;
 
         public readonly Retina Retina;
 
@@ -201,12 +201,12 @@ namespace Ssz.AI.Models
             //float cosineSimilarity = 0.0f;
 
             //int calculateCountLocal = 0;
-            //CurrentMnistImageIndex = 100;
+            //CurrentInputIndex = 100;
             //foreach (var _ in Enumerable.Range(0, 10))
             //{
-            //    CurrentMnistImageIndex += 1;
+            //    CurrentInputIndex += 1;
 
-            //    var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+            //    var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
             //    Array.Clear(inputHash);
 
@@ -260,9 +260,9 @@ namespace Ssz.AI.Models
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
-                CurrentMnistImageIndex += 1;
+                CurrentInputIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                 DoStep_CollectMemories_MNIST(gradientMatrix);
             }
@@ -300,16 +300,16 @@ namespace Ssz.AI.Models
                 int stopIterationsCount = 0;
                 while (stopIterationsCount < 5)
                 {   
-                    CurrentMnistImageIndex = -1;
+                    CurrentInputIndex = -1;
                     foreach (var _ in Enumerable.Range(0, 5000))
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         if (stopIterationsCount >= 5)
                             break;
 
-                        CurrentMnistImageIndex += 1;
+                        CurrentInputIndex += 1;
 
-                        var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                        var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                         Array.Clear(input_Hash);
 
@@ -339,7 +339,7 @@ namespace Ssz.AI.Models
 
                         swLocal.Stop();
 
-                        Logger.LogInformation($"Image Processed: {CurrentMnistImageIndex}; CosineSimilarity: {Cortex.InputAutoencoder.State_CosineSimilarity}; ElapsedMilliseconds: {swLocal.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");                        
+                        Logger.LogInformation($"Image Processed: {CurrentInputIndex}; CosineSimilarity: {Cortex.InputAutoencoder.State_CosineSimilarity}; ElapsedMilliseconds: {swLocal.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");                        
                     }                    
                 }
             }
@@ -352,9 +352,9 @@ namespace Ssz.AI.Models
 
             foreach (var _ in Enumerable.Range(0, 10))
             {
-                CurrentMnistImageIndex += 1;
+                CurrentInputIndex += 1;
 
-                var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                 Array.Clear(input_Hash);
 
@@ -424,17 +424,17 @@ namespace Ssz.AI.Models
             // TEMPCODE
             //while (true)
             {
-                CurrentMnistImageIndex = -1; // Перед первым элементом
+                CurrentInputIndex = -1; // Перед первым элементом
                 foreach (var _ in Enumerable.Range(0, 5000))
                 {
-                    CurrentMnistImageIndex += 1;
+                    CurrentInputIndex += 1;
 
-                    var gradientMatrix = GradientMatricesCollection[CurrentMnistImageIndex];
+                    var gradientMatrix = GradientMatricesCollection[CurrentInputIndex];
 
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
                         bool anyToProcessNearestMiniColumn = false;
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0].Item2)
+                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
                         {
                             if (!nearestMiniColumn.Temp_IsSynced)
                             {
@@ -473,7 +473,7 @@ namespace Ssz.AI.Models
                         miniColumn.Autoencoder!.Calculate_ForwardPass(miniColumn.Temp_Hash);
                         miniColumn.GetShortHashConverted(miniColumn.Autoencoder!.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
 
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0].Item2)
+                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
                         {
                             if (!nearestMiniColumn.Temp_IsSynced)
                             {
@@ -764,7 +764,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int NearestMiniColumnsDelta => 1;
+            public int MiniColumnsMaxDistance => 1;
         }        
     }
 }

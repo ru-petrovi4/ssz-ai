@@ -53,5 +53,8 @@
     <Compile Update="Views\Model5View.axaml.cs">
       <DependentUpon>Model5View.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\Sliders.axaml.cs">
+      <DependentUpon>Sliders.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
 </Project>

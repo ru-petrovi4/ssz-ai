@@ -5,15 +5,15 @@ namespace Ssz.AI.Helpers
 {
     public static class MathHelper
     {
-        public static (double magnitude, double angle) GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
-        {
+        public static GradientInPoint GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
+        {   
             int x = (int)centerX;
             int y = (int)centerY;
             if (x < 0 ||
                     y < 0 ||
                     x + 1 >= gradientMatrix.Dimensions[0] ||
                     y + 1 >= gradientMatrix.Dimensions[1])
-                return (0.0, 0.0);
+                return new();
 
             double tx = centerX - x;
             double ty = centerY - y;
@@ -33,7 +33,13 @@ namespace Ssz.AI.Helpers
             if (angle > Math.PI - 0.000001)
                 angle = -Math.PI;
 
-            return (magnitude, angle);
+            return new GradientInPoint
+            {
+                GradX = gradX,
+                GradY = gradY,
+                Angle = angle,
+                Magnitude = magnitude
+            };
         }
 
         /// <summary>
