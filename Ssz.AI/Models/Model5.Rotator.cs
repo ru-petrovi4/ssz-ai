@@ -649,7 +649,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 400; //300;
+            public int? SubAreaMiniColumnsCount => 25; //400;
 
             /// <summary>
             ///     Индекс X центра подобласти [0..CortexWidth]

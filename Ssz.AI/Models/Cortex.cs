@@ -411,15 +411,21 @@ namespace Ssz.AI.Models
             {                
                 double gradX = 0.0;
                 double gradY = 0.0;
+                int notNullCount = 0;
                 foreach (var detector in Detectors)
                 {
-                    gradX += detector.Temp_GradientInPoint.GradX;
-                    gradY += detector.Temp_GradientInPoint.GradY;
+                    if (detector.Temp_GradientInPoint.GradX != 0 ||
+                            detector.Temp_GradientInPoint.GradY != 0)
+                    {
+                        gradX += detector.Temp_GradientInPoint.GradX;
+                        gradY += detector.Temp_GradientInPoint.GradY;
+                        notNullCount += 1;
+                    }
                 }
-                if (Detectors.Count > 0)
+                if (notNullCount > 0)
                 {
-                    gradX /= Detectors.Count;
-                    gradY /= Detectors.Count;
+                    gradX /= notNullCount;
+                    gradY /= notNullCount;
                 }
                 double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
                 double angle = Math.Atan2(gradY, gradX); // Угол в радианах    

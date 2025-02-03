@@ -17,7 +17,7 @@
 		<StackPanel Orientation="Horizontal">
 			<Button Content="Step MNIST" Click="StepMnistButton_OnClick" />
 			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />
-			<Button Content="Process Samples" Click="ProcessSamplesButton_OnClick" />
+			<Button Content="Process Samples" IsDefault="True" Click="ProcessSamplesButton_OnClick" />
 		</StackPanel>
 
 		<Grid Grid.Row="1">

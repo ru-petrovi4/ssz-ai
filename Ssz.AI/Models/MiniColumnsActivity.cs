@@ -35,7 +35,7 @@ namespace Ssz.AI.Models
                     positiveActivity += a;
                     positive_MemoryCount += 1;
                 }
-                else if (a > -0.66)
+                else //if (a > -0.66)
                 {
                     negativeActivity += a;
                     negative_MemoryCount += 1;
@@ -47,12 +47,13 @@ namespace Ssz.AI.Models
             }
 
             if (positive_MemoryCount > 0)
-                positiveActivity = positiveActivity / positive_MemoryCount;
+                positiveActivity /= positive_MemoryCount;
 
             if (negative_MemoryCount > 0)
-                negativeActivity = negativeActivity / negative_MemoryCount;
+                negativeActivity /= negative_MemoryCount;
 
             return (positiveActivity, negativeActivity);
+            //return (positive_MemoryCount, -negative_MemoryCount);
         }
 
         public static float GetSuperActivity(Cortex.MiniColumn miniColumn, Cortex cortex)

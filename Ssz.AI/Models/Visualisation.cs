@@ -388,7 +388,37 @@ namespace Ssz.AI.Models
 
         public static Bitmap GetBitmapFromMiniColumsMemoriesColor(Cortex cortex)
         {
-            Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);            
+            Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
+
+            double normalizedMagnitudeMax = Double.MinValue;
+            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+                {
+                    var mc = cortex.MiniColumns[mcx, mcy];
+                    if (mc is not null && mc.Memories.Count > 0)
+                    {
+                        double gradX = 0.0;
+                        double gradY = 0.0;
+                        foreach (var memory in mc.Memories)
+                        {
+                            gradX += memory.AverageGradientInPoint.GradX;
+                            gradY += memory.AverageGradientInPoint.GradY;
+                        }
+                        if (mc.Memories.Count > 0)
+                        {
+                            gradX /= mc.Memories.Count;
+                            gradY /= mc.Memories.Count;
+                        }
+                        double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                        double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+                        // Преобразуем магнитуду в яркость
+                        double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
+
+                        if (normalizedMagnitude > normalizedMagnitudeMax)
+                            normalizedMagnitudeMax = normalizedMagnitude;
+                    }                    
+                }
 
             foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
@@ -412,14 +442,16 @@ namespace Ssz.AI.Models
                         double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
 
                         // Преобразуем магнитуду в яркость
-                        int brightness = (int)(255 * magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
-                        if (brightness > 255)
-                            brightness = 255;
+                        double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
+                        //brightness = 0.5 + (1 - brightness) * 0.5;
+                        double saturation = 1.3 * normalizedMagnitude / normalizedMagnitudeMax;
+                        if (saturation > 1)
+                            saturation = 1;
 
                         // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                         double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
                         // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                        Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+                        Color color = ColorFromHSV(360 * normalizedAngle, saturation, 1);
 
                         bitmap.SetPixel(mcx, mcy, color);
                     }
