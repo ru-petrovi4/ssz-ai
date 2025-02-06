@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:CompileBindings="False"
+             x:Class="Ssz.AI.Views.ImagesSet">
+	<ItemsControl Name="MainItemsControl">
+		<!-- Определяем панель для размещения элементов по горизонтали -->
+		<ItemsControl.ItemsPanel>
+			<ItemsPanelTemplate>
+				<StackPanel Orientation="Horizontal" />
+			</ItemsPanelTemplate>
+		</ItemsControl.ItemsPanel>
+
+		<!-- Шаблон элемента -->
+		<ItemsControl.ItemTemplate>
+			<DataTemplate>
+				<Grid RowDefinitions="*,4*" Margin="5">
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainImage.Bounds.Width}" />
+					<Image Grid.Row="1" Name="MainImage" Source="{Binding Image}" />
+				</Grid>
+			</DataTemplate>
+		</ItemsControl.ItemTemplate>
+	</ItemsControl>
+</UserControl>

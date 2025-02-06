@@ -99,7 +99,7 @@ namespace Ssz.AI.Models
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
-                Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
+                Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
@@ -196,7 +196,7 @@ namespace Ssz.AI.Models
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
-                Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
+                Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
@@ -646,7 +646,9 @@ namespace Ssz.AI.Models
             /// </summary>
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
-            public int AngleRangesCount => 6;
+            public int AngleRangeDegreeMin => 90;
+
+            public int AngleRangeDegreeMax => 90;
 
             public int MagnitudeRangesCount => 4;
 
@@ -665,7 +667,8 @@ namespace Ssz.AI.Models
             public int CortexHeight => 200;
 
             /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
+            ///     Расстояние между детекторами по горизонтали и вертикали
+            ///     [0..MNISTImageWidth]
             /// </summary>
             public double DetectorDelta => 0.1;
 

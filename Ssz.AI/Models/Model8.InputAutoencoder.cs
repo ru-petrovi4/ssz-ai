@@ -693,11 +693,14 @@ namespace Ssz.AI.Models
         public class ModelConstants : ICortexConstants
         {
             /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
+            ///     Расстояние между детекторами по горизонтали и вертикали  
+            ///     [0..MNISTImageWidth]
             /// </summary>
             public double DetectorDelta => 0.1;
 
-            public int AngleRangesCount => 6;
+            public int AngleRangeDegreeMin => 60;
+
+            public int AngleRangeDegreeMax => 60;
 
             public int MagnitudeRangesCount => 4;
 

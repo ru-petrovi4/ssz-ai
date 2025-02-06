@@ -141,7 +141,7 @@ namespace Ssz.AI.Models
         public double SubAreaMiniColumnsRadius;
 
         /// <summary>
-        ///     In big picture coordinates
+        ///     [0..MNISTImageWidth]
         /// </summary>
         public double DetectorsVisibleRadius { get; }
 
@@ -151,7 +151,7 @@ namespace Ssz.AI.Models
 
         public float[] NegativeK;
 
-        public float PositiveCosineSimilarity = 0.66f;
+        public float PositiveCosineSimilarity;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -163,6 +163,12 @@ namespace Ssz.AI.Models
         public Autoencoder InputAutoencoder { get; } = null!;
 
         public List<VisualizationTableItem> VisualizationTableItems { get; }
+
+        public Cortex.MiniColumn? Temp_SuperActivityMax_MiniColumn
+        {
+            get;
+            set;
+        }
 
         public void GenerateOwnedData(Retina retina)
         {
@@ -304,9 +310,9 @@ namespace Ssz.AI.Models
 
             /// <summary>
             ///     Текущая активность миниколонки при подаче примера.
-            ///     Активность по похожести (положительная величина), активность по непохожести (отрицательная величина).
+            ///     Активность по похожести (положительная величина), активность по непохожести (отрицательная величина), сумарная активность.
             /// </summary>
-            public (float, float) Temp_Activity;
+            public (float, float, float) Temp_Activity;
 
             /// <summary>
             ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -318,9 +324,9 @@ namespace Ssz.AI.Models
             /// </summary>
             public readonly float[] Temp_Hash;
 
-            public Color Temp_ActivityColor;
+            //public Color Temp_ActivityColor;
 
-            public Color Temp_SuperActivityColor;
+            //public Color Temp_SuperActivityColor;
 
             public bool Temp_IsSynced;
 
@@ -480,11 +486,14 @@ namespace Ssz.AI.Models
         public interface ICortexConstants
         {
             /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
+            ///     Расстояние между детекторами по горизонтали и вертикали  
+            ///     [0..MNISTImageWidth]
             /// </summary>
             double DetectorDelta { get; }
 
-            int AngleRangesCount { get; }
+            int AngleRangeDegreeMin { get; }
+
+            int AngleRangeDegreeMax { get; }
 
             int MagnitudeRangesCount { get; }
 

@@ -16,19 +16,55 @@ public partial class Model5View : UserControl
     {
         InitializeComponent();
 
-        //DataContext = new Model5ViewModel();
+        if (Design.IsDesignMode)
+            return;
 
         _model = new Model5();
 
-        Refresh_StackPanel1();
-    }
+        Reset();
 
-    private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
+        Refresh_StackPanel1();        
+    }    
+
+    private void Reset()
     {
-        _model.DoSteps_MNIST(1);
-
-        //Refresh_StackPanel3();
+        _model.ResetMemories();
+        _random = new Random(1); // Pseudorandom
+        _model.CurrentInputIndex = -1; // Перед первым элементом       
     }
+
+    private void ProcessSamplesButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        {
+            _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
+            _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
+        }
+        _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;             
+        _model.DoSteps_MNIST(1000, _random);
+
+        Refresh_StackPanel2();
+    }
+
+    private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Reset();
+
+        ImagesSet2.MainItemsControl.ItemsSource = null;
+    }
+
+    private void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
+    {        
+        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        {
+            _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
+            _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
+        }
+        _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;      
+        _model.DoSteps_MNIST(1, _random);
+
+        Refresh_StackPanel2();
+    }    
 
     private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)
     {
@@ -37,22 +73,7 @@ public partial class Model5View : UserControl
         _model.DoStep_GeneratedLine(position, angle);
 
         Refresh_StackPanel1();        
-    }
-
-    private void ProcessSamplesButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        _model.ResetMemories();
-        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        {
-            _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
-            _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
-        }
-        _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;
-        _model.CurrentInputIndex = -1; // Перед первым элементом
-        _model.DoSteps_MNIST(5000);
-
-        Refresh_StackPanel2();
-    }
+    }    
 
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
@@ -68,7 +89,7 @@ public partial class Model5View : UserControl
     {
         double position = PositionScrollBar.Value;
         double angle = AngleScrollBar.Value;
-        var images = _model.GetImages1(position, angle);
+        ImagesSet1.MainItemsControl.ItemsSource = _model.GetImageWithDescs1(position, angle);
 
         PositionTextBlock.Text =
             new Any(_model.Generated_CenterXDelta).ValueAsString(false);
@@ -76,39 +97,11 @@ public partial class Model5View : UserControl
             new Any(180.0 * _model.Generated_AngleDelta / Math.PI).ValueAsString(false);
         ScalarProductTextBlock.Text =
             new Any(TensorPrimitives.CosineSimilarity(_model.DetectorsActivationHash, _model.DetectorsActivationHash0)).ValueAsString(false);
-
-        var panel = StackPanel1;
-        panel.Children.Clear();
-        foreach (var image in images)
-        {
-            var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
-            var imageControl = new Avalonia.Controls.Image
-            {
-                Source = bitmap,
-                //Width = 150,
-                //Height = 150
-            };
-            panel.Children.Add(imageControl);
-        }
     }
 
     private void Refresh_StackPanel2()
-    {   
-        var images = _model.GetImages2();
-
-        var panel = StackPanel2;
-        panel.Children.Clear();
-        foreach (var image in images)
-        {
-            var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
-            var imageControl = new Avalonia.Controls.Image
-            {
-                Source = bitmap,
-                //Width = 150,
-                //Height = 150
-            };
-            panel.Children.Add(imageControl);
-        }
+    {
+        ImagesSet2.MainItemsControl.ItemsSource = _model.GetImageWithDescs2();
     }
 
     //private void Refresh_StackPanel3()
@@ -130,5 +123,7 @@ public partial class Model5View : UserControl
     //    }
     //}
 
-    private Model5 _model;
+    private Model5 _model = null!;
+
+    private Random _random = null!;
 }

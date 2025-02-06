@@ -205,7 +205,9 @@ namespace Ssz.AI.Models
 
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
-            public int AngleRangesCount => 3;
+            public int AngleRangeDegreeMin => 120;
+
+            public int AngleRangeDegreeMax => 120;
 
             public int MagnitudeRangesCount => 3;
 
@@ -223,7 +225,8 @@ namespace Ssz.AI.Models
             public int CortexHeight => 200;
 
             /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
+            ///     Расстояние между детекторами по горизонтали и вертикали  
+            ///     [0..MNISTImageWidth]
             /// </summary>
             public double DetectorDelta => 0.1;
 

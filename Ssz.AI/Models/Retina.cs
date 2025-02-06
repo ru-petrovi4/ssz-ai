@@ -45,18 +45,26 @@ namespace Ssz.AI.Models
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
             UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
 
-            //int maxMagnitude;
-            //for (int i = gradientDistribution.MagnitudeData.Length; i >= 0; i -= 1)
-            //{
-            //    ulong count = gradientDistribution.MagnitudeData[i];
-            //}
-            
+            ulong maxCount = ulong.MinValue;
+            int maxMagnitude = -1;
+            for (int i = gradientDistribution.MagnitudeData.Length - 1; i >= 0; i -= 1)
+            {
+                ulong count = gradientDistribution.MagnitudeData[i];
+                if (count > maxCount)
+                {
+                    maxCount = count;
+                    maxMagnitude = i;
+                }
+            }
+
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
                 var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, constants.MagnitudeRangesCount);
 
+                int angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitIndex / maxMagnitude;
+
                 double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
-                double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI / constants.AngleRangesCount;
+                double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI * angleRangeDegree / 360;
                 if (gradientAngleHighLimit > Math.PI)
                     gradientAngleHighLimit = gradientAngleHighLimit - 2 * Math.PI;
 

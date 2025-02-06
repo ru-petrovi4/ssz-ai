@@ -3,7 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:local="clr-namespace:Ssz.AI"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:localViews="clr-namespace:Ssz.AI.Views"			 
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"			 
              x:Class="Ssz.AI.Views.Model5View">
 	<Grid>		
 		<Grid.RowDefinitions>
@@ -15,9 +16,10 @@
 		</Grid.RowDefinitions>
 		
 		<StackPanel Orientation="Horizontal">
-			<Button Content="Step MNIST" Click="StepMnistButton_OnClick" />
-			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />
+			<Button Content="Reset" Click="ResetButton_OnClick" />
 			<Button Content="Process Samples" IsDefault="True" Click="ProcessSamplesButton_OnClick" />
+			<Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />			
+			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />			
 		</StackPanel>
 
 		<Grid Grid.Row="1">
@@ -41,7 +43,7 @@
 			<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
 		</Grid>
 
-		<StackPanel Name="StackPanel1" Grid.Row="2" Orientation="Horizontal"></StackPanel>
+		<localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />		
 		
 		<Grid Grid.Row="3">
 			<Grid.ColumnDefinitions>
@@ -66,9 +68,9 @@
 			<TextBlock Text="Порог:" Grid.Row="2" />
 			<TextBlock Name="LevelTextBlock" Text="{Binding Value, ElementName=LevelScrollBar}" Grid.Row="2" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.66" Minimum="0" Maximum="1" />			
-		</Grid>		
-		
-		<StackPanel Name="StackPanel2" Grid.Row="4" Orientation="Horizontal"></StackPanel>
+		</Grid>
+
+		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			
 		<!--
 		<StackPanel Name="StackPanel3" Grid.Row="5" Orientation="Horizontal"></StackPanel>-->
 	</Grid>	

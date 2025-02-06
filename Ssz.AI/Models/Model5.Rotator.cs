@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.AI.ViewModels;
 using Ssz.AI.Views;
 using Ssz.Utils;
 using System;
@@ -49,24 +50,19 @@ namespace Ssz.AI.Models
 
             var t = sw.ElapsedMilliseconds;
 
-            //Random random = new();
+            Random random = new();
 
             Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            //Retina.GenerateOwnedData(random, Constants, gradientDistribution);
-            SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
+            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            //SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
             Retina.Prepare();
-            //SerializationHelper.SaveToFile("Retina.bin", Retina, null);
+            SerializationHelper.SaveToFile("Retina.bin", Retina, null);
 
             Cortex = new Cortex(Constants, Retina);
 
             DetectorsActivationHash = new float[Constants.HashLength];
-            GetImages1(0.0, 0.0);
-            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
-
-            //CurrentInputIndex = -1; // Перед первым элементом
-
-            // Прогон картинок
-            //DoSteps_MNIST(30000);
+            GetImageWithDescs1(0.0, 0.0);
+            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();            
         }        
 
         #endregion
@@ -76,6 +72,8 @@ namespace Ssz.AI.Models
         public readonly ModelConstants Constants = new();        
 
         public MonoInput MonoInput { get; set; } = null!;
+
+        public MiniColumnsActivity.ActivitiyMaxInfo Current_ActivitiyMaxInfo { get; } = new();
 
         public float[] DetectorsActivationHash0 { get; set; }
         public float[] DetectorsActivationHash { get; set; }
@@ -90,7 +88,7 @@ namespace Ssz.AI.Models
         public int Generated_CenterXDelta { get; set; }
         public int Generated_CenterY { get; set; }
         public double Generated_AngleDelta { get; set; }
-        public double Generated_Angle { get; set; }
+        public double Generated_Angle { get; set; }                
 
         public void ResetMemories()
         {
@@ -102,16 +100,39 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.Memories.Clear();
                 });
+        }                                           
+
+        public void DoSteps_MNIST(int stepsCount, Random random)
+        {
+            foreach (var _ in Enumerable.Range(0, stepsCount))
+            {
+                CurrentInputIndex += 1;
+
+                var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
+
+                DoStep(CurrentInputIndex, gradientMatrix, Current_ActivitiyMaxInfo, random);
+            }
         }
 
-        public Image[] GetImages1(double positionK, double angleK)
-        {   
+        public void DoStep_GeneratedLine(double positionK, double angleK)
+        {
+            //var random = new Random();
+
+            //MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
+
+            //(GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
+            
+            //DoStep(-1, gradientMatrix, activitiyMaxInfo, random);            
+        }
+
+        public ImageWithDesc[] GetImageWithDescs1(double positionK, double angleK)
+        {
             (DenseMatrix<GradientInPoint> gradientMatrix, var resizedBitmap) = GetGeneratedLine_GradientMatrix(positionK, angleK);
 
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
 
             MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
-                
+
             CalculateDetectorsAndActivityAndSuperActivity(gradientMatrix, activitiyMaxInfo);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
@@ -126,82 +147,39 @@ namespace Ssz.AI.Models
 
             Cortex.CenterMiniColumn!.GetHash(DetectorsActivationHash);
 
-            var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
-                Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
+            var activityColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
-            //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
-            return [resizedBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
+            var superActivityColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_SuperActivityBrightness(Cortex),
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+
+            var activityMaxBitmap = BitmapHelper.GetSubBitmap(
+               Visualisation.GetMiniColumsActivityMaxBitmap(Cortex, activitiyMaxInfo, allSuperActivity: true),
+               Cortex.MiniColumns.Dimensions[0] / 2,
+               Cortex.MiniColumns.Dimensions[1] / 2,
+               Cortex.SubAreaMiniColumnsRadius + 2);
+
+            return [
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(gradientBitmap),
+                    Desc = @"Полная картина градиентов" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(detectorsActivationBitmap),
+                    Desc = @"Активация детекторов" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage),
+                    Desc = @"Активность миниколонок (желтая  - положительная, темно-желтая - отрицательная)" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage),
+                    Desc = @"Суперактивность колонок" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityMaxBitmap),
+                    Desc = @"Желтый - максимальная активность, красный - максимальная суперактивность" },
+                ];
         }
 
-        private (DenseMatrix<GradientInPoint>, Bitmap) GetGeneratedLine_GradientMatrix(double positionK, double angleK)
-        {
-            // Создаем изображение размером 280x280           
-
-            Generated_CenterXDelta = (int)(positionK * Constants.GeneratedImageWidth / 2.0);
-            Generated_CenterX = (int)(Constants.GeneratedImageWidth / 2.0) + Generated_CenterXDelta;
-            Generated_CenterY = (int)(Constants.GeneratedImageHeight / 2.0);
-
-            Generated_AngleDelta = angleK * 2.0 * Math.PI;
-            Generated_Angle = Math.PI / 2 + Generated_AngleDelta;
-
-            // Длина линии
-            int lineLength = 100;
-
-            // Рассчитываем конечные координаты линии
-            int endX = (int)(Generated_CenterX + lineLength * Math.Cos(Generated_Angle));
-            int endY = (int)(Generated_CenterY + lineLength * Math.Sin(Generated_Angle));
-
-            // Рассчитываем начальные координаты линии (в противоположном направлении)
-            int startX = (int)(Generated_CenterX - lineLength * Math.Cos(Generated_Angle));
-            int startY = (int)(Generated_CenterY - lineLength * Math.Sin(Generated_Angle));
-
-            Bitmap originalBitmap = new Bitmap(Constants.GeneratedImageWidth, Constants.GeneratedImageHeight);
-            using (Graphics g = Graphics.FromImage(originalBitmap))
-            {
-                // Устанавливаем черный фон
-                g.Clear(Color.Black);
-
-                // Настраиваем высококачественные параметры
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode = SmoothingMode.HighQuality;
-                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                g.CompositingQuality = CompositingQuality.HighQuality;
-
-                // Создаем кисть и устанавливаем толщину линии
-                using (Pen pen = new Pen(Color.White, 15))
-                {
-                    // Рисуем наклонную линию
-                    g.DrawLine(pen, startX, startY, endX, endY);
-                }
-            }
-
-            // Уменьшаем изображение до размера 28x28
-
-            // Создаем пустое изображение 28x28
-            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            using (Graphics g = Graphics.FromImage(resizedBitmap))
-            {
-                // Устанавливаем черный фон
-                g.Clear(Color.Black);
-
-                // Настраиваем высококачественные параметры для уменьшения
-                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                g.SmoothingMode = SmoothingMode.HighQuality;
-                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
-                g.CompositingQuality = CompositingQuality.HighQuality;
-
-                // Масштабируем изображение
-                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
-            }
-
-            // Применяем оператор Собеля к первому изображению            
-            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
-        }               
-
-        public Image[] GetImages2()
+        public ImageWithDesc[] GetImageWithDescs2()
         {
             //Random random = new();                        
 
@@ -210,97 +188,97 @@ namespace Ssz.AI.Models
             //    MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
             //    mc.Temp_ActivityColor = Color.Black;
             //    mc.Temp_SuperActivityColor = Color.Black;
-            //}            
+            //}                 
 
-            //var image0 = BitmapHelper.GetSubBitmap(
-            //    Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
-            //    Cortex.MiniColumns.Dimensions[0] / 2,
-            //    Cortex.MiniColumns.Dimensions[1] / 2,
-            //    Cortex.SubAreaMiniColumnsRadius + 2);
+            var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
+            var subImage = BitmapHelper.GetSubBitmap(
+                gradientBitmap,
+                (int)(Cortex.CenterMiniColumn!.CenterX * 10),
+                (int)(Cortex.CenterMiniColumn!.CenterY * 10),
+                (int)(Cortex.DetectorsVisibleRadius * 10));
 
-            //var image1 = BitmapHelper.GetSubBitmap(
-            //    Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex),
-            //    Cortex.MiniColumns.Dimensions[0] / 2,
-            //    Cortex.MiniColumns.Dimensions[1] / 2,
-            //    Cortex.SubAreaMiniColumnsRadius + 2);
+            var activityColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
 
-            var image1 = BitmapHelper.GetSubBitmap(
+            var superActivityColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColums_SuperActivityBrightness(Cortex),
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+
+            var activityMaxBitmap = BitmapHelper.GetSubBitmap(
+               Visualisation.GetMiniColumsActivityMaxBitmap(Cortex, Current_ActivitiyMaxInfo, allSuperActivity: false),
+               Cortex.MiniColumns.Dimensions[0] / 2,
+               Cortex.MiniColumns.Dimensions[1] / 2,
+               Cortex.SubAreaMiniColumnsRadius + 2);
+
+            var memoriesColorImage = BitmapHelper.GetSubBitmap(
                 Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubAreaMiniColumnsRadius + 2);
 
-            var image2 = BitmapHelper.GetSubBitmap(
+            var memoriesCountImage = BitmapHelper.GetSubBitmap(
                 Visualisation.GetBitmapFromMiniColumsMemoriesCount(Cortex),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
-                Cortex.SubAreaMiniColumnsRadius + 2);
+                Cortex.SubAreaMiniColumnsRadius + 2);            
 
-            return [ image1, image2];
+            return [
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(subImage), 
+                    Desc = @"Видимая картина градиентов" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
+                    Desc = @"Активность миниколонок (желтая  - положительная, темно-желтая - отрицательная)" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 
+                    Desc = @"Суперактивность колонок" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityMaxBitmap),
+                    Desc = @"Желтый - максимальная активность, красный - максимальная суперактивность" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage), 
+                    Desc = @"Средний цвет накопленных воспоминаний в миниколонках" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesCountImage), 
+                    Desc = @"Количество воспоминаний в миниколонках" }
+                ];
         }
 
-        //public Image[] GetImages3()
-        //{
-        //    //var totalMnistBitmap = GetMnistTotalBitmap();
-
-        //    var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
-
-        //    var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
-
-        //    MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
-
-        //    //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
-
-        //    List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-        //    foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-        //        foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
-        //        {
-        //            Detector d = Retina.Detectors[dx, dy];
-        //            if (d.Temp_IsActivated)
-        //                activatedDetectors.Add(d);
-        //        }
-        //    var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
-
-        //    var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
-        //        Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo),
-        //        Cortex.MiniColumns.Dimensions[0] / 2,
-        //        Cortex.MiniColumns.Dimensions[1] / 2,
-        //        Cortex.SubAreaMiniColumnsRadius + 2);
-        //    //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
-
-        //    var originalBitmap = MNISTHelper.GetBitmap(
-        //        MonoInput.MonoInputItems[CurrentInputIndex].Original_Image,
-        //        MNISTHelper.MNISTImageWidthPixels,
-        //        MNISTHelper.MNISTImageHeightPixels);
-
-        //    return [originalBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
-        //}
-
-        public void DoSteps_MNIST(int stepsCount)
+        public Image[] GetImages3()
         {
+            //var totalMnistBitmap = GetMnistTotalBitmap();
+
+            var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
+
+            var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
+
             MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
 
-            Random random = new(1);
+            //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            foreach (var _ in Enumerable.Range(0, stepsCount))
-            {
-                CurrentInputIndex += 1;
+            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
+            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+                {
+                    Detector d = Retina.Detectors[dx, dy];
+                    if (d.Temp_IsActivated)
+                        activatedDetectors.Add(d);
+                }
+            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
-                var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
+            var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
+                Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
+                Cortex.MiniColumns.Dimensions[0] / 2,
+                Cortex.MiniColumns.Dimensions[1] / 2,
+                Cortex.SubAreaMiniColumnsRadius + 2);
+            //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
-                DoStep(CurrentInputIndex, gradientMatrix, activitiyMaxInfo, random);
-            }
-        }
+            var originalBitmap = MNISTHelper.GetBitmap(
+                MonoInput.MonoInputItems[CurrentInputIndex].Original_Image,
+                MNISTHelper.MNISTImageWidthPixels,
+                MNISTHelper.MNISTImageHeightPixels);
 
-        public void DoStep_GeneratedLine(double positionK, double angleK)
-        {
-            //var random = new Random();
-
-            //MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
-
-            //(GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
-            
-            //DoStep(-1, gradientMatrix, activitiyMaxInfo, random);            
+            return [originalBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
         }
 
         #endregion
@@ -393,6 +371,7 @@ namespace Ssz.AI.Models
 
             // Сохраняем воспоминание в миниколонке-победителе.
             winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+            Cortex.Temp_SuperActivityMax_MiniColumn = winnerMiniColumn;
             if (winnerMiniColumn is not null)
             {       
                 if (TensorPrimitives.Sum(winnerMiniColumn.Temp_Hash) >= Constants.MinBitsInHashForMemory)
@@ -405,6 +384,71 @@ namespace Ssz.AI.Models
                     });
                 }                
             }
+        }
+
+        private (DenseMatrix<GradientInPoint>, Bitmap) GetGeneratedLine_GradientMatrix(double positionK, double angleK)
+        {
+            // Создаем изображение размером 280x280           
+
+            Generated_CenterXDelta = (int)(positionK * Constants.GeneratedImageWidth / 2.0);
+            Generated_CenterX = (int)(Constants.GeneratedImageWidth / 2.0) + Generated_CenterXDelta;
+            Generated_CenterY = (int)(Constants.GeneratedImageHeight / 2.0);
+
+            Generated_AngleDelta = angleK * 2.0 * Math.PI;
+            Generated_Angle = Math.PI / 2 + Generated_AngleDelta;
+
+            // Длина линии
+            int lineLength = 100;
+
+            // Рассчитываем конечные координаты линии
+            int endX = (int)(Generated_CenterX + lineLength * Math.Cos(Generated_Angle));
+            int endY = (int)(Generated_CenterY + lineLength * Math.Sin(Generated_Angle));
+
+            // Рассчитываем начальные координаты линии (в противоположном направлении)
+            int startX = (int)(Generated_CenterX - lineLength * Math.Cos(Generated_Angle));
+            int startY = (int)(Generated_CenterY - lineLength * Math.Sin(Generated_Angle));
+
+            Bitmap originalBitmap = new Bitmap(Constants.GeneratedImageWidth, Constants.GeneratedImageHeight);
+            using (Graphics g = Graphics.FromImage(originalBitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+
+                // Настраиваем высококачественные параметры
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                // Создаем кисть и устанавливаем толщину линии
+                using (Pen pen = new Pen(Color.White, 15))
+                {
+                    // Рисуем наклонную линию
+                    g.DrawLine(pen, startX, startY, endX, endY);                    
+                }
+            }
+
+            // Уменьшаем изображение до размера 28x28
+
+            // Создаем пустое изображение 28x28
+            Bitmap resizedBitmap = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            using (Graphics g = Graphics.FromImage(resizedBitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+
+                // Настраиваем высококачественные параметры для уменьшения
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                // Масштабируем изображение
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+            }
+
+            // Применяем оператор Собеля к первому изображению            
+            return (SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels), resizedBitmap);
         }
 
         private void CalculateDetectorsAndActivityAndSuperActivity(DenseMatrix<GradientInPoint> gradientMatrix, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
@@ -428,50 +472,17 @@ namespace Ssz.AI.Models
                     mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Cortex);
                 });
 
-            GetSuperActivitiyMaxInfo(activitiyMaxInfo);            
-        }        
-
-        private void GetSuperActivitiyMaxInfo(float[] hash, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
-        {            
-            Parallel.For(
-                fromInclusive: 0,
-                toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
-                {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, hash, Cortex);
-                });
-
-            GetSuperActivitiyMaxInfo(activitiyMaxInfo);
-        }
-
-        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
-        {
-            Parallel.For(
-                fromInclusive: 0,
-                toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
-                {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci], Cortex);
-                });
-
-            GetSuperActivitiyMaxInfo(activitiyMaxInfo);
-        }
-
-        private void GetSuperActivitiyMaxInfo(MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
-        {
             activitiyMaxInfo.MaxActivity = float.MinValue;
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
 
             activitiyMaxInfo.MaxSuperActivity = float.MinValue;
-            activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();            
+            activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
                 mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Cortex);
 
-                float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+                float a = mc.Temp_Activity.Item3;
                 if (a > activitiyMaxInfo.MaxActivity)
                 {
                     activitiyMaxInfo.MaxActivity = a;
@@ -479,7 +490,7 @@ namespace Ssz.AI.Models
                     activitiyMaxInfo.ActivityMax_MiniColumns.Add(mc);
                 }
                 else if (a == activitiyMaxInfo.MaxActivity)
-                {                    
+                {
                     activitiyMaxInfo.ActivityMax_MiniColumns.Add(mc);
                 }
 
@@ -494,87 +505,7 @@ namespace Ssz.AI.Models
                     activitiyMaxInfo.SuperActivityMax_MiniColumns.Add(mc);
                 }
             }
-
-            //Parallel.For(
-            //        fromInclusive: 0,
-            //        toExclusive: Cortex.SubArea_MiniColumns.Length,
-            //        () => new ActivitiyMaxInfo(), // method to initialize the local variable
-            //        (mci, loopState, localActivitiyMaxInfo) => // method invoked by the loop on each iteration
-            //        {
-            //            var mc = Cortex.SubArea_MiniColumns[mci];
-            //            mc.Temp_SuperActivity = mc.GetSuperActivity();
-
-            //            float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
-            //            if (a > localActivitiyMaxInfo.MaxActivity)
-            //            {
-            //                localActivitiyMaxInfo.MaxActivity = a;
-            //                localActivitiyMaxInfo.ActivityMax_MiniColumn = mc;
-            //            }
-
-            //            if (mc.Temp_SuperActivity > localActivitiyMaxInfo.MaxSuperActivity)
-            //            {
-            //                localActivitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
-            //                localActivitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
-            //            }
-
-            //            return localActivitiyMaxInfo; // value to be passed to next iteration
-            //        },
-            //        localActivitiyMaxInfo => // Method to be executed when each partition has completed.
-            //        {
-            //            lock (activitiyMaxInfo)
-            //            {
-            //                if (localActivitiyMaxInfo.MaxActivity > activitiyMaxInfo.MaxActivity)
-            //                {
-            //                    activitiyMaxInfo.MaxActivity = localActivitiyMaxInfo.MaxActivity;
-            //                    activitiyMaxInfo.ActivityMax_MiniColumn = localActivitiyMaxInfo.ActivityMax_MiniColumn;
-            //                }
-
-            //                if (localActivitiyMaxInfo.MaxSuperActivity > activitiyMaxInfo.MaxSuperActivity)
-            //                {
-            //                    activitiyMaxInfo.MaxSuperActivity = localActivitiyMaxInfo.MaxSuperActivity;
-            //                    activitiyMaxInfo.SuperActivityMax_MiniColumn = localActivitiyMaxInfo.SuperActivityMax_MiniColumn;
-            //                }
-            //            }
-            //        });
-        }        
-
-        //private Image GetMnistTotalBitmap()
-        //{
-        //    GradientInPoint[,] totalGradientMatrix = new GradientInPoint[MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels];
-        //    foreach (int i in Enumerable.Range(0, MonoInput.MonoInputItems.Length))
-        //    {
-        //        DenseMatrix<GradientInPoint> gm = MonoInput.MonoInputItems[i].GradientMatrix;
-        //        for (int y = 1; y < MNISTHelper.MNISTImageHeightPixels - 1; y += 1)
-        //        {
-        //            for (int x = 1; x < MNISTHelper.MNISTImageWidthPixels - 1; x += 1)
-        //            {
-        //                GradientInPoint p = gm[x, y];
-        //                GradientInPoint totalP = totalGradientMatrix[x, y];
-
-        //                totalP.GradX += p.GradX;
-        //                totalP.GradY += p.GradY;                        
-
-        //                totalGradientMatrix[x, y] = totalP;
-        //            }
-        //        }                
-        //    }
-        //    //for (int y = 1; y < MNISTHelper.MNISTImageHeight - 1; y += 1)
-        //    //{
-        //    //    for (int x = 1; x < MNISTHelper.MNISTImageWidth - 1; x += 1)
-        //    //    {                    
-        //    //        GradientInPoint totalP = totalGradientMatrix[x, y];
-
-        //    //        //totalP.GradX = totalP.GradX / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
-        //    //        //totalP.GradY = totalP.GradY / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
-        //    //        //totalP.Magnitude = totalP.Magnitude / GradientMatricesCollection.Count;
-        //    //        //totalP.Angle = totalP.Angle / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
-
-        //    //        totalGradientMatrix[x, y] = totalP;
-        //    //    }
-        //    //}
-
-        //    return Visualisation.GetGradientBigBitmapObsolete(totalGradientMatrix);
-        //}        
+        }                             
 
         public static readonly Color[] DefaultColors =
         {
@@ -616,9 +547,11 @@ namespace Ssz.AI.Models
             /// </summary>
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
-            public int AngleRangesCount => 4;
+            public int AngleRangeDegreeMin => 90;
 
-            public int MagnitudeRangesCount => 3;
+            public int AngleRangeDegreeMax => 360;
+
+            public int MagnitudeRangesCount => 4;
 
             public int GeneratedImageWidth => 280;
 
@@ -635,7 +568,8 @@ namespace Ssz.AI.Models
             public int CortexHeight => 200;
 
             /// <summary>
-            ///     Расстояние между детекторами по коризонтали и вертикали  
+            ///     Расстояние между детекторами по горизонтали и вертикали 
+            ///     [0..MNISTImageWidth]
             /// </summary>
             public double DetectorDelta => 0.1;
 
@@ -649,7 +583,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 25; //400;
+            public int? SubAreaMiniColumnsCount => 400; //400;
 
             /// <summary>
             ///     Индекс X центра подобласти [0..CortexWidth]
@@ -1026,3 +960,118 @@ namespace Ssz.AI.Models
 //        }
 //    }
 //}
+
+
+//private void GetSuperActivitiyMaxInfo(float[] hash, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+//{
+//    Parallel.For(
+//        fromInclusive: 0,
+//        toExclusive: Cortex.SubArea_MiniColumns.Length,
+//        mci =>
+//        {
+//            var mc = Cortex.SubArea_MiniColumns[mci];
+//            mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, hash, Cortex);
+//        });
+
+//    GetSuperActivitiyMaxInfo(activitiyMaxInfo);
+//}
+
+//private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+//{
+//    Parallel.For(
+//        fromInclusive: 0,
+//        toExclusive: Cortex.SubArea_MiniColumns.Length,
+//        mci =>
+//        {
+//            var mc = Cortex.SubArea_MiniColumns[mci];
+//            mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci], Cortex);
+//        });
+
+//    GetSuperActivitiyMaxInfo(activitiyMaxInfo);
+//}
+
+
+//private void GetSuperActivitiyMaxInfo(MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+//{
+
+
+//    //Parallel.For(
+//    //        fromInclusive: 0,
+//    //        toExclusive: Cortex.SubArea_MiniColumns.Length,
+//    //        () => new ActivitiyMaxInfo(), // method to initialize the local variable
+//    //        (mci, loopState, localActivitiyMaxInfo) => // method invoked by the loop on each iteration
+//    //        {
+//    //            var mc = Cortex.SubArea_MiniColumns[mci];
+//    //            mc.Temp_SuperActivity = mc.GetSuperActivity();
+
+//    //            float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+//    //            if (a > localActivitiyMaxInfo.MaxActivity)
+//    //            {
+//    //                localActivitiyMaxInfo.MaxActivity = a;
+//    //                localActivitiyMaxInfo.ActivityMax_MiniColumn = mc;
+//    //            }
+
+//    //            if (mc.Temp_SuperActivity > localActivitiyMaxInfo.MaxSuperActivity)
+//    //            {
+//    //                localActivitiyMaxInfo.MaxSuperActivity = mc.Temp_SuperActivity;
+//    //                localActivitiyMaxInfo.SuperActivityMax_MiniColumn = mc;
+//    //            }
+
+//    //            return localActivitiyMaxInfo; // value to be passed to next iteration
+//    //        },
+//    //        localActivitiyMaxInfo => // Method to be executed when each partition has completed.
+//    //        {
+//    //            lock (activitiyMaxInfo)
+//    //            {
+//    //                if (localActivitiyMaxInfo.MaxActivity > activitiyMaxInfo.MaxActivity)
+//    //                {
+//    //                    activitiyMaxInfo.MaxActivity = localActivitiyMaxInfo.MaxActivity;
+//    //                    activitiyMaxInfo.ActivityMax_MiniColumn = localActivitiyMaxInfo.ActivityMax_MiniColumn;
+//    //                }
+
+//    //                if (localActivitiyMaxInfo.MaxSuperActivity > activitiyMaxInfo.MaxSuperActivity)
+//    //                {
+//    //                    activitiyMaxInfo.MaxSuperActivity = localActivitiyMaxInfo.MaxSuperActivity;
+//    //                    activitiyMaxInfo.SuperActivityMax_MiniColumn = localActivitiyMaxInfo.SuperActivityMax_MiniColumn;
+//    //                }
+//    //            }
+//    //        });
+//}        
+
+//private Image GetMnistTotalBitmap()
+//{
+//    GradientInPoint[,] totalGradientMatrix = new GradientInPoint[MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels];
+//    foreach (int i in Enumerable.Range(0, MonoInput.MonoInputItems.Length))
+//    {
+//        DenseMatrix<GradientInPoint> gm = MonoInput.MonoInputItems[i].GradientMatrix;
+//        for (int y = 1; y < MNISTHelper.MNISTImageHeightPixels - 1; y += 1)
+//        {
+//            for (int x = 1; x < MNISTHelper.MNISTImageWidthPixels - 1; x += 1)
+//            {
+//                GradientInPoint p = gm[x, y];
+//                GradientInPoint totalP = totalGradientMatrix[x, y];
+
+//                totalP.GradX += p.GradX;
+//                totalP.GradY += p.GradY;                        
+
+//                totalGradientMatrix[x, y] = totalP;
+//            }
+//        }                
+//    }
+//    //for (int y = 1; y < MNISTHelper.MNISTImageHeight - 1; y += 1)
+//    //{
+//    //    for (int x = 1; x < MNISTHelper.MNISTImageWidth - 1; x += 1)
+//    //    {                    
+//    //        GradientInPoint totalP = totalGradientMatrix[x, y];
+
+//    //        //totalP.GradX = totalP.GradX / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
+//    //        //totalP.GradY = totalP.GradY / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
+//    //        //totalP.Magnitude = totalP.Magnitude / GradientMatricesCollection.Count;
+//    //        //totalP.Angle = totalP.Angle / GradientMatricesCollection.Count; // не надо делить, т.к. есть отрицательные значения
+
+//    //        totalGradientMatrix[x, y] = totalP;
+//    //    }
+//    //}
+
+//    return Visualisation.GetGradientBigBitmapObsolete(totalGradientMatrix);
+//}   
