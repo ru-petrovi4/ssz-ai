@@ -156,7 +156,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetMiniColumsActivityBitmap_Obsolete(Cortex cortex, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+        public static Bitmap GetMiniColumsActivityBitmap_Obsolete(Cortex cortex, ActivitiyMaxInfo activitiyMaxInfo)
         {
             var miniColumns = cortex.MiniColumns;            
 
@@ -218,8 +218,8 @@ namespace Ssz.AI.Models
 
         public static Bitmap GetGradientBigBitmap(DenseMatrix<GradientInPoint> gradientMatrix)
         {
-            int width = MNISTHelper.MNISTImageWidthPixels * 10;
-            int height = MNISTHelper.MNISTImageHeightPixels * 10;
+            int width = gradientMatrix.Dimensions[0] * 10;
+            int height = gradientMatrix.Dimensions[1] * 10;
 
             Bitmap gradientBitmap = new Bitmap(width, height);
 
@@ -305,23 +305,41 @@ namespace Ssz.AI.Models
         public static Bitmap GetBitmapFromMiniColums_ActivityColor(Cortex cortex)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
-            
+
+            float activityMin = float.MaxValue;
+            float activityMax = float.MinValue;
+
+            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+                {
+                    var mc = cortex.MiniColumns[mcx, mcy];
+                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item3))
+                    {
+                        if (mc.Temp_Activity.Item3 > activityMax)
+                            activityMax = mc.Temp_Activity.Item3;
+                        if (mc.Temp_Activity.Item3 < activityMin)
+                            activityMin = mc.Temp_Activity.Item3;
+                    }
+                }
+
             foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
                     if (mc is not null)
                     {
-                        float activity = mc.Temp_Activity.Item3 + cortex.PositiveCosineSimilarity;
-                        int brightness = (int)(255 * activity);
-                        if (activity >= cortex.PositiveCosineSimilarity)
-                        {                            
-                            bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
-                        }
-                        else
-                        {
-                            bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, (int)(80 * activity)));
-                        }
+                        int brightness = (int)(255 * (mc.Temp_Activity.Item3 - activityMin) / (activityMax - activityMin));
+                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
+                        //float activity = mc.Temp_Activity.Item3 + cortex.PositiveCosineSimilarity;
+                        //int brightness = (int)(255 * activity);
+                        //if (activity >= cortex.PositiveCosineSimilarity)
+                        //{                            
+                        //    bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
+                        //}
+                        //else
+                        //{
+                        //    bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, (int)(80 * activity)));
+                        //}
                     }
                     else
                     {
@@ -384,7 +402,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetMiniColumsActivityMaxBitmap(Cortex cortex, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo, bool allSuperActivity)
+        public static Bitmap GetMiniColumsActivityMaxBitmap(Cortex cortex, ActivitiyMaxInfo activitiyMaxInfo, bool allSuperActivity)
         {
             var miniColumns = cortex.MiniColumns;
 
@@ -468,7 +486,36 @@ namespace Ssz.AI.Models
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
-            double normalizedMagnitudeMax = Double.MinValue;
+            //double normalizedMagnitudeMax = Double.MinValue;
+            //foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+            //    foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+            //    {
+            //        var mc = cortex.MiniColumns[mcx, mcy];
+            //        if (mc is not null && mc.Memories.Count > 0)
+            //        {
+            //            double gradX = 0.0;
+            //            double gradY = 0.0;
+            //            foreach (var memory in mc.Memories.TakeLast(1))
+            //            {
+            //                gradX += memory.AverageGradientInPoint.GradX;
+            //                gradY += memory.AverageGradientInPoint.GradY;
+            //            }
+            //            if (mc.Memories.Count > 0)
+            //            {
+            //                gradX /= mc.Memories.Count;
+            //                gradY /= mc.Memories.Count;
+            //            }
+            //            double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+            //            double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+            //            // Преобразуем магнитуду в яркость
+            //            double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
+
+            //            if (normalizedMagnitude > normalizedMagnitudeMax)
+            //                normalizedMagnitudeMax = normalizedMagnitude;
+            //        }                    
+            //    }
+
             foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
@@ -477,36 +524,7 @@ namespace Ssz.AI.Models
                     {
                         double gradX = 0.0;
                         double gradY = 0.0;
-                        foreach (var memory in mc.Memories)
-                        {
-                            gradX += memory.AverageGradientInPoint.GradX;
-                            gradY += memory.AverageGradientInPoint.GradY;
-                        }
-                        if (mc.Memories.Count > 0)
-                        {
-                            gradX /= mc.Memories.Count;
-                            gradY /= mc.Memories.Count;
-                        }
-                        double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
-                        double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
-
-                        // Преобразуем магнитуду в яркость
-                        double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
-
-                        if (normalizedMagnitude > normalizedMagnitudeMax)
-                            normalizedMagnitudeMax = normalizedMagnitude;
-                    }                    
-                }
-
-            foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-                foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
-                {
-                    var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null && mc.Memories.Count > 0)
-                    {
-                        double gradX = 0.0;
-                        double gradY = 0.0;
-                        foreach (var memory in mc.Memories)
+                        foreach (var memory in mc.Memories.TakeLast(1))
                         {
                             gradX += memory.AverageGradientInPoint.GradX;
                             gradY += memory.AverageGradientInPoint.GradY;
@@ -522,7 +540,7 @@ namespace Ssz.AI.Models
                         // Преобразуем магнитуду в яркость
                         double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
                         //brightness = 0.5 + (1 - brightness) * 0.5;
-                        double saturation = 1.3 * normalizedMagnitude / normalizedMagnitudeMax;
+                        double saturation = 0.7 + 2 * normalizedMagnitude;
                         if (saturation > 1)
                             saturation = 1;
 

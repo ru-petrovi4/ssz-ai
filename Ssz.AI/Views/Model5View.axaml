@@ -55,6 +55,7 @@
 				<RowDefinition Height="*" />
 				<RowDefinition Height="*" />
 				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
 			</Grid.RowDefinitions>
 			
 			<TextBlock Text="Притяжение:" />
@@ -65,9 +66,11 @@
 			<TextBlock Name="NegativeTextBlock" Grid.Row="1" Grid.Column="1" />
 			<local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="2" />
 			
-			<TextBlock Text="Порог:" Grid.Row="2" />
-			<TextBlock Name="LevelTextBlock" Text="{Binding Value, ElementName=LevelScrollBar}" Grid.Row="2" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.66" Minimum="0" Maximum="1" />			
+			<TextBlock Text="Пороги:" Grid.Row="2" />
+			<TextBlock Name="LevelTextBlock" Text="{Binding #LevelScrollBar.Value}" Grid.Row="2" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.66" Minimum="0" Maximum="1" />
+			<TextBlock Name="LevelTextBlock2" Text="{Binding #LevelScrollBar2.Value}" Grid.Row="3" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.8" Minimum="0" Maximum="1" />
 		</Grid>
 
 		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			

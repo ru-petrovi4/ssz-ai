@@ -23,14 +23,16 @@ public partial class Model5View : UserControl
 
         Reset();
 
-        Refresh_StackPanel1();        
+        Refresh_ImagesSet1();    
+        Refresh_ImagesSet2();
     }    
 
     private void Reset()
     {
         _model.ResetMemories();
         _random = new Random(1); // Pseudorandom
-        _model.CurrentInputIndex = -1; // Перед первым элементом       
+        _model.CurrentInputIndex = -1; // Перед первым элементом
+        _model.DoSteps_MNIST(1000, _random, initialization: true);
     }
 
     private void ProcessSamplesButton_OnClick(object? sender, RoutedEventArgs args)
@@ -40,17 +42,18 @@ public partial class Model5View : UserControl
             _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
             _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
         }
-        _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;             
-        _model.DoSteps_MNIST(1000, _random);
+        _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;
+        _model.Cortex.PositiveCosineSimilarity2 = (float)LevelScrollBar2.Value;
+        _model.DoSteps_MNIST(30000, _random, initialization: false);
 
-        Refresh_StackPanel2();
+        Refresh_ImagesSet2();
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
     {
         Reset();
 
-        ImagesSet2.MainItemsControl.ItemsSource = null;
+        Refresh_ImagesSet2();
     }
 
     private void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
@@ -61,9 +64,9 @@ public partial class Model5View : UserControl
             _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
         }
         _model.Cortex.PositiveCosineSimilarity = (float)LevelScrollBar.Value;      
-        _model.DoSteps_MNIST(1, _random);
+        _model.DoSteps_MNIST(1, _random, initialization: false);
 
-        Refresh_StackPanel2();
+        Refresh_ImagesSet2();
     }    
 
     private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)
@@ -72,20 +75,20 @@ public partial class Model5View : UserControl
         double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
         _model.DoStep_GeneratedLine(position, angle);
 
-        Refresh_StackPanel1();        
+        Refresh_ImagesSet1();        
     }    
 
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        Refresh_StackPanel1();
+        Refresh_ImagesSet1();
     }
 
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
-        Refresh_StackPanel1();
+        Refresh_ImagesSet1();
     }
 
-    private void Refresh_StackPanel1()
+    private void Refresh_ImagesSet1()
     {
         double position = PositionScrollBar.Value;
         double angle = AngleScrollBar.Value;
@@ -99,7 +102,7 @@ public partial class Model5View : UserControl
             new Any(TensorPrimitives.CosineSimilarity(_model.DetectorsActivationHash, _model.DetectorsActivationHash0)).ValueAsString(false);
     }
 
-    private void Refresh_StackPanel2()
+    private void Refresh_ImagesSet2()
     {
         ImagesSet2.MainItemsControl.ItemsSource = _model.GetImageWithDescs2();
     }

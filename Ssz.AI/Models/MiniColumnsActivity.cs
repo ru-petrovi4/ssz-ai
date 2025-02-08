@@ -8,7 +8,7 @@ namespace Ssz.AI.Models
     public static class MiniColumnsActivity
     {
         /// <summary>
-        ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина)
+        ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), общая активность
         /// </summary>
         /// <param name="hash"></param>
         /// <returns></returns>
@@ -24,42 +24,44 @@ namespace Ssz.AI.Models
             float negativeActivity = 0.0f;
             int negative_MemoryCount = 0;
 
+            float activity = 0.0f;
+            int memoryCount = 0;
+
             foreach (var mi in Enumerable.Range(0, miniColumn.Memories.Count))
             {
                 var memory = miniColumn.Memories[mi];
                 if (memory.IsDeleted)
                     continue;
-                float a = TensorPrimitives.CosineSimilarity(hash, memory.Hash) - cortex.PositiveCosineSimilarity;
-                if (a >= 0.0f)
+
+                float a = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
+                if (float.IsNaN(a))
+                    throw new Exception();
+
+                activity += a;
+                memoryCount += 1;
+
+                a -= cortex.PositiveCosineSimilarity;
+                if (a > 0.0f)
                 {
                     positiveActivity += a;
                     positive_MemoryCount += 1;                    
                 }
-                else if (a >= -1.0) // Exclude NaN
+                else
                 {
                     negativeActivity += a;
                     negative_MemoryCount += 1;                    
                 }
-
-                if (float.IsNaN(positiveActivity) ||
-                        float.IsNaN(negativeActivity))
-                    throw new Exception();
             }
-
-            int memoryCount = positive_MemoryCount + negative_MemoryCount;
-            float activity = positiveActivity + negativeActivity;
+            
             if (memoryCount > 0)
                 activity /= memoryCount;
+            activity -= cortex.PositiveCosineSimilarity;
 
             if (positive_MemoryCount > 0)
                 positiveActivity /= positive_MemoryCount;
 
             if (negative_MemoryCount > 0)
                 negativeActivity /= negative_MemoryCount;
-
-            //if (float.IsNaN(positiveActivity) || float.IsNaN(negativeActivity))
-            //{
-            //}
 
             return (positiveActivity, negativeActivity, activity);
             //return (positive_MemoryCount, -negative_MemoryCount);
@@ -68,8 +70,8 @@ namespace Ssz.AI.Models
         public static float GetSuperActivity(Cortex.MiniColumn miniColumn, Cortex cortex)
         {
             if (float.IsNaN(miniColumn.Temp_Activity.Item3))
-                return float.NaN;
-            
+                return float.NaN;            
+
             float positiveActivitySum = 0.0f;
             float positiveActivitySum_TotalK = 0.0f;
 
@@ -77,6 +79,14 @@ namespace Ssz.AI.Models
             float negativeActivitySum_TotalK = 0.0f;
 
             float activitySum = 0.0f;
+            //if (miniColumn.Temp_Activity.Item3 + cortex.PositiveCosineSimilarity > cortex.PositiveCosineSimilarity2)
+            //{
+            //    activitySum = 1.0f;
+            //}
+            if (miniColumn.Memories.Count(m => !m.IsDeleted) == 0)
+            {
+                activitySum = 1.0f;
+            }
 
             foreach (var r in Enumerable.Range(0, miniColumn.NearestMiniColumnInfos.Count))
             {
@@ -93,7 +103,7 @@ namespace Ssz.AI.Models
                     {
                         positiveActivitySumForR += nearestMiniColumnInfo.Temp_Activity.Item1;
                         negativeActivitySumForR += nearestMiniColumnInfo.Temp_Activity.Item2;
-                        activitySumForR += nearestMiniColumnInfo.Temp_Activity.Item3;
+                        activitySumForR += nearestMiniColumnInfo.Temp_Activity.Item3; // * Math.Abs(nearestMiniColumnInfo.Temp_Activity.Item3);
                         nearestMiniColumnsForRCount += 1;
                     }
                 }
@@ -110,8 +120,12 @@ namespace Ssz.AI.Models
                 float negativeK = cortex.NegativeK[r];
                 negativeActivitySum += negativeK * negativeActivitySumForR / nearestMiniColumnsForRCount;
                 negativeActivitySum_TotalK += negativeK;
-                
-                activitySum += positiveK * activitySumForR / nearestMiniColumnsForRCount;
+
+                float activityForR = activitySumForR / nearestMiniColumnsForRCount;
+                //if (r == 0)
+                //    activityForR *= Math.Abs(activityForR);
+
+                activitySum += positiveK * activityForR;
             }
 
             //if (positiveActivitySum_TotalK > 0)
@@ -124,25 +138,100 @@ namespace Ssz.AI.Models
             //}
 
             //return positiveActivitySum + negativeActivitySum;            
-            return activitySum;
+            return activitySum; // * Math.Abs(activitySum);
+        }        
+    }
+
+    public static class MiniColumnsActivity2
+    {
+        /// <summary>
+        ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), общая активность
+        /// </summary>
+        /// <param name="hash"></param>
+        /// <returns></returns>
+        public static (float, float, float) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, Cortex cortex)
+        {
+            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)                
+                return (float.NaN, float.NaN, float.NaN);
+
+            float positiveActivity = 0.0f;            
+
+            float negativeActivity = 0.0f;
+            
+            foreach (var mi in Enumerable.Range(0, miniColumn.Memories.Count))
+            {
+                var memory = miniColumn.Memories[mi];
+                if (memory.IsDeleted)
+                    continue;
+
+                float a = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
+                if (float.IsNaN(a))
+                    throw new Exception();
+                
+                a -= cortex.PositiveCosineSimilarity;
+                if (a > 0.0f)
+                {
+                    positiveActivity += a;                    
+                }
+                else
+                {
+                    negativeActivity += a;                    
+                }
+            }           
+
+            return (positiveActivity, negativeActivity, positiveActivity + negativeActivity);           
         }
 
-        public class ActivitiyMaxInfo
+        public static float GetSuperActivity(Cortex.MiniColumn miniColumn, Cortex cortex)
         {
-            public float MaxActivity = float.MinValue;
-            public readonly List<Cortex.MiniColumn> ActivityMax_MiniColumns = new();
+            if (float.IsNaN(miniColumn.Temp_Activity.Item3))
+                return float.NaN;
 
-            public float MaxSuperActivity = float.MinValue;
-            public readonly List<Cortex.MiniColumn> SuperActivityMax_MiniColumns = new();            
-            public Cortex.MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+            int count = 0;
+            float activitySum = 0.0f;            
+            if (miniColumn.Memories.Count(m => !m.IsDeleted) == 0)
             {
-                if (SuperActivityMax_MiniColumns.Count == 0)
-                    return null;
-                if (SuperActivityMax_MiniColumns.Count == 1)
-                    return SuperActivityMax_MiniColumns[0];
-                var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);                
-                return SuperActivityMax_MiniColumns[winnerIndex];
+                activitySum = 1000.0f;
             }
+
+            foreach (var r in Enumerable.Range(0, miniColumn.NearestMiniColumnInfos.Count))
+            {
+                var nearestMiniColumnInfosForR = miniColumn.NearestMiniColumnInfos[r];
+                float positiveK = cortex.PositiveK[r];
+
+                foreach (var mci in Enumerable.Range(0, nearestMiniColumnInfosForR.Count))
+                {
+                    var nearestMiniColumnInfo = nearestMiniColumnInfosForR[mci];
+                    if (!float.IsNaN(nearestMiniColumnInfo.Temp_Activity.Item3))
+                    {                        
+                        activitySum += positiveK * nearestMiniColumnInfo.Temp_Activity.Item3; // * Math.Abs(nearestMiniColumnInfo.Temp_Activity.Item3);
+                        count += 1;
+                    }
+                }
+            }
+
+            if (count > 0)
+                activitySum /= count;
+
+            return activitySum;
+        }
+    }
+
+    public class ActivitiyMaxInfo
+    {
+        public float MaxActivity = float.MinValue;
+        public readonly List<Cortex.MiniColumn> ActivityMax_MiniColumns = new();
+
+        public float MaxSuperActivity = float.MinValue;
+        public readonly List<Cortex.MiniColumn> SuperActivityMax_MiniColumns = new();
+        public Cortex.MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+        {
+            if (SuperActivityMax_MiniColumns.Count == 0)
+                return null;
+            if (SuperActivityMax_MiniColumns.Count == 1)
+                return SuperActivityMax_MiniColumns[0];
+            var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
+            return SuperActivityMax_MiniColumns[winnerIndex];
         }
     }
 }

@@ -84,7 +84,7 @@ namespace Ssz.AI.Models
 
             var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
 
-            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
+            ActivitiyMaxInfo activitiyMaxInfo = new();
                 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
@@ -181,7 +181,7 @@ namespace Ssz.AI.Models
 
             var gradientBitmap = Visualisation.GetGradientBigBitmapObsolete(gradientMatrix);
 
-            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
+            ActivitiyMaxInfo activitiyMaxInfo = new();
 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
@@ -236,7 +236,7 @@ namespace Ssz.AI.Models
         {
             var random = new Random();
 
-            MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo = new();
+            ActivitiyMaxInfo activitiyMaxInfo = new();
 
             (GradientInPoint[,] gradientMatrix, var resizedBitmap) = GetGeneratedLine_gradientMatrix(positionK, angleK);
             
@@ -275,7 +275,7 @@ namespace Ssz.AI.Models
                 });
         }        
 
-        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+        private void GetSuperActivitiyMaxInfo2(VisualizationTableItem visualizationTableItem, ActivitiyMaxInfo activitiyMaxInfo)
         {
             Parallel.For(
                 fromInclusive: 0,
@@ -289,7 +289,7 @@ namespace Ssz.AI.Models
             GetSuperActivitiyMaxInfo(activitiyMaxInfo);
         }
 
-        private void GetSuperActivitiyMaxInfo(MiniColumnsActivity.ActivitiyMaxInfo activitiyMaxInfo)
+        private void GetSuperActivitiyMaxInfo(ActivitiyMaxInfo activitiyMaxInfo)
         {
             activitiyMaxInfo.MaxActivity = float.MinValue;
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();

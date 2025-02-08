@@ -152,6 +152,7 @@ namespace Ssz.AI.Models
         public float[] NegativeK;
 
         public float PositiveCosineSimilarity;
+        public float PositiveCosineSimilarity2;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -169,6 +170,8 @@ namespace Ssz.AI.Models
             get;
             set;
         }
+
+        public double Temp_WinnerMiniColumn_AverageGradientInPoint_Delta { get; set; }
 
         public void GenerateOwnedData(Retina retina)
         {
@@ -412,9 +415,23 @@ namespace Ssz.AI.Models
                     }
                 }
             }
-
-            public GradientInPoint GetAverageGradientInPoint()
-            {                
+            
+            /// <summary>
+            ///     Max, Min, Average
+            /// </summary>
+            /// <returns></returns>
+            public (GradientInPoint, GradientInPoint, GradientInPoint) GetAverageGradientInPoint()
+            {
+                GradientInPoint max = new GradientInPoint()
+                {
+                    GradX = Double.MinValue,
+                    GradY = Double.MinValue,
+                };
+                GradientInPoint min = new GradientInPoint()
+                {
+                    GradX = Double.MaxValue,
+                    GradY = Double.MaxValue,
+                };
                 double gradX = 0.0;
                 double gradY = 0.0;
                 int notNullCount = 0;
@@ -423,6 +440,14 @@ namespace Ssz.AI.Models
                     if (detector.Temp_GradientInPoint.GradX != 0 ||
                             detector.Temp_GradientInPoint.GradY != 0)
                     {
+                        if (detector.Temp_GradientInPoint.GradX > max.GradX)
+                            max.GradX = detector.Temp_GradientInPoint.GradX;
+                        if (detector.Temp_GradientInPoint.GradY > max.GradY)
+                            max.GradY = detector.Temp_GradientInPoint.GradY;
+                        if (detector.Temp_GradientInPoint.GradX < min.GradX)
+                            min.GradX = detector.Temp_GradientInPoint.GradX;
+                        if (detector.Temp_GradientInPoint.GradY < min.GradY)
+                            min.GradY = detector.Temp_GradientInPoint.GradY;
                         gradX += detector.Temp_GradientInPoint.GradX;
                         gradY += detector.Temp_GradientInPoint.GradY;
                         notNullCount += 1;
@@ -435,13 +460,13 @@ namespace Ssz.AI.Models
                 }
                 double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
                 double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
-                return new GradientInPoint
+                return (max, min, new GradientInPoint
                 {
                     GradX = gradX,
                     GradY = gradY,
                     Angle = angle,
                     Magnitude = magnitude
-                };
+                });
             }
 
             public void SerializeOwnedData(SerializationWriter writer, object? context)
