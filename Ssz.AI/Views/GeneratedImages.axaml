@@ -1,0 +1,33 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:localViews="clr-namespace:Ssz.AI.Views"
+             x:Class="Ssz.AI.Views.GeneratedImages">
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="200" />
+			<ColumnDefinition Width="200" />
+			<ColumnDefinition Width="*" />
+		</Grid.ColumnDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="*" />
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="*" />
+		</Grid.RowDefinitions>
+		<TextBlock Text="Косинусное расстояние:" />
+		<TextBlock Name="CosineSimilarityTextBlock" Grid.Column="1" />
+		<Grid Grid.Row="1" Grid.ColumnSpan="3">
+			<Grid.ColumnDefinitions>				
+				<ColumnDefinition Width="*" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<localViews:GeneratedImage Grid.Column="0" Name="GeneratedImage0" />
+			<localViews:GeneratedImage Grid.Column="1" Name="GeneratedImage1" />
+		</Grid>
+		<Separator Grid.Row="2" />
+		<localViews:RotatorGeneratedImage Grid.Row="3" Grid.ColumnSpan="3" Name="RotatorGeneratedImage" />
+	</Grid>
+</UserControl>

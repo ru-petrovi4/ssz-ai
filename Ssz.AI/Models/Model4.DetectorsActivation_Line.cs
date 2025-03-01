@@ -205,6 +205,8 @@ namespace Ssz.AI.Models
 
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
+            public int AngleRangeDegreeMinMagnitude => 300;
+
             public int AngleRangeDegreeMin => 120;
 
             public int AngleRangeDegreeMax => 120;

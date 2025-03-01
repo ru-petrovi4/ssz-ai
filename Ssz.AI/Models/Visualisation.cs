@@ -9,6 +9,75 @@ namespace Ssz.AI.Models
 {
     public static class Visualisation
     {
+        public static (DenseMatrix<GradientInPoint>, Bitmap) GetGeneratedLine_GradientMatrix(int width, int height, double positionK, double angleK)
+        {
+            // Создаем изображение размером 280x280           
+
+            var Generated_CenterXDelta = (int)(positionK * width / 2.0);
+            var Generated_CenterX = (int)(width / 2.0) + Generated_CenterXDelta;
+            var Generated_CenterY = (int)(height / 2.0);
+
+            var Generated_AngleDelta = angleK * 2.0 * Math.PI;
+            var Generated_Angle = Math.PI / 2 + Generated_AngleDelta;
+
+            // Длина линии
+            int lineLength = 100;
+
+            // Рассчитываем конечные координаты линии
+            int endX = (int)(Generated_CenterX + lineLength * Math.Cos(Generated_Angle));
+            int endY = (int)(Generated_CenterY + lineLength * Math.Sin(Generated_Angle));
+
+            // Рассчитываем начальные координаты линии (в противоположном направлении)
+            int startX = (int)(Generated_CenterX - lineLength * Math.Cos(Generated_Angle));
+            int startY = (int)(Generated_CenterY - lineLength * Math.Sin(Generated_Angle));
+
+            Bitmap originalBitmap = new Bitmap(width, height);
+            using (Graphics g = Graphics.FromImage(originalBitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+
+                // Настраиваем высококачественные параметры
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                // Создаем кисть и устанавливаем толщину линии
+                using (Pen pen = new Pen(Color.White, 15))
+                {
+                    // Рисуем наклонную линию
+                    g.DrawLine(pen, startX, startY, endX, endY);
+                }
+            }
+
+            // Уменьшаем изображение до размера 28x28
+
+            // Создаем пустое изображение 28x28
+
+            int smallWidth = MNISTHelper.MNISTImageWidthPixels;
+            int smallHeight = MNISTHelper.MNISTImageHeightPixels;
+
+            Bitmap resizedBitmap = new Bitmap(smallWidth, smallHeight);
+            using (Graphics g = Graphics.FromImage(resizedBitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+
+                // Настраиваем высококачественные параметры для уменьшения
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.SmoothingMode = SmoothingMode.HighQuality;
+                g.PixelOffsetMode = PixelOffsetMode.HighQuality;
+                g.CompositingQuality = CompositingQuality.HighQuality;
+
+                // Масштабируем изображение
+                g.DrawImage(originalBitmap, new Rectangle(0, 0, smallWidth, smallHeight), new Rectangle(0, 0, originalBitmap.Width, originalBitmap.Height), GraphicsUnit.Pixel);
+            }
+
+            // Применяем оператор Собеля к первому изображению            
+            return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
+        }
+
         public static Bitmap GetBitmap(List<Detector> activatedDetectors)
         {
             int width = MNISTHelper.MNISTImageWidthPixels * 10;
@@ -326,20 +395,24 @@ namespace Ssz.AI.Models
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null)
+                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item3))
                     {
-                        int brightness = (int)(255 * (mc.Temp_Activity.Item3 - activityMin) / (activityMax - activityMin));
-                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
-                        //float activity = mc.Temp_Activity.Item3 + cortex.PositiveCosineSimilarity;
-                        //int brightness = (int)(255 * activity);
-                        //if (activity >= cortex.PositiveCosineSimilarity)
-                        //{                            
-                        //    bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
-                        //}
-                        //else
-                        //{
-                        //    bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, (int)(80 * activity)));
-                        //}
+                        if (activityMax > activityMin)
+                        {
+                            if (mc.Temp_Activity.Item3 == activityMax)
+                            {
+                                bitmap.SetPixel(mcx, mcy, Color.White);
+                            }
+                            else
+                            {
+                                int brightness = (int)(255 * (mc.Temp_Activity.Item3 - activityMin) / (activityMax - activityMin));
+                                bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
+                            }
+                        }
+                        else
+                        {
+                            bitmap.SetPixel(mcx, mcy, Color.White);
+                        }
                     }
                     else
                     {
@@ -350,7 +423,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBitmapFromMiniColums_SuperActivityBrightness(Cortex cortex)
+        public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -374,10 +447,24 @@ namespace Ssz.AI.Models
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null && superActivityMax > superActivityMin && !float.IsNaN(mc.Temp_SuperActivity))
+                    if (mc is not null && !float.IsNaN(mc.Temp_SuperActivity))
                     {
-                        int brightness = (int)(255 * (mc.Temp_SuperActivity - superActivityMin) / (superActivityMax - superActivityMin));
-                        bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, 0, 0));
+                        if (superActivityMax > superActivityMin)
+                        {
+                            if (mc.Temp_SuperActivity == superActivityMax)
+                            {
+                                bitmap.SetPixel(mcx, mcy, Color.White);
+                            }
+                            else
+                            {
+                                int brightness = (int)(255 * (mc.Temp_SuperActivity - superActivityMin) / (superActivityMax - superActivityMin));
+                                bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, 0, 0));
+                            }
+                        }
+                        else
+                        {
+                            bitmap.SetPixel(mcx, mcy, Color.White);
+                        }
                     }
                     else
                     {
@@ -495,7 +582,7 @@ namespace Ssz.AI.Models
             //        {
             //            double gradX = 0.0;
             //            double gradY = 0.0;
-            //            foreach (var memory in mc.Memories.TakeLast(1))
+            //            foreach (var memory in mc.Memories)
             //            {
             //                gradX += memory.AverageGradientInPoint.GradX;
             //                gradY += memory.AverageGradientInPoint.GradY;
@@ -516,15 +603,25 @@ namespace Ssz.AI.Models
             //        }                    
             //    }
 
+            using (Graphics g = Graphics.FromImage(bitmap))
+            {
+                // Устанавливаем черный фон
+                g.Clear(Color.Black);
+            }
+
+            Cortex.MiniColumn maxMemoryMiniColumn = cortex.CenterMiniColumn!;
             foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
                     if (mc is not null && mc.Memories.Count > 0)
                     {
+                        if (mc.Memories.Count > maxMemoryMiniColumn.Memories.Count)
+                            maxMemoryMiniColumn = mc;
+
                         double gradX = 0.0;
                         double gradY = 0.0;
-                        foreach (var memory in mc.Memories.TakeLast(1))
+                        foreach (var memory in mc.Memories)
                         {
                             gradX += memory.AverageGradientInPoint.GradX;
                             gradY += memory.AverageGradientInPoint.GradY;
@@ -538,9 +635,9 @@ namespace Ssz.AI.Models
                         double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
 
                         // Преобразуем магнитуду в яркость
-                        double normalizedMagnitude = magnitude / 1448.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
+                        double normalizedMagnitude = magnitude / 1000.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
                         //brightness = 0.5 + (1 - brightness) * 0.5;
-                        double saturation = 0.7 + 2 * normalizedMagnitude;
+                        double saturation = 0.3 + normalizedMagnitude;
                         if (saturation > 1)
                             saturation = 1;
 
@@ -550,12 +647,14 @@ namespace Ssz.AI.Models
                         Color color = ColorFromHSV(360 * normalizedAngle, saturation, 1);
 
                         bitmap.SetPixel(mcx, mcy, color);
-                    }
-                    else
-                    {
-                        bitmap.SetPixel(mcx, mcy, Color.Black);
-                    }
+                    }                    
                 }
+
+            //using (Graphics g = Graphics.FromImage(bitmap))
+            //{
+            //    // Устанавливаем черный фон
+            //    g.DrawEllipse(new Pen(Color.White), maxMemoryMiniColumn.MCX - 3, maxMemoryMiniColumn.MCY - 3, 5, 5);
+            //}
 
             return bitmap;
         }

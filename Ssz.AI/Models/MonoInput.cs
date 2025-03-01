@@ -1,5 +1,6 @@
 ﻿using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;
 using System.Linq;
@@ -21,6 +22,9 @@ namespace Ssz.AI.Models
 
         public MonoInputItem[] MonoInputItems = null!;
 
+        public byte[] Labels = null!;
+        public byte[][] Images = null!;
+
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
@@ -30,16 +34,74 @@ namespace Ssz.AI.Models
             byte[] labels, 
             byte[][] images)
         {
+            Labels = labels;
+            Images = images;
             MonoInputItems = new MonoInputItem[images.Length];            
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 MonoInputItem monoInputItem = new();                
                 byte[] original_Image = images[i];
-                monoInputItem.Label = labels[i];
+                monoInputItem.Label = new Any(labels[i]).ValueAsString(false);
                 monoInputItem.Original_Image = original_Image;               
 
                 // Применяем оператор Собеля
                 monoInputItem.GradientMatrix = SobelOperator.ApplySobel(original_Image, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);                
+                if (gradientDistribution is not null)
+                    SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
+
+                MonoInputItems[i] = monoInputItem;
+            }
+        }
+
+        public void GenerateOwnedData_Simplified(
+            ICortexConstants constants,
+            GradientDistribution? gradientDistribution,
+            byte[] labels,
+            byte[][] images)
+        {
+            Labels = labels;
+            Images = images;
+            MonoInputItems = new MonoInputItem[images.Length];
+            foreach (int i in Enumerable.Range(0, images.Length))
+            {
+                MonoInputItem monoInputItem = new();
+                byte[] original_Image = images[i];
+                monoInputItem.Label = new Any(labels[i]).ValueAsString(false);
+                monoInputItem.Original_Image = original_Image;
+
+                // Применяем оператор Собеля
+                monoInputItem.GradientMatrix = SobelOperator.ApplySobel_Simplified(original_Image, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+                if (gradientDistribution is not null)
+                    SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
+
+                MonoInputItems[i] = monoInputItem;
+            }
+        }
+
+        public void GenerateOwnedData_Simplified2(            
+            ICortexConstants constants,
+            GradientDistribution? gradientDistribution,
+            byte[] labels,
+            byte[][] images,
+            Random random)
+        {
+            Labels = labels;
+            Images = images;
+            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
+            foreach (int i in Enumerable.Range(0, images.Length))
+            {
+                // Вычисляем магнитуду и угол градиента
+                double magnitude = 1000 * random.NextDouble();
+                // [-pi, pi]
+                double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
+
+                MonoInputItem monoInputItem = new();
+                byte[] original_Image = images[i];
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Original_Image = original_Image;
+
+                // Применяем оператор Собеля
+                monoInputItem.GradientMatrix = SobelOperator.ApplySobel_Simplified2(original_Image, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels, magnitude, angle);
                 if (gradientDistribution is not null)
                     SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
 
@@ -80,7 +142,7 @@ namespace Ssz.AI.Models
 
     public struct MonoInputItem : IOwnedDataSerializable
     {
-        public byte Label;
+        public string Label;
 
         public byte[] Original_Image;        
 
@@ -95,7 +157,7 @@ namespace Ssz.AI.Models
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            Label = reader.ReadByte();
+            Label = reader.ReadString();
             Original_Image = reader.ReadByteArray();
             GradientMatrix = new();
             reader.ReadOwnedDataSerializable(GradientMatrix, null);

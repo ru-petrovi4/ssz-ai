@@ -5,6 +5,32 @@ namespace Ssz.AI.Helpers
 {
     public static class MathHelper
     {
+        /// <summary>
+        ///     Radians [-pi, pi], Degrees [0..360]
+        /// </summary>
+        /// <param name="radians"></param>
+        /// <returns></returns>
+        public static double RadiansToDegrees(double radians)
+        {
+            double degrees = 180 * radians / Math.PI;
+            if (degrees < 0)
+                degrees += 360;
+            return degrees;
+        }
+
+        /// <summary>
+        ///     Radians [-pi, pi), Degrees [0..360)
+        /// </summary>
+        /// <param name="degrees"></param>
+        /// <returns></returns>
+        public static double DegreesToRadians(double degrees)
+        {
+            double radians = Math.PI * degrees / 180;
+            if (radians >= Math.PI)
+                radians -= 2 * Math.PI;
+            return radians;
+        }
+
         public static GradientInPoint GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
         {   
             int x = (int)centerX;

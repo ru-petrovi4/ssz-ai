@@ -17,9 +17,12 @@
 		
 		<StackPanel Orientation="Horizontal">
 			<Button Content="Reset" Click="ResetButton_OnClick" />
-			<Button Content="Process Samples" IsDefault="True" Click="ProcessSamplesButton_OnClick" />
-			<Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />			
-			<Button Content="Step Generated Line" Click="StepGeneratedLineButton_OnClick" />			
+			<Button Content="GenerateRotator" Click="GenerateRotator_OnClick" />
+			<Button Content="Process Samples 10K" IsDefault="True" Click="ProcessSamples10KButton_OnClick" />
+			<Button Content="Process Samples 2000" IsDefault="True" Click="ProcessSamples2000Button_OnClick" />
+			<Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />
+			<Button Content="Потоп!" Click="FloodButton_OnClick" />
+			<Button Content="Show Test Window" Click="ShowTestWindowButton_OnClick" />
 		</StackPanel>
 
 		<Grid Grid.Row="1">
@@ -38,7 +41,7 @@
 			<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
 			<TextBlock Text="Угол (градусы):" Grid.Row="1" />
 			<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
-			<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="AngleScrollBar_OnValueChanged" />
+			<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="360" ValueChanged="AngleScrollBar_OnValueChanged" />
 			<TextBlock Text="Косинусное расстояние:" Grid.Row="2" />
 			<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
 		</Grid>
@@ -56,6 +59,8 @@
 				<RowDefinition Height="*" />
 				<RowDefinition Height="auto" />
 				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
 			</Grid.RowDefinitions>
 			
 			<TextBlock Text="Притяжение:" />
@@ -68,9 +73,13 @@
 			
 			<TextBlock Text="Пороги:" Grid.Row="2" />
 			<TextBlock Name="LevelTextBlock" Text="{Binding #LevelScrollBar.Value}" Grid.Row="2" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.66" Minimum="0" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />
 			<TextBlock Name="LevelTextBlock2" Text="{Binding #LevelScrollBar2.Value}" Grid.Row="3" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.8" Minimum="0" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />
+		    <TextBlock Name="LevelTextBlock3" Text="{Binding #LevelScrollBar3.Value}" Grid.Row="4" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar3" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.95" Minimum="0" Maximum="1" />
+			<TextBlock Name="LevelTextBlock4" Text="{Binding #LevelScrollBar4.Value}" Grid.Row="5" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar4" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="1.0" Minimum="0" Maximum="50" />
 		</Grid>
 
 		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			

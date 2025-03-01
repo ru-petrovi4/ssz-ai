@@ -35,50 +35,45 @@ namespace Ssz.AI.Models
             double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);
             
             if (constants.SubAreaMiniColumnsCount is not null)
-                SubAreaMiniColumnsRadius = Math.Sqrt(constants.SubAreaMiniColumnsCount.Value / Math.PI);
+                SubArea_MiniColumns_Radius = Math.Sqrt(constants.SubAreaMiniColumnsCount.Value / Math.PI);
             else
-                SubAreaMiniColumnsRadius = 0.0;            
+                SubArea_MiniColumns_Radius = 0.0;            
 
-            // Создаем только миниколонки для подобласти
-            Parallel.For(
-                fromInclusive: 0,
-                toExclusive: constants.CortexHeight,
-                mcy =>
+            // Создаем только миниколонки для подобласти            
+            foreach (int mcy in Enumerable.Range(0, constants.CortexHeight))
+                foreach (int mcx in Enumerable.Range(0, constants.CortexWidth))
                 {
-                    foreach (int mcx in Enumerable.Range(0, constants.CortexWidth))
+                    double miniColumnR = Math.Sqrt((mcx - constants.SubAreaCenter_Cx) * (mcx - constants.SubAreaCenter_Cx) + (mcy - constants.SubAreaCenter_Cy) * (mcy - constants.SubAreaCenter_Cy));
+                    if (SubArea_MiniColumns_Radius == 0.0 || miniColumnR < SubArea_MiniColumns_Radius)
                     {
-                        double miniColumnR = Math.Sqrt((mcx - constants.SubAreaCenter_Cx) * (mcx - constants.SubAreaCenter_Cx) + (mcy - constants.SubAreaCenter_Cy) * (mcy - constants.SubAreaCenter_Cy));
-                        if (SubAreaMiniColumnsRadius == 0.0 || miniColumnR < SubAreaMiniColumnsRadius)
-                        {
-                            double centerX = minCenterX + mcx * deltaCenterX;
-                            double centerY = minCenterY + mcy * deltaCenterY;
+                        double centerX = minCenterX + mcx * deltaCenterX;
+                        double centerY = minCenterY + mcy * deltaCenterY;
 
-                            List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
+                        List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                            for (int dy = (int)((centerY - DetectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + DetectorsVisibleRadius) / constants.DetectorDelta) && dy < retina.Detectors.Dimensions[1]; dy += 1)
-                                for (int dx = (int)((centerX - DetectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + DetectorsVisibleRadius) / constants.DetectorDelta) && dx < retina.Detectors.Dimensions[0]; dx += 1)
-                                {
-                                    Detector detector = retina.Detectors[dx, dy];
-                                    double r = Math.Sqrt((detector.CenterX - centerX) * (detector.CenterX - centerX) + (detector.CenterY - centerY) * (detector.CenterY - centerY));
-                                    if (r < DetectorsVisibleRadius)
-                                        miniColumnDetectors.Add(detector);
-                                }
+                        for (int dy = (int)((centerY - DetectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + DetectorsVisibleRadius) / constants.DetectorDelta) && dy < retina.Detectors.Dimensions[1]; dy += 1)
+                            for (int dx = (int)((centerX - DetectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + DetectorsVisibleRadius) / constants.DetectorDelta) && dx < retina.Detectors.Dimensions[0]; dx += 1)
+                            {
+                                Detector detector = retina.Detectors[dx, dy];
+                                double r = Math.Sqrt((detector.CenterX - centerX) * (detector.CenterX - centerX) + (detector.CenterY - centerY) * (detector.CenterY - centerY));
+                                if (r < DetectorsVisibleRadius)
+                                    miniColumnDetectors.Add(detector);
+                            }
 
-                            MiniColumn miniColumn = new MiniColumn(
-                                constants,
-                                mcx,
-                                mcy,
-                                miniColumnDetectors,
-                                centerX,
-                                centerY);
+                        MiniColumn miniColumn = new MiniColumn(
+                            constants,
+                            mcx,
+                            mcy,
+                            miniColumnDetectors,
+                            centerX,
+                            centerY);
 
-                            MiniColumns[mcx, mcy] = miniColumn;
+                        MiniColumns[mcx, mcy] = miniColumn;
 
-                            if (miniColumnR < 0.000001)
-                                CenterMiniColumn = miniColumn;
-                        }
+                        if (miniColumnR < 0.000001)
+                            CenterMiniColumn = miniColumn;                        
                     }
-                });
+                }            
 
             HashSet<Detector> subArea_DetectorsHashSet = new(retina.Detectors.Dimensions[0] * retina.Detectors.Dimensions[1]);
             List<MiniColumn> subArea_MiniColumns = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
@@ -136,9 +131,7 @@ namespace Ssz.AI.Models
             VisualizationTableItems = new(1000);
 
             InputAutoencoder = new Autoencoder();
-        }
-
-        public double SubAreaMiniColumnsRadius;
+        }        
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -151,15 +144,18 @@ namespace Ssz.AI.Models
 
         public float[] NegativeK;
 
-        public float PositiveCosineSimilarity;
-        public float PositiveCosineSimilarity2;
+        public float K0;
+        public float K1;
+        public float K2;
+        public float K3;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
-        public MiniColumn? CenterMiniColumn { get; private set; }
+        public MiniColumn? CenterMiniColumn { get; private set; }       
 
         public MiniColumn[] SubArea_MiniColumns { get; } = null!;
-        public Detector[] SubArea_Detectors { get; } = null!;
+        public Detector[] SubArea_Detectors { get; } = null!;        
+        public double SubArea_MiniColumns_Radius;
 
         public Autoencoder InputAutoencoder { get; } = null!;
 
@@ -172,6 +168,7 @@ namespace Ssz.AI.Models
         }
 
         public double Temp_WinnerMiniColumn_AverageGradientInPoint_Delta { get; set; }
+        public double Temp_WinnerMiniColumn_AverageGradientInPoint_Magnitude { get; set; }
 
         public void GenerateOwnedData(Retina retina)
         {
@@ -505,6 +502,9 @@ namespace Ssz.AI.Models
 
             public GradientInPoint AverageGradientInPoint;
 
+            /// <summary>
+            ///     Input image index for this memory.
+            /// </summary>
             public int InputIndex;
         }        
 
@@ -515,6 +515,8 @@ namespace Ssz.AI.Models
             ///     [0..MNISTImageWidth]
             /// </summary>
             double DetectorDelta { get; }
+
+            int AngleRangeDegreeMinMagnitude { get; }
 
             int AngleRangeDegreeMin { get; }
 

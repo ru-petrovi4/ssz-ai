@@ -102,7 +102,7 @@ namespace Ssz.AI.Models
                 Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
-                Cortex.SubAreaMiniColumnsRadius + 2);
+                Cortex.SubArea_MiniColumns_Radius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
             return [resizedBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
@@ -199,7 +199,7 @@ namespace Ssz.AI.Models
                 Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
-                Cortex.SubAreaMiniColumnsRadius + 2);
+                Cortex.SubArea_MiniColumns_Radius + 2);
             //var miniColumsActivityBitmap = Visualisation.GetMiniColumsActivityBitmap(Cortex, activitiyMaxInfo);
 
             var originalBitmap = MNISTHelper.GetBitmap(Images[CurrentInputIndex], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
@@ -645,6 +645,8 @@ namespace Ssz.AI.Models
             ///     Высота основного изображения
             /// </summary>
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+
+            public int AngleRangeDegreeMinMagnitude => 300;
 
             public int AngleRangeDegreeMin => 90;
 

@@ -14,13 +14,13 @@ namespace Ssz.AI.Models
         public const int MagnitudeMaxValue = 1449;
 
         // Операторы Собеля для X и Y
-        private static int[,] sobelX = {
+        private static int[,] SobelX = {
             { -1, 0, 1 },
             { -2, 0, 2 },
             { -1, 0, 1 }
         };
 
-        private static int[,] sobelY = {
+        private static int[,] SobelY = {
             { -1, -2, -1 },
             {  0,  0,  0 },
             {  1,  2,  1 }
@@ -42,8 +42,8 @@ namespace Ssz.AI.Models
                     {
                         for (int j = -1; j <= 1; j += 1)
                         {
-                            gradX += sobelX[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
-                            gradY += sobelY[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
+                            gradX += SobelX[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
+                            gradY += SobelY[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
                         }
                     }
 
@@ -60,6 +60,78 @@ namespace Ssz.AI.Models
                         Angle = angle,
                     };
 
+                    gradientMatrix[x, y] = gradientInPoint;
+                }
+            }
+
+            return gradientMatrix;
+        }
+
+        public static DenseMatrix<GradientInPoint> ApplySobel_Simplified(byte[] mnistImageData, int width, int height)
+        {
+            DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
+            
+            int cx = width / 2;
+            int cy = height / 2;
+
+            int gradX = 0;
+            int gradY = 0;
+
+            for (int i = -1; i <= 1; i += 1)
+            {
+                for (int j = -1; j <= 1; j += 1)
+                {
+                    gradX += SobelX[i + 1, j + 1] * mnistImageData[cx + j + (cy + i) * width];
+                    gradY += SobelY[i + 1, j + 1] * mnistImageData[cx + j + (cy + i) * width];
+                }
+            }
+
+            // Вычисляем магнитуду и угол градиента
+            double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+            // [-pi, pi]
+            double angle = Math.Atan2(gradY, gradX); // Угол в радианах
+
+            GradientInPoint gradientInPoint = new()
+            {
+                GradX = gradX,
+                GradY = gradY,
+                Magnitude = magnitude,
+                Angle = angle,
+            };
+
+            for (int y = 1; y < height - 1; y += 1)
+            {
+                for (int x = 1; x < width - 1; x += 1)
+                {
+                    gradientMatrix[x, y] = gradientInPoint;
+                }
+            }
+
+            return gradientMatrix;
+        }
+
+        public static DenseMatrix<GradientInPoint> ApplySobel_Simplified2(byte[] mnistImageData, int width, int height, double magnitude, double angle)
+        {
+            DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
+
+            int gradX = 0;
+            int gradY = 0;                        
+
+            gradX = (int)(Math.Cos(angle) * magnitude);
+            gradY = (int)(Math.Sin(angle) * magnitude);
+
+            GradientInPoint gradientInPoint = new()
+            {
+                GradX = gradX,
+                GradY = gradY,
+                Magnitude = magnitude,
+                Angle = angle,
+            };
+
+            for (int y = 1; y < height - 1; y += 1)
+            {
+                for (int x = 1; x < width - 1; x += 1)
+                {
                     gradientMatrix[x, y] = gradientInPoint;
                 }
             }
@@ -90,8 +162,8 @@ namespace Ssz.AI.Models
 
                             int brightnessByte = (int)(brightness * 255);
 
-                            gradX += sobelX[i + 1, j + 1] * brightnessByte;
-                            gradY += sobelY[i + 1, j + 1] * brightnessByte;
+                            gradX += SobelX[i + 1, j + 1] * brightnessByte;
+                            gradY += SobelY[i + 1, j + 1] * brightnessByte;
                         }
                     }
 
@@ -131,8 +203,8 @@ namespace Ssz.AI.Models
                     {
                         for (int j = -1; j <= 1; j += 1)
                         {
-                            gradX += sobelX[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
-                            gradY += sobelY[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
+                            gradX += SobelX[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
+                            gradY += SobelY[i + 1, j + 1] * mnistImageData[x + j + (y + i) * width];
                         }
                     }                    
 
@@ -179,8 +251,8 @@ namespace Ssz.AI.Models
 
                             int brightnessByte = (int)(brightness * 255);
 
-                            gradX += sobelX[i + 1, j + 1] * brightnessByte;
-                            gradY += sobelY[i + 1, j + 1] * brightnessByte;
+                            gradX += SobelX[i + 1, j + 1] * brightnessByte;
+                            gradY += SobelY[i + 1, j + 1] * brightnessByte;
                         }
                     }
 

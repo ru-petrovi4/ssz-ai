@@ -43,25 +43,30 @@ namespace Ssz.AI.Models
         public void GenerateOwnedData(Random random, ICortexConstants constants, GradientDistribution gradientDistribution)
         {
             UInt64[] magnitudeAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
-            UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
-
-            ulong maxCount = ulong.MinValue;
-            int maxMagnitude = -1;
-            for (int i = gradientDistribution.MagnitudeData.Length - 1; i >= 0; i -= 1)
-            {
-                ulong count = gradientDistribution.MagnitudeData[i];
-                if (count > maxCount)
-                {
-                    maxCount = count;
-                    maxMagnitude = i;
-                }
-            }
+            
+            //UInt64[] angleAccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.AngleData);
+            //ulong maxCount = ulong.MinValue;
+            //int maxMagnitude = -1;
+            //for (int i = gradientDistribution.MagnitudeData.Length - 1; i >= 0; i -= 1)
+            //{
+            //    ulong count = gradientDistribution.MagnitudeData[i];
+            //    if (count > maxCount)
+            //    {
+            //        maxCount = count;
+            //        maxMagnitude = i;
+            //    }
+            //}
 
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
                 var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, constants.MagnitudeRangesCount);
 
-                int angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitIndex / maxMagnitude;
+                //int angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitIndex / maxMagnitude;
+                double gradientMagnitudeHighLimitForAngle = gradientMagnitudeHighLimitIndex;
+                double hiLimit = constants.AngleRangeDegreeMinMagnitude;
+                if (gradientMagnitudeHighLimitForAngle > hiLimit)
+                    gradientMagnitudeHighLimitForAngle = hiLimit;
+                double angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitForAngle / hiLimit;
 
                 double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
                 double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI * angleRangeDegree / 360;

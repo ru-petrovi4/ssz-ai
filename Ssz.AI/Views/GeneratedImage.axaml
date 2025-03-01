@@ -1,0 +1,32 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:localViews="clr-namespace:Ssz.AI.Views"	
+             x:Class="Ssz.AI.Views.GeneratedImage">
+	<Grid>
+		<Grid.RowDefinitions>			
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="*" />			
+		</Grid.RowDefinitions>
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />				
+			</Grid.RowDefinitions>
+			<TextBlock Text="Интенсивность:" />
+			<TextBlock Name="MagnitudeTextBlock" Text="{Binding #MagnitudeScrollBar.Value}" Grid.Column="1" />
+			<ScrollBar Name="MagnitudeScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1448" />
+			<TextBlock Text="Угол (градусы):" Grid.Row="1" />
+			<TextBlock Name="AngleTextBlock" Text="{Binding #AngleScrollBar.Value}" Grid.Row="1" Grid.Column="1" />
+			<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="360" />			
+		</Grid>
+		<localViews:ImagesSet Grid.Row="1" Name="ImagesSet1" />
+	</Grid>
+</UserControl>
