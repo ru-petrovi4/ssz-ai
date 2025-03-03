@@ -88,7 +88,7 @@ public partial class RotatorGeneratedImage : UserControl
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage),
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage),
-                    Desc = @"Суперактивность миниколонок (белый - максимум)" },                
+                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" },                
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage),
                     Desc = @"Средний цвет накопленных воспоминаний в миниколонках" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesCountImage),

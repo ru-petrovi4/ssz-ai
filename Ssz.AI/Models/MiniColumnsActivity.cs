@@ -62,8 +62,7 @@ namespace Ssz.AI.Models
             {
                 activity /= memoriesCount;
 
-                positiveActivity /= memoriesCount;
-                negativeActivity /= memoriesCount;
+                positiveActivity /= memoriesCount;                
             }
 
             //if (positive_MemoriesCount > 0)

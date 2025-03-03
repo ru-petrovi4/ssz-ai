@@ -195,7 +195,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage),
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage),
-                    Desc = @"Суперактивность миниколонок (белый - максимум)" }
+                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" }
                 ];
         }
 
@@ -262,7 +262,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 
-                    Desc = @"Суперактивность миниколонок (белый - максимум)" },
+                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" },
                 //new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityMaxBitmap),
                 //    Desc = @"Желтый - максимальная активность, красный - максимальная суперактивность" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage), 

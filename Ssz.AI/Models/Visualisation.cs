@@ -399,9 +399,9 @@ namespace Ssz.AI.Models
                     {
                         if (activityMax > activityMin)
                         {
-                            if (mc.Temp_Activity.Item3 == activityMax)
+                            if (mc.Temp_Activity.Item3 == activityMax)                            
                             {
-                                bitmap.SetPixel(mcx, mcy, Color.White);
+                                bitmap.SetPixel(mcx, mcy, Color.White);                                
                             }
                             else
                             {
@@ -453,7 +453,10 @@ namespace Ssz.AI.Models
                         {
                             if (mc.Temp_SuperActivity == superActivityMax)
                             {
-                                bitmap.SetPixel(mcx, mcy, Color.White);
+                                if (mc.Temp_Activity.Item2 == 0.0f)
+                                    bitmap.SetPixel(mcx, mcy, Color.White);
+                                else
+                                    bitmap.SetPixel(mcx, mcy, Color.Blue);                                
                             }
                             else
                             {
