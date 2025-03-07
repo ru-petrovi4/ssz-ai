@@ -518,6 +518,15 @@ namespace Ssz.AI.Models
 
             int AngleRangeDegreeMinMagnitude { get; }
 
+            /// <summary>
+            ///     Минимальная чувствительность к модулю градиента
+            /// </summary>
+            double DetectorMinGradientMagnitude { get; }
+
+            int GeneratedMinGradientMagnitude { get; }
+
+            int GeneratedMaxGradientMagnitude { get; }
+
             int AngleRangeDegreeMin { get; }
 
             int AngleRangeDegreeMax { get; }

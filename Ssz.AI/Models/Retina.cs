@@ -62,11 +62,11 @@ namespace Ssz.AI.Models
                 var (gradientMagnitudeLowLimitIndex, gradientMagnitudeHighLimitIndex) = DistributionHelper.GetLimitsIndices(magnitudeAccumulativeDistribution, random, constants.MagnitudeRangesCount);
 
                 //int angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitIndex / maxMagnitude;
-                double gradientMagnitudeHighLimitForAngle = gradientMagnitudeHighLimitIndex;
-                double hiLimit = constants.AngleRangeDegreeMinMagnitude;
-                if (gradientMagnitudeHighLimitForAngle > hiLimit)
-                    gradientMagnitudeHighLimitForAngle = hiLimit;
-                double angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitForAngle / hiLimit;
+                double gradientMagnitude = gradientMagnitudeHighLimitIndex;                
+                if (gradientMagnitude > constants.AngleRangeDegreeMinMagnitude)
+                    gradientMagnitude = constants.AngleRangeDegreeMinMagnitude;
+                double angleRangeDegree = constants.AngleRangeDegreeMax -
+                    (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * (gradientMagnitude - constants.GeneratedMinGradientMagnitude) / (constants.AngleRangeDegreeMinMagnitude - constants.GeneratedMinGradientMagnitude);
 
                 double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
                 double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI * angleRangeDegree / 360;
@@ -148,12 +148,7 @@ namespace Ssz.AI.Models
     {
         public int X;
 
-        public int Y;
-
-        /// <summary>
-        ///     Минимальная чувствительность к модулю градиента
-        /// </summary>
-        public const double GradientMagnitudeMinimum = 5.0;
+        public int Y;        
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -185,11 +180,11 @@ namespace Ssz.AI.Models
 
         public GradientInPoint Temp_GradientInPoint;
 
-        public void CalculateIsActivated(DenseMatrix<GradientInPoint> gradientMatrix, Vector2 offset = default)
+        public void CalculateIsActivated(DenseMatrix<GradientInPoint> gradientMatrix, ICortexConstants constants, Vector2 offset = default)
         {
             Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
-            if (Temp_GradientInPoint.Magnitude < GradientMagnitudeMinimum)
+            if (Temp_GradientInPoint.Magnitude < constants.DetectorMinGradientMagnitude)
             {
                 Temp_IsActivated = false;
                 return;
@@ -209,11 +204,11 @@ namespace Ssz.AI.Models
             Temp_IsActivated = activated;
         }
 
-        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, Vector2 offset = default)
+        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, ICortexConstants constants, Vector2 offset = default)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
-            if (magnitude < GradientMagnitudeMinimum)
+            if (magnitude < constants.DetectorMinGradientMagnitude)
                 return false;
 
             bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeHighLimit);

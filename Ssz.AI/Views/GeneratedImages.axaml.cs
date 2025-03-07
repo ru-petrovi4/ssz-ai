@@ -74,7 +74,7 @@ public partial class GeneratedImages : UserControl
                     di =>
                     {
                         var d = _model5.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(GeneratedImage0.GeneratedGradientMatrix);
+                        d.CalculateIsActivated(GeneratedImage0.GeneratedGradientMatrix, _model5.Cortex.Constants);
                     });
 
         float[] hash0 = new float[_model5.Constants.HashLength];
@@ -86,7 +86,7 @@ public partial class GeneratedImages : UserControl
                     di =>
                     {
                         var d = _model5.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(GeneratedImage1.GeneratedGradientMatrix);
+                        d.CalculateIsActivated(GeneratedImage1.GeneratedGradientMatrix, _model5.Cortex.Constants);
                     });
 
         float[] hash1 = new float[_model5.Constants.HashLength];

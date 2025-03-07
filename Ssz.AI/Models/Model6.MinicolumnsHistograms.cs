@@ -41,7 +41,7 @@ namespace Ssz.AI.Models
                 // Применяем оператор Собеля
                 GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(Images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 GradientMatricesCollection.Add(gm);
-                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
+                SobelOperator.CalculateDistributionObsolete(gm, Constants, gradientDistribution);
             }
 
             Random random = new();
@@ -253,7 +253,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix, Constants);
                     });
 
             Parallel.For(
@@ -647,6 +647,12 @@ namespace Ssz.AI.Models
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             public int AngleRangeDegreeMinMagnitude => 300;
+
+            public double DetectorMinGradientMagnitude => 5;
+
+            public int GeneratedMinGradientMagnitude => 5;
+
+            public int GeneratedMaxGradientMagnitude => 1200;
 
             public int AngleRangeDegreeMin => 90;
 

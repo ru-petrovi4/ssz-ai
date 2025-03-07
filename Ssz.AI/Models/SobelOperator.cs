@@ -286,7 +286,7 @@ namespace Ssz.AI.Models
                 for (int x = 0; x < width; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < Detector.GradientMagnitudeMinimum)
+                    if (magnitudeInt < constants.DetectorMinGradientMagnitude)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
@@ -317,7 +317,7 @@ namespace Ssz.AI.Models
             //    }            
         }
 
-        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, GradientDistribution gradientDistribution)
+        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, ICortexConstants constants, GradientDistribution gradientDistribution)
         {
             int width = gradientMatrix.GetLength(0);
             int height = gradientMatrix.GetLength(1);
@@ -327,7 +327,7 @@ namespace Ssz.AI.Models
                 for (int x = 0; x < width; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < Detector.GradientMagnitudeMinimum)
+                    if (magnitudeInt < constants.DetectorMinGradientMagnitude)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;

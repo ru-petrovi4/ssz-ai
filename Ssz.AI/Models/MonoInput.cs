@@ -91,7 +91,7 @@ namespace Ssz.AI.Models
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Вычисляем магнитуду и угол градиента
-                double magnitude = 1000 * random.NextDouble();
+                double magnitude = constants.GeneratedMaxGradientMagnitude * random.NextDouble();
                 // [-pi, pi]
                 double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
 

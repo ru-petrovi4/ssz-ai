@@ -321,7 +321,7 @@ namespace Ssz.AI.Models
                             di =>
                             {
                                 var d = Retina.Detectors.Data[di];
-                                input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix) ? 1.0f : 0.0f;
+                                input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                             });
 
                         cosineSimilarity = Cortex.InputAutoencoder.Calculate(input_Hash, learningRate: 0.01f);
@@ -364,7 +364,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Retina.Detectors.Data[di];
-                        input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix) ? 1.0f : 0.0f;
+                        input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                     });
 
                 Cortex.InputAutoencoder.Calculate_ForwardPass(input_Hash);
@@ -454,7 +454,7 @@ namespace Ssz.AI.Models
                     for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix, Constants);
                     }
                     //Parallel.For(
                     //    fromInclusive: 0,
@@ -545,7 +545,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix);
+                        d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix, Constants);
                     });
 
             //for (int mci = 0; mci < Cortex.SubArea_MiniColumns.Length; mci += 1)
@@ -699,6 +699,12 @@ namespace Ssz.AI.Models
             public double DetectorDelta => 0.1;
 
             public int AngleRangeDegreeMinMagnitude => 300;
+
+            public double DetectorMinGradientMagnitude => 5;
+
+            public int GeneratedMinGradientMagnitude => 5;
+
+            public int GeneratedMaxGradientMagnitude => 1200;
 
             public int AngleRangeDegreeMin => 60;
 

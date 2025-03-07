@@ -106,7 +106,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = leftEye_Detectors.Data[di];
-                        d.CalculateIsActivated(leftEye_GradientMatrix);
+                        d.CalculateIsActivated(leftEye_GradientMatrix, Constants);
                     });
                 
                 var rightEye_GradientMatrix = stereoInputItem.RightEye_GradientMatrix;
@@ -117,7 +117,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = rightEye_Detectors.Data[di];
-                        d.CalculateIsActivated(rightEye_GradientMatrix);
+                        d.CalculateIsActivated(rightEye_GradientMatrix, Constants);
                     });
 
                 Parallel.For(

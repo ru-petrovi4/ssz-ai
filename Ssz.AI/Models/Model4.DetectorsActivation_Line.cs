@@ -174,7 +174,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(gradientMatrix);
+                        d.CalculateIsActivated(gradientMatrix, Constants);
                         if (d.Temp_IsActivated)
                         {                            
                             activatedDetectors.Add(d);
@@ -206,6 +206,12 @@ namespace Ssz.AI.Models
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             public int AngleRangeDegreeMinMagnitude => 300;
+
+            public double DetectorMinGradientMagnitude => 5;
+
+            public int GeneratedMinGradientMagnitude => 5;
+
+            public int GeneratedMaxGradientMagnitude => 1200;
 
             public int AngleRangeDegreeMin => 120;
 

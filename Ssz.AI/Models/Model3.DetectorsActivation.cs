@@ -33,7 +33,7 @@ namespace Ssz.AI.Models
                 // Применяем оператор Собеля
                 GradientInPoint[,] gm = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
                 //gradientMatricesCollection.Add(gradientMatrix);
-                SobelOperator.CalculateDistributionObsolete(gm, gradientDistribution);
+                //SobelOperator.CalculateDistributionObsolete(gm,  gradientDistribution);
             }
 
             //Retina retina = new(gradientDistribution, AngleRangesCount, MagnitudeRangesCount, HashLength);

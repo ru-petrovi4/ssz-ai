@@ -31,7 +31,7 @@ namespace Ssz.AI.Models
             {
                 // Применяем оператор Собеля
                 GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobelObsoslete(images[i], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-                SobelOperator.CalculateDistributionObsolete(gradientMatrix, gradientDistribution);
+                //SobelOperator.CalculateDistributionObsolete(gradientMatrix, constants, gradientDistribution);
             }
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();

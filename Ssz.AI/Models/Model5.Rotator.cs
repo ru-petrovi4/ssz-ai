@@ -317,7 +317,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(gradientMatrix);
+                        d.CalculateIsActivated(gradientMatrix, Constants);
                     });
 
             Parallel.For(
@@ -365,7 +365,7 @@ namespace Ssz.AI.Models
             }
         }
 
-        public void GenerateRotator()
+        public void GenerateRotator(Random random)
         {
             foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
@@ -380,7 +380,8 @@ namespace Ssz.AI.Models
                 var dx = winnerMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
                 var dy = winnerMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
 
-                double magnitude = Detector.GradientMagnitudeMinimum + 1000 * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
+                double magnitude = Constants.GeneratedMinGradientMagnitude + 
+                    (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
                 double angle = Math.Atan2(dy, dx);
 
                 int gradX = (int)(Math.Cos(angle) * magnitude);
@@ -420,17 +421,100 @@ namespace Ssz.AI.Models
                 if (sum >= Constants.MinBitsInHashForMemory)
                 {
                     var g = winnerMiniColumn.GetAverageGradientInPoint();
-                    winnerMiniColumn.Memories.Add(new Memory
+
+                    int generatedMemoriesCount = random.Next(10);
+
+                    foreach (var _ in Enumerable.Range(0, generatedMemoriesCount))
                     {
-                        Hash = (float[])winnerMiniColumn.Temp_Hash.Clone(),
-                        AverageGradientInPoint = g.Item3,
-                        InputIndex = inputIndex
-                    });                    
+                        winnerMiniColumn.Memories.Add(new Memory
+                        {
+                            Hash = (float[])winnerMiniColumn.Temp_Hash.Clone(),
+                            AverageGradientInPoint = g.Item3,
+                            InputIndex = inputIndex
+                        });
+                    }
                 }
                 else
                 {
                     //throw new InvalidOperationException();
                 }
+            }
+        }        
+
+        public void DoStep_Memory(                        
+            Random random
+            )
+        {
+            ActivitiyMaxInfo activitiyMaxInfo = new();
+
+            CurrentInputIndex += 1;
+
+            var gradientMatrix = MonoInput.MonoInputItems[CurrentInputIndex].GradientMatrix;
+
+            MiniColumn? winnerMiniColumn;
+
+            for (; ; )
+            {
+                var mci = random.Next(Cortex.SubArea_MiniColumns.Length);
+                MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+
+                if (mc.Memories.Count == 0)
+                    continue;
+
+                var mi = random.Next(mc.Memories.Count);
+
+                Memory memory = mc.Memories[mi];
+                if (memory.IsDeleted)
+                    continue;
+
+                memory.IsDeleted = true;
+                mc.Memories[mi] = memory;
+
+                CalculateDetectorsAndActivityAndSuperActivity_Simplified(MonoInput.MonoInputItems[memory.InputIndex].GradientMatrix, activitiyMaxInfo);
+
+                // Сохраняем воспоминание в миниколонке-победителе.
+                winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                if (winnerMiniColumn is not null)
+                {
+                    if (!ReferenceEquals(winnerMiniColumn, mc) &&
+                        TensorPrimitives.Sum(winnerMiniColumn.Temp_Hash) >= Constants.MinBitsInHashForMemory)
+                    {
+                        var g = winnerMiniColumn.GetAverageGradientInPoint();
+                        winnerMiniColumn.Memories.Add(new Memory
+                        {
+                            Hash = (float[])winnerMiniColumn.Temp_Hash.Clone(),
+                            AverageGradientInPoint = g.Item3,
+                            InputIndex = memory.InputIndex
+                        });
+                    }
+                    else
+                    {
+                        memory.IsDeleted = false;
+                        mc.Memories[mi] = memory;
+                    }
+                }
+
+                break;
+            }
+
+            foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            {
+                MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+
+                mc.Temp_Memories.Clear();
+
+                foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
+                {
+                    Memory memory = mc.Memories[mi];
+                    if (memory.IsDeleted)
+                        continue;
+
+                    mc.Temp_Memories.Add(memory);
+                }
+
+                var oldMemories = mc.Memories;
+                mc.Memories = mc.Temp_Memories;
+                mc.Temp_Memories = oldMemories;
             }
         }
 
@@ -658,7 +742,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(gradientMatrix);                        
+                        d.CalculateIsActivated(gradientMatrix, Constants);                        
                     });
 
             var centerMiniColumn_Temp_Hash = Cortex.CenterMiniColumn!.Temp_Hash;
@@ -750,11 +834,17 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegreeMinMagnitude => 300;
 
+            public double DetectorMinGradientMagnitude => 5;
+
+            public int GeneratedMinGradientMagnitude => 5;
+
+            public int GeneratedMaxGradientMagnitude => 1200;
+
             public int AngleRangeDegreeMin => 90;
 
             public int AngleRangeDegreeMax => 360;
 
-            public int MagnitudeRangesCount => 4;
+            public int MagnitudeRangesCount => 5;
 
             public int GeneratedImageWidth => 280;
 
@@ -779,9 +869,9 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 250;            
+            public int MiniColumnVisibleDetectorsCount => 500;  // ORIG 250         
 
-            public int HashLength => 200;
+            public int HashLength => 300;
 
             /// <summary>
             ///     Количество миниколонок в подобласти

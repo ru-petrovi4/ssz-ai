@@ -78,7 +78,7 @@ public partial class Model5View : UserControl
     {
         Reset();
 
-        _model.GenerateRotator();
+        _model.GenerateRotator(_random);
 
         Refresh_ImagesSet2();
     }
@@ -100,6 +100,13 @@ public partial class Model5View : UserControl
     private void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
     {
         _model.DoSteps_MNIST(1, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
+
+        Refresh_ImagesSet2();
+    }
+
+    private void ProcessMemoryButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _model.DoStep_Memory(_random);
 
         Refresh_ImagesSet2();
     }
