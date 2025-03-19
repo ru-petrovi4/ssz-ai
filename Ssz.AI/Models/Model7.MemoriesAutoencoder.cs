@@ -694,6 +694,11 @@ namespace Ssz.AI.Models
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
             public int MiniColumnsMaxDistance => 1;
+
+            /// <summary>
+            ///     Верхний предел количества воспоминаний (для кэширования)
+            /// </summary>
+            public float MemoryClustersThreshold => 0.66f;
         }        
     }
 }

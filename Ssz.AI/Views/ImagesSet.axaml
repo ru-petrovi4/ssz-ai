@@ -3,6 +3,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:vm="using:Ssz.AI.ViewModels"
+			 xmlns:views="using:Ssz.AI.Views"
 			 x:CompileBindings="False"
              x:Class="Ssz.AI.Views.ImagesSet">
 	<ItemsControl Name="MainItemsControl">
@@ -13,14 +15,20 @@
 			</ItemsPanelTemplate>
 		</ItemsControl.ItemsPanel>
 
-		<!-- Шаблон элемента -->
-		<ItemsControl.ItemTemplate>
-			<DataTemplate>
+		<!-- Шаблоны элементов -->
+		<ItemsControl.DataTemplates>
+			<DataTemplate DataType="vm:ImageWithDesc">
 				<Grid RowDefinitions="*,4*" Margin="5">
-					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainImage.Bounds.Width}" />
-					<Image Grid.Row="1" Name="MainImage" Source="{Binding Image}" />
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainView.Bounds.Height}" />
+					<Image Grid.Row="1" Name="MainView" Source="{Binding Image}" />
 				</Grid>
 			</DataTemplate>
-		</ItemsControl.ItemTemplate>
+			<!--<DataTemplate DataType="vm:Model3DViewWithDesc">
+				<Grid RowDefinitions="*,4*" Margin="5">
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainView.Bounds.Height}" />
+					<views:Model3DView Grid.Row="1" Width="{Binding #MainView.Bounds.Height}" Name="MainView" Data="{Binding Data}" />
+				</Grid>
+			</DataTemplate>-->
+		</ItemsControl.DataTemplates>
 	</ItemsControl>
 </UserControl>

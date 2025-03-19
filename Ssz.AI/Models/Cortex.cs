@@ -294,12 +294,14 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Сохраненные хэш-коды
             /// </summary>
-            public List<Memory> Memories;
+            public List<Memory?> Memories;
 
             /// <summary>
             ///     Временный список для сохраненных хэш-кодов
             /// </summary>
             public List<Memory> Temp_Memories;
+
+            public List<List<Memory>> Temp_MemoryClusters = new();
 
             public Autoencoder? Autoencoder;
 
@@ -310,9 +312,9 @@ namespace Ssz.AI.Models
 
             /// <summary>
             ///     Текущая активность миниколонки при подаче примера.
-            ///     Активность по похожести (положительная величина), активность по непохожести (отрицательная величина), сумарная активность.
+            ///     Количество воспоминаний, reserved, активность.
             /// </summary>
-            public (float, float, float) Temp_Activity;
+            public (int, float, float) Temp_Activity;
 
             /// <summary>
             ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -417,7 +419,7 @@ namespace Ssz.AI.Models
             ///     Max, Min, Average
             /// </summary>
             /// <returns></returns>
-            public (GradientInPoint, GradientInPoint, GradientInPoint) GetAverageGradientInPoint()
+            public (GradientInPoint, GradientInPoint, GradientInPoint) GetPictureAverageGradientInPoint()
             {
                 GradientInPoint max = new GradientInPoint()
                 {
@@ -494,18 +496,16 @@ namespace Ssz.AI.Models
             }            
         }
 
-        public struct Memory
+        public class Memory
         {
-            public float[] Hash;
+            public float[] Hash = null!;
 
-            public bool IsDeleted;
-
-            public GradientInPoint AverageGradientInPoint;
+            public GradientInPoint PictureAverageGradientInPoint;
 
             /// <summary>
             ///     Input image index for this memory.
             /// </summary>
-            public int InputIndex;
+            public int PictureInputIndex;
         }        
 
         public interface ICortexConstants
@@ -602,6 +602,11 @@ namespace Ssz.AI.Models
             ///     Верхний предел количества воспоминаний (для кэширования)
             /// </summary>
             int MemoriesMaxCount { get; }
+
+            /// <summary>
+            ///     Порог для кластеризации воспоминаний
+            /// </summary>
+            float MemoryClustersThreshold { get; }
         }
     }    
 }

@@ -289,6 +289,11 @@ namespace Ssz.AI.Models
             ///     Количество бит в коротком хэш-векторе
             /// </summary>
             public int ShortHashBitsCount => 11;
+
+            /// <summary>
+            ///     Верхний предел количества воспоминаний (для кэширования)
+            /// </summary>
+            public float MemoryClustersThreshold => 0.66f;
         }
     }
 }

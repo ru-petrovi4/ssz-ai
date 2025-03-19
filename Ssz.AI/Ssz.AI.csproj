@@ -14,21 +14,28 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.4" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.4" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.4" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.4" />
+    <PackageReference Include="Avalonia" Version="11.2.5" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.2.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.5" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.5" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.5" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.4" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.5" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.2" />
+    <PackageReference Include="Material.Avalonia.Dialogs" Version="3.9.2" />
+    <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="NumSharp" Version="0.30.0" />
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.10.0.20241108" />
     <PackageReference Include="SciSharp.TensorFlow.Redist" Version="2.16.0" />
-    <PackageReference Include="System.Numerics.Tensors" Version="9.0.2" />
+    <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
+    <PackageReference Include="System.Numerics.Tensors" Version="9.0.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Ssz.Utils\Ssz.Utils.Avalonia.Model3D\Ssz.Utils.Avalonia.Model3D.csproj" />
+    <ProjectReference Include="..\..\Ssz.Utils\Ssz.Utils.Avalonia\Ssz.Utils.Avalonia.csproj" />
     <ProjectReference Include="..\..\Ssz.Utils\Ssz.Utils\Ssz.Utils.csproj" />
     <ProjectReference Include="..\..\Ssz.Utils\ThirdParties\ZKWeb.System.Drawing\ZKWeb.System.Drawing.csproj" />
     <ProjectReference Include="..\Ssz.AI.Core\Ssz.AI.Core.csproj" />

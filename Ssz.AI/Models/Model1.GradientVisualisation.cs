@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Layout;
+using NumSharp;
 using OpenCvSharp;
 using Ssz.AI.Helpers;
 using Ssz.AI.Views;
@@ -16,16 +17,16 @@ namespace Ssz.AI.Models
     public class Model1
     {
         public Model1()
-        {
-            string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
-            string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
-
-            var (labels, images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
+        {   
+            NDArray images = np.load("Images(500x500).npy");
+            NDArray writerInfo = np.load("WriterInfo.npy");            
 
             // Применяем оператор Собеля к первому изображению
-            var originalBitmap = MNISTHelper.GetBitmap(images[2], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            GradientInPoint[,] gradientMatrix = SobelOperator.ApplySobelObsoslete(images[2], MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            var gradientBitmap = Visualisation.GetGradientBitmap(gradientMatrix);
+            //var originalBitmap = HWDDHelper.GetBitmap(images, 1);
+            //DenseMatrix<GradientInPoint> gradientMatrix = SobelOperator.ApplySobel(originalBitmap, HWDDHelper.HWDDImageWidthPixels, HWDDHelper.HWDDImageHeightPixels);
+            //var gradientBitmap = Visualisation.GetGradientBitmap(gradientMatrix);
+
+
             // Сохраняем результат
             //gradientImage.Save("sobel_gradient_image.png");
 
@@ -45,55 +46,8 @@ namespace Ssz.AI.Models
             //var visualization = new DetectorVisualization(detectors);
             //var gifImages = GenerateGif();
 
-            VisualisationHelper.ShowImages([originalBitmap, gradientBitmap]);
+            //VisualisationHelper.ShowImages([originalBitmap, gradientBitmap]);
             //visualization.Visualize(gifImages);
-        }
-
-        public static List<Detector> GenerateDetectors(int numDetectors, Size imageShape, double receptiveWidth)
-        {
-            var detectors = new List<Detector>();
-            var rand = new Random();
-
-            for (int i = 0; i < numDetectors; i++)
-            {
-                double centerX = rand.NextDouble() * imageShape.Width;
-                double centerY = rand.NextDouble() * imageShape.Height;
-                double angleRange = rand.NextDouble() * Math.PI;
-                double gradientMagnitudeRange = rand.NextDouble() * 255;
-
-                bool isOverlap = detectors.Exists(d =>
-                    Math.Sqrt((centerX - d.CenterX) * (centerX - d.CenterX) + (centerY - d.CenterY) * (centerY - d.CenterY)) < receptiveWidth);
-
-                if (!isOverlap)
-                {
-                    //detectors.Add(new Detector(centerX, centerY, receptiveWidth, angleRange, gradientMagnitudeRange));
-                }
-            }
-
-            return detectors;
-        }
-
-        //public static List<Mat> GenerateGif()
-        //{
-        //    var images = new List<Mat>();
-        //    var image = new Mat(new Size(280, 280), MatType.CV_8UC1, Scalar.Black);
-        //    Cv2.Line(image, new Point(15, 0), new Point(15, 200), Scalar.White, 2);
-        //    var smallImage = new Mat();
-        //    Cv2.Resize(image, smallImage, new Size(28, 28));
-
-        //    
-        //    images.Add(smallImage);
-        //    //for (int i = 0; i < 100; i++)
-        //    //{
-        //    //    var matExpr = Mat.Eye(rows: 2, cols: 3, MatType.CV_32F);
-        //    //    // TODO
-        //    //    //matExpr.Set(0, 2, i * 0.1f);
-        //    //    var shiftedImage = new Mat();
-        //    //    Cv2.WarpAffine(smallImage, shiftedImage, matExpr, new Size(28, 28));
-        //    //    images.Add(shiftedImage);
-        //    //}
-
-        //    return images;
-        //}        
+        }     
     }
 }

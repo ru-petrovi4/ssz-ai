@@ -1,12 +1,14 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using MsBox.Avalonia;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
 using Ssz.Utils;
 using System;
 using System.Linq;
 using System.Numerics.Tensors;
+using System.Threading.Tasks;
 
 namespace Ssz.AI.Views;
 
@@ -21,13 +23,13 @@ public partial class Model5View : UserControl
 
         _model = new Model5();
 
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 0.72;
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.45;
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.23;
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.0;
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.05;
 
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.72;
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.45;
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.23;
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
 
         foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
         {
@@ -83,23 +85,51 @@ public partial class Model5View : UserControl
         Refresh_ImagesSet2();
     }
 
-    private void ProcessSamples10KButton_OnClick(object? sender, RoutedEventArgs args)
+    private async void ProcessSamples10KButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.DoSteps_MNIST(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+        IsEnabled = false;
+        await Task.Delay(50);        
+
+        _model.CurrentInputIndex = -1;
+
+        await _model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
         Refresh_ImagesSet2();
+
+        IsEnabled = true;
     }
 
-    private void ProcessSamples2000Button_OnClick(object? sender, RoutedEventArgs args)
+    private async void ProcessSamples2000Button_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.DoSteps_MNIST(2000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+        IsEnabled = false;
+        await Task.Delay(50);
+
+        await _model.DoSteps_MNISTAsync(2000, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
 
         Refresh_ImagesSet2();
+
+        IsEnabled = true;
     }
 
-    private void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
+    private async void ReorderMemoriesButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.DoSteps_MNIST(1, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
+        IsEnabled = false;
+        await Task.Delay(50);        
+
+        await _model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+        {
+            Refresh_ImagesSet2();
+            await Task.Delay(50);
+        });
+
+        Refresh_ImagesSet2();
+
+        IsEnabled = true;
+    }
+
+    private async void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await _model.DoSteps_MNISTAsync(1, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
 
         Refresh_ImagesSet2();
     }
@@ -111,9 +141,13 @@ public partial class Model5View : UserControl
         Refresh_ImagesSet2();
     }
 
-    private void FloodButton_OnClick(object? sender, RoutedEventArgs args)
+    private async void FloodButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.Flood(_random);
+        var floodRadius = await DialogHelper.GetValueFromUserAsync(
+                "Радиус потопа:"             // Заголовок                
+            );
+
+        _model.Flood(_random, new Any(floodRadius).ValueAsSingle(false));
 
         Refresh_ImagesSet2();
     }

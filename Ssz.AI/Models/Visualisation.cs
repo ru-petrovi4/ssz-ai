@@ -9,6 +9,34 @@ namespace Ssz.AI.Models
 {
     public static class Visualisation
     {
+        public static Bitmap GetGradientBitmap(DenseMatrix<GradientInPoint> gradientMatrix)
+        {
+            int width = gradientMatrix.Dimensions[0];
+            int height = gradientMatrix.Dimensions[1];
+
+            Bitmap gradientBitmap = new Bitmap(width, height);
+
+            for (int y = 1; y < height - 1; y += 1)
+            {
+                for (int x = 1; x < width - 1; x += 1)
+                {
+                    GradientInPoint gradientInPoint = gradientMatrix[x, y];
+
+                    // Преобразуем магнитуду в яркость
+                    int brightness = (int)(255 * gradientInPoint.Magnitude / 1448.0); // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))
+
+                    // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
+                    double normalizedAngle = (gradientInPoint.Angle + Math.PI) / (2 * Math.PI);
+                    // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
+                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+
+                    gradientBitmap.SetPixel(x, y, color);
+                }
+            }
+
+            return gradientBitmap;
+        }
+
         public static (DenseMatrix<GradientInPoint>, Bitmap) GetGeneratedLine_GradientMatrix(int width, int height, double positionK, double angleK)
         {
             // Создаем изображение размером 280x280           
@@ -611,23 +639,22 @@ namespace Ssz.AI.Models
                 // Устанавливаем черный фон
                 g.Clear(Color.Black);
             }
-
-            Cortex.MiniColumn maxMemoryMiniColumn = cortex.CenterMiniColumn!;
+            
             foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
                     if (mc is not null && mc.Memories.Count > 0)
-                    {
-                        if (mc.Memories.Count > maxMemoryMiniColumn.Memories.Count)
-                            maxMemoryMiniColumn = mc;
-
+                    {                        
                         double gradX = 0.0;
                         double gradY = 0.0;
+
                         foreach (var memory in mc.Memories)
                         {
-                            gradX += memory.AverageGradientInPoint.GradX;
-                            gradY += memory.AverageGradientInPoint.GradY;
+                            if (memory is null)
+                                continue;
+                            gradX += memory.PictureAverageGradientInPoint.GradX;
+                            gradY += memory.PictureAverageGradientInPoint.GradY;
                         }
                         if (mc.Memories.Count > 0)
                         {
@@ -638,7 +665,7 @@ namespace Ssz.AI.Models
                         double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
 
                         // Преобразуем магнитуду в яркость
-                        double normalizedMagnitude = magnitude / 1000.0; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
+                        double normalizedMagnitude = magnitude / cortex.Constants.GeneratedMaxGradientMagnitude; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                        
                         //brightness = 0.5 + (1 - brightness) * 0.5;
                         double saturation = 0.3 + normalizedMagnitude;
                         if (saturation > 1)

@@ -282,6 +282,11 @@ namespace Ssz.AI.Models
             public int DependantDetectorsRangeWidthCount = 50;
 
             public int DependantDetectorsRangeHeightCount = 50;
+
+            /// <summary>
+            ///     Верхний предел количества воспоминаний (для кэширования)
+            /// </summary>
+            public float MemoryClustersThreshold => 0.66f;
         }        
     }
 }

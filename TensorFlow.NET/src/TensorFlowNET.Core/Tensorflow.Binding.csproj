@@ -187,6 +187,6 @@ https://tensorflownet.readthedocs.io</Description>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="IsExternalInit" Version="1.0.3" PrivateAssets="all" />
-    <PackageReference Include="System.Memory" Version="4.6.0" PrivateAssets="all" />
+    <PackageReference Include="System.Memory" Version="4.6.1" PrivateAssets="all" />
   </ItemGroup>
 </Project>
