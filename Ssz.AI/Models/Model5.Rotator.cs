@@ -260,7 +260,7 @@ namespace Ssz.AI.Models
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 
                     Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" },
-                new Model3DViewWithDesc { Data = Visualization3D.GetSubArea_MiniColumnsMemories_Model3DScene(Cortex),
+                new Model3DWithDesc { Data = Visualization3D.GetSubArea_MiniColumnsMemories_Model3DScene(Cortex),
                     Desc = @"Накопленные воспоминания в миниколонках" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage),
                     Desc = @"Средний цвет накопленных воспоминаний в миниколонках" },                
@@ -888,7 +888,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 500;  // ORIG 250         
+            public int MiniColumnVisibleDetectorsCount => 600;  // ORIG 250         
 
             public int HashLength => 300;
 

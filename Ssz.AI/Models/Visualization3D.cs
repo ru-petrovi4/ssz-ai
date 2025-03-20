@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
 using Ssz.AI.Views;
+using Ssz.Utils.Avalonia.Model3D;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,9 +27,22 @@ namespace Ssz.AI.Models
         {
             List<Point3DWithColor> point3DWithColorList = new();
 
+            int mcxMin = Int32.MaxValue;
+            int mcxMax = Int32.MinValue;
+            int mcyMin = Int32.MaxValue;
+            int mcyMax = Int32.MinValue;
+
             foreach (var mci in Enumerable.Range(0, cortex.SubArea_MiniColumns.Length))
             {
                 MiniColumn mc = cortex.SubArea_MiniColumns[mci];
+                if (mc.MCX > mcxMax)
+                    mcxMax = mc.MCX;
+                if (mc.MCX < mcxMin)
+                    mcxMin = mc.MCX;
+                if (mc.MCY > mcyMax)
+                    mcyMax = mc.MCY;
+                if (mc.MCY < mcyMin)
+                    mcyMin = mc.MCY;
 
                 foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                 {
@@ -48,19 +62,26 @@ namespace Ssz.AI.Models
                         saturation = 1;
 
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
-                    double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
+                    float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    System.DrawingCore.Color color = Visualisation.ColorFromHSV(360 * normalizedAngle, saturation, 1);
+                    System.DrawingCore.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
 
                     point3DWithColorList.Add(new Point3DWithColor
                     {
                         Position = new System.Numerics.Vector3(
                             mc.MCX,
                             mc.MCY,
-                            (float)normalizedAngle * 20),
-                        Color = new System.Numerics.Vector4(color.A, color.R, color.G, color.B)
+                            normalizedAngle - 0.5f),                        
+                        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
                     });
                 }
+            }
+
+            // Normalize
+            foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
+            {
+                point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
+                point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
             }
 
             Model3DScene model3DScene = new();

@@ -28,7 +28,7 @@ namespace Ssz.AI.Models
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     double normalizedAngle = (gradientInPoint.Angle + Math.PI) / (2 * Math.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+                    Color color = ColorFromHSV(normalizedAngle, 1, brightness / 255.0);
 
                     gradientBitmap.SetPixel(x, y, color);
                 }
@@ -148,7 +148,7 @@ namespace Ssz.AI.Models
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     double normalizedAngle = (gradientInPoint.Angle + Math.PI) / (2 * Math.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+                    Color color = ColorFromHSV(normalizedAngle, 1, brightness / 255.0);
 
                     gradientBitmap.SetPixel(x, y, color);
                 }
@@ -334,7 +334,7 @@ namespace Ssz.AI.Models
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     double normalizedAngle = (gradientInPoint.Angle + Math.PI) / (2 * Math.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+                    Color color = ColorFromHSV(normalizedAngle, 1, brightness / 255.0);
 
                     gradientBitmap.SetPixel(x, y, color);
                 }
@@ -364,7 +364,7 @@ namespace Ssz.AI.Models
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    Color color = ColorFromHSV(360 * normalizedAngle, 1, brightness / 255.0);
+                    Color color = ColorFromHSV(normalizedAngle, 1, brightness / 255.0);
 
                     gradientBitmap.SetPixel(x, y, color);
                 }
@@ -376,6 +376,7 @@ namespace Ssz.AI.Models
         // Преобразование HSV в RGB (используется для цветового кодирования угла градиента)
         public static Color ColorFromHSV(double hue, double saturation, double value)
         {
+            hue *= 360;
             int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
             double f = hue / 60 - Math.Floor(hue / 60);
 
@@ -674,7 +675,7 @@ namespace Ssz.AI.Models
                         // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                         double normalizedAngle = (angle + Math.PI) / (2 * Math.PI);
                         // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                        Color color = ColorFromHSV(360 * normalizedAngle, saturation, 1);
+                        Color color = ColorFromHSV(normalizedAngle, saturation, 1);
 
                         bitmap.SetPixel(mcx, mcy, color);
                     }                    

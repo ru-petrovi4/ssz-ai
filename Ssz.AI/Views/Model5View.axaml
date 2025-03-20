@@ -77,7 +77,7 @@
 			<TextBlock Name="LevelTextBlock" Text="{Binding #LevelScrollBar.Value}" Grid.Row="2" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.2" Minimum="0" Maximum="1" />
 			<TextBlock Name="LevelTextBlock2" Text="{Binding #LevelScrollBar2.Value}" Grid.Row="3" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.05" Minimum="0" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.1" Minimum="0" Maximum="1" />
 		    <TextBlock Name="LevelTextBlock3" Text="{Binding #LevelScrollBar3.Value}" Grid.Row="4" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar3" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />
 			<TextBlock Name="LevelTextBlock4" Text="{Binding #LevelScrollBar4.Value}" Grid.Row="5" Grid.Column="1" />

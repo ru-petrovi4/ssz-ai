@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Models;
+using Ssz.Utils.Avalonia.Model3D;
 using System.DrawingCore;
 
 namespace Ssz.AI.ViewModels
@@ -13,7 +14,7 @@ namespace Ssz.AI.ViewModels
         public Avalonia.Media.Imaging.Bitmap Image { get; set;} = null!;
     }
 
-    public class Model3DViewWithDesc : VisualizationWithDesc
+    public class Model3DWithDesc : VisualizationWithDesc
     {
         public Model3DScene Data { get; set; } = null!;
     }

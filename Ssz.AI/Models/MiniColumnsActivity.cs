@@ -28,10 +28,13 @@ namespace Ssz.AI.Models
 
                 float memoryCosineSimilarity = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
                 if (float.IsNaN(memoryCosineSimilarity))
-                    throw new Exception();                
+                    throw new Exception();
 
-                activity += memoryCosineSimilarity - cortex.K0;
-                memoriesCount += 1;                
+                if (memoryCosineSimilarity >= cortex.K1)
+                {
+                    activity += memoryCosineSimilarity - cortex.K0;
+                    memoriesCount += 1;
+                }
             }
 
             if (memoriesCount > 0)
@@ -46,10 +49,10 @@ namespace Ssz.AI.Models
                 return float.NaN;
 
             float superActivity;
-            if (miniColumn.Temp_Activity.Item1 == 0) // No memories
-                superActivity = cortex.PositiveK[0] * (1.0f - cortex.K0); // Best proximity
+            if (miniColumn.Temp_Activity.Item1 > 0)
+                superActivity = cortex.PositiveK[0] * miniColumn.Temp_Activity.Item3;            
             else
-                superActivity = cortex.PositiveK[0] * miniColumn.Temp_Activity.Item3;
+                superActivity = cortex.PositiveK[0] * (1.0f - cortex.K0); // Best proximity
 
             foreach (var r in Enumerable.Range(1, miniColumn.NearestMiniColumnInfos.Count - 1))
             {
@@ -60,8 +63,10 @@ namespace Ssz.AI.Models
                 foreach (var mci in Enumerable.Range(0, nearestMiniColumnInfosForR.Count))
                 {
                     var nearestMiniColumnInfo = nearestMiniColumnInfosForR[mci];
-                    if (nearestMiniColumnInfo.Temp_Activity.Item1 > 0 && 
-                        nearestMiniColumnInfo.Temp_Activity.Item3 > cortex.K1 - cortex.K0)
+                    if (float.IsNaN(nearestMiniColumnInfo.Temp_Activity.Item3))
+                        continue;
+
+                    if (nearestMiniColumnInfo.Temp_Activity.Item1 > 0)
                     {                        
                         activitySumForR += nearestMiniColumnInfo.Temp_Activity.Item3;
                         nearestMiniColumnsForRCount += 1;

@@ -5,6 +5,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 			 xmlns:vm="using:Ssz.AI.ViewModels"
 			 xmlns:views="using:Ssz.AI.Views"
+			 xmlns:model3D="using:Ssz.Utils.Avalonia.Model3D"
 			 x:CompileBindings="False"
              x:Class="Ssz.AI.Views.ImagesSet">
 	<ItemsControl Name="MainItemsControl">
@@ -19,16 +20,16 @@
 		<ItemsControl.DataTemplates>
 			<DataTemplate DataType="vm:ImageWithDesc">
 				<Grid RowDefinitions="*,4*" Margin="5">
-					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainView.Bounds.Height}" />
-					<Image Grid.Row="1" Name="MainView" Source="{Binding Image}" />
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainImage.Bounds.Height}" />
+					<Image Grid.Row="1" Name="MainImage" Source="{Binding Image}" />
 				</Grid>
 			</DataTemplate>
-			<!--<DataTemplate DataType="vm:Model3DViewWithDesc">
+			<DataTemplate DataType="vm:Model3DWithDesc">
 				<Grid RowDefinitions="*,4*" Margin="5">
-					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainView.Bounds.Height}" />
-					<views:Model3DView Grid.Row="1" Width="{Binding #MainView.Bounds.Height}" Name="MainView" Data="{Binding Data}" />
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainModel3DControl.Bounds.Height}" />
+					<model3D:Model3DControl Grid.Row="1" Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" Data="{Binding Data}" />
 				</Grid>
-			</DataTemplate>-->
+			</DataTemplate>
 		</ItemsControl.DataTemplates>
 	</ItemsControl>
 </UserControl>
