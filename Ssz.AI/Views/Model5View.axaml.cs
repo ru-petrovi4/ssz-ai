@@ -36,10 +36,10 @@ public partial class Model5View : UserControl
             ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
             ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
         }
-        LevelScrollBar.ValueChanged += (s, e) => GetDataFromControls();
+        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls();
+        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls();
         LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls();
         LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls();
-        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls();
         GetDataFromControls();
 
         Reset();
@@ -63,10 +63,10 @@ public partial class Model5View : UserControl
             _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
             _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
         }
-        _model.Cortex.K0 = (float)LevelScrollBar.Value;
-        _model.Cortex.K1 = (float)LevelScrollBar2.Value;
-        _model.Cortex.K2 = (float)LevelScrollBar3.Value;
-        _model.Cortex.K3 = (float)LevelScrollBar4.Value;
+        _model.Cortex.K0 = (float)LevelScrollBar0.Value;
+        _model.Cortex.K1 = (float)LevelScrollBar1.Value;
+        _model.Cortex.K2 = (float)LevelScrollBar2.Value;
+        _model.Cortex.K3 = (float)LevelScrollBar3.Value;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
@@ -74,6 +74,15 @@ public partial class Model5View : UserControl
         Reset();        
 
         Refresh_ImagesSet2();        
+    }
+
+    private void Back1Button_OnClick(object? sender, RoutedEventArgs args)
+    {
+        var lastAddedMemory = _model.Temp_ActivitiyMaxInfo?.Temp_WinnerMiniColumn?.Temp_Memory;
+        if (lastAddedMemory is not null)
+            _model.Temp_ActivitiyMaxInfo!.Temp_WinnerMiniColumn!.Memories.Remove(lastAddedMemory);
+
+        _model.CurrentInputIndex -= 1;
     }
 
     private void GenerateRotator_OnClick(object? sender, RoutedEventArgs args)

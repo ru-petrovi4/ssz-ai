@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Tensors;
+using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Models
 {
@@ -52,7 +53,7 @@ namespace Ssz.AI.Models
             if (miniColumn.Temp_Activity.Item1 > 0)
                 superActivity = cortex.PositiveK[0] * miniColumn.Temp_Activity.Item3;            
             else
-                superActivity = cortex.PositiveK[0] * (1.0f - cortex.K0); // Best proximity
+                superActivity = cortex.PositiveK[0] * (cortex.K2 - cortex.K0); // Best proximity
 
             foreach (var r in Enumerable.Range(1, miniColumn.NearestMiniColumnInfos.Count - 1))
             {
@@ -82,6 +83,8 @@ namespace Ssz.AI.Models
 
     public class ActivitiyMaxInfo
     {
+        public MiniColumn? Temp_WinnerMiniColumn;
+
         public float MaxActivity = float.MinValue;
         public readonly List<Cortex.MiniColumn> ActivityMax_MiniColumns = new();
 
@@ -94,7 +97,8 @@ namespace Ssz.AI.Models
             if (SuperActivityMax_MiniColumns.Count == 1)
                 return SuperActivityMax_MiniColumns[0];
             var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
-            return SuperActivityMax_MiniColumns[winnerIndex];
+            Temp_WinnerMiniColumn = SuperActivityMax_MiniColumns[winnerIndex];
+            return Temp_WinnerMiniColumn;
         }
     }
 }

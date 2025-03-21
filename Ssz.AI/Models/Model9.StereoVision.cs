@@ -188,7 +188,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public double DetectorDelta => 0.1;
 
-            public int AngleRangeDegreeMinMagnitude => 300;
+            public int AngleRangeDegree_LimitMagnitude => 300;
 
             public double DetectorMinGradientMagnitude => 5;
 

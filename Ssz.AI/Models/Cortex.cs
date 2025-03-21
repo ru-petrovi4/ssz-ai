@@ -301,6 +301,11 @@ namespace Ssz.AI.Models
             /// </summary>
             public List<Memory> Temp_Memories;
 
+            /// <summary>
+            ///     Последнее добавленное воспомининие            
+            /// </summary>
+            public Memory? Temp_Memory;
+
             public List<List<Memory>> Temp_MemoryClusters = new();
 
             public Autoencoder? Autoencoder;
@@ -372,6 +377,12 @@ namespace Ssz.AI.Models
                     if (detector.Temp_IsActivated)
                         hash[detector.BitIndexInHash] = 1.0f;
                 }
+            }
+
+            public void AddMemory(Memory memory)
+            {
+                Temp_Memory = memory;
+                Memories.Add(memory);
             }
 
             public void GetShortHashConverted(float[] shortHash, float[] shortHashConverted)
@@ -493,7 +504,7 @@ namespace Ssz.AI.Models
                         }
                     }
                 }
-            }            
+            }
         }
 
         public class Memory
@@ -516,7 +527,7 @@ namespace Ssz.AI.Models
             /// </summary>
             double DetectorDelta { get; }
 
-            int AngleRangeDegreeMinMagnitude { get; }
+            int AngleRangeDegree_LimitMagnitude { get; }
 
             /// <summary>
             ///     Минимальная чувствительность к модулю градиента

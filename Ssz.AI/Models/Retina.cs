@@ -63,10 +63,10 @@ namespace Ssz.AI.Models
 
                 //int angleRangeDegree = constants.AngleRangeDegreeMax - (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * gradientMagnitudeHighLimitIndex / maxMagnitude;
                 double gradientMagnitude = gradientMagnitudeHighLimitIndex;                
-                if (gradientMagnitude > constants.AngleRangeDegreeMinMagnitude)
-                    gradientMagnitude = constants.AngleRangeDegreeMinMagnitude;
+                if (gradientMagnitude > constants.AngleRangeDegree_LimitMagnitude)
+                    gradientMagnitude = constants.AngleRangeDegree_LimitMagnitude;
                 double angleRangeDegree = constants.AngleRangeDegreeMax -
-                    (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * (gradientMagnitude - constants.GeneratedMinGradientMagnitude) / (constants.AngleRangeDegreeMinMagnitude - constants.GeneratedMinGradientMagnitude);
+                    (constants.AngleRangeDegreeMax - constants.AngleRangeDegreeMin) * (gradientMagnitude - constants.GeneratedMinGradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
 
                 double gradientAngleLowLimit = 2 * Math.PI * random.NextDouble() - Math.PI;
                 double gradientAngleHighLimit = gradientAngleLowLimit + 2 * Math.PI * angleRangeDegree / 360;

@@ -492,7 +492,7 @@ namespace Ssz.AI.Models
 
                     if (bitsCountInHash >= Constants.MinBitsInHashForMemory)
                     {
-                        mc.Memories.Add(new Memory { Hash = (float[])mc.Temp_Hash.Clone() });
+                        mc.AddMemory(new Memory { Hash = (float[])mc.Temp_Hash.Clone() });
                     }
                 });
         }        
@@ -616,7 +616,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public double DetectorDelta => 0.1;
 
-            public int AngleRangeDegreeMinMagnitude => 300;
+            public int AngleRangeDegree_LimitMagnitude => 300;
 
             public double DetectorMinGradientMagnitude => 5;
 

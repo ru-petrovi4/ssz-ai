@@ -17,6 +17,7 @@
 		
 		<StackPanel Orientation="Horizontal">
 			<Button Content="Reset" Click="ResetButton_OnClick" />
+			<Button Content="1 Step Back" Click="Back1Button_OnClick" />
 			<Button Content="GenerateRotator" Click="GenerateRotator_OnClick" />
 			<Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />
 			<Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
@@ -74,14 +75,14 @@
 			<local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="2" />
 			
 			<TextBlock Text="Пороги:" Grid.Row="2" />
-			<TextBlock Name="LevelTextBlock" Text="{Binding #LevelScrollBar.Value}" Grid.Row="2" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.2" Minimum="0" Maximum="1" />
-			<TextBlock Name="LevelTextBlock2" Text="{Binding #LevelScrollBar2.Value}" Grid.Row="3" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar2" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.1" Minimum="0" Maximum="1" />
-		    <TextBlock Name="LevelTextBlock3" Text="{Binding #LevelScrollBar3.Value}" Grid.Row="4" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar3" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />
-			<TextBlock Name="LevelTextBlock4" Text="{Binding #LevelScrollBar4.Value}" Grid.Row="5" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar4" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="10" />
+			<TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.20" Minimum="-1" Maximum="1" />
+			<TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.20" Minimum="-1" Maximum="1" />
+		    <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.80" Minimum="-1" Maximum="1" />
+			<TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="5" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="10" />
 		</Grid>
 
 		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			
