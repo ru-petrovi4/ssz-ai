@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:Ssz.AI"
+			 xmlns:localViews="clr-namespace:Ssz.AI.Views"			 
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"			 
+             x:Class="Ssz.AI.Views.Model3View">
+	<Grid>		
+		<Grid.RowDefinitions>			
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="*" />
+			<RowDefinition Height="auto" />			
+		</Grid.RowDefinitions>
+
+		<Grid>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto" />						
+			</Grid.RowDefinitions>
+			<TextBlock Text="Значение:" />
+			<TextBlock Text="{Binding #ValueScrollBar.Value}" Grid.Column="1" />
+			<ScrollBar Name="ValueScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" Value="0.5" ValueChanged="ValueScrollBar_OnValueChanged" />						
+		</Grid>
+
+		<localViews:ImagesSet Grid.Row="1" Name="ImagesSet0" />		
+		
+		<Grid Grid.Row="2">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>								
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+			</Grid.RowDefinitions>			
+			
+			<TextBlock Text="Расстояние между исполинами:" Grid.Row="0" TextWrapping="Wrap" />
+			<TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="0" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar0" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.01" Minimum="0" Maximum="1" />
+
+			<TextBlock Text="Радиус для исполина:" Grid.Row="1" />
+			<TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" />
+			<ScrollBar Name="LevelScrollBar1" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />
+
+			<TextBlock Text="Радиус:" Grid.Row="2" />
+		    <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.10" Minimum="0" Maximum="1" />
+
+			<!--
+			<TextBlock Text="" Grid.Row="3" />
+			<TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" />
+			<ScrollBar Name="LevelScrollBar3" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="1" />-->
+		</Grid>
+	</Grid>	
+</UserControl>

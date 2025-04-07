@@ -6,6 +6,7 @@
 			 xmlns:vm="using:Ssz.AI.ViewModels"
 			 xmlns:views="using:Ssz.AI.Views"
 			 xmlns:model3D="using:Ssz.Utils.Avalonia.Model3D"
+			 xmlns:oxy="clr-namespace:OxyPlot.Avalonia;assembly=OxyPlot.Avalonia"
 			 x:CompileBindings="False"
              x:Class="Ssz.AI.Views.ImagesSet">
 	<ItemsControl Name="MainItemsControl">
@@ -28,6 +29,12 @@
 				<Grid RowDefinitions="*,4*" Margin="5">
 					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainModel3DControl.Bounds.Height}" />
 					<model3D:Model3DControl Grid.Row="1" Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" Data="{Binding Data}" />
+				</Grid>
+			</DataTemplate>
+			<DataTemplate DataType="vm:Plot2DWithDesc">
+				<Grid RowDefinitions="*,4*" Margin="5">
+					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #Plot2DControl.Bounds.Height}" />
+					<oxy:PlotView Grid.Row="1" Width="{Binding #Plot2DControl.Bounds.Height}" Name="Plot2DControl" Model="{Binding Model}" />
 				</Grid>
 			</DataTemplate>
 		</ItemsControl.DataTemplates>

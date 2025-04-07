@@ -1,4 +1,5 @@
-﻿using Ssz.AI.Models;
+﻿using OxyPlot;
+using Ssz.AI.Models;
 using Ssz.Utils.Avalonia.Model3D;
 using System.DrawingCore;
 
@@ -17,5 +18,10 @@ namespace Ssz.AI.ViewModels
     public class Model3DWithDesc : VisualizationWithDesc
     {
         public Model3DScene Data { get; set; } = null!;
+    }
+
+    public class Plot2DWithDesc : VisualizationWithDesc
+    {
+        public PlotModel Model { get; set; } = null!;
     }
 }

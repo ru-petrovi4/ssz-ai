@@ -18,7 +18,7 @@
 
 	<dh:DialogHost Identifier="RootDialog">
 		<Grid>
-			<v:Model5View />
+			<v:Model9View />
 		</Grid>
 	</dh:DialogHost>
 </Window>

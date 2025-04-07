@@ -13,6 +13,9 @@
     <Application.Styles>
         <FluentTheme />
 		<dialogHostAvalonia:DialogHostStyles />
-		<StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+		<StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />		
+
+		<!-- Add the line below to get OxyPlot UI theme applied in Avalonia 11. -->
+		<StyleInclude Source="avares://OxyPlot.Avalonia/Themes/Default.axaml"/>
     </Application.Styles>
 </Application>
