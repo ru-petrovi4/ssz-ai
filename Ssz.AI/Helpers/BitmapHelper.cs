@@ -1,9 +1,10 @@
-﻿using OpenCvSharp;
+﻿using Avalonia;
+using OpenCvSharp;
 using Ssz.AI.Models;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
-using System.DrawingCore.Imaging;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -11,6 +12,46 @@ namespace Ssz.AI.Helpers
 {
     public static class BitmapHelper
     {
+        public static byte GetInterpolatedValue(byte[] imageData, PixelSize imageSize, float centerX, float centerY)
+        {
+            int x = (int)centerX;
+            int y = (int)centerY;
+            if (x < 0 ||
+                    y < 0 ||
+                    x + 1 >= imageSize.Width ||
+                    y + 1 >= imageSize.Height)
+                return 0;
+
+            double tx = centerX - x;
+            double ty = centerY - y;
+            double interpolatedValue = (1 - tx) * (1 - ty) * imageData[x + imageSize.Width * y] +
+                tx * (1 - ty) * imageData[x + 1 + imageSize.Width * y] +
+                (1 - tx) * ty * imageData[x + imageSize.Width * (y + 1)] +
+                tx * ty * imageData[x + 1 + imageSize.Width * (y + 1)];
+
+            return (byte)interpolatedValue;
+        }
+
+        //public static byte GetInterpolatedValue(byte[] image, System.Drawing.Size imageSize, float centerX, float centerY)
+        //{
+        //    int x = (int)centerX;
+        //    int y = (int)centerY;
+        //    if (x < 0 ||
+        //            y < 0 ||
+        //            x + 1 >= image.GetLength(0) ||
+        //            y + 1 >= image.GetLength(1))
+        //        return 0;
+
+        //    float tx = centerX - x;
+        //    float ty = centerY - y;
+        //    float interpolatedValue = (1.0f - tx) * (1.0f - ty) * image[x, y] +
+        //        tx * (1.0f - ty) * image[x + 1, y] +
+        //        (1.0f - tx) * ty * image[x, y + 1] +
+        //        tx * ty * image[x + 1, y + 1];
+
+        //    return (byte)interpolatedValue;
+        //}
+
         //public static Bitmap ConvertImageDataToBitmap(byte[] imageData, int width, int height)
         //{
         //    Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);

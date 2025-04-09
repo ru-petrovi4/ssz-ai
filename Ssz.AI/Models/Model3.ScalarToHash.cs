@@ -13,10 +13,10 @@ using Ssz.AI.Views;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.DrawingCore;
+using System.Drawing;
 using System.Linq;
 using System.Numerics.Tensors;
-using Size = System.DrawingCore.Size;
+using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
 {

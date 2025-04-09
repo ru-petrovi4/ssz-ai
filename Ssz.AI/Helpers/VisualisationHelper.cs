@@ -6,7 +6,7 @@ namespace Ssz.AI.Helpers
 {
     public static class VisualisationHelper
     {
-        public static void ShowImages(System.DrawingCore.Image[] images)
+        public static void ShowImages(System.Drawing.Image[] images)
         {
             var window = new MainWindow
             {

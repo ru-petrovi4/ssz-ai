@@ -1,6 +1,6 @@
 ﻿using Ssz.AI.Models;
 using System;
-using System.DrawingCore;
+using System.Drawing;
 using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Grafana

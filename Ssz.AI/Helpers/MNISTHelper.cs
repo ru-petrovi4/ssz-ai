@@ -1,7 +1,7 @@
 ﻿using Ssz.AI.Core.Grafana;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
+using System.Drawing;
 using System.IO;
 
 namespace Ssz.AI.Helpers
@@ -48,7 +48,7 @@ namespace Ssz.AI.Helpers
             return bitmap;
         }
 
-        public static byte GetInterpolatedValue(byte[] mnistImageData, float centerX, float centerY)
+        public static byte GetInterpolatedValue(byte[] mnistImage, float centerX, float centerY)
         {
             int x = (int)centerX;
             int y = (int)centerY;
@@ -60,13 +60,13 @@ namespace Ssz.AI.Helpers
 
             double tx = centerX - x;
             double ty = centerY - y;
-            double interpolatedValue = (1 - tx) * (1 - ty) * mnistImageData[x + MNISTImageWidthPixels * y] +
-                tx * (1 - ty) * mnistImageData[x + 1 + MNISTImageWidthPixels * y] +
-                (1 - tx) * ty * mnistImageData[x + MNISTImageWidthPixels * (y + 1)] +
-                tx * ty * mnistImageData[x + 1 + MNISTImageWidthPixels * (y + 1)];            
+            double interpolatedValue = (1 - tx) * (1 - ty) * mnistImage[x + MNISTImageWidthPixels * y] +
+                tx * (1 - ty) * mnistImage[x + 1 + MNISTImageWidthPixels * y] +
+                (1 - tx) * ty * mnistImage[x + MNISTImageWidthPixels * (y + 1)] +
+                tx * ty * mnistImage[x + 1 + MNISTImageWidthPixels * (y + 1)];            
 
             return (byte)interpolatedValue;
-        }
+        }        
 
         #endregion
 

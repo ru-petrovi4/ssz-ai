@@ -1,13 +1,12 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Layout;
-using NumSharp;
 using OpenCvSharp;
 using Ssz.AI.Helpers;
 using Ssz.AI.Views;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
-using Size = System.DrawingCore.Size;
+using System.Drawing;
+using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
 {
@@ -18,8 +17,8 @@ namespace Ssz.AI.Models
     {
         public Model1()
         {   
-            NDArray images = np.load("Images(500x500).npy");
-            NDArray writerInfo = np.load("WriterInfo.npy");            
+            //NDArray images = np.load("Images(500x500).npy");
+            //NDArray writerInfo = np.load("WriterInfo.npy");            
 
             // Применяем оператор Собеля к первому изображению
             //var originalBitmap = HWDDHelper.GetBitmap(images, 1);

@@ -11,7 +11,7 @@ namespace Ssz.AI.Models
 {
     public static class Visualization3D
     {
-        //public static void ShowPoints(System.DrawingCore.Image[] images)
+        //public static void ShowPoints(System.Drawing.Image[] images)
         //{
         //    var window = new Window
         //    {
@@ -64,7 +64,7 @@ namespace Ssz.AI.Models
                     // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
                     float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
                     // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    System.DrawingCore.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
+                    System.Drawing.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
 
                     point3DWithColorList.Add(new Point3DWithColor
                     {

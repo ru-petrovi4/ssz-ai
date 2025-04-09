@@ -1,7 +1,7 @@
 ﻿using Ssz.AI.Core.Grafana;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
+using System.Drawing;
 using System.IO;
 
 namespace Ssz.AI.Helpers

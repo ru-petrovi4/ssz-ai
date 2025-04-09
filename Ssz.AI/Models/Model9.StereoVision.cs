@@ -1,4 +1,5 @@
-﻿ using Avalonia.Layout;
+﻿using Avalonia;
+using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -10,8 +11,8 @@ using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.DrawingCore;
-using System.DrawingCore.Drawing2D;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -19,9 +20,8 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using Xla;
 using static Ssz.AI.Models.Cortex;
-using Size = System.DrawingCore.Size;
+using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
 {
@@ -42,27 +42,29 @@ namespace Ssz.AI.Models
             LeftEye = CreateEye(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
             RightEye = CreateEye(pupil: new Vector3DFloat() { X = Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
 
-            // (float centerX, float centerY) = GetPointOnMnistImage(new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.0f }, new Direction() { XRadians = 0.1f, YRadians = 0.1f }, new Direction { XRadians = 0.0f, YRadians = 0.2f });
+            //string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
+            //string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
+            //(Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
 
-            string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
-            string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
-
-            (Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
+            (byte[] inputImagesLabels, byte[][] inputImageDatas, PixelSize inputImagesSize) = MNIST_Ex_Helper.ReadMNISTEx(
+                labelsPath: @"Data\WriterInfo.npy", 
+                imagesPath: @"Data\Images(500x500).npy"
+                );
 
             GradientDistribution leftEye_GradientDistribution = new();
             GradientDistribution rightEye_GradientDistribution = new();
 
-            StereoInput = new StereoInput();
-            //StereoInput.GenerateOwnedData(
-            //    random,
-            //    Constants,
-            //    leftEye_GradientDistribution,
-            //    rightEye_GradientDistribution,
-            //    Labels,
-            //    Images,
-            //    LeftEye,
-            //    RightEye);
-            Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
+            StereoInput = new StereoInput(inputImagesSize);
+            StereoInput.GenerateOwnedData(
+                random,
+                Constants,
+                leftEye_GradientDistribution,
+                rightEye_GradientDistribution,
+                inputImagesLabels,
+                inputImageDatas,
+                LeftEye,
+                RightEye);
+            //Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
             StereoInput.Prepare();
             //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
 
@@ -94,10 +96,7 @@ namespace Ssz.AI.Models
 
         #region public functions
 
-        public readonly ModelConstants Constants = new();
-
-        public readonly byte[] Labels;
-        public readonly byte[][] Images;
+        public readonly ModelConstants Constants = new();        
 
         public int CurrentInputIndex = 0;
 
@@ -123,14 +122,14 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages1(double positionK, double angleK)
         {
-            byte[] image = Images[0];
+            byte[] image = StereoInput.StereoInputItems[0].InputImageData;
             Direction imageNormalDirection = new() { XRadians = (float)(positionK - 0.5) * MathF.PI, YRadians = (float)(angleK - 0.5) * MathF.PI };
 
-            var Temp_LeftEye_Image = StereoInput.GetEyeImage(Constants, image, imageNormalDirection, LeftEye);
-            var Temp_RightEye_Image = StereoInput.GetEyeImage(Constants, image, imageNormalDirection, RightEye);
+            var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);
+            var temp_RightEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, RightEye);
 
-            return [ MNISTHelper.GetBitmap(Temp_LeftEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels),
-                MNISTHelper.GetBitmap(Temp_RightEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels) ];
+            return [ MNISTHelper.GetBitmap(temp_LeftEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels),
+                MNISTHelper.GetBitmap(temp_RightEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels) ];
 
             //return [];
         }        

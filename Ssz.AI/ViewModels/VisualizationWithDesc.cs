@@ -1,7 +1,7 @@
 ﻿using OxyPlot;
 using Ssz.AI.Models;
 using Ssz.Utils.Avalonia.Model3D;
-using System.DrawingCore;
+using System.Drawing;
 
 namespace Ssz.AI.ViewModels
 {

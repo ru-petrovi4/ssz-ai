@@ -1,7 +1,7 @@
 ﻿using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;

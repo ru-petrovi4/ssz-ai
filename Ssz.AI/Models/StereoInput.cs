@@ -1,7 +1,9 @@
-﻿using Ssz.AI.Grafana;
+﻿using Avalonia;
+using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
 using Ssz.Utils.Serialization;
 using System;
+using System.Drawing;
 using System.Linq;
 
 namespace Ssz.AI.Models
@@ -10,8 +12,9 @@ namespace Ssz.AI.Models
     {
         #region construction and destruction
 
-        public StereoInput()
-        {    
+        public StereoInput(PixelSize inputImagesSize)
+        {
+            InputImagesSize = inputImagesSize;
         }
 
         #endregion
@@ -19,6 +22,8 @@ namespace Ssz.AI.Models
         #region public functions
 
         public StereoInputItem[] StereoInputItems = null!;
+
+        public readonly PixelSize InputImagesSize;
 
         /// <summary>
         ///     Generates model data after construction.
@@ -28,31 +33,31 @@ namespace Ssz.AI.Models
             Model9.ModelConstants constants,
             GradientDistribution leftEye_GradientDistribution,
             GradientDistribution rightEye_GradientDistribution,
-            byte[] labels, 
-            byte[][] images,
+            byte[] inputImagesLabels, 
+            byte[][] inputImageDatas,            
             Eye leftEye,
             Eye rightEye)
         {
-            StereoInputItems = new StereoInputItem[images.Length];            
-            foreach (int i in Enumerable.Range(0, images.Length))
+            StereoInputItems = new StereoInputItem[inputImageDatas.Length];            
+            foreach (int i in Enumerable.Range(0, inputImageDatas.Length))
             {
                 StereoInputItem stereoInputItem = new();
                 StereoInputItems[i] = stereoInputItem;
-                byte[] original_Image = images[i];
-                stereoInputItem.Label = labels[i];
-                stereoInputItem.Original_Image = original_Image;
+                byte[] inputImageData = inputImageDatas[i];
+                stereoInputItem.Label = inputImagesLabels[i];
+                stereoInputItem.InputImageData = inputImageData;
                 stereoInputItem.ImageNormalDirection = new Direction();
                 stereoInputItem.ImageNormalDirection.XRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
                 stereoInputItem.ImageNormalDirection.YRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
 
-                stereoInputItem.LeftEye_Image = GetEyeImage(constants, original_Image, stereoInputItem.ImageNormalDirection, leftEye);
-                stereoInputItem.RightEye_Image = GetEyeImage(constants, original_Image, stereoInputItem.ImageNormalDirection, rightEye);
+                stereoInputItem.LeftEyeImageData = GetEyeImageData(constants, inputImageData, InputImagesSize, stereoInputItem.ImageNormalDirection, leftEye);
+                stereoInputItem.RightEyeImageData = GetEyeImageData(constants, inputImageData, InputImagesSize, stereoInputItem.ImageNormalDirection, rightEye);
 
                 // Применяем оператор Собеля
-                stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftEye_Image, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
+                stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftEyeImageData, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
                 SobelOperator.CalculateDistribution(stereoInputItem.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
 
-                stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightEye_Image, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
+                stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightEyeImageData, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
                 SobelOperator.CalculateDistribution(stereoInputItem.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
             }
         }
@@ -85,60 +90,27 @@ namespace Ssz.AI.Models
             }
         }
 
-        public static byte[] GetEyeImage(Model9.ModelConstants Constants, byte[] mnistImage, Direction imageNormalDirection, Eye eye)
+        public static byte[] GetEyeImageData(Model9.ModelConstants constants, byte[] inputImageData, PixelSize inputImageSize, Direction imageNormalDirection, Eye eye)
         {
             float widthRadians = eye.RetinaBottomRightXRadians - eye.RetinaUpperLeftXRadians;
             float heightRadians = eye.RetinaBottomRightYRadians - eye.RetinaUpperLeftYRadians;
 
-            byte[] eyeImage = new byte[Constants.EyeImageWidthPixels * Constants.EyeImageHeightPixels];
-            for (int y = 0; y < Constants.EyeImageHeightPixels; y += 1)
+            byte[] eyeImage = new byte[constants.EyeImageWidthPixels * constants.EyeImageHeightPixels];
+            for (int y = 0; y < constants.EyeImageHeightPixels; y += 1)
             {
-                for (int x = 0; x < Constants.EyeImageWidthPixels; x += 1)
+                for (int x = 0; x < constants.EyeImageWidthPixels; x += 1)
                 {
                     Direction eyeDirection = new();
-                    eyeDirection.XRadians = eye.RetinaUpperLeftXRadians + widthRadians * x / Constants.EyeImageWidthPixels;
-                    eyeDirection.YRadians = eye.RetinaUpperLeftYRadians + heightRadians * y / Constants.EyeImageHeightPixels;
-                    (float centerX, float centerY) = GetPointOnMnistImage(Constants, eye.Pupil, eyeDirection, imageNormalDirection);
+                    eyeDirection.XRadians = eye.RetinaUpperLeftXRadians + widthRadians * x / constants.EyeImageWidthPixels;
+                    eyeDirection.YRadians = eye.RetinaUpperLeftYRadians + heightRadians * y / constants.EyeImageHeightPixels;
+                    (float centerX, float centerY) = GetPointOnMnistImage(constants, eye.Pupil, eyeDirection, imageNormalDirection);
                     // Значение пикселя из массива байтов
-                    byte pixelValue = MNISTHelper.GetInterpolatedValue(mnistImage, centerX, centerY);
+                    byte pixelValue = BitmapHelper.GetInterpolatedValue(inputImageData, inputImageSize, centerX, centerY);
 
-                    eyeImage[x + y * Constants.EyeImageWidthPixels] = pixelValue;
+                    eyeImage[x + y * constants.EyeImageWidthPixels] = pixelValue;
                 }
             }
-            return eyeImage;
-            //Bitmap resultImage = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-
-            //// Преобразование изображения в двумерный массив интенсивностей
-            //double[,] intensityArray = new double[imageSize, imageSize];
-            //for (int y = 0; y < MNISTHelper.MNISTImageHeightPixels; y++)
-            //{
-            //    for (int x = 0; x < MNISTHelper.MNISTImageWidthPixels; x++)
-            //    {
-            //        intensityArray[x, y] = image[y * imageSize + x] / 255.0;
-            //    }
-            //}
-
-            //// Применение матрицы трансформации к каждому пикселю
-            //for (int y = 0; y < imageSize; y++)
-            //{
-            //    for (int x = 0; x < imageSize; x++)
-            //    {
-            //        var originalPoint = Vector<double>.Build.DenseOfArray(new double[] { x - imageSize / 2, y - imageSize / 2, 0 });
-            //        var transformedPoint = rotationMatrix * originalPoint + Vector<double>.Build.DenseOfArray(new double[] { eyeOffset, 0, 0 });
-
-            //        int newX = (int)Math.Round(transformedPoint[0] + imageSize / 2);
-            //        int newY = (int)Math.Round(transformedPoint[1] + imageSize / 2);
-
-            //        if (newX >= 0 && newX < imageSize && newY >= 0 && newY < imageSize)
-            //        {
-            //            double intensity = intensityArray[x, y];
-            //            Color color = Color.FromArgb((int)(intensity * 255), (int)(intensity * 255), (int)(intensity * 255));
-            //            resultImage.SetPixel(newX, newY, color);
-            //        }
-            //    }
-            //}
-
-            //return resultImage;
+            return eyeImage;            
         }
 
         #endregion                
@@ -234,13 +206,13 @@ namespace Ssz.AI.Models
     {
         public byte Label;
 
-        public byte[] Original_Image = null!;
+        public byte[] InputImageData = null!;
 
         public Direction ImageNormalDirection;
 
-        public byte[] LeftEye_Image = null!;
+        public byte[] LeftEyeImageData = null!;
 
-        public byte[] RightEye_Image = null!;
+        public byte[] RightEyeImageData = null!;
 
         public DenseMatrix<GradientInPoint> LeftEye_GradientMatrix = null!;
 
@@ -251,11 +223,11 @@ namespace Ssz.AI.Models
             using (writer.EnterBlock(1))
             {
                 writer.Write(Label);
-                writer.WriteArray(Original_Image);
+                writer.WriteArray(InputImageData);
                 writer.Write(ImageNormalDirection.XRadians);
                 writer.Write(ImageNormalDirection.YRadians);
-                writer.WriteArray(LeftEye_Image);
-                writer.WriteArray(RightEye_Image);
+                writer.WriteArray(LeftEyeImageData);
+                writer.WriteArray(RightEyeImageData);
                 writer.WriteOwnedDataSerializable(LeftEye_GradientMatrix, null);
                 writer.WriteOwnedDataSerializable(RightEye_GradientMatrix, null);
             }
@@ -269,11 +241,11 @@ namespace Ssz.AI.Models
                 {
                     case 1:
                         Label = reader.ReadByte();
-                        Original_Image = reader.ReadByteArray();
+                        InputImageData = reader.ReadByteArray();
                         ImageNormalDirection.XRadians = reader.ReadSingle();
                         ImageNormalDirection.YRadians = reader.ReadSingle();
-                        LeftEye_Image = reader.ReadByteArray();
-                        RightEye_Image = reader.ReadByteArray();
+                        LeftEyeImageData = reader.ReadByteArray();
+                        RightEyeImageData = reader.ReadByteArray();
                         LeftEye_GradientMatrix = new();
                         reader.ReadOwnedDataSerializable(LeftEye_GradientMatrix, null);
                         RightEye_GradientMatrix = new();
@@ -284,3 +256,38 @@ namespace Ssz.AI.Models
         }
     }
 }
+
+
+//Bitmap resultImage = new Bitmap(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+
+//// Преобразование изображения в двумерный массив интенсивностей
+//double[,] intensityArray = new double[imageSize, imageSize];
+//for (int y = 0; y < MNISTHelper.MNISTImageHeightPixels; y++)
+//{
+//    for (int x = 0; x < MNISTHelper.MNISTImageWidthPixels; x++)
+//    {
+//        intensityArray[x, y] = image[y * imageSize + x] / 255.0;
+//    }
+//}
+
+//// Применение матрицы трансформации к каждому пикселю
+//for (int y = 0; y < imageSize; y++)
+//{
+//    for (int x = 0; x < imageSize; x++)
+//    {
+//        var originalPoint = Vector<double>.Build.DenseOfArray(new double[] { x - imageSize / 2, y - imageSize / 2, 0 });
+//        var transformedPoint = rotationMatrix * originalPoint + Vector<double>.Build.DenseOfArray(new double[] { eyeOffset, 0, 0 });
+
+//        int newX = (int)Math.Round(transformedPoint[0] + imageSize / 2);
+//        int newY = (int)Math.Round(transformedPoint[1] + imageSize / 2);
+
+//        if (newX >= 0 && newX < imageSize && newY >= 0 && newY < imageSize)
+//        {
+//            double intensity = intensityArray[x, y];
+//            Color color = Color.FromArgb((int)(intensity * 255), (int)(intensity * 255), (int)(intensity * 255));
+//            resultImage.SetPixel(newX, newY, color);
+//        }
+//    }
+//}
+
+//return resultImage;

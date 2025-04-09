@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.DrawingCore;
+using System.Drawing;
 
 namespace Ssz.AI.Models
 {

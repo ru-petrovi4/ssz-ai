@@ -7,13 +7,13 @@ using Ssz.AI.Helpers;
 using Ssz.AI.Views;
 using System;
 using System.Collections.Generic;
-using System.DrawingCore;
-using System.DrawingCore.Drawing2D;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
 using static Ssz.AI.Models.Cortex;
-using Size = System.DrawingCore.Size;
+using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
 {
