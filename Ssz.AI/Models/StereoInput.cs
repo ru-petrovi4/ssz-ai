@@ -39,7 +39,7 @@ namespace Ssz.AI.Models
             Eye rightEye)
         {
             StereoInputItems = new StereoInputItem[inputImageDatas.Length];            
-            foreach (int i in Enumerable.Range(0, inputImageDatas.Length))
+            foreach (int i in Enumerable.Range(0, 300)) // TEMPCODE
             {
                 StereoInputItem stereoInputItem = new();
                 StereoInputItems[i] = stereoInputItem;

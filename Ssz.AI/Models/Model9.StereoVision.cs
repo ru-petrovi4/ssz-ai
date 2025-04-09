@@ -122,7 +122,7 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages1(double positionK, double angleK)
         {
-            byte[] image = StereoInput.StereoInputItems[0].InputImageData;
+            byte[] image = StereoInput.StereoInputItems[199].InputImageData;
             Direction imageNormalDirection = new() { XRadians = (float)(positionK - 0.5) * MathF.PI, YRadians = (float)(angleK - 0.5) * MathF.PI };
 
             var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);
@@ -274,9 +274,9 @@ namespace Ssz.AI.Models
 
             public float ImageHeight => 0.1f;
 
-            public int EyeImageWidthPixels = 32;
+            public int EyeImageWidthPixels = 320;
 
-            public int EyeImageHeightPixels = 32;
+            public int EyeImageHeightPixels = 320;
 
             public int DependantDetectorsRangeWidthCount = 50;
 

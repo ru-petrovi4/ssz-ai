@@ -11,7 +11,8 @@ namespace Tensorflow.NumPy
             if (!ParseReader(reader, out var bytes, out var type, out var shape))
                 throw new FormatException();
 
-            Array array = Create(type, shape.Aggregate((dims, dim) => dims * dim));
+            // VALFIX
+            Array array = Create(type, shape.Select(i => (long)i).Aggregate((dims, dim) => dims * dim));
 
             var result = new NDArray(ReadValueMatrix(reader, array, bytes, type, shape));
             return result.reshape(shape);
@@ -155,7 +156,13 @@ namespace Tensorflow.NumPy
             return littleEndian;
         }
 
-        Array Create(Type type, int length)
+        /// <summary>
+        ///     VALFIX
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        Array Create(Type type, long length)
         {
             // ReSharper disable once PossibleNullReferenceException
             while (type.IsArray)
