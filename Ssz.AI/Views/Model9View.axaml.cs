@@ -39,6 +39,7 @@ public partial class Model9View : UserControl
     private void StepMnistButton_OnClick(object? sender, RoutedEventArgs args)
     {
         //_model.CollectMemories_MNIST(1);
+        _model.CurrentInputIndex += 1;
 
         Refresh_StackPanel2();
     }

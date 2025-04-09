@@ -86,10 +86,10 @@ namespace Ssz.AI.Models
             PreCortex.Prepare();            
             //Helpers.SerializationHelper.SaveToFile(@"PreCortex.bin", PreCortex, null);
 
-            Task.Factory.StartNew(() =>
-            {
-                PreCortex.Calculate(StereoInput, LeftEye, RightEye);
-            }, TaskCreationOptions.LongRunning);
+            //Task.Factory.StartNew(() =>
+            //{
+            //    PreCortex.Calculate(StereoInput, LeftEye, RightEye);
+            //}, TaskCreationOptions.LongRunning);
         }
 
         #endregion
@@ -122,7 +122,7 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages1(double positionK, double angleK)
         {
-            byte[] image = StereoInput.StereoInputItems[199].InputImageData;
+            byte[] image = StereoInput.StereoInputItems[CurrentInputIndex].InputImageData;
             Direction imageNormalDirection = new() { XRadians = (float)(positionK - 0.5) * MathF.PI, YRadians = (float)(angleK - 0.5) * MathF.PI };
 
             var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);

@@ -39,7 +39,7 @@ namespace Ssz.AI.Models
             Eye rightEye)
         {
             StereoInputItems = new StereoInputItem[inputImageDatas.Length];            
-            foreach (int i in Enumerable.Range(0, 300)) // TEMPCODE
+            foreach (int i in Enumerable.Range(0, 50)) // TEMPCODE
             {
                 StereoInputItem stereoInputItem = new();
                 StereoInputItems[i] = stereoInputItem;
@@ -103,7 +103,7 @@ namespace Ssz.AI.Models
                     Direction eyeDirection = new();
                     eyeDirection.XRadians = eye.RetinaUpperLeftXRadians + widthRadians * x / constants.EyeImageWidthPixels;
                     eyeDirection.YRadians = eye.RetinaUpperLeftYRadians + heightRadians * y / constants.EyeImageHeightPixels;
-                    (float centerX, float centerY) = GetPointOnMnistImage(constants, eye.Pupil, eyeDirection, imageNormalDirection);
+                    (float centerX, float centerY) = GetPointOnImage(constants, eye.Pupil, eyeDirection, imageNormalDirection, inputImageSize);
                     // Значение пикселя из массива байтов
                     byte pixelValue = BitmapHelper.GetInterpolatedValue(inputImageData, inputImageSize, centerX, centerY);
 
@@ -115,7 +115,7 @@ namespace Ssz.AI.Models
 
         #endregion                
 
-        private static (float centerX, float centerY) GetPointOnMnistImage(Model9.ModelConstants constants, Vector3DFloat pupil, Direction eyeDirection, Direction imageNormalDirection)
+        private static (float centerX, float centerY) GetPointOnImage(Model9.ModelConstants constants, Vector3DFloat pupil, Direction eyeDirection, Direction imageNormalDirection, PixelSize inputImageSize)
         {
             // Входные данные
             // Координаты точки A и углы линии Л
@@ -187,8 +187,8 @@ namespace Ssz.AI.Models
             planeCoordX -= constants.ImageCenter.X - constants.ImageWidth / 2;
             planeCoordY -= constants.ImageCenter.Y - constants.ImageHeight / 2;
 
-            planeCoordX /= constants.ImageWidth / MNISTHelper.MNISTImageWidthPixels;
-            planeCoordY /= constants.ImageHeight / MNISTHelper.MNISTImageHeightPixels;
+            planeCoordX /= constants.ImageWidth / inputImageSize.Width;
+            planeCoordY /= constants.ImageHeight / inputImageSize.Height;
 
             return (planeCoordX, planeCoordY);
         }
