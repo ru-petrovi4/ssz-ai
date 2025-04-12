@@ -16,13 +16,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.2.6" />
+    <PackageReference Include="Avalonia" Version="11.2.7" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.2.0" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.2.6" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.6" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.2.7" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.7" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.7" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.6" />
+    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.2.7" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Material.Avalonia.Dialogs" Version="3.10.1" />
     <PackageReference Include="MessageBox.Avalonia" Version="3.2.0" />
@@ -44,6 +44,33 @@
     <ProjectReference Include="..\Ssz.AI.Core\Ssz.AI.Core.csproj" />
     <ProjectReference Include="..\ThirdParties\TensorFlow.NET\src\TensorFlowNET.Core\Tensorflow.Binding.csproj" />
     <ProjectReference Include="..\ThirdParties\TensorFlow.NET\src\TensorFlowNET.Keras\Tensorflow.Keras.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Views\Model10View.axaml.cs">
+      <DependentUpon>Model10View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model03View.axaml.cs">
+      <DependentUpon>Model03View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model04View.axaml.cs">
+      <DependentUpon>Model04View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model05View.axaml.cs">
+      <DependentUpon>Model05View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model06View.axaml.cs">
+      <DependentUpon>Model06View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model07View.axaml.cs">
+      <DependentUpon>Model07View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model08View.axaml.cs">
+      <DependentUpon>Model08View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model09View.axaml.cs">
+      <DependentUpon>Model09View.axaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   
 </Project>

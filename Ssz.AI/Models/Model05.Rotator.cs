@@ -35,28 +35,25 @@ namespace Ssz.AI.Models
         {
             UserFriendlyLogger = new UserFriendlyLogger(DebugWindow.AddLine);
 
-            Stopwatch sw = Stopwatch.StartNew();
-            string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
-            string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений
+            Stopwatch sw = Stopwatch.StartNew();            
 
-            var (Labels, Images) = MNISTHelper.ReadMNIST(labelsPath, imagesPath);
+            var (Labels, Images) = (new byte[60000], new byte[60000][]);
 
             GradientDistribution? gradientDistribution = new();
 
             Random random = new(6);
+            var t = sw.ElapsedMilliseconds;
 
             MonoInput = new MonoInput();
             MonoInput.GenerateOwnedData_Simplified2(
+                random,
                 Constants,
                 gradientDistribution,
                 Labels,
-                Images,
-                random);
+                Images);
             //SerializationHelper.LoadFromFileIfExists("MonoInput.bin", MonoInput, null);
             MonoInput.Prepare();
-            //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);
-
-            var t = sw.ElapsedMilliseconds;            
+            //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);                  
 
             Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
@@ -64,7 +61,7 @@ namespace Ssz.AI.Models
             Retina.Prepare();
             SerializationHelper.SaveToFile("Retina.bin", Retina, null);
 
-            Cortex = new Cortex(Constants, Retina);
+            Cortex = new Cortex(Constants, Retina);            
 
             DetectorsActivationHash = new float[Constants.HashLength];
             GetImageWithDescs1(0.0, 0.0);
@@ -206,7 +203,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage),
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage),
-                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" }
+                    Desc = @"Суперактивность миниколонок (белый - максимум)" }
                 ];
         }
 
@@ -259,7 +256,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 
-                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" },
+                    Desc = @"Суперактивность миниколонок (белый - максимум)" },
                 new Model3DWithDesc { Data = Visualization3D.GetSubArea_MiniColumnsMemories_Model3DScene(Cortex),
                     Desc = @"Накопленные воспоминания в миниколонках" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage),
@@ -936,6 +933,14 @@ namespace Ssz.AI.Models
             ///     Верхний предел количества воспоминаний (для кэширования)
             /// </summary>
             public float MemoryClustersThreshold => 0.66f;
+
+            public int Angle_SmallPoints_Count => 1000;
+
+            public float Angle_SmallPoints_Radius => 0.003f;
+
+            public int Angle_BigPoints_Count => 200;
+
+            public float Angle_BigPoints_Radius => 0.015f;
         }        
     }
 }

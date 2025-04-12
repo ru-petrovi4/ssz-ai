@@ -699,6 +699,14 @@ namespace Ssz.AI.Models
             ///     Верхний предел количества воспоминаний (для кэширования)
             /// </summary>
             public float MemoryClustersThreshold => 0.66f;
+
+            public int Angle_SmallPoints_Count => 1000;
+
+            public float Angle_SmallPoints_Radius => 0.003f;
+
+            public int Angle_BigPoints_Count => 200;
+
+            public float Angle_BigPoints_Radius => 0.015f;
         }        
     }
 }

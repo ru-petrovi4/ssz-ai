@@ -27,17 +27,17 @@ namespace Ssz.AI.Models
         /// </summary>
         public Model3(Random random)
         {
-            BaseHash = new float[HashLength];
-            CompareHash = new float[HashLength];
-            LongCodeProjectionToHash = new int[LongCodeLength];
+            _baseHash = new float[HashLength];
+            _compareHash = new float[HashLength];
+            _longCode_ToHashIndices = new int[LongCodeLength];
 
-            foreach (int i in Enumerable.Range(0, LongCodeProjectionToHash.Length))
+            foreach (int i in Enumerable.Range(0, _longCode_ToHashIndices.Length))
             {
-                LongCodeProjectionToHash[i] = random.Next(HashLength);
+                _longCode_ToHashIndices[i] = random.Next(HashLength);
             }
         }        
 
-        public const int HashLength = 200;
+        public const int HashLength = 300;
 
         public const int LongCodeLength = 1000;
 
@@ -57,7 +57,7 @@ namespace Ssz.AI.Models
         public float K2 { get; set; }
 
         /// <summary>
-        ///     Расстояние между исполинами
+        ///     
         /// </summary>
         public float K3 { get; set; }
 
@@ -89,52 +89,49 @@ namespace Ssz.AI.Models
                 Maximum = 1
             });
 
-            var series = new OxyPlot.Series.LineSeries { MarkerType = MarkerType.Circle };            
+            var series = new OxyPlot.Series.LineSeries { MarkerType = MarkerType.Circle };
 
-            ComputeHash(value, BaseHash);
-            float delta = 1.0f / LongCodeProjectionToHash.Length;
-            for (float v = 0.0f; v < 1.0; v += delta)
-            {
-                ComputeHash(v, CompareHash);
-                float cosineSimilarity = TensorPrimitives.CosineSimilarity(BaseHash, CompareHash);
-                if (float.IsNaN(cosineSimilarity) || float.IsInfinity(cosineSimilarity))
-                    cosineSimilarity = 0.0f;
-                series.Points.Add(new DataPoint(v, cosineSimilarity));
-            }
+            if (K0 > 0.0f)
+            {                
+                int bigsCount = (int)(1.0f / K0);
+                var value_BigToHashIndices = new int[bigsCount];
+                foreach(int i in Enumerable.Range(0, bigsCount))
+                {
+                    value_BigToHashIndices[i] = _longCode_ToHashIndices[(int)(K0 * i * _longCode_ToHashIndices.Length)];
+                }
+
+                Array.Clear(_baseHash);
+                Hash.ValueToHash(
+                    value,
+                    value_BigToHashIndices,
+                    _longCode_ToHashIndices,
+                    bigRadius: K1,
+                    smallRadius: K2,                    
+                    _baseHash);
+                float delta = 1.0f / _longCode_ToHashIndices.Length;
+                for (float v = 0.0f; v < 1.0; v += delta)
+                {
+                    Array.Clear(_compareHash);
+                    Hash.ValueToHash(
+                        v,
+                        value_BigToHashIndices,
+                        _longCode_ToHashIndices,
+                        bigRadius: K1,
+                        smallRadius: K2,                        
+                        _compareHash);
+                    float cosineSimilarity = TensorPrimitives.CosineSimilarity(_baseHash, _compareHash);
+                    if (float.IsNaN(cosineSimilarity) || float.IsInfinity(cosineSimilarity))
+                        cosineSimilarity = 0.0f;
+                    series.Points.Add(new DataPoint(v, cosineSimilarity));
+                }
+            }            
 
             model.Series.Add(series);
             return model;
         }
 
-        private void ComputeHash(float value, float[] hash)
-        {
-            Array.Clear(hash);
-
-            float delta = K0;
-            for (float v = value - K1; v < value + K1; v += delta)
-            {
-                if (v >= 0.0f && v < 1.0f)
-                {
-                    int i = (int)(v / delta);
-                    if (i < LongCodeProjectionToHash.Length)
-                        hash[LongCodeProjectionToHash[i]] = 1.0f;
-                }
-            }
-
-            delta = 1.0f / LongCodeProjectionToHash.Length;
-            for (float v = value - K2; v < value + K2; v += delta)
-            {
-                if (v >= 0.0f && v < 1.0f)
-                {
-                    int i = (int)(v / delta);
-                    if (i < LongCodeProjectionToHash.Length)
-                        hash[LongCodeProjectionToHash[i]] = 1.0f;
-                }
-            }
-        }
-
-        private float[] BaseHash = null!;
-        private float[] CompareHash = null!;
-        private int[] LongCodeProjectionToHash = null!;
+        private float[] _baseHash = null!;
+        private float[] _compareHash = null!;
+        private int[] _longCode_ToHashIndices = null!;
     }
 }

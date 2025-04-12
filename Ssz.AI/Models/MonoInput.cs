@@ -4,6 +4,7 @@ using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;
 using System.Linq;
+using System.Numerics.Tensors;
 using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Models
@@ -20,23 +21,33 @@ namespace Ssz.AI.Models
 
         #region public functions
 
+        /// <summary>
+        ///     MonoInputItems.Length = Images.Length + constants.SubAreaMiniColumnsCount
+        ///     Last Items - generated ideal Rotator
+        /// </summary>
         public MonoInputItem[] MonoInputItems = null!;
 
         public byte[] Labels = null!;
         public byte[][] Images = null!;
+        
+        public int[] Angle_Big_ToHashIndices = null!;
+        public float Angle_BigPoints_Radius;
+        public int[] Angle_Small_ToHashIndices = null!;
+        public float Angle_SmallPoints_Radius;        
 
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
         public void GenerateOwnedData(
-            ICortexConstants constants,
+            Random random,
+            ICortexConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels, 
             byte[][] images)
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length];            
+            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];            
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 MonoInputItem monoInputItem = new();                
@@ -51,17 +62,32 @@ namespace Ssz.AI.Models
 
                 MonoInputItems[i] = monoInputItem;
             }
+
+            Angle_Small_ToHashIndices = new int[constants.Angle_SmallPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Small_ToHashIndices.Length))
+            {
+                Angle_Small_ToHashIndices[i] = random.Next(constants.HashLength);
+            }
+
+            Angle_Big_ToHashIndices = new int[constants.Angle_BigPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Big_ToHashIndices.Length))
+            {
+                Angle_Big_ToHashIndices[i] = Angle_Small_ToHashIndices[(int)((float)i * Angle_Small_ToHashIndices.Length / Angle_Big_ToHashIndices.Length)];
+            }
+            Angle_BigPoints_Radius = constants.Angle_BigPoints_Radius;
+            Angle_SmallPoints_Radius = constants.Angle_SmallPoints_Radius;
         }
 
         public void GenerateOwnedData_Simplified(
-            ICortexConstants constants,
+            Random random,
+            ICortexConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels,
             byte[][] images)
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length];
+            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 MonoInputItem monoInputItem = new();
@@ -76,14 +102,29 @@ namespace Ssz.AI.Models
 
                 MonoInputItems[i] = monoInputItem;
             }
+
+            Angle_Small_ToHashIndices = new int[constants.Angle_SmallPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Small_ToHashIndices.Length))
+            {
+                Angle_Small_ToHashIndices[i] = random.Next(constants.HashLength);
+            }
+
+            Angle_Big_ToHashIndices = new int[constants.Angle_BigPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Big_ToHashIndices.Length))
+            {
+                Angle_Big_ToHashIndices[i] = Angle_Small_ToHashIndices[(int)((float)i * Angle_Small_ToHashIndices.Length / Angle_Big_ToHashIndices.Length)];
+            }
+
+            Angle_BigPoints_Radius = constants.Angle_BigPoints_Radius;
+            Angle_SmallPoints_Radius = constants.Angle_SmallPoints_Radius;
         }
 
-        public void GenerateOwnedData_Simplified2(            
-            ICortexConstants constants,
+        public void GenerateOwnedData_Simplified2(
+            Random random,
+            ICortexConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels,
-            byte[][] images,
-            Random random)
+            byte[][] images)
         {
             Labels = labels;
             Images = images;
@@ -107,6 +148,67 @@ namespace Ssz.AI.Models
 
                 MonoInputItems[i] = monoInputItem;
             }
+
+            Angle_Small_ToHashIndices = new int[constants.Angle_SmallPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Small_ToHashIndices.Length))
+            {
+                Angle_Small_ToHashIndices[i] = random.Next(constants.HashLength);
+            }
+
+            Angle_Big_ToHashIndices = new int[constants.Angle_BigPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Big_ToHashIndices.Length))
+            {
+                Angle_Big_ToHashIndices[i] = Angle_Small_ToHashIndices[(int)((float)i * Angle_Small_ToHashIndices.Length / Angle_Big_ToHashIndices.Length)];
+            }
+
+            Angle_BigPoints_Radius = constants.Angle_BigPoints_Radius;
+            Angle_SmallPoints_Radius = constants.Angle_SmallPoints_Radius;
+        }
+
+        public void GenerateOwnedData_Simplified_WithAngle(
+            Random random,
+            ICortexConstants constants,            
+            GradientDistribution? gradientDistribution,
+            byte[] labels,
+            byte[][] images)
+        {
+            Labels = labels;
+            Images = images;
+            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
+            foreach (int i in Enumerable.Range(0, images.Length))
+            {
+                // Вычисляем магнитуду и угол градиента
+                double magnitude = constants.GeneratedMaxGradientMagnitude * random.NextDouble();
+                // [-pi, pi]
+                double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
+
+                MonoInputItem monoInputItem = new();
+                byte[] original_Image = images[i];
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Original_Image = original_Image;
+
+                // Применяем оператор Собеля
+                monoInputItem.GradientMatrix = SobelOperator.ApplySobel_Simplified2(original_Image, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels, magnitude, angle);
+                if (gradientDistribution is not null)
+                    SobelOperator.CalculateDistribution(monoInputItem.GradientMatrix, gradientDistribution, constants);
+
+                MonoInputItems[i] = monoInputItem;
+            }
+
+            Angle_Small_ToHashIndices = new int[constants.Angle_SmallPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Small_ToHashIndices.Length))
+            {
+                Angle_Small_ToHashIndices[i] = random.Next(constants.HashLength);
+            }
+
+            Angle_Big_ToHashIndices = new int[constants.Angle_BigPoints_Count];
+            foreach (int i in Enumerable.Range(0, Angle_Big_ToHashIndices.Length))
+            {
+                Angle_Big_ToHashIndices[i] = Angle_Small_ToHashIndices[(int)((float)i * Angle_Small_ToHashIndices.Length / Angle_Big_ToHashIndices.Length)];
+            }
+
+            Angle_BigPoints_Radius = constants.Angle_BigPoints_Radius;
+            Angle_SmallPoints_Radius = constants.Angle_SmallPoints_Radius;
         }
 
         /// <summary>
@@ -137,7 +239,18 @@ namespace Ssz.AI.Models
             }
         }
 
-        #endregion
+        public void AddValueHash(float angleNormalized, float[] temp_Hash)
+        {
+            Hash.ValueToHash(
+                    angleNormalized,
+                    Angle_Big_ToHashIndices,
+                    Angle_Small_ToHashIndices,
+                    bigRadius: Angle_BigPoints_Radius,
+                    smallRadius: Angle_SmallPoints_Radius,
+                    temp_Hash);
+        }
+
+        #endregion        
     }
 
     public struct MonoInputItem : IOwnedDataSerializable

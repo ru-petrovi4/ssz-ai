@@ -367,7 +367,7 @@ namespace Ssz.AI.Models
             public readonly float[] Temp_ShortHashConverted;
 
             public bool Temp_IsShortHashMustBeCalculated;
-
+            
             public void GetHash(float[] hash)
             {
                 Array.Clear(hash);
@@ -618,6 +618,14 @@ namespace Ssz.AI.Models
             ///     Порог для кластеризации воспоминаний
             /// </summary>
             float MemoryClustersThreshold { get; }
+
+            int Angle_SmallPoints_Count { get; }
+
+            float Angle_SmallPoints_Radius { get; }
+
+            int Angle_BigPoints_Count { get; }
+
+            float Angle_BigPoints_Radius { get; }
         }
     }    
 }
