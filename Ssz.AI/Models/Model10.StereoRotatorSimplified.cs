@@ -44,6 +44,7 @@ namespace Ssz.AI.Models
             GradientDistribution? gradientDistribution = new();
 
             Random random = new(6);
+            var t = sw.ElapsedMilliseconds;
 
             MonoInput = new MonoInput();
             MonoInput.GenerateOwnedData_Simplified_WithAngle(
@@ -54,9 +55,7 @@ namespace Ssz.AI.Models
                 Images);
             //SerializationHelper.LoadFromFileIfExists("MonoInput.bin", MonoInput, null);
             MonoInput.Prepare();
-            //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);
-
-            var t = sw.ElapsedMilliseconds;            
+            //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);             
 
             Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
@@ -65,6 +64,8 @@ namespace Ssz.AI.Models
             //SerializationHelper.SaveToFile("Retina.bin", Retina, null);
 
             Cortex = new Cortex(Constants, Retina);
+            Cortex.GenerateOwnedData(Retina);
+            Cortex.Prepare();
 
             DetectorsActivationHash = new float[Constants.HashLength];
             GetImageWithDescs1(0.0, 0.0);
@@ -356,7 +357,7 @@ namespace Ssz.AI.Models
                 CalculateDetectorsAndActivityAndSuperActivity(angleNormalized, generatedGradientMatrix, activitiyMaxInfo);
 
                 MonoInputItem monoInputItem = new();
-                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}; AngleNormalized: {angleNormalized}";
                 //monoInputItem.Original_Image = original_Image;                
                 monoInputItem.GradientMatrix = generatedGradientMatrix;
                 MonoInput.MonoInputItems[inputIndex] = monoInputItem;

@@ -12,16 +12,16 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Views;
 
-public partial class Model5View : UserControl
+public partial class Model05View : UserControl
 {
-    public Model5View()
+    public Model05View()
     {
         InitializeComponent();
 
         if (Design.IsDesignMode)
             return;
 
-        _model = new Model5();
+        _model = new Model05();
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.0;
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
@@ -227,7 +227,7 @@ public partial class Model5View : UserControl
     //    }
     //}
 
-    private Model5 _model = null!;
+    private Model05 _model = null!;
 
     private Random _random = null!;
 }

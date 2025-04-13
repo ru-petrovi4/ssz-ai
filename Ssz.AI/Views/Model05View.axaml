@@ -5,7 +5,7 @@
 			 xmlns:local="clr-namespace:Ssz.AI"
 			 xmlns:localViews="clr-namespace:Ssz.AI.Views"			 
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"			 
-             x:Class="Ssz.AI.Views.Model5View">
+             x:Class="Ssz.AI.Views.Model05View">
 	<Grid>		
 		<Grid.RowDefinitions>
 			<RowDefinition Height="auto" />

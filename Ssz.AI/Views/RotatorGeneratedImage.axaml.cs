@@ -18,7 +18,7 @@ public partial class RotatorGeneratedImage : UserControl
 
     public DenseMatrix<GradientInPoint> GeneratedGradientMatrix { get; private set; } = null!;
 
-    public void Refresh(Model5 model5)
+    public void Refresh(Model05 model)
     {
         int width = MNISTHelper.MNISTImageWidthPixels;
         int height = MNISTHelper.MNISTImageHeightPixels;
@@ -51,31 +51,31 @@ public partial class RotatorGeneratedImage : UserControl
 
         ActivitiyMaxInfo activitiyMaxInfo = new();
 
-        model5.CalculateDetectorsAndActivityAndSuperActivity(GeneratedGradientMatrix, activitiyMaxInfo);
+        model.CalculateDetectorsAndActivityAndSuperActivity(GeneratedGradientMatrix, activitiyMaxInfo);
 
         var activityColorImage = BitmapHelper.GetSubBitmap(
-                Visualisation.GetBitmapFromMiniColums_ActivityColor(model5.Cortex),
-                model5.Cortex.MiniColumns.Dimensions[0] / 2,
-                model5.Cortex.MiniColumns.Dimensions[1] / 2,
-                model5.Cortex.SubArea_MiniColumns_Radius + 2);
+                Visualisation.GetBitmapFromMiniColums_ActivityColor(model.Cortex),
+                model.Cortex.MiniColumns.Dimensions[0] / 2,
+                model.Cortex.MiniColumns.Dimensions[1] / 2,
+                model.Cortex.SubArea_MiniColumns_Radius + 2);
 
         var superActivityColorImage = BitmapHelper.GetSubBitmap(
-            Visualisation.GetBitmapFromMiniColums_SuperActivityColor(model5.Cortex),
-            model5.Cortex.MiniColumns.Dimensions[0] / 2,
-            model5.Cortex.MiniColumns.Dimensions[1] / 2,
-            model5.Cortex.SubArea_MiniColumns_Radius + 2);        
+            Visualisation.GetBitmapFromMiniColums_SuperActivityColor(model.Cortex),
+            model.Cortex.MiniColumns.Dimensions[0] / 2,
+            model.Cortex.MiniColumns.Dimensions[1] / 2,
+            model.Cortex.SubArea_MiniColumns_Radius + 2);        
 
         var memoriesColorImage = BitmapHelper.GetSubBitmap(
-            Visualisation.GetBitmapFromMiniColumsMemoriesColor(model5.Cortex),
-            model5.Cortex.MiniColumns.Dimensions[0] / 2,
-            model5.Cortex.MiniColumns.Dimensions[1] / 2,
-            model5.Cortex.SubArea_MiniColumns_Radius + 2);
+            Visualisation.GetBitmapFromMiniColumsMemoriesColor(model.Cortex),
+            model.Cortex.MiniColumns.Dimensions[0] / 2,
+            model.Cortex.MiniColumns.Dimensions[1] / 2,
+            model.Cortex.SubArea_MiniColumns_Radius + 2);
 
         var memoriesCountImage = BitmapHelper.GetSubBitmap(
-            Visualisation.GetBitmapFromMiniColumsMemoriesCount(model5.Cortex),
-            model5.Cortex.MiniColumns.Dimensions[0] / 2,
-            model5.Cortex.MiniColumns.Dimensions[1] / 2,
-            model5.Cortex.SubArea_MiniColumns_Radius + 2);
+            Visualisation.GetBitmapFromMiniColumsMemoriesCount(model.Cortex),
+            model.Cortex.MiniColumns.Dimensions[0] / 2,
+            model.Cortex.MiniColumns.Dimensions[1] / 2,
+            model.Cortex.SubArea_MiniColumns_Radius + 2);
 
         var gradientBitmap0 = Visualisation.GetGradientBigBitmap(GeneratedGradientMatrix);
         var r = Visualisation.GetGeneratedLine_GradientMatrix(width, height, 0, angle / (2.0 * Math.PI));

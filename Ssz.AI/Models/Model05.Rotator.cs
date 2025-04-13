@@ -24,14 +24,14 @@ using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
 {
-    public class Model5
+    public class Model05
     {
         #region construction and destruction
 
         /// <summary>
         ///     Построение "вертушки"
         /// </summary>
-        public Model5()
+        public Model05()
         {
             UserFriendlyLogger = new UserFriendlyLogger(DebugWindow.AddLine);
 
