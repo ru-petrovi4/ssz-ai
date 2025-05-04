@@ -434,14 +434,14 @@ namespace Ssz.AI.Models
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
                         bool anyToProcessNearestMiniColumn = false;
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
-                        {
-                            if (!nearestMiniColumn.Temp_IsSynced)
-                            {
-                                nearestMiniColumn.Temp_IsShortHashMustBeCalculated = true;
-                                anyToProcessNearestMiniColumn = true;
-                            }
-                        }
+                        //foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
+                        //{
+                        //    if (!nearestMiniColumn.Temp_IsSynced)
+                        //    {
+                        //        nearestMiniColumn.Temp_IsShortHashMustBeCalculated = true;
+                        //        anyToProcessNearestMiniColumn = true;
+                        //    }
+                        //}
                         if (!anyToProcessNearestMiniColumn)
                         {
                             syncedMiniColumnsToProcess.Remove(miniColumn.Temp_SyncedMiniColumnsToProcess_Handle);
@@ -473,60 +473,60 @@ namespace Ssz.AI.Models
                         miniColumn.Autoencoder!.Calculate_ForwardPass(miniColumn.Temp_Hash);
                         miniColumn.GetShortHashConverted(miniColumn.Autoencoder!.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
 
-                        foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
-                        {
-                            if (!nearestMiniColumn.Temp_IsSynced)
-                            {
-                                if (nearestMiniColumn.Temp_IsShortHashMustBeCalculated)
-                                {
-                                    nearestMiniColumn.Temp_IsShortHashMustBeCalculated = false;
+                        //foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
+                        //{
+                        //    if (!nearestMiniColumn.Temp_IsSynced)
+                        //    {
+                        //        if (nearestMiniColumn.Temp_IsShortHashMustBeCalculated)
+                        //        {
+                        //            nearestMiniColumn.Temp_IsShortHashMustBeCalculated = false;
 
-                                    nearestMiniColumn.GetHash(nearestMiniColumn.Temp_Hash);
-                                    if (TensorPrimitives.Sum(nearestMiniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
-                                        continue;
-                                    nearestMiniColumn.Autoencoder!.Calculate_ForwardPass(nearestMiniColumn.Temp_Hash);
-                                }
-                                else
-                                {
-                                    if (TensorPrimitives.Sum(nearestMiniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
-                                        continue;
-                                }
+                        //            nearestMiniColumn.GetHash(nearestMiniColumn.Temp_Hash);
+                        //            if (TensorPrimitives.Sum(nearestMiniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
+                        //                continue;
+                        //            nearestMiniColumn.Autoencoder!.Calculate_ForwardPass(nearestMiniColumn.Temp_Hash);
+                        //        }
+                        //        else
+                        //        {
+                        //            if (TensorPrimitives.Sum(nearestMiniColumn.Temp_Hash) < Constants.MinBitsInHashForMemory)
+                        //                continue;
+                        //        }
 
-                                if (nearestMiniColumn.Temp_ShortHashConversionMatrix is null)
-                                {
-                                    if (freeMatrixFloatsStack.Count == 0)
-                                    {
-                                        nearestMiniColumn.Temp_ShortHashConversionMatrix = new MatrixFloat(Constants.ShortHashLength, Constants.ShortHashLength);                                        
-                                    }
-                                    else
-                                    {
-                                        var freeMatrixFloat = freeMatrixFloatsStack.Pop();
-                                        Array.Clear(freeMatrixFloat.Data);
-                                        nearestMiniColumn.Temp_ShortHashConversionMatrix = freeMatrixFloat;
-                                    }
-                                    nearestMiniColumn.Temp_ShortHashConversionMatrix_TrainingCount = 0;
-                                }
+                        //        if (nearestMiniColumn.Temp_ShortHashConversionMatrix is null)
+                        //        {
+                        //            if (freeMatrixFloatsStack.Count == 0)
+                        //            {
+                        //                nearestMiniColumn.Temp_ShortHashConversionMatrix = new MatrixFloat(Constants.ShortHashLength, Constants.ShortHashLength);                                        
+                        //            }
+                        //            else
+                        //            {
+                        //                var freeMatrixFloat = freeMatrixFloatsStack.Pop();
+                        //                Array.Clear(freeMatrixFloat.Data);
+                        //                nearestMiniColumn.Temp_ShortHashConversionMatrix = freeMatrixFloat;
+                        //            }
+                        //            nearestMiniColumn.Temp_ShortHashConversionMatrix_TrainingCount = 0;
+                        //        }
 
-                                nearestMiniColumn.Temp_Hash_SyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, miniColumn.Temp_Hash);
-                                nearestMiniColumn.Temp_Hash_SyncQualitySumCount += 1;
-                                nearestMiniColumn.Temp_Hash_SyncQuality = nearestMiniColumn.Temp_Hash_SyncQualitySum / nearestMiniColumn.Temp_Hash_SyncQualitySumCount;
+                        //        nearestMiniColumn.Temp_Hash_SyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, miniColumn.Temp_Hash);
+                        //        nearestMiniColumn.Temp_Hash_SyncQualitySumCount += 1;
+                        //        nearestMiniColumn.Temp_Hash_SyncQuality = nearestMiniColumn.Temp_Hash_SyncQualitySum / nearestMiniColumn.Temp_Hash_SyncQualitySumCount;
 
-                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, nearestMiniColumn.Autoencoder!.Temp_Output_Hash);
-                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount += 1;
-                                nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQuality = nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum / nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount;
+                        //        nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum += TensorPrimitives.CosineSimilarity(nearestMiniColumn.Temp_Hash, nearestMiniColumn.Autoencoder!.Temp_Output_Hash);
+                        //        nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount += 1;
+                        //        nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQuality = nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySum / nearestMiniColumn.Temp_ShortHash_AutoencoderSyncQualitySumCount;
 
-                                bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, miniColumn.Temp_ShortHashConverted); // nearestMiniColumn.Temp_ShortHash miniColumn.Temp_ShortHashConverted
-                                if (synced)
-                                {
-                                    nearestMiniColumn.Temp_IsSynced = true;
-                                    nearestMiniColumn.Temp_SyncedMiniColumnsToProcess_Handle = syncedMiniColumnsToProcess.Add(nearestMiniColumn);
+                        //        bool synced = MiniColumnsSyncronization.TrainSyncronization(nearestMiniColumn, miniColumn.Temp_ShortHashConverted); // nearestMiniColumn.Temp_ShortHash miniColumn.Temp_ShortHashConverted
+                        //        if (synced)
+                        //        {
+                        //            nearestMiniColumn.Temp_IsSynced = true;
+                        //            nearestMiniColumn.Temp_SyncedMiniColumnsToProcess_Handle = syncedMiniColumnsToProcess.Add(nearestMiniColumn);
                                     
-                                    // TEMPCODE
-                                    //freeMatrixFloatsStack.Push(nearestMiniColumn.Temp_ShortHashConversionMatrix);
-                                    //nearestMiniColumn.Temp_ShortHashConversionMatrix = null;
-                                }
-                            }
-                        }
+                        //            // TEMPCODE
+                        //            //freeMatrixFloatsStack.Push(nearestMiniColumn.Temp_ShortHashConversionMatrix);
+                        //            //nearestMiniColumn.Temp_ShortHashConversionMatrix = null;
+                        //        }
+                        //    }
+                        //}
                     }
                 }
             }

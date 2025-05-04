@@ -100,12 +100,7 @@ namespace Ssz.AI.Models
                 toExclusive: SubArea_MiniColumns.Length,
                 mci =>
                 {
-                    MiniColumn mc = SubArea_MiniColumns[mci];
-
-                    foreach (int r in Enumerable.Range(0, constants.MiniColumnsMaxDistance + 1))
-                    {
-                        mc.NearestMiniColumnInfos.Add(new List<MiniColumn>(r * 8 + 1));
-                    }
+                    MiniColumn mc = SubArea_MiniColumns[mci];                    
 
                     for (int mcy = mc.MCY - constants.MiniColumnsMaxDistance; mcy <= mc.MCY + constants.MiniColumnsMaxDistance; mcy += 1)
                         for (int mcx = mc.MCX - constants.MiniColumnsMaxDistance; mcx <= mc.MCX + constants.MiniColumnsMaxDistance; mcx += 1)
@@ -113,17 +108,17 @@ namespace Ssz.AI.Models
                             if (mcx < 0 ||
                                     mcx >= constants.CortexWidth ||
                                     mcy < 0 ||
-                                    mcy >= constants.CortexHeight) // (mcx == mc.MCX && mcy == mc.MCY)
+                                    mcy >= constants.CortexHeight ||
+                                    (mcx == mc.MCX && mcy == mc.MCY))
                                 continue;                            
 
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
-                                continue;
-                            //mc.NearestMiniColumnInfos[0].Item2.Add(nearestMc);
-                            double r = Math.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY)) + 0.000001;
-                            if (r < constants.MiniColumnsMaxDistance + 0.00001)
+                                continue;                            
+                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
+                            if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos[(int)r].Add(nearestMc);
+                                mc.NearestMiniColumnInfos.Add((0.5f / (r * 2.0f * MathF.PI * r), nearestMc));
                             }
                         }
                 });            
@@ -144,10 +139,20 @@ namespace Ssz.AI.Models
 
         public float[] NegativeK;
 
+        /// <summary>
+        ///     Среднее значение косинусного расстояния
+        /// </summary>
         public float K0;
+        /// <summary>
+        ///     Порог косинусного расстояния для учета 
+        /// </summary>
         public float K1;
+        /// <summary>
+        ///     Косинусное расстояние для пустой колонки
+        /// </summary>
         public float K2;
-        public float K3;
+
+        //public float K3;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -259,7 +264,7 @@ namespace Ssz.AI.Models
                 Temp_Memories = new(constants.MemoriesMaxCount);                       
                 Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
-                NearestMiniColumnInfos = new List<List<MiniColumn>>();
+                NearestMiniColumnInfos = new List<(float, MiniColumn)>((int)(Math.PI * constants.MiniColumnsMaxDistance * constants.MiniColumnsMaxDistance) + 10);
             }
 
             public readonly ICortexConstants Constants;
@@ -277,9 +282,9 @@ namespace Ssz.AI.Models
             public readonly int MCY;
 
             /// <summary>
-            ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
+            ///     (Величина, обратно пропорциональная расстоянию; MiniColumn)
             /// </summary>
-            public readonly List<List<MiniColumn>> NearestMiniColumnInfos;
+            public readonly List<(float, MiniColumn)> NearestMiniColumnInfos;
 
             /// <summary>
             ///     [0..MNISTImageWidth]

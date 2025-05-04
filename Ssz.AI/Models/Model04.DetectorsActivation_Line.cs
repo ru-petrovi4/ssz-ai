@@ -174,7 +174,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(gradientMatrix, Constants);
+                        d.CalculateIsActivated(Retina, gradientMatrix, Constants);
                         if (d.Temp_IsActivated)
                         {                            
                             activatedDetectors.Add(d);

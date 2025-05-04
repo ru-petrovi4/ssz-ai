@@ -35,4 +35,20 @@ namespace Ssz.AI.Grafana
         /// </summary>
         public UInt64[] AngleData = new UInt64[360];
     }
+
+    /// <summary>
+    ///     Диапазоны для детекторов в зависимости от модуля градиента и угла градиента (в градусах).
+    /// </summary>
+    public class DetectorRanges
+    {
+        /// <summary>
+        ///     Диапазоны модуля градиента в зависимости от модуля градиента и угла градиента (в градусах).
+        /// </summary>
+        public MatrixFloat GradientMagnitudeRanges = new();
+
+        /// <summary>
+        ///     Диапазоны угла градиента в зависимости от модуля градиента и угла градиента (в градусах).
+        /// </summary>
+        public MatrixFloat GradientAngleRanges = new();
+    }
 }

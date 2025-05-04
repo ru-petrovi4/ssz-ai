@@ -6,7 +6,7 @@ namespace Ssz.AI.Helpers
     public static class MathHelper
     {
         /// <summary>
-        ///     Radians [-pi, pi], Degrees [0..360]
+        ///     Radians [-pi, pi], Degrees [0..360)
         /// </summary>
         /// <param name="radians"></param>
         /// <returns></returns>
@@ -14,20 +14,30 @@ namespace Ssz.AI.Helpers
         {
             double degrees = 180 * radians / Math.PI;
             if (degrees < 0)
-                degrees += 360;
+            {
+                if (degrees < -0.000001)
+                    degrees += 360;
+                else
+                    degrees = 0.0;
+            }                
             return degrees;
         }
 
         /// <summary>
-        ///     Radians [-pi, pi), Degrees [0..360)
+        ///     Degrees [0..360], Radians [-pi, pi)
         /// </summary>
         /// <param name="degrees"></param>
         /// <returns></returns>
         public static double DegreesToRadians(double degrees)
         {
             double radians = Math.PI * degrees / 180;
-            if (radians >= Math.PI)
-                radians -= 2 * Math.PI;
+            if (radians > Math.PI - 0.000001)
+            {
+                if (radians > Math.PI)
+                    radians -= 2 * Math.PI;
+                else
+                    radians = -Math.PI;
+            }                
             return radians;
         }
 

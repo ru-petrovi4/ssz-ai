@@ -60,7 +60,7 @@ public partial class RotatorGeneratedImage : UserControl
                 model.Cortex.SubArea_MiniColumns_Radius + 2);
 
         var superActivityColorImage = BitmapHelper.GetSubBitmap(
-            Visualisation.GetBitmapFromMiniColums_SuperActivityColor(model.Cortex),
+            Visualisation.GetBitmapFromMiniColums_SuperActivityColor(model.Cortex, activitiyMaxInfo),
             model.Cortex.MiniColumns.Dimensions[0] / 2,
             model.Cortex.MiniColumns.Dimensions[1] / 2,
             model.Cortex.SubArea_MiniColumns_Radius + 2);        
@@ -88,7 +88,7 @@ public partial class RotatorGeneratedImage : UserControl
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage),
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage),
-                    Desc = @"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом)" },                
+                    Desc = $"Суперактивность миниколонок (белый - максимум, синий - максимум со штрафом). Значение: {activitiyMaxInfo.MaxSuperActivity}" },                
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesColorImage),
                     Desc = @"Средний цвет накопленных воспоминаний в миниколонках" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(memoriesCountImage),

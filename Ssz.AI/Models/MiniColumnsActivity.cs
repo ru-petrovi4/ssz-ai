@@ -36,6 +36,9 @@ namespace Ssz.AI.Models
                     activity += memoryCosineSimilarity - cortex.K0;
                     memoriesCount += 1;
                 }
+                else
+                {
+                }
             }
 
             if (memoriesCount > 0)
@@ -51,31 +54,22 @@ namespace Ssz.AI.Models
 
             float superActivity;
             if (miniColumn.Temp_Activity.Item1 > 0)
-                superActivity = cortex.PositiveK[0] * miniColumn.Temp_Activity.Item3;            
+                superActivity = miniColumn.Temp_Activity.Item3;            
             else
-                superActivity = cortex.PositiveK[0] * (cortex.K2 - cortex.K0); // Best proximity
+                superActivity = cortex.K2 - cortex.K0; // Best proximity
 
-            foreach (var r in Enumerable.Range(1, miniColumn.NearestMiniColumnInfos.Count - 1))
+            foreach (var it in miniColumn.NearestMiniColumnInfos)
             {
-                var nearestMiniColumnInfosForR = miniColumn.NearestMiniColumnInfos[r];
-                
-                float activitySumForR = 0.0f;
-                int nearestMiniColumnsForRCount = 0;
-                foreach (var mci in Enumerable.Range(0, nearestMiniColumnInfosForR.Count))
-                {
-                    var nearestMiniColumnInfo = nearestMiniColumnInfosForR[mci];
-                    if (float.IsNaN(nearestMiniColumnInfo.Temp_Activity.Item3))
-                        continue;
+                var nearestMiniColumn = it.Item2;
 
-                    if (nearestMiniColumnInfo.Temp_Activity.Item1 > 0)
-                    {                        
-                        activitySumForR += nearestMiniColumnInfo.Temp_Activity.Item3;
-                        nearestMiniColumnsForRCount += 1;
-                    }
-                }
+                if (float.IsNaN(nearestMiniColumn.Temp_Activity.Item3))
+                    continue;
 
-                superActivity += cortex.PositiveK[r] * activitySumForR;
-            }
+                if (nearestMiniColumn.Temp_Activity.Item1 > 0)
+                    superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item3;
+                //else
+                //    superActivity += it.Item1 * (cortex.K2 - cortex.K0); // Best proximity
+            }            
 
             return superActivity;
         }

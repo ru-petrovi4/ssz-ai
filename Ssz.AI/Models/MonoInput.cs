@@ -128,11 +128,15 @@ namespace Ssz.AI.Models
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
+            if (constants.SubAreaMiniColumnsCount is not null)
+                MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount.Value + 10]; // С запасом
+            else
+                MonoInputItems = new MonoInputItem[images.Length];
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Вычисляем магнитуду и угол градиента
-                double magnitude = constants.GeneratedMaxGradientMagnitude * random.NextDouble();
+                double magnitude = constants.GeneratedMinGradientMagnitude +
+                    (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) * random.NextDouble();
                 // [-pi, pi]
                 double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
 

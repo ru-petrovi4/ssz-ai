@@ -66,7 +66,7 @@ public partial class Model10View : UserControl
         _model.Cortex.K0 = (float)LevelScrollBar0.Value;
         _model.Cortex.K1 = (float)LevelScrollBar1.Value;
         _model.Cortex.K2 = (float)LevelScrollBar2.Value;
-        _model.Cortex.K3 = (float)LevelScrollBar3.Value;
+        //_model.Cortex.K3 = (float)LevelScrollBar3.Value;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)

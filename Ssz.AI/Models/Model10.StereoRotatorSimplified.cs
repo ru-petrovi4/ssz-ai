@@ -195,7 +195,7 @@ namespace Ssz.AI.Models
                 Cortex.SubArea_MiniColumns_Radius + 2);
 
             var superActivityColorImage = BitmapHelper.GetSubBitmap(
-                Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex),
+                Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, activitiyMaxInfo),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubArea_MiniColumns_Radius + 2);            
@@ -236,7 +236,7 @@ namespace Ssz.AI.Models
                 Cortex.SubArea_MiniColumns_Radius + 2);
 
             var superActivityColorImage = BitmapHelper.GetSubBitmap(
-                Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex),
+                Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null),
                 Cortex.MiniColumns.Dimensions[0] / 2,
                 Cortex.MiniColumns.Dimensions[1] / 2,
                 Cortex.SubArea_MiniColumns_Radius + 2);            
@@ -571,7 +571,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(gradientMatrix, Constants);
+                        d.CalculateIsActivated(Retina, gradientMatrix, Constants);
                     });
 
             Parallel.For(

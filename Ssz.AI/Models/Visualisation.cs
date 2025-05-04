@@ -452,7 +452,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex)
+        public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex, ActivitiyMaxInfo? activitiyMaxInfo)
         {
             Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -480,7 +480,10 @@ namespace Ssz.AI.Models
                     {
                         if (superActivityMax > superActivityMin)
                         {
-                            if (mc.Temp_SuperActivity == superActivityMax)
+                            if ((activitiyMaxInfo is not null &&
+                                    activitiyMaxInfo.SuperActivityMax_MiniColumns.Contains(mc)) ||
+                                    (activitiyMaxInfo is null &&
+                                    mc.Temp_SuperActivity == superActivityMax))
                             {
                                 if (mc.Temp_Activity.Item2 == 0.0f)
                                     bitmap.SetPixel(mcx, mcy, Color.White);

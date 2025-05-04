@@ -23,9 +23,9 @@ public partial class Model05View : UserControl
 
         _model = new Model05();
 
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.0;
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.05;
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.02;
 
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
@@ -51,7 +51,7 @@ public partial class Model05View : UserControl
     private void Reset()
     {
         _model.ResetMemories();
-        _random = new Random(1); // Pseudorandom
+        _random = new Random(3); // Pseudorandom
         _model.CurrentInputIndex = -1; // Перед первым элементом
         //_model.DoSteps_MNIST(1000, _random, initialization: true);            
     }
@@ -66,7 +66,7 @@ public partial class Model05View : UserControl
         _model.Cortex.K0 = (float)LevelScrollBar0.Value;
         _model.Cortex.K1 = (float)LevelScrollBar1.Value;
         _model.Cortex.K2 = (float)LevelScrollBar2.Value;
-        _model.Cortex.K3 = (float)LevelScrollBar3.Value;
+        //_model.Cortex.K3 = (float)LevelScrollBar3.Value;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)

@@ -78,9 +78,9 @@
 			<TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.20" Minimum="-1" Maximum="1" />
 			<TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.20" Minimum="-1" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="-0.01" Minimum="-1" Maximum="1" />
 		    <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.95" Minimum="-1" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.96" Minimum="-1" Maximum="1" />
 			<TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="5" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="10" />
 		</Grid>

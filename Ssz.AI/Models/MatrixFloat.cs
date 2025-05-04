@@ -30,7 +30,7 @@ namespace Ssz.AI.Models
 
         public int[] Dimensions { get; private set; } = null!;
 
-        public float[] Data { get; private set; } = null!;
+        public float[] Data { get; set; } = null!;
 
         public float this[int i, int j]
         {
@@ -42,7 +42,12 @@ namespace Ssz.AI.Models
         {
             var d = Dimensions[0];
             return new Span<float>(Data, j * d, d);
-        }        
+        }
+
+        public (int, int) GetIndices(int rawIndex)
+        {
+            return (rawIndex % Dimensions[0], rawIndex / Dimensions[0]);
+        }
 
         public MatrixFloat Clone()
         {
