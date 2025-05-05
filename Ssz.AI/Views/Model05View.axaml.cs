@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
+using Microsoft.AspNetCore.Identity;
 using MsBox.Avalonia;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
@@ -9,6 +10,7 @@ using System;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
+using static Ssz.AI.Models.Cortex;
 
 namespace Ssz.AI.Views;
 
@@ -21,28 +23,26 @@ public partial class Model05View : UserControl
         if (Design.IsDesignMode)
             return;
 
-        _model = new Model05();
+        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
+        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
+        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.02;
+        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
+        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
+        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
+        //foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        //{
+        //    ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
+        //    ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
+        //}        
 
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.02;
+        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
 
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
-
-        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        {
-            ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
-            ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
-        }
-        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls();
-        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls();
-        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls();
-        LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls();
-        GetDataFromControls();
-
-        Reset();
+        Reset();        
 
         Refresh_ImagesSet1();    
         Refresh_ImagesSet2();
@@ -50,23 +50,29 @@ public partial class Model05View : UserControl
 
     private void Reset()
     {
+        var constants = new Model05.ModelConstants();
+        GetDataFromControls(constants);
+        _model = new Model05(constants);
         _model.ResetMemories();
         _random = new Random(3); // Pseudorandom
         _model.CurrentInputIndex = -1; // Перед первым элементом
-        //_model.DoSteps_MNIST(1000, _random, initialization: true);            
+        //_model.DoSteps_MNIST(1000, _random, initialization: true);                    
     }
 
-    private void GetDataFromControls()
+    private void GetDataFromControls(IConstants constants)
     {
-        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        {
-            _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
-            _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
-        }
-        _model.Cortex.K0 = (float)LevelScrollBar0.Value;
-        _model.Cortex.K1 = (float)LevelScrollBar1.Value;
-        _model.Cortex.K2 = (float)LevelScrollBar2.Value;
-        //_model.Cortex.K3 = (float)LevelScrollBar3.Value;
+        //foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        //{
+        //    _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
+        //    _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
+        //}
+        constants.K0 = (float)LevelScrollBar0.Value;
+        constants.K1 = (float)LevelScrollBar1.Value;
+        constants.K2 = (float)LevelScrollBar2.Value;
+        constants.K3 = (float)LevelScrollBar3.Value;
+        constants.K4 = (float)LevelScrollBar4.Value;
+        constants.K5 = (float)LevelScrollBar5.Value;
+        constants.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
@@ -87,8 +93,6 @@ public partial class Model05View : UserControl
 
     private void GenerateRotator_OnClick(object? sender, RoutedEventArgs args)
     {
-        Reset();
-
         _model.GenerateRotator(_random);
 
         Refresh_ImagesSet2();
@@ -102,6 +106,20 @@ public partial class Model05View : UserControl
         _model.CurrentInputIndex = -1;
 
         await _model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+
+        Refresh_ImagesSet2();
+
+        IsEnabled = true;
+    }
+
+    private async void ProcessSamples5KButton_OnClick(object? sender, RoutedEventArgs args)
+    {
+        IsEnabled = false;
+        await Task.Delay(50);
+
+        _model.CurrentInputIndex = -1;
+
+        await _model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
         Refresh_ImagesSet2();
 
@@ -187,6 +205,11 @@ public partial class Model05View : UserControl
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         Refresh_ImagesSet1();
+    }
+
+    private void SuperactivityThreshold_OnClick(object? sender, RoutedEventArgs args)
+    {
+        GetDataFromControls(_model.Constants);
     }
 
     private void Refresh_ImagesSet1()

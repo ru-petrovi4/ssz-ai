@@ -40,7 +40,7 @@ namespace Ssz.AI.Models
         /// </summary>
         public void GenerateOwnedData(
             Random random,
-            ICortexConstants constants,            
+            IConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels, 
             byte[][] images)
@@ -80,7 +80,7 @@ namespace Ssz.AI.Models
 
         public void GenerateOwnedData_Simplified(
             Random random,
-            ICortexConstants constants,            
+            IConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels,
             byte[][] images)
@@ -121,7 +121,7 @@ namespace Ssz.AI.Models
 
         public void GenerateOwnedData_Simplified2(
             Random random,
-            ICortexConstants constants,            
+            IConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels,
             byte[][] images)
@@ -171,7 +171,7 @@ namespace Ssz.AI.Models
 
         public void GenerateOwnedData_Simplified_WithAngle(
             Random random,
-            ICortexConstants constants,            
+            IConstants constants,            
             GradientDistribution? gradientDistribution,
             byte[] labels,
             byte[][] images)

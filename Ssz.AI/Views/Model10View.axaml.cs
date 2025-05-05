@@ -58,14 +58,14 @@ public partial class Model10View : UserControl
 
     private void GetDataFromControls()
     {
-        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        {
-            _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
-            _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
-        }
-        _model.Cortex.K0 = (float)LevelScrollBar0.Value;
-        _model.Cortex.K1 = (float)LevelScrollBar1.Value;
-        _model.Cortex.K2 = (float)LevelScrollBar2.Value;
+        //foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        //{
+        //    _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
+        //    _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
+        //}
+        //_model.Cortex.K0 = (float)LevelScrollBar0.Value;
+        //_model.Cortex.K1 = (float)LevelScrollBar1.Value;
+        //_model.Cortex.K2 = (float)LevelScrollBar2.Value;
         //_model.Cortex.K3 = (float)LevelScrollBar3.Value;
     }
 

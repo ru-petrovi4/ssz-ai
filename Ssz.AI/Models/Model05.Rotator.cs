@@ -1,4 +1,6 @@
-﻿using Avalonia.Layout;
+﻿#define CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+
+using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -31,9 +33,15 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Построение "вертушки"
         /// </summary>
-        public Model05()
+        public Model05(ModelConstants constants)
         {
+            Constants = constants;
+
             UserFriendlyLogger = new UserFriendlyLogger(DebugWindow.AddLine);
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();            
+#endif
 
             Stopwatch sw = Stopwatch.StartNew();            
 
@@ -71,7 +79,7 @@ namespace Ssz.AI.Models
 
             DetectorsActivationHash = new float[Constants.HashLength];
             GetImageWithDescs1(0.0, 0.0);
-            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();            
+            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
         }
 
         #endregion
@@ -80,7 +88,9 @@ namespace Ssz.AI.Models
 
         public ILogger UserFriendlyLogger { get; }
 
-        public readonly ModelConstants Constants = new();        
+        public DataToDisplayHolder DataToDisplayHolder = null!;
+
+        public readonly ModelConstants Constants;        
 
         public MonoInput MonoInput { get; set; } = null!;
 
@@ -111,7 +121,11 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.Memories.Clear();
                 });
-        }                                           
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+            Array.Clear(DataToDisplayHolder.MiniColumsBitsCountInHashDistribution);
+#endif
+        }
 
         public async Task DoSteps_MNISTAsync(int stepsCount, Random random, bool randomInitialization, bool reorderMemoriesPeriodically)
         {
@@ -215,10 +229,13 @@ namespace Ssz.AI.Models
 
         public VisualizationWithDesc[] GetImageWithDescs2()
         {
+            int currentInputIndex;
             if (CurrentInputIndex < 0)
-                return [];            
+                currentInputIndex = 0;
+            else
+                currentInputIndex = CurrentInputIndex;
 
-            MonoInputItem monoInputItem = MonoInput.MonoInputItems[CurrentInputIndex];
+            MonoInputItem monoInputItem = MonoInput.MonoInputItems[currentInputIndex];
 
             var gradientMatrix = monoInputItem.GradientMatrix;
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
@@ -581,18 +598,27 @@ namespace Ssz.AI.Models
                 {
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.GetHash(mc.Temp_Hash);
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Cortex);
+                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Constants);
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+                    int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
+                    //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+                    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution[bitsCountInHash] += 1;
+#endif
                 });
 
             activitiyMaxInfo.MaxActivity = float.MinValue;
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
 
-            activitiyMaxInfo.MaxSuperActivity = 0.77f;
+            if (Constants.SuperactivityThreshold)
+                activitiyMaxInfo.MaxSuperActivity = Constants.K2 - Constants.K0 + 0.01f; // Чуть больше, чем активность пустой миниколонки
+            else
+                activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
-                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Cortex);
+                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Constants);
 
                 float a = mc.Temp_Activity.Item3;
                 if (a > activitiyMaxInfo.MaxActivity)
@@ -813,7 +839,7 @@ namespace Ssz.AI.Models
 
             // Применяем оператор Собеля к первому изображению            
             return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
-        }              
+        }        
 
         public static readonly Color[] DefaultColors =
         {
@@ -843,7 +869,7 @@ namespace Ssz.AI.Models
         /// <summary>        
         ///     Константы данной модели
         /// </summary>
-        public class ModelConstants : ICortexConstants
+        public class ModelConstants : IConstants
         {
             /// <summary>
             ///     Ширина основного изображения
@@ -856,9 +882,9 @@ namespace Ssz.AI.Models
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             /// <summary>
-            ///     Модуль градиента для вычисления диапазона угла градиента TensorPrimitives.Sigmoid(Magnitude / LimitMagnitude)
+            ///     Не используется
             /// </summary>
-            public int AngleRangeDegree_LimitMagnitude => 100;// Sigmoid = 70 for pi/2; Linear = 150
+            public int AngleRangeDegree_LimitMagnitude => 70;// Sigmoid = 70 for pi/2; Linear = 150
 
             public double DetectorMinGradientMagnitude => 5;
 
@@ -895,7 +921,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 1200;  // ORIG 250         
+            public int MiniColumnVisibleDetectorsCount => 600;  // ORIG 250         
 
             public int HashLength => 300;
 
@@ -951,6 +977,30 @@ namespace Ssz.AI.Models
             public int Angle_BigPoints_Count => 200;
 
             public float Angle_BigPoints_Radius => 0.015f;
+
+            /// <summary>
+            ///     Нулевой уровень косинусного расстояния
+            /// </summary>
+            public float K0 { get; set; }
+            /// <summary>
+            ///     Порог косинусного расстояния для учета 
+            /// </summary>
+            public float K1 { get; set; }
+            /// <summary>
+            ///     Косинусное расстояние для пустой колонки
+            /// </summary>
+            public float K2 { get; set; }
+
+            /// <summary>
+            ///     K значимости соседей
+            /// </summary>
+            public float K3 { get; set; }
+
+            public float K4 { get; set; }
+
+            public float K5 { get; set; }
+
+            public bool SuperactivityThreshold { get; set; }
         }        
     }
 }

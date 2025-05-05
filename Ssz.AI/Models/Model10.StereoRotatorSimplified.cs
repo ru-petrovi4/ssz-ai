@@ -582,7 +582,7 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.GetHash(mc.Temp_Hash);
                     MonoInput.AddValueHash(angleNormalized, mc.Temp_Hash);
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Cortex);
+                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Constants);
                 });
 
             activitiyMaxInfo.MaxActivity = float.MinValue;
@@ -593,7 +593,7 @@ namespace Ssz.AI.Models
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
-                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Cortex);
+                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Constants);
 
                 float a = mc.Temp_Activity.Item3;
                 if (a > activitiyMaxInfo.MaxActivity)
@@ -844,7 +844,7 @@ namespace Ssz.AI.Models
         /// <summary>        
         ///     Константы данной модели
         /// </summary>
-        public class ModelConstants : ICortexConstants
+        public class ModelConstants : IConstants
         {
             /// <summary>
             ///     Ширина основного изображения
@@ -949,6 +949,30 @@ namespace Ssz.AI.Models
             public int Angle_BigPoints_Count => 200;
 
             public float Angle_BigPoints_Radius => 0.015f;
+
+            /// <summary>
+            ///     Нулевой уровень косинусного расстояния
+            /// </summary>
+            public float K0 { get; set; }
+            /// <summary>
+            ///     Порог косинусного расстояния для учета 
+            /// </summary>
+            public float K1 { get; set; }
+            /// <summary>
+            ///     Косинусное расстояние для пустой колонки
+            /// </summary>
+            public float K2 { get; set; }
+
+            /// <summary>
+            ///     K значимости соседей
+            /// </summary>
+            public float K3 { get; set; }
+
+            public float K4 { get; set; }
+
+            public float K5 { get; set; }
+
+            public bool SuperactivityThreshold { get; set; }
         }        
     }
 }

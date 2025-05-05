@@ -16,13 +16,13 @@ namespace Ssz.AI.Models
         /// </summary>
         /// <param name="constants"></param>        
         public Cortex(
-            ICortexConstants constants,            
+            IConstants constants,            
             Retina retina)
         {
             Constants = constants;
 
-            PositiveK = new float[Constants.MiniColumnsMaxDistance + 1];
-            NegativeK = new float[Constants.MiniColumnsMaxDistance + 1];
+            //PositiveK = new float[Constants.MiniColumnsMaxDistance + 1];
+            //NegativeK = new float[Constants.MiniColumnsMaxDistance + 1];
 
             DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
 
@@ -118,7 +118,7 @@ namespace Ssz.AI.Models
                             float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos.Add((0.5f / (r * 2.0f * MathF.PI * r), nearestMc));
+                                mc.NearestMiniColumnInfos.Add((constants.K3 / (r * 2.0f * MathF.PI * r), nearestMc));
                             }
                         }
                 });            
@@ -133,26 +133,11 @@ namespace Ssz.AI.Models
         /// </summary>
         public double DetectorsVisibleRadius { get; }
 
-        public ICortexConstants Constants { get; }
+        public IConstants Constants { get; }
 
-        public float[] PositiveK;
+        //public float[] PositiveK;
 
-        public float[] NegativeK;
-
-        /// <summary>
-        ///     Среднее значение косинусного расстояния
-        /// </summary>
-        public float K0;
-        /// <summary>
-        ///     Порог косинусного расстояния для учета 
-        /// </summary>
-        public float K1;
-        /// <summary>
-        ///     Косинусное расстояние для пустой колонки
-        /// </summary>
-        public float K2;
-
-        //public float K3;
+        //public float[] NegativeK;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -251,7 +236,7 @@ namespace Ssz.AI.Models
 
         public class MiniColumn : ISerializableModelObject
         {
-            public MiniColumn(ICortexConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
+            public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
             {
                 Constants = constants;
                 Detectors = detectors;
@@ -267,7 +252,7 @@ namespace Ssz.AI.Models
                 NearestMiniColumnInfos = new List<(float, MiniColumn)>((int)(Math.PI * constants.MiniColumnsMaxDistance * constants.MiniColumnsMaxDistance) + 10);
             }
 
-            public readonly ICortexConstants Constants;
+            public readonly IConstants Constants;
 
             public readonly List<Detector> Detectors;
 
@@ -524,7 +509,7 @@ namespace Ssz.AI.Models
             public int PictureInputIndex;
         }        
 
-        public interface ICortexConstants
+        public interface IConstants
         {
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали  
@@ -532,6 +517,9 @@ namespace Ssz.AI.Models
             /// </summary>
             double DetectorDelta { get; }
 
+            /// <summary>
+            ///     Не используется
+            /// </summary>
             int AngleRangeDegree_LimitMagnitude { get; }
 
             /// <summary>
@@ -631,6 +619,33 @@ namespace Ssz.AI.Models
             int Angle_BigPoints_Count { get; }
 
             float Angle_BigPoints_Radius { get; }
+
+            /// <summary>
+            ///     Нулевой уровень косинусного расстояния
+            /// </summary>
+            float K0 { get; set; }
+            /// <summary>
+            ///     Порог косинусного расстояния для учета 
+            /// </summary>
+            float K1 { get; set; }
+            /// <summary>
+            ///     Косинусное расстояние для пустой колонки
+            /// </summary>
+            float K2 { get; set; }
+
+            /// <summary>
+            ///     K значимости соседей
+            /// </summary>
+            float K3 { get; set; }
+
+            float K4 { get; set; }
+
+            float K5 { get; set; }
+
+            /// <summary>
+            ///     Включен ли порог на суперактивность при накоплении воспоминаний
+            /// </summary>
+            bool SuperactivityThreshold { get; set; }
         }
     }    
 }

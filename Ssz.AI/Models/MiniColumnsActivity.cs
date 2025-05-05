@@ -13,7 +13,7 @@ namespace Ssz.AI.Models
         /// </summary>
         /// <param name="hash"></param>
         /// <returns></returns>
-        public static (int, float, float) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, Cortex cortex)
+        public static (int, float, float) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, IConstants constants)
         {
             if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)                
                 return (0, float.NaN, float.NaN);
@@ -31,9 +31,9 @@ namespace Ssz.AI.Models
                 if (float.IsNaN(memoryCosineSimilarity))
                     throw new Exception();
 
-                if (memoryCosineSimilarity >= cortex.K1)
+                if (memoryCosineSimilarity >= constants.K1)
                 {
-                    activity += memoryCosineSimilarity - cortex.K0;
+                    activity += memoryCosineSimilarity - constants.K0;
                     memoriesCount += 1;
                 }
                 else
@@ -47,7 +47,7 @@ namespace Ssz.AI.Models
             return (memoriesCount, 0.0f, activity);
         }
 
-        public static float GetSuperActivity(Cortex.MiniColumn miniColumn, Cortex cortex)
+        public static float GetSuperActivity(Cortex.MiniColumn miniColumn, IConstants constants)
         {
             if (float.IsNaN(miniColumn.Temp_Activity.Item3))
                 return float.NaN;
@@ -56,7 +56,7 @@ namespace Ssz.AI.Models
             if (miniColumn.Temp_Activity.Item1 > 0)
                 superActivity = miniColumn.Temp_Activity.Item3;            
             else
-                superActivity = cortex.K2 - cortex.K0; // Best proximity
+                superActivity = constants.K2 - constants.K0; // Best proximity
 
             foreach (var it in miniColumn.NearestMiniColumnInfos)
             {

@@ -275,7 +275,7 @@ namespace Ssz.AI.Models
             return gradientMatrix;
         }
 
-        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, ICortexConstants constants)
+        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, IConstants constants)
         {
             int width = gradientMatrix.Dimensions[0];
             int height = gradientMatrix.Dimensions[1];
@@ -316,7 +316,7 @@ namespace Ssz.AI.Models
             //    }            
         }
 
-        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, ICortexConstants constants, GradientDistribution gradientDistribution)
+        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, IConstants constants, GradientDistribution gradientDistribution)
         {
             int width = gradientMatrix.GetLength(0);
             int height = gradientMatrix.GetLength(1);

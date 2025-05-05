@@ -16,7 +16,7 @@ namespace Ssz.AI.Models
     {
         #region construction and destruction
 
-        public Retina(ICortexConstants constants, int imageWidth, int imageHeight)
+        public Retina(IConstants constants, int imageWidth, int imageHeight)
         {
             Detectors = new DenseMatrix<Detector>((int)(imageWidth / constants.DetectorDelta), (int)(imageHeight / constants.DetectorDelta));
             foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
@@ -48,7 +48,7 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
-        public void GenerateOwnedData(Random random, ICortexConstants constants, GradientDistribution gradientDistribution)
+        public void GenerateOwnedData(Random random, IConstants constants, GradientDistribution gradientDistribution)
         {   
             // TODO gradientDistribution -> DetectorRanges            
             int gradientMagnitudeRange = constants.GeneratedMaxGradientMagnitude / constants.MagnitudeRangesCount;
@@ -62,17 +62,21 @@ namespace Ssz.AI.Models
                 }                
             }
 
-            float[] tempF = new float[1];
-            foreach (int gradientMagnitude in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
+            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
+            foreach (int gm in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
             {
-                tempF[0] = gradientMagnitude / constants.AngleRangeDegree_LimitMagnitude;
-                TensorPrimitives.Sigmoid(tempF, tempF);
-                float angleRange = MathF.PI / 6.0f + (11.0f / 6.0f) * MathF.PI * 2.0f * (1.0f - tempF[0]);
+                int gradientMagnitude = gm;
+                if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
+                    gradientMagnitude = constants.GeneratedMinGradientMagnitude;
+                float angleRange = MathF.Atan2(constants.K4, gradientMagnitude / gmIn1) * constants.K5;
                 //float angleRange;
                 //if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
-                //    angleRange = MathF.PI / 8.0f + (15.0f / 8.0f) * MathF.PI * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / constants.AngleRangeDegree_LimitMagnitude;
+                //    angleRange = MathF.PI / 6.0f + (11.0f / 6.0f) * MathF.PI * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 //else
-                //    angleRange = MathF.PI / 2.0f;
+                //    angleRange = MathF.PI / 6.0f;
+
+                if (angleRange > 2 * MathF.PI)
+                    angleRange = 2 * MathF.PI;
 
                 foreach (int gradientAngleDegree in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[1]))
                 {
@@ -204,7 +208,7 @@ namespace Ssz.AI.Models
 
         public GradientInPoint Temp_GradientInPoint;
 
-        public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, ICortexConstants constants, Vector2 offset = default)
+        public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, IConstants constants, Vector2 offset = default)
         {
             Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
@@ -240,7 +244,7 @@ namespace Ssz.AI.Models
             Temp_IsActivated = activated;
         }
 
-        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, ICortexConstants constants, Vector2 offset = default)
+        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstants constants, Vector2 offset = default)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
 
