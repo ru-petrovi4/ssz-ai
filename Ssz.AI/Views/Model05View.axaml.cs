@@ -66,7 +66,8 @@ public partial class Model05View : UserControl
         _model.Cortex.K0 = (float)LevelScrollBar0.Value;
         _model.Cortex.K1 = (float)LevelScrollBar1.Value;
         _model.Cortex.K2 = (float)LevelScrollBar2.Value;
-        //_model.Cortex.K3 = (float)LevelScrollBar3.Value;
+        _model.Cortex.K3 = (float)LevelScrollBar3.Value;
+        _model.Cortex.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
@@ -187,6 +188,11 @@ public partial class Model05View : UserControl
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         Refresh_ImagesSet1();
+    }
+
+    private void SuperactivityThreshold_OnClick(object? sender, RoutedEventArgs args)
+    {
+        GetDataFromControls();
     }
 
     private void Refresh_ImagesSet1()

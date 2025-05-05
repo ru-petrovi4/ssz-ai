@@ -294,7 +294,7 @@ namespace Ssz.AI.Grafana
             var data = _dataToDisplayHolder.MiniColumsBitsCountInHashDistribution2;
 
             List<object[]> rows = new List<object[]>(data.Length);
-            for (int i = 0; i < 50; i += 1)
+            for (int i = 0; i < 300; i += 1)
             {
                 rows.Add([i.ToString(), data[50, 50, i]]);
             }

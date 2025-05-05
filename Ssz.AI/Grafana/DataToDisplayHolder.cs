@@ -11,7 +11,7 @@ namespace Ssz.AI.Grafana
 
         public ulong[] MiniColumsActivatedDetectorsCountDistribution { get; set; } = new ulong[new Model4.ModelConstants().MiniColumnVisibleDetectorsCount];
 
-        public ulong[] MiniColumsBitsCountInHashDistribution { get; set; } = new ulong[new Model4.ModelConstants().HashLength];
+        public ulong[] MiniColumsBitsCountInHashDistribution { get; set; } = new ulong[new Model05.ModelConstants().HashLength];
 
         /// <summary>
         ///     [mcx, mcy, bits count]

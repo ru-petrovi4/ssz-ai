@@ -152,7 +152,15 @@ namespace Ssz.AI.Models
         /// </summary>
         public float K2;
 
-        //public float K3;
+        /// <summary>
+        ///     Не используется
+        /// </summary>
+        public float K3;
+
+        /// <summary>
+        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        /// </summary>
+        public bool SuperactivityThreshold;
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
@@ -532,6 +540,9 @@ namespace Ssz.AI.Models
             /// </summary>
             double DetectorDelta { get; }
 
+            /// <summary>
+            ///     Не используется
+            /// </summary>
             int AngleRangeDegree_LimitMagnitude { get; }
 
             /// <summary>

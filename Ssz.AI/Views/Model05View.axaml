@@ -26,6 +26,7 @@
 			<Button Content="Process Memory" Click="ProcessMemoryButton_OnClick" />
 			<Button Content="Потоп!" Click="FloodButton_OnClick" />			
 			<Button Content="Show Test Window" Click="ShowTestWindowButton_OnClick" />
+      <CheckBox Name="SuperactivityThreshold" Content="Порог на суперактивность" Click="SuperactivityThreshold_OnClick" />
 		</StackPanel>
 
 		<Grid Grid.Row="1">
@@ -82,7 +83,7 @@
 		    <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.96" Minimum="-1" Maximum="1" />
 			<TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="5" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.0" Minimum="0" Maximum="10" />
+			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="0.80" Minimum="0" Maximum="10" />
 		</Grid>
 
 		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			

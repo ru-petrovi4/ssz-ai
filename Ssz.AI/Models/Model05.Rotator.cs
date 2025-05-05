@@ -1,4 +1,6 @@
-﻿using Avalonia.Layout;
+﻿#define CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+
+using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenCvSharp;
@@ -34,6 +36,10 @@ namespace Ssz.AI.Models
         public Model05()
         {
             UserFriendlyLogger = new UserFriendlyLogger(DebugWindow.AddLine);
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();            
+#endif
 
             Stopwatch sw = Stopwatch.StartNew();            
 
@@ -71,7 +77,7 @@ namespace Ssz.AI.Models
 
             DetectorsActivationHash = new float[Constants.HashLength];
             GetImageWithDescs1(0.0, 0.0);
-            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();            
+            DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
         }
 
         #endregion
@@ -79,6 +85,8 @@ namespace Ssz.AI.Models
         #region public functions
 
         public ILogger UserFriendlyLogger { get; }
+
+        public DataToDisplayHolder DataToDisplayHolder = null!;
 
         public readonly ModelConstants Constants = new();        
 
@@ -111,7 +119,11 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.Memories.Clear();
                 });
-        }                                           
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+            Array.Clear(DataToDisplayHolder.MiniColumsBitsCountInHashDistribution);
+#endif
+        }
 
         public async Task DoSteps_MNISTAsync(int stepsCount, Random random, bool randomInitialization, bool reorderMemoriesPeriodically)
         {
@@ -582,12 +594,21 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.GetHash(mc.Temp_Hash);
                     mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Cortex);
+
+#if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+                    int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
+                    //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
+                    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution[bitsCountInHash] += 1;
+#endif
                 });
 
             activitiyMaxInfo.MaxActivity = float.MinValue;
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
 
-            activitiyMaxInfo.MaxSuperActivity = 0.77f;
+            if (Cortex.SuperactivityThreshold)
+                activitiyMaxInfo.MaxSuperActivity = Cortex.K2 - Cortex.K0 + 0.01f; // Чуть больше, чем активность пустой миниколонки
+            else
+                activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
@@ -813,7 +834,7 @@ namespace Ssz.AI.Models
 
             // Применяем оператор Собеля к первому изображению            
             return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
-        }              
+        }        
 
         public static readonly Color[] DefaultColors =
         {
@@ -856,9 +877,9 @@ namespace Ssz.AI.Models
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             /// <summary>
-            ///     Модуль градиента для вычисления диапазона угла градиента TensorPrimitives.Sigmoid(Magnitude / LimitMagnitude)
+            ///     Не используется
             /// </summary>
-            public int AngleRangeDegree_LimitMagnitude => 100;// Sigmoid = 70 for pi/2; Linear = 150
+            public int AngleRangeDegree_LimitMagnitude => 70;// Sigmoid = 70 for pi/2; Linear = 150
 
             public double DetectorMinGradientMagnitude => 5;
 
@@ -895,7 +916,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 1200;  // ORIG 250         
+            public int MiniColumnVisibleDetectorsCount => 600;  // ORIG 250         
 
             public int HashLength => 300;
 

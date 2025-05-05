@@ -62,17 +62,21 @@ namespace Ssz.AI.Models
                 }                
             }
 
-            float[] tempF = new float[1];
-            foreach (int gradientMagnitude in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
+            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
+            foreach (int gm in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
             {
-                tempF[0] = gradientMagnitude / constants.AngleRangeDegree_LimitMagnitude;
-                TensorPrimitives.Sigmoid(tempF, tempF);
-                float angleRange = MathF.PI / 6.0f + (11.0f / 6.0f) * MathF.PI * 2.0f * (1.0f - tempF[0]);
+                int gradientMagnitude = gm;
+                if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
+                    gradientMagnitude = constants.GeneratedMinGradientMagnitude;
+                float angleRange = MathF.Atan2(1.0f, gradientMagnitude / gmIn1) * 6.0f;
                 //float angleRange;
                 //if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
-                //    angleRange = MathF.PI / 8.0f + (15.0f / 8.0f) * MathF.PI * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / constants.AngleRangeDegree_LimitMagnitude;
+                //    angleRange = MathF.PI / 6.0f + (11.0f / 6.0f) * MathF.PI * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 //else
-                //    angleRange = MathF.PI / 2.0f;
+                //    angleRange = MathF.PI / 6.0f;
+
+                if (angleRange > 2 * MathF.PI)
+                    angleRange = 2 * MathF.PI;
 
                 foreach (int gradientAngleDegree in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[1]))
                 {
