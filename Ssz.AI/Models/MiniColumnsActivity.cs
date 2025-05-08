@@ -31,7 +31,7 @@ namespace Ssz.AI.Models
                 if (float.IsNaN(memoryCosineSimilarity))
                     throw new Exception();
 
-                memoryCosineSimilarity = memoryCosineSimilarity * memoryCosineSimilarity;
+                //memoryCosineSimilarity = memoryCosineSimilarity * memoryCosineSimilarity;
 
                 if (memoryCosineSimilarity >= constants.K1)
                 {
