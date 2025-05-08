@@ -611,7 +611,7 @@ namespace Ssz.AI.Models
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
 
             if (Constants.SuperactivityThreshold)
-                activitiyMaxInfo.MaxSuperActivity = Constants.K2 - Constants.K0 + 0.01f; // Чуть больше, чем активность пустой миниколонки
+                activitiyMaxInfo.MaxSuperActivity = 1.0f; // Constants.K2 * Constants.K2 - Constants.K0 + 0.01f Чуть больше, чем активность пустой миниколонки
             else
                 activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
@@ -989,17 +989,17 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; } = 0.97f;
+            public float K2 { get; set; } = 1.0f;
 
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; } = 6.0f;
+            public float K3 { get; set; } = 15.0f;
 
             /// <summary>
             ///     Диапазон угла, K внутри арктангенса:
             /// </summary>
-            public float K4 { get; set; } = 1.0f;
+            public float K4 { get; set; } = 2.5f;
 
             public float K5 { get; set; } = 4.0f;
 

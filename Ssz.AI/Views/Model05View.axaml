@@ -96,13 +96,13 @@
 			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
       <TextBlock Text="K значимости соседей:" Grid.Row="5" />
 			<TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="5" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
+			<ScrollBar Name="LevelScrollBar3" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />
       <TextBlock Text="Диапазон угла, K внутри арктангенса:" Grid.Row="6" />
       <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="6" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar4" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
       <TextBlock Text="Диапазон угла K2:" Grid.Row="7" />
       <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="7" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar5" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
+      <ScrollBar Name="LevelScrollBar5" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />
 		</Grid>
 
 		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			

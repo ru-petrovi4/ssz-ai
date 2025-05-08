@@ -26,27 +26,29 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         SetDataToControls(constants);
 
-        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
-        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
-        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
-        LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
-        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
-        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
+        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
 
         Reset();        
 
         Refresh_ImagesSet1();    
         Refresh_ImagesSet2();
-    }    
+    }
+
+    public Model05 Model = null!;
 
     private void Reset()
     {
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
-        _model = new Model05(constants);
-        _model.ResetMemories();
+        Model = new Model05(constants);
+        Model.ResetMemories();
         _random = new Random(4); // Pseudorandom
-        _model.CurrentInputIndex = -1; // Перед первым элементом              
+        Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
 
     private void SetDataToControls(Model05.ModelConstants constants)
@@ -80,16 +82,16 @@ public partial class Model05View : UserControl
 
     private void Back1Button_OnClick(object? sender, RoutedEventArgs args)
     {
-        var lastAddedMemory = _model.Temp_ActivitiyMaxInfo?.Temp_WinnerMiniColumn?.Temp_Memory;
+        var lastAddedMemory = Model.Temp_ActivitiyMaxInfo?.Temp_WinnerMiniColumn?.Temp_Memory;
         if (lastAddedMemory is not null)
-            _model.Temp_ActivitiyMaxInfo!.Temp_WinnerMiniColumn!.Memories.Remove(lastAddedMemory);
+            Model.Temp_ActivitiyMaxInfo!.Temp_WinnerMiniColumn!.Memories.Remove(lastAddedMemory);
 
-        _model.CurrentInputIndex -= 1;
+        Model.CurrentInputIndex -= 1;
     }
 
     private void GenerateRotator_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.GenerateRotator(_random);
+        Model.GenerateRotator(_random);
 
         Refresh_ImagesSet2();
     }
@@ -99,9 +101,9 @@ public partial class Model05View : UserControl
         IsEnabled = false;
         await Task.Delay(50);        
 
-        _model.CurrentInputIndex = -1;
+        Model.CurrentInputIndex = -1;
 
-        await _model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+        await Model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
         Refresh_ImagesSet2();
 
@@ -113,9 +115,9 @@ public partial class Model05View : UserControl
         IsEnabled = false;
         await Task.Delay(50);
 
-        _model.CurrentInputIndex = -1;
+        Model.CurrentInputIndex = -1;
 
-        await _model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+        await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
         Refresh_ImagesSet2();
 
@@ -127,7 +129,7 @@ public partial class Model05View : UserControl
         IsEnabled = false;
         await Task.Delay(50);
 
-        await _model.DoSteps_MNISTAsync(2000, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
+        await Model.DoSteps_MNISTAsync(2000, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
 
         Refresh_ImagesSet2();
 
@@ -139,7 +141,7 @@ public partial class Model05View : UserControl
         IsEnabled = false;
         await Task.Delay(50);        
 
-        await _model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+        await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
         {
             Refresh_ImagesSet2();
             await Task.Delay(50);
@@ -152,14 +154,14 @@ public partial class Model05View : UserControl
 
     private async void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        await _model.DoSteps_MNISTAsync(1, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
+        await Model.DoSteps_MNISTAsync(1, _random, randomInitialization: false, reorderMemoriesPeriodically: false);
 
         Refresh_ImagesSet2();
     }
 
     private void ProcessMemoryButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        _model.DoStep_Memory(_random);
+        Model.DoStep_Memory(_random);
 
         Refresh_ImagesSet2();
     }
@@ -170,7 +172,7 @@ public partial class Model05View : UserControl
                 "Радиус потопа:"             // Заголовок                
             );
 
-        _model.Flood(_random, new Any(floodRadius).ValueAsSingle(false));
+        Model.Flood(_random, new Any(floodRadius).ValueAsSingle(false));
 
         Refresh_ImagesSet2();
     }
@@ -179,7 +181,7 @@ public partial class Model05View : UserControl
     {
         Window testWindow = new();
 
-        testWindow.Content = new GeneratedImages(_model);
+        testWindow.Content = new GeneratedImages(this);
         
         testWindow.Show((Window)Window.GetTopLevel(this)!);
     }       
@@ -196,29 +198,27 @@ public partial class Model05View : UserControl
 
     private void SuperactivityThreshold_OnClick(object? sender, RoutedEventArgs args)
     {
-        GetDataFromControls(_model.Constants);
+        GetDataFromControls(Model.Constants);
     }
 
     private void Refresh_ImagesSet1()
     {
         double position = PositionScrollBar.Value;
         double angle = MathHelper.DegreesToRadians(AngleScrollBar.Value);
-        ImagesSet1.MainItemsControl.ItemsSource = _model.GetImageWithDescs1(position, angle);
+        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs1(position, angle);
 
         PositionTextBlock.Text =
-            new Any(_model.Generated_CenterXDelta).ValueAsString(false);
+            new Any(Model.Generated_CenterXDelta).ValueAsString(false);
         AngleTextBlock.Text =
-            new Any(180.0 * _model.Generated_AngleDelta / Math.PI).ValueAsString(false);
+            new Any(180.0 * Model.Generated_AngleDelta / Math.PI).ValueAsString(false);
         ScalarProductTextBlock.Text =
-            new Any(TensorPrimitives.CosineSimilarity(_model.DetectorsActivationHash, _model.DetectorsActivationHash0)).ValueAsString(false);
+            new Any(TensorPrimitives.CosineSimilarity(Model.DetectorsActivationHash, Model.DetectorsActivationHash0)).ValueAsString(false);
     }
 
     private void Refresh_ImagesSet2()
     {
-        ImagesSet2.MainItemsControl.ItemsSource = _model.GetImageWithDescs2();
-    }        
-
-    private Model05 _model = null!;
+        ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs2();
+    }            
 
     private Random _random = null!;
 }

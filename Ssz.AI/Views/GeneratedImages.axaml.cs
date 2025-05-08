@@ -12,7 +12,7 @@ namespace Ssz.AI.Views;
 
 public partial class GeneratedImages : UserControl
 {
-    public GeneratedImages(Model05 model05)
+    public GeneratedImages(Model05View model05View)
     {
         InitializeComponent();
 
@@ -23,9 +23,9 @@ public partial class GeneratedImages : UserControl
         RotatorGeneratedImage.MagnitudeScrollBar.ValueChanged += RotatorGeneratedImage_MagnitudeScrollBar_ValueChanged;
         RotatorGeneratedImage.AngleScrollBar.ValueChanged += RotatorGeneratedImage_AngleScrollBar_ValueChanged;
 
-        _model = model05;
+        _model05View = model05View;
 
-        RotatorGeneratedImage.Refresh(_model);
+        RotatorGeneratedImage.Refresh(model05View.Model);
     }
 
     private void GeneratedImage0_MagnitudeScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -58,42 +58,43 @@ public partial class GeneratedImages : UserControl
 
     private void RotatorGeneratedImage_MagnitudeScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        RotatorGeneratedImage.Refresh(_model);
+        RotatorGeneratedImage.Refresh(_model05View.Model);
     }
 
     private void RotatorGeneratedImage_AngleScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        RotatorGeneratedImage.Refresh(_model);
+        RotatorGeneratedImage.Refresh(_model05View.Model);
     }
 
     private void Refresh()
     {
+        var model = _model05View.Model;
         Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: _model.Cortex.SubArea_Detectors.Length,
+                    toExclusive: model.Cortex.SubArea_Detectors.Length,
                     di =>
                     {
-                        var d = _model.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(_model.Retina, GeneratedImage0.GeneratedGradientMatrix, _model.Cortex.Constants);
+                        var d = model.Cortex.SubArea_Detectors[di];
+                        d.CalculateIsActivated(model.Retina, GeneratedImage0.GeneratedGradientMatrix, model.Cortex.Constants);
                     });
 
-        float[] hash0 = new float[_model.Constants.HashLength];
-        _model.Cortex.CenterMiniColumn!.GetHash(hash0);
+        float[] hash0 = new float[model.Constants.HashLength];
+        model.Cortex.CenterMiniColumn!.GetHash(hash0);
 
         Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: _model.Cortex.SubArea_Detectors.Length,
+                    toExclusive: model.Cortex.SubArea_Detectors.Length,
                     di =>
                     {
-                        var d = _model.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(_model.Retina, GeneratedImage1.GeneratedGradientMatrix, _model.Cortex.Constants);
+                        var d = model.Cortex.SubArea_Detectors[di];
+                        d.CalculateIsActivated(model.Retina, GeneratedImage1.GeneratedGradientMatrix, model.Cortex.Constants);
                     });
 
-        float[] hash1 = new float[_model.Constants.HashLength];
-        _model.Cortex.CenterMiniColumn!.GetHash(hash1);
+        float[] hash1 = new float[model.Constants.HashLength];
+        model.Cortex.CenterMiniColumn!.GetHash(hash1);
 
         CosineSimilarityTextBlock.Text = new Any(TensorPrimitives.CosineSimilarity(hash0, hash1)).ValueAsString(false, "F04");
     }
 
-    private Model05 _model;
+    private Model05View _model05View;
 }
