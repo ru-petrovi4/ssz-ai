@@ -921,7 +921,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 600;  // ORIG 250         
+            public int MiniColumnVisibleDetectorsCount => 1000;  // ORIG 250         
 
             public int HashLength => 300;
 
@@ -989,19 +989,19 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; } = 0.96f;
+            public float K2 { get; set; } = 0.97f;
 
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; } = 1.3f;
+            public float K3 { get; set; } = 6.0f;
 
             /// <summary>
             ///     Диапазон угла, K внутри арктангенса:
             /// </summary>
-            public float K4 { get; set; } = 1.4f;
+            public float K4 { get; set; } = 1.0f;
 
-            public float K5 { get; set; } = 3.7f;
+            public float K5 { get; set; } = 4.0f;
 
             public bool SuperactivityThreshold { get; set; }
         }        
