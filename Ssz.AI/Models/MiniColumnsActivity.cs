@@ -68,7 +68,7 @@ namespace Ssz.AI.Models
                 if (nearestMiniColumn.Temp_Activity.Item1 > 0)
                     superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item3;
                 //else
-                //    superActivity += it.Item1 * (cortex.K2 - cortex.K0); // Best proximity
+                //    superActivity += it.Item1 * (constants.K2 - constants.K0); // Best proximity
             }            
 
             return superActivity;

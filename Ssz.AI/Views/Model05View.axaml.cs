@@ -22,18 +22,9 @@ public partial class Model05View : UserControl
 
         if (Design.IsDesignMode)
             return;
-
-        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
-        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
-        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.02;
-        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
-        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
-        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
-        //foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        //{
-        //    ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
-        //    ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
-        //}        
+        
+        var constants = new Model05.ModelConstants();
+        SetDataToControls(constants);
 
         LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
         LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(_model.Constants);
@@ -54,18 +45,23 @@ public partial class Model05View : UserControl
         GetDataFromControls(constants);
         _model = new Model05(constants);
         _model.ResetMemories();
-        _random = new Random(3); // Pseudorandom
-        _model.CurrentInputIndex = -1; // Перед первым элементом
-        //_model.DoSteps_MNIST(1000, _random, initialization: true);                    
+        _random = new Random(4); // Pseudorandom
+        _model.CurrentInputIndex = -1; // Перед первым элементом              
+    }
+
+    private void SetDataToControls(Model05.ModelConstants constants)
+    {
+        LevelScrollBar0.Value = constants.K0;
+        LevelScrollBar1.Value = constants.K1;
+        LevelScrollBar2.Value = constants.K2;
+        LevelScrollBar3.Value = constants.K3;
+        LevelScrollBar4.Value = constants.K4;
+        LevelScrollBar5.Value = constants.K5;
+        SuperactivityThreshold.IsChecked = constants.SuperactivityThreshold;
     }
 
     private void GetDataFromControls(IConstants constants)
-    {
-        //foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
-        //{
-        //    _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
-        //    _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
-        //}
+    {        
         constants.K0 = (float)LevelScrollBar0.Value;
         constants.K1 = (float)LevelScrollBar1.Value;
         constants.K2 = (float)LevelScrollBar2.Value;
@@ -186,16 +182,7 @@ public partial class Model05View : UserControl
         testWindow.Content = new GeneratedImages(_model);
         
         testWindow.Show((Window)Window.GetTopLevel(this)!);
-    }
-
-    //private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)
-    //{
-    //    double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
-    //    double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
-    //    _model.DoStep_GeneratedLine(position, angle);
-
-    //    Refresh_ImagesSet1();        
-    //}    
+    }       
 
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
@@ -229,28 +216,58 @@ public partial class Model05View : UserControl
     private void Refresh_ImagesSet2()
     {
         ImagesSet2.MainItemsControl.ItemsSource = _model.GetImageWithDescs2();
-    }    
-
-    //private void Refresh_StackPanel3()
-    //{
-    //    var images = _model.GetImages3();
-
-    //    var panel = StackPanel3;
-    //    panel.Children.Clear();
-    //    foreach (var image in images)
-    //    {
-    //        var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
-    //        var imageControl = new Avalonia.Controls.Image
-    //        {
-    //            Source = bitmap,
-    //            //Width = 150,
-    //            //Height = 150
-    //        };
-    //        panel.Children.Add(imageControl);
-    //    }
-    //}
+    }        
 
     private Model05 _model = null!;
 
     private Random _random = null!;
 }
+
+
+//((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
+//((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;
+//((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = 0.02;
+//((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = 0.0;
+//((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
+//((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
+//foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+//{
+//    ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
+//    ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
+//}        
+
+
+//private void Refresh_StackPanel3()
+//{
+//    var images = _model.GetImages3();
+
+//    var panel = StackPanel3;
+//    panel.Children.Clear();
+//    foreach (var image in images)
+//    {
+//        var bitmap = BitmapHelper.ConvertImageToAvaloniaBitmap(image);
+//        var imageControl = new Avalonia.Controls.Image
+//        {
+//            Source = bitmap,
+//            //Width = 150,
+//            //Height = 150
+//        };
+//        panel.Children.Add(imageControl);
+//    }
+//}
+
+//private void StepGeneratedLineButton_OnClick(object? sender, RoutedEventArgs args)
+//{
+//    double position = this.FindControl<ScrollBar>("PositionScrollBar")!.Value;
+//    double angle = this.FindControl<ScrollBar>("AngleScrollBar")!.Value;
+//    _model.DoStep_GeneratedLine(position, angle);
+
+//    Refresh_ImagesSet1();        
+//} 
+
+
+//foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+//{
+//    _model.Cortex.PositiveK[i] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].Value;
+//    _model.Cortex.NegativeK[i] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].Value;
+//}

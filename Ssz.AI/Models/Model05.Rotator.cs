@@ -981,24 +981,27 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; }
+            public float K0 { get; set; } = 0.2f;
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
-            public float K1 { get; set; }
+            public float K1 { get; set; } = -0.01f;
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; }
+            public float K2 { get; set; } = 0.96f;
 
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; }
+            public float K3 { get; set; } = 1.3f;
 
-            public float K4 { get; set; }
+            /// <summary>
+            ///     Диапазон угла, K внутри арктангенса:
+            /// </summary>
+            public float K4 { get; set; } = 1.4f;
 
-            public float K5 { get; set; }
+            public float K5 { get; set; } = 3.7f;
 
             public bool SuperactivityThreshold { get; set; }
         }        
