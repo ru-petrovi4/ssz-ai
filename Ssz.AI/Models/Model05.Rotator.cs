@@ -611,7 +611,7 @@ namespace Ssz.AI.Models
             activitiyMaxInfo.ActivityMax_MiniColumns.Clear();
 
             if (Constants.SuperactivityThreshold)
-                activitiyMaxInfo.MaxSuperActivity = Constants.K2 - Constants.K0 + 0.01f; // Чуть больше, чем активность пустой миниколонки
+                activitiyMaxInfo.MaxSuperActivity = Constants.K4;
             else
                 activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
@@ -879,12 +879,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
-
-            /// <summary>
-            ///     Не используется
-            /// </summary>
-            public int AngleRangeDegree_LimitMagnitude => 70;// Sigmoid = 70 for pi/2; Linear = 150
+            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;            
 
             public double DetectorMinGradientMagnitude => 5;
 
@@ -979,17 +974,24 @@ namespace Ssz.AI.Models
             public float Angle_BigPoints_Radius => 0.015f;
 
             /// <summary>
+            ///     Граница, до которой убывает чувствительность к углу градиента.
+            /// </summary>
+            public int AngleRangeDegree_LimitMagnitude => 100;
+
+            /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.3f;
+            public float K0 { get; set; } = 0.33f;
+
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
             public float K1 { get; set; } = -0.01f;
+
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; } = 1.0f;
+            public float K2 { get; set; } = 0.96f;
 
             /// <summary>
             ///     K значимости соседей
@@ -997,12 +999,18 @@ namespace Ssz.AI.Models
             public float K3 { get; set; } = 6.0f;
 
             /// <summary>
-            ///     Диапазон угла, K внутри арктангенса:
+            ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 1.5f;
+            public float K4 { get; set; } = 1.0f;
 
-            public float K5 { get; set; } = 4.0f;
+            /// <summary>
+            ///     Коэффициент для расчета диапазона угла чувствительности детектора
+            /// </summary>
+            public float K5 { get; set; } = 2.0f;
 
+            /// <summary>
+            ///     Включен ли порог на суперактивность при накоплении воспоминаний
+            /// </summary>
             public bool SuperactivityThreshold { get; set; }
         }        
     }

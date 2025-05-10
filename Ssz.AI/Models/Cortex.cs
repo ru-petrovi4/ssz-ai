@@ -515,12 +515,7 @@ namespace Ssz.AI.Models
             ///     Расстояние между детекторами по горизонтали и вертикали  
             ///     [0..MNISTImageWidth]
             /// </summary>
-            double DetectorDelta { get; }
-
-            /// <summary>
-            ///     Не используется
-            /// </summary>
-            int AngleRangeDegree_LimitMagnitude { get; }
+            double DetectorDelta { get; }            
 
             /// <summary>
             ///     Минимальная чувствительность к модулю градиента
@@ -621,13 +616,20 @@ namespace Ssz.AI.Models
             float Angle_BigPoints_Radius { get; }
 
             /// <summary>
+            ///     Граница, до которой убывает чувствительность к углу градиента.
+            /// </summary>
+            int AngleRangeDegree_LimitMagnitude { get; }
+
+            /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
             float K0 { get; set; }
+
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
             float K1 { get; set; }
+
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
@@ -638,8 +640,14 @@ namespace Ssz.AI.Models
             /// </summary>
             float K3 { get; set; }
 
+            /// <summary>
+            ///     Порог суперактивности
+            /// </summary>
             float K4 { get; set; }
 
+            /// <summary>
+            ///     Коэффициент для расчета диапазона угла чувствительности детектора
+            /// </summary>
             float K5 { get; set; }
 
             /// <summary>
