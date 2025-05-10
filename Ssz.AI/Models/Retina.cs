@@ -71,8 +71,8 @@ namespace Ssz.AI.Models
                 if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
                     gradientMagnitude = constants.GeneratedMinGradientMagnitude;
                 float angleRange;
-                //if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude * 0.5)
-                //    angleRange = 2 * MathF.PI;
+                if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude * 0.5)
+                    angleRange = 2 * MathF.PI;
                 if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
                     angleRange = angleRange0; //+(angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 else

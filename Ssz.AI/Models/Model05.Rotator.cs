@@ -891,7 +891,7 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegreeMax => 360;
 
-            public int MagnitudeRangesCount => 4;
+            public int MagnitudeRangesCount => 5;
 
             public int GeneratedImageWidth => 280;
 
@@ -981,17 +981,17 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.4f;
+            public float K0 { get; set; } = 0.33f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
-            public float K1 { get; set; } = 0.001f;
+            public float K1 { get; set; } = 0.1f;
 
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; } = 1.0f;
+            public float K2 { get; set; } = 0.96f;
 
             /// <summary>
             ///     K значимости соседей
@@ -1001,7 +1001,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 0.61f;
+            public float K4 { get; set; } = 0.7f;
 
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора
