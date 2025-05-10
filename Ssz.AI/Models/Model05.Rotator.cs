@@ -991,7 +991,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
             /// </summary>
-            public float K2 { get; set; } = 0.96f;
+            public float K2 { get; set; } = 1.0f;
 
             /// <summary>
             ///     K значимости соседей
@@ -1001,7 +1001,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 1.0f;
+            public float K4 { get; set; } = 0.61f;
 
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора
