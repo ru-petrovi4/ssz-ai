@@ -981,12 +981,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.33f;
+            public float K0 { get; set; } = 0.4f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
-            public float K1 { get; set; } = -0.01f;
+            public float K1 { get; set; } = 0.001f;
 
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
@@ -1006,7 +1006,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора
             /// </summary>
-            public float K5 { get; set; } = 2.0f;
+            public float K5 { get; set; } = 1.82f; // 1.8, 1.82 локальный оптимум для суперактивности в центре
 
             /// <summary>
             ///     Включен ли порог на суперактивность при накоплении воспоминаний
