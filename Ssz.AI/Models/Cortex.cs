@@ -118,7 +118,7 @@ namespace Ssz.AI.Models
                             float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos.Add((constants.K3 / (r * 2.0f * MathF.PI * r), nearestMc));
+                                mc.NearestMiniColumnInfos.Add((constants.K3 / (r * 2.0f * MathF.PI), nearestMc));
                             }
                         }
                 });            

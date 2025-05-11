@@ -943,7 +943,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 3;
+            public int MiniColumnsMaxDistance => 2;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
