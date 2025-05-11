@@ -887,7 +887,7 @@ namespace Ssz.AI.Models
 
             public int GeneratedMaxGradientMagnitude => 1200;
 
-            public int AngleRangeDegreeMin => 120;
+            public int AngleRangeDegreeMin => 90;
 
             public int AngleRangeDegreeMax => 360;
 
@@ -976,12 +976,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Граница, до которой убывает чувствительность к углу градиента.
             /// </summary>
-            public int AngleRangeDegree_LimitMagnitude => 100;
+            public int AngleRangeDegree_LimitMagnitude => 300;
 
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.15f;
+            public float K0 { get; set; } = 0.2f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
