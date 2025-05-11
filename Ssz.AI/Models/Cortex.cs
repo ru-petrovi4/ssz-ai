@@ -1,4 +1,5 @@
-﻿using Ssz.Utils.Serialization;
+﻿using Ssz.AI.Helpers;
+using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -118,7 +119,7 @@ namespace Ssz.AI.Models
                             float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos.Add((constants.K3 / (r * 2.0f * MathF.PI), nearestMc));
+                                mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r - 1.0f), nearestMc));
                             }
                         }
                 });            
@@ -638,7 +639,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            float K3 { get; set; }
+            float[] K3 { get; set; }
 
             /// <summary>
             ///     Порог суперактивности

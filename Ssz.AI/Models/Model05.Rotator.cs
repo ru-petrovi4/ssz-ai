@@ -943,7 +943,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 2;
+            public int MiniColumnsMaxDistance => 3;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
@@ -981,7 +981,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.20f;
+            public float K0 { get; set; } = 0.15f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
@@ -996,12 +996,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; } = 2.0f;
+            public float[] K3 { get; set; } = [ 0.16f, 0.05f, 0.000f ];
 
             /// <summary>
             ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 0.8f;
+            public float K4 { get; set; } = 1.0f;
 
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора

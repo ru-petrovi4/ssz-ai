@@ -71,6 +71,16 @@ namespace Ssz.AI.Helpers
             return radians;
         }
 
+        public static float GetInterpolatedValue(float[] points, float x)
+        {   
+            if (x < 0.00001f)
+                return points[0];
+            int xi = (int)x;
+            if (xi + 1 >= points.Length)
+                return points[points.Length - 1];
+            return points[xi] + (points[xi + 1] - points[xi]) * (x - (float)xi);
+        }
+
         public static GradientInPoint GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
         {   
             int x = (int)centerX;

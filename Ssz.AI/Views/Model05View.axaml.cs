@@ -29,7 +29,9 @@ public partial class Model05View : UserControl
         LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar30.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar31.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar32.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
 
@@ -47,7 +49,7 @@ public partial class Model05View : UserControl
         GetDataFromControls(constants);
         Model = new Model05(constants);
         Model.ResetMemories();
-        _random = new Random(4); // Pseudorandom
+        _random = new Random(5); // Pseudorandom
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
 
@@ -56,7 +58,9 @@ public partial class Model05View : UserControl
         LevelScrollBar0.Value = constants.K0;
         LevelScrollBar1.Value = constants.K1;
         LevelScrollBar2.Value = constants.K2;
-        LevelScrollBar3.Value = constants.K3;
+        LevelScrollBar30.Value = constants.K3[0];
+        LevelScrollBar31.Value = constants.K3[1];
+        LevelScrollBar32.Value = constants.K3[2];
         LevelScrollBar4.Value = constants.K4;
         LevelScrollBar5.Value = constants.K5;
         SuperactivityThreshold.IsChecked = constants.SuperactivityThreshold;
@@ -67,7 +71,9 @@ public partial class Model05View : UserControl
         constants.K0 = (float)LevelScrollBar0.Value;
         constants.K1 = (float)LevelScrollBar1.Value;
         constants.K2 = (float)LevelScrollBar2.Value;
-        constants.K3 = (float)LevelScrollBar3.Value;
+        constants.K3[0] = (float)LevelScrollBar30.Value;
+        constants.K3[1] = (float)LevelScrollBar31.Value;
+        constants.K3[2] = (float)LevelScrollBar32.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
         constants.K5 = (float)LevelScrollBar5.Value;
         constants.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;

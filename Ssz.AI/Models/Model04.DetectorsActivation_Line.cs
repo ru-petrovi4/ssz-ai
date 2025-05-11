@@ -319,7 +319,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; }
+            public float[] K3 { get; set; } = null!;
 
             public float K4 { get; set; }
 
