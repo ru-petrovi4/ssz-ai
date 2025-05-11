@@ -35,6 +35,8 @@ namespace Ssz.AI.Grafana
 
         public const string MiniColumsActiveBitsHisogram2_Metric = @"MiniColumsActiveBitsHisogram2";
 
+        public const string Distribution_Metric = @"Distribution";
+
         /// <summary>
         ///     Used for "Test connection" on the datasource config page.
         /// </summary>
@@ -75,6 +77,14 @@ namespace Ssz.AI.Grafana
                         {
                             Label = "Гистограмма количества активных бит миниколонок",
                             Value = MiniColumsActiveBitsHisogram2_Metric,
+                            Payloads = new List<ListMetricsResponsePayload>
+                            {
+                            }
+                        },
+                        new ListMetricsResponse
+                        {
+                            Label = "Распределение",
+                            Value = Distribution_Metric,
                             Payloads = new List<ListMetricsResponsePayload>
                             {
                             }
@@ -151,6 +161,9 @@ namespace Ssz.AI.Grafana
                         break;
                     case MiniColumsActiveBitsHisogram2_Metric:
                         result.Add(await Query_MiniColumsActiveBitsHisogram2(queryRequest, target));
+                        break;
+                    case Distribution_Metric:
+                        result.Add(await Query_Distribution(queryRequest, target));
                         break;
                 }
             }
@@ -309,6 +322,36 @@ namespace Ssz.AI.Grafana
                     {
                                 new QueryResponseColumn { Text = @"Количество бит", Type = QueryResponseColumn.TypeEnum.String },
                                 new QueryResponseColumn { Text = @"Количество примеров", Type = QueryResponseColumn.TypeEnum.Number },
+                    },
+                    Rows = rows,
+                };
+
+            return Task.FromResult(queryResponse);
+        }
+
+        private Task<QueryResponse> Query_Distribution(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
+        {
+            var jsonElement = (JObject)queryRequestTarget.Payload!;
+            //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
+
+            var data = _dataToDisplayHolder.Distribution;
+
+            List<object[]> rows = new List<object[]>(data.Length);
+            for (int i = 0; i < data.Length; i += 1)
+            {
+                rows.Add([(ulong)i, data[i]]);
+            }
+
+            var queryResponse =
+                new QueryResponse
+                {
+                    Target = GradientHisogram_Metric,
+                    //Datapoints = datapoints,
+                    Type = QueryResponse.TypeEnum.Table,
+                    Columns = new List<QueryResponseColumn>
+                    {
+                                new QueryResponseColumn { Text = @"Индекс", Type = QueryResponseColumn.TypeEnum.Number },
+                                new QueryResponseColumn { Text = @"Количество", Type = QueryResponseColumn.TypeEnum.Number },
                     },
                     Rows = rows,
                 };

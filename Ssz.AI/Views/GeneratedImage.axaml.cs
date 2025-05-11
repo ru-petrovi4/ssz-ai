@@ -30,7 +30,7 @@ public partial class GeneratedImage : UserControl
         // Вычисляем магнитуду и угол градиента
         double magnitude = MagnitudeScrollBar.Value;
         // [-pi, pi]
-        double angle = MathHelper.DegreesToRadians(AngleScrollBar.Value); // Угол в радианах
+        double angle = MathHelper.DegreesToRadians((float)AngleScrollBar.Value); // Угол в радианах
 
         int gradX = (int)(Math.Cos(angle) * magnitude);
         int gradY = (int)(Math.Sin(angle) * magnitude);

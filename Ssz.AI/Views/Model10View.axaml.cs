@@ -192,7 +192,7 @@ public partial class Model10View : UserControl
     private void Refresh_ImagesSet1()
     {
         double position = PositionScrollBar.Value;
-        double angle = MathHelper.DegreesToRadians(AngleScrollBar.Value);
+        double angle = MathHelper.DegreesToRadians((float)AngleScrollBar.Value);
         ImagesSet1.MainItemsControl.ItemsSource = _model.GetImageWithDescs1(position, angle);
 
         PositionTextBlock.Text =

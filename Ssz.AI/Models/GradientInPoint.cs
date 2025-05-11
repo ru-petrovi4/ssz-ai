@@ -11,7 +11,7 @@ namespace Ssz.AI.Models
         /// </summary>
         public double Magnitude;
         /// <summary>
-        ///     [-pi, pi]
+        ///     [-pi, pi)
         /// </summary>
         public double Angle;
 

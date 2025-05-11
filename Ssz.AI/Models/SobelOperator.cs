@@ -290,8 +290,8 @@ namespace Ssz.AI.Models
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
 
-                    int angleDegree = (int)(180.0 * gradientMatrix[x, y].Angle / Math.PI + 180.0);
-                    if (angleDegree < 0 || angleDegree >= 360)
+                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);
+                    if (angleDegree == 360)
                         angleDegree = 0;
                     gradientDistribution.AngleData[angleDegree] += 1;
                 }
@@ -331,7 +331,7 @@ namespace Ssz.AI.Models
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
 
-                    int angleDegree = (int)(180.0 * gradientMatrix[x, y].Angle / Math.PI + 180.0);
+                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);
                     if (angleDegree == 360)
                         angleDegree = 0;
                     gradientDistribution.AngleData[angleDegree] += 1;

@@ -142,7 +142,7 @@ namespace Ssz.AI.Models
 
                 MonoInputItem monoInputItem = new();
                 byte[] original_Image = images[i];
-                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees((float)angle)}";
                 monoInputItem.Original_Image = original_Image;
 
                 // Применяем оператор Собеля
@@ -188,7 +188,7 @@ namespace Ssz.AI.Models
 
                 MonoInputItem monoInputItem = new();
                 byte[] original_Image = images[i];
-                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees((float)angle)}";
                 monoInputItem.Original_Image = original_Image;
 
                 // Применяем оператор Собеля

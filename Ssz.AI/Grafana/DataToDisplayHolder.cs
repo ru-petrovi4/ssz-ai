@@ -21,6 +21,11 @@ namespace Ssz.AI.Grafana
         public MiniColumn? ContextSyncingMiniColumn { get; set; }
         //public MatrixFloat? ContextSyncingMatrixFloat { get; set; }
         //public Image? ContextSyncingImage { get; set; }
+
+        /// <summary>
+        ///     Распределение чего-либо
+        /// </summary>
+        public ulong[] Distribution { get; set; } = null!;
     }
 
     public class GradientDistribution

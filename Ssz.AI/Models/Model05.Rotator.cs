@@ -344,7 +344,7 @@ namespace Ssz.AI.Models
 
                 double magnitude = Constants.GeneratedMinGradientMagnitude + 
                     (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
-                double angle = Math.Atan2(dy, dx);
+                double angle = MathHelper.NormalizeAngle(MathF.Atan2(dy, dx));
 
                 int gradX = (int)(Math.Cos(angle) * magnitude);
                 int gradY = (int)(Math.Sin(angle) * magnitude);
@@ -374,7 +374,7 @@ namespace Ssz.AI.Models
                 CalculateDetectorsAndActivityAndSuperActivity(generatedGradientMatrix, activitiyMaxInfo);
                 
                 MonoInputItem monoInputItem = new();
-                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}";
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees((float)angle)}";
                 //monoInputItem.Original_Image = original_Image;                
                 monoInputItem.GradientMatrix = generatedGradientMatrix;
                 MonoInput.MonoInputItems[inputIndex] = monoInputItem;
@@ -981,12 +981,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.33f;
+            public float K0 { get; set; } = 0.20f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
             /// </summary>
-            public float K1 { get; set; } = 0.1f;
+            public float K1 { get; set; } = -0.01f;
 
             /// <summary>
             ///     Косинусное расстояние для пустой колонки
@@ -996,12 +996,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float K3 { get; set; } = 6.0f;
+            public float K3 { get; set; } = 2.0f;
 
             /// <summary>
             ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 0.7f;
+            public float K4 { get; set; } = 0.8f;
 
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора

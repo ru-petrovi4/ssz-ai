@@ -6,38 +6,68 @@ namespace Ssz.AI.Helpers
     public static class MathHelper
     {
         /// <summary>
-        ///     Radians [-pi, pi], Degrees [0..360)
+        ///     Radians to Degrees [0..360)
         /// </summary>
         /// <param name="radians"></param>
         /// <returns></returns>
-        public static double RadiansToDegrees(double radians)
+        public static float RadiansToDegrees(float radians)
         {
-            double degrees = 180 * radians / Math.PI;
-            if (degrees < 0)
+            float degrees = 180 * radians / MathF.PI;                        
+            return NormalizeAngleDegrees(degrees);
+        }
+
+        /// <summary>
+        ///     Degrees [0..360)
+        /// </summary>
+        /// <param name="degrees"></param>
+        /// <returns></returns>
+        public static float NormalizeAngleDegrees(float degrees)
+        {
+            degrees = degrees % 360.0f;
+            if (degrees < 0.000001f)
             {
-                if (degrees < -0.000001)
-                    degrees += 360;
+                if (degrees < -0.000001f)
+                    degrees += 360.0f;
                 else
-                    degrees = 0.0;
-            }                
+                    degrees = 0.0f;
+            }
             return degrees;
         }
 
         /// <summary>
-        ///     Degrees [0..360], Radians [-pi, pi)
+        ///     Degrees to Radians [-pi, pi)
         /// </summary>
         /// <param name="degrees"></param>
         /// <returns></returns>
-        public static double DegreesToRadians(double degrees)
+        public static float DegreesToRadians(float degrees)
         {
-            double radians = Math.PI * degrees / 180;
-            if (radians > Math.PI - 0.000001)
+            float radians = MathF.PI * degrees / 180.0f;            
+            return NormalizeAngle(radians);
+        }
+
+        /// <summary>
+        ///     Returns Radians [-pi, pi)
+        /// </summary>
+        /// <param name="v"></param>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public static float NormalizeAngle(float radians)
+        {
+            radians = radians % (2.0f * MathF.PI);
+            if (radians > MathF.PI - 0.00001f)
             {
-                if (radians > Math.PI)
-                    radians -= 2 * Math.PI;
+                if (radians > MathF.PI + 0.00001f)
+                    radians -= 2 * MathF.PI;
                 else
-                    radians = -Math.PI;
-            }                
+                    radians = -MathF.PI;
+            }
+            else if (radians < -MathF.PI + 0.00001f)
+            {
+                if (radians < -MathF.PI - 0.00001f)
+                    radians += 2 * MathF.PI;
+                else
+                    radians = -MathF.PI;
+            }
             return radians;
         }
 
@@ -114,6 +144,6 @@ namespace Ssz.AI.Helpers
                 angle = -Math.PI;
 
             return (magnitude, angle);
-        }
+        }        
     }
 }

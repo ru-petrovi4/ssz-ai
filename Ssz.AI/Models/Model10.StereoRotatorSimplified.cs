@@ -357,7 +357,7 @@ namespace Ssz.AI.Models
                 CalculateDetectorsAndActivityAndSuperActivity(angleNormalized, generatedGradientMatrix, activitiyMaxInfo);
 
                 MonoInputItem monoInputItem = new();
-                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees(angle)}; AngleNormalized: {angleNormalized}";
+                monoInputItem.Label = $"Maginitude: {(int)magnitude}; Angle: {(int)MathHelper.RadiansToDegrees((float)angle)}; AngleNormalized: {angleNormalized}";
                 //monoInputItem.Original_Image = original_Image;                
                 monoInputItem.GradientMatrix = generatedGradientMatrix;
                 MonoInput.MonoInputItems[inputIndex] = monoInputItem;

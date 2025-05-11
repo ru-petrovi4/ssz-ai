@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tensorflow.Keras", "ThirdPa
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TensorFlow.NET", "TensorFlow.NET", "{DEAC9A7A-41BF-4CF3-898F-D6FD5FE1920C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ssz.AI.Tests", "Ssz.AI.Tests\Ssz.AI.Tests.csproj", "{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -77,6 +79,10 @@ Global
 		{74C27639-8EAA-848F-E272-C395A2699C1A}.Debug|x64.Build.0 = Debug|x64
 		{74C27639-8EAA-848F-E272-C395A2699C1A}.Release|x64.ActiveCfg = Release|x64
 		{74C27639-8EAA-848F-E272-C395A2699C1A}.Release|x64.Build.0 = Release|x64
+		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Debug|x64.Build.0 = Debug|Any CPU
+		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Release|x64.ActiveCfg = Release|Any CPU
+		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
