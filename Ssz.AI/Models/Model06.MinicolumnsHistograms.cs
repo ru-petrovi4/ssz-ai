@@ -220,7 +220,7 @@ namespace Ssz.AI.Models
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
-            dataToDisplayHolder.MiniColumsBitsCountInHashDistribution2 = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
+            dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
@@ -266,7 +266,7 @@ namespace Ssz.AI.Models
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
                     //dataToDisplayHolder.MiniColumsActivatedDetectorsCountDistribution[activatedDetectors.Intersect(miniColumn.Detectors).Count()] += 1;
-                    dataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
+                    dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution[mc.MCX, mc.MCY, bitsCountInHash] += 1;
 
                     if (bitsCountInHash >= 11)
                     {

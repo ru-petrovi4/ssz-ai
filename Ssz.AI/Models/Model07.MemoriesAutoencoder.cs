@@ -212,7 +212,7 @@ namespace Ssz.AI.Models
 
         public void CollectMemories_MNIST(int stepsCount)
         {
-            DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2 = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
+            DataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
@@ -488,7 +488,7 @@ namespace Ssz.AI.Models
                     mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
-                    DataToDisplayHolder.MiniColumsBitsCountInHashDistribution2[mc.MCX, mc.MCY, bitsCountInHash] += 1;
+                    DataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution[mc.MCX, mc.MCY, bitsCountInHash] += 1;
 
                     if (bitsCountInHash >= Constants.MinBitsInHashForMemory)
                     {

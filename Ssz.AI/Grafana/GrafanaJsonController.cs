@@ -33,7 +33,7 @@ namespace Ssz.AI.Grafana
 
         public const string MiniColumsActiveBitsHisogram_Metric = @"MiniColumsActiveBitsHisogram";
 
-        public const string MiniColumsActiveBitsHisogram2_Metric = @"MiniColumsActiveBitsHisogram2";
+        public const string WithCoordinate_MiniColumsActiveBitsHisogram_Metric = @"WithCoordinate_MiniColumsActiveBitsHisogram";
 
         public const string Distribution_Metric = @"Distribution";
 
@@ -67,7 +67,7 @@ namespace Ssz.AI.Grafana
                         },
                         new ListMetricsResponse
                         {
-                            Label = "Гистограмма количества активных бит детекторов",
+                            Label = "Гистограмма количества активных бит мниколонок",
                             Value = MiniColumsActiveBitsHisogram_Metric,
                             Payloads = new List<ListMetricsResponsePayload>
                             {
@@ -75,8 +75,8 @@ namespace Ssz.AI.Grafana
                         },
                         new ListMetricsResponse
                         {
-                            Label = "Гистограмма количества активных бит миниколонок",
-                            Value = MiniColumsActiveBitsHisogram2_Metric,
+                            Label = "Гистограмма количества активных бит миниколонки (одной)",
+                            Value = WithCoordinate_MiniColumsActiveBitsHisogram_Metric,
                             Payloads = new List<ListMetricsResponsePayload>
                             {
                             }
@@ -159,8 +159,8 @@ namespace Ssz.AI.Grafana
                     case MiniColumsActiveBitsHisogram_Metric:
                         result.Add(await Query_MiniColumsActiveBitsHisogram(queryRequest, target));
                         break;
-                    case MiniColumsActiveBitsHisogram2_Metric:
-                        result.Add(await Query_MiniColumsActiveBitsHisogram2(queryRequest, target));
+                    case WithCoordinate_MiniColumsActiveBitsHisogram_Metric:
+                        result.Add(await Query_WithCoordinate_MiniColumsActiveBitsHisogram(queryRequest, target));
                         break;
                     case Distribution_Metric:
                         result.Add(await Query_Distribution(queryRequest, target));
@@ -277,7 +277,7 @@ namespace Ssz.AI.Grafana
             var data = _dataToDisplayHolder.MiniColumsBitsCountInHashDistribution;
             
             List<object[]> rows = new List<object[]>(data.Length);            
-            for (int i = 0; i < 50; i += 1)
+            for (int i = 0; i < 150; i += 1)
             {
                 rows.Add([i.ToString(), data[i]]);
             }
@@ -285,7 +285,7 @@ namespace Ssz.AI.Grafana
             var queryResponse =
                 new QueryResponse
                 {
-                    Target = GradientHisogram_Metric,
+                    Target = MiniColumsActiveBitsHisogram_Metric,
                     //Datapoints = datapoints,
                     Type = QueryResponse.TypeEnum.Table,
                     Columns = new List<QueryResponseColumn>
@@ -299,12 +299,12 @@ namespace Ssz.AI.Grafana
             return Task.FromResult(queryResponse);
         }
 
-        private Task<QueryResponse> Query_MiniColumsActiveBitsHisogram2(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
+        private Task<QueryResponse> Query_WithCoordinate_MiniColumsActiveBitsHisogram(QueryRequest queryRequest, QueryRequestTarget queryRequestTarget)
         {
             var jsonElement = (JObject)queryRequestTarget.Payload!;
             //int n = new Any(jsonElement[N_PropertyName]?.ToString() ?? @"0").ValueAsInt32(false);            
 
-            var data = _dataToDisplayHolder.MiniColumsBitsCountInHashDistribution2;
+            var data = _dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution;
 
             List<object[]> rows = new List<object[]>(data.Length);
             for (int i = 0; i < 300; i += 1)
@@ -315,7 +315,7 @@ namespace Ssz.AI.Grafana
             var queryResponse =
                 new QueryResponse
                 {
-                    Target = GradientHisogram_Metric,
+                    Target = WithCoordinate_MiniColumsActiveBitsHisogram_Metric,
                     //Datapoints = datapoints,
                     Type = QueryResponse.TypeEnum.Table,
                     Columns = new List<QueryResponseColumn>

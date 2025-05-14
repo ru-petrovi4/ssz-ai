@@ -71,13 +71,20 @@ namespace Ssz.AI.Models
                 SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
             Retina.Prepare();
             if (generateRetina)
-                SerializationHelper.SaveToFile("Retina.bin", Retina, null);
+                SerializationHelper.SaveToFile("Retina.bin", Retina, null);            
 
             Cortex = new Cortex(Constants, Retina);
             Cortex.GenerateOwnedData(Retina);
-            Cortex.Prepare();
+            Cortex.Prepare();            
 
-            DetectorsActivationHash = new float[Constants.HashLength];
+            DetectorsActivationHash = new float[Constants.HashLength];           
+            
+            //foreach (int i in Enumerable.Range(0, 200))
+            //{
+            //    DetectorsActivationHash[Cortex.SubArea_Detectors[i].BitIndexInHash] = 1.0f;
+            //}
+            //var sum = TensorPrimitives.Sum(DetectorsActivationHash);
+
             GetImageWithDescs1(0.0, 0.0);
             DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
         }
@@ -248,6 +255,8 @@ namespace Ssz.AI.Models
             var activatedDetectors = Cortex.SubArea_Detectors.Where(d => d.Temp_IsActivated).ToList();
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
 
+            var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn.Detectors.Where(d => d.Temp_IsActivated).ToList();
+
             var activityColorImage = BitmapHelper.GetSubBitmap(
                 Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
                 Cortex.MiniColumns.Dimensions[0] / 2,
@@ -276,7 +285,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(subImage), 
                     Desc = $"Видимая картина градиентов. {monoInputItem.Label}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(detectorsActivationBitmap),
-                    Desc = $"Активация детекторов. Activated Detectors: {activatedDetectors.Count}" },
+                    Desc = $"Активация детекторов. Всего (для одной миниколонки): {activatedDetectors.Count} ({forMinicolumn_ActivatedDetectors.Count})" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 

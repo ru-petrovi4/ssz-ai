@@ -32,8 +32,6 @@ namespace Ssz.AI.Models
                     };
                     Detectors[dx, dy] = detector;
                 }
-
-            DetectorRanges = new();
         }
 
         #endregion
@@ -42,7 +40,10 @@ namespace Ssz.AI.Models
 
         public DenseMatrix<Detector> Detectors;
 
-        public DetectorRanges DetectorRanges;
+        /// <summary>
+        ///     Диапазоны для детекторов в зависимости от модуля градиента и угла градиента (в градусах).
+        /// </summary>
+        public DenseMatrix<DetectorRange> DetectorsRanges = new();
 
         //public float[] AngleAccumulativeDistribution = null!;
 
@@ -50,25 +51,18 @@ namespace Ssz.AI.Models
         ///     Generates model data after construction.
         /// </summary>
         public void GenerateOwnedData(Random random, IConstants constants, GradientDistribution gradientDistribution)
-        {   
+        {
             // TODO gradientDistribution -> DetectorRanges            
             int gradientMagnitudeRange = constants.GeneratedMaxGradientMagnitude / constants.MagnitudeRangesCount;
-            DetectorRanges.GradientMagnitudeRanges = new MatrixFloat(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);
-            DetectorRanges.GradientAngleRanges = new MatrixFloat(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);
-            foreach (int gradientMagnitude in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
-            {
-                foreach (int gradientAngleDegree in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[1]))
-                {
-                    DetectorRanges.GradientMagnitudeRanges[gradientMagnitude, gradientAngleDegree] = gradientMagnitudeRange;
-                }                
-            }
+
+            DetectorsRanges = new DenseMatrix<DetectorRange>(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);                                  
 
             float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
             float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;
             float angleRange1 = 2.0f * MathF.PI;
-            foreach (int gm in Enumerable.Range(0, DetectorRanges.GradientMagnitudeRanges.Dimensions[0]))
+            foreach (int gradientMagnitudeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[0]))
             {
-                int gradientMagnitude = gm;
+                int gradientMagnitude = gradientMagnitudeIdx;
                 if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
                     gradientMagnitude = constants.GeneratedMinGradientMagnitude;
                 float angleRange;
@@ -82,16 +76,20 @@ namespace Ssz.AI.Models
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;
 
-                foreach (int gradientAngleDegree in Enumerable.Range(0, DetectorRanges.GradientAngleRanges.Dimensions[1]))
+                foreach (int gradientAngleDegreeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[1]))
                 {
-                    DetectorRanges.GradientAngleRanges[gradientMagnitude, gradientAngleDegree] = angleRange;
+                    DetectorsRanges[gradientMagnitudeIdx, gradientAngleDegreeIdx] = new DetectorRange
+                    {
+                        GradientMagnitudeRange = gradientMagnitudeRange,
+                        GradientAngleRange = angleRange
+                    };
                 }
             }
 
             // Плотность детекторов, в зависимости от модуля градиента и угла градиента (в градусах).
-            MatrixFloat detectorDensities = new MatrixFloat(DetectorRanges.GradientMagnitudeRanges.Dimensions[0], DetectorRanges.GradientMagnitudeRanges.Dimensions[1]);
+            MatrixFloat detectorDensities = new MatrixFloat(DetectorsRanges.Dimensions[0], DetectorsRanges.Dimensions[1]);
 
-            foreach (int gradientMagnitude in Enumerable.Range(constants.GeneratedMinGradientMagnitude, gradientMagnitudeRange))
+            foreach (int gradientMagnitude in Enumerable.Range(0, detectorDensities.Dimensions[0]))//Enumerable.Range(constants.GeneratedMinGradientMagnitude, gradientMagnitudeRange))
             {
                 foreach (int gradientAngleDegree in Enumerable.Range(0, detectorDensities.Dimensions[1]))
                 {
@@ -99,22 +97,22 @@ namespace Ssz.AI.Models
                 }
             }
             
-            float activatedCount0 = gradientMagnitudeRange * DetectorRanges.GradientAngleRanges[constants.GeneratedMinGradientMagnitude, 0];
-            //float detectorsCount = (detectorRanges.GradientAngleRanges[constants.GeneratedMinGradientMagnitude, 0] * 360.0f / (2 * MathF.PI)) * gradientMagnitudeRange;
-            foreach (int gradientMagnitude in Enumerable.Range(constants.GeneratedMinGradientMagnitude + gradientMagnitudeRange, constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude))
-            {
-                float gradientAngleRange1 = DetectorRanges.GradientAngleRanges[gradientMagnitude - gradientMagnitudeRange + 1, 0];
-                float activatedCount1 = 0.0f;
-                foreach (int gm in Enumerable.Range(gradientMagnitude - gradientMagnitudeRange + 1, gradientMagnitudeRange - 1))
-                {
-                    activatedCount1 += detectorDensities[gm, 0] * gradientAngleRange1;
-                }                                
-                float px = (activatedCount0 - activatedCount1) / gradientAngleRange1;
-                foreach (int gradientAngleDegree in Enumerable.Range(0, detectorDensities.Dimensions[1]))
-                {
-                    detectorDensities[gradientMagnitude, gradientAngleDegree] = px;
-                }                
-            }            
+            //float activatedCount0 = gradientMagnitudeRange * DetectorsRanges[constants.GeneratedMinGradientMagnitude, 0].GradientMagnitudeRange;
+            ////float detectorsCount = (detectorRanges.GradientAngleRanges[constants.GeneratedMinGradientMagnitude, 0] * 360.0f / (2 * MathF.PI)) * gradientMagnitudeRange;
+            //foreach (int gradientMagnitude in Enumerable.Range(constants.GeneratedMinGradientMagnitude + gradientMagnitudeRange, constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude))
+            //{
+            //    float gradientAngleRange1 = DetectorsRanges[gradientMagnitude - gradientMagnitudeRange + 1, 0].GradientMagnitudeRange;
+            //    float activatedCount1 = 0.0f;
+            //    foreach (int gm in Enumerable.Range(gradientMagnitude - gradientMagnitudeRange + 1, gradientMagnitudeRange - 1))
+            //    {
+            //        activatedCount1 += detectorDensities[gm, 0] * gradientAngleRange1;
+            //    }                                
+            //    float px = (activatedCount0 - activatedCount1) / gradientAngleRange1;
+            //    foreach (int gradientAngleDegree in Enumerable.Range(0, detectorDensities.Dimensions[1]))
+            //    {
+            //        detectorDensities[gradientMagnitude, gradientAngleDegree] = px;
+            //    }                
+            //}            
 
             MatrixFloat detectorDensities_Accumulative = new MatrixFloat(detectorDensities.Dimensions[0], detectorDensities.Dimensions[1]);
             detectorDensities_Accumulative.Data = DistributionHelper.GetAccumulativeDistribution(detectorDensities.Data);
@@ -125,7 +123,8 @@ namespace Ssz.AI.Models
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
                 int rawIndex = DistributionHelper.GetRandom(random, detectorDensities_Accumulative.Data);
-                var indices = detectorDensities_Accumulative.GetIndices(rawIndex);                
+                //var indices = detectorDensities_Accumulative.GetIndices(rawIndex);                
+                var indices = (random.Next(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange), random.Next(360));
 
                 Detector detector = Detectors.Data[di];
 
@@ -156,8 +155,7 @@ namespace Ssz.AI.Models
                     writer.Write(detector.BitIndexInHash);
                 }
 
-                writer.WriteOwnedDataSerializable(DetectorRanges.GradientMagnitudeRanges, null);
-                writer.WriteOwnedDataSerializable(DetectorRanges.GradientAngleRanges, null);
+                writer.WriteOwnedDataSerializable(Detectors, null);                
             }
         }
 
@@ -177,8 +175,7 @@ namespace Ssz.AI.Models
                             detector.BitIndexInHash = reader.ReadInt32();
                         }
                         
-                        reader.ReadOwnedDataSerializable(DetectorRanges.GradientMagnitudeRanges, null);
-                        reader.ReadOwnedDataSerializable(DetectorRanges.GradientAngleRanges, null);                        
+                        reader.ReadOwnedDataSerializable(Detectors, null);                                           
                         break;
                 }
             }
@@ -227,7 +224,10 @@ namespace Ssz.AI.Models
             }
 
             int gradientAngleDegree = (int)MathHelper.RadiansToDegrees((float)Temp_GradientInPoint.Angle);
-            float gradientMagnitudeMin = GradientMagnitudeMax - retina.DetectorRanges.GradientMagnitudeRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree];
+
+            DetectorRange detectorRange = retina.DetectorsRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree];
+            
+            float gradientMagnitudeMin = GradientMagnitudeMax - detectorRange.GradientMagnitudeRange;
 
             bool activated = (Temp_GradientInPoint.Magnitude >= gradientMagnitudeMin) && (Temp_GradientInPoint.Magnitude < GradientMagnitudeMax);
             if (!activated)
@@ -237,7 +237,7 @@ namespace Ssz.AI.Models
             }
 
             // [-pi, pi)
-            float gradientAngleMin = MathHelper.NormalizeAngle(GradientAngleMax - retina.DetectorRanges.GradientAngleRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree]);            
+            float gradientAngleMin = MathHelper.NormalizeAngle(GradientAngleMax - detectorRange.GradientAngleRange);            
                 
             if (GradientAngleMax > gradientAngleMin + 0.01f)
                 activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) && (Temp_GradientInPoint.Angle < GradientAngleMax);
@@ -263,5 +263,33 @@ namespace Ssz.AI.Models
             //    activated = (angle >= gradientAngleMin) || (angle < GradientAngleMax);
             return false;
         }        
-    }    
+    }
+
+    /// <summary>
+    ///     Диапазоны для детектора.
+    /// </summary>
+    public class DetectorRange : IOwnedDataSerializable
+    {
+        /// <summary>
+        ///     Диапазоны модуля градиента.
+        /// </summary>
+        public float GradientMagnitudeRange;
+
+        /// <summary>
+        ///     Диапазоны угла градиента.
+        /// </summary>
+        public float GradientAngleRange;
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            writer.Write(GradientMagnitudeRange);
+            writer.Write(GradientAngleRange);
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            GradientMagnitudeRange = reader.ReadSingle();
+            GradientAngleRange = reader.ReadSingle();
+        }
+    }
 }
