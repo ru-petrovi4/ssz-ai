@@ -197,6 +197,11 @@ public partial class Model05View : UserControl
         Refresh_ImagesSet1();
     }
 
+    private void DoScript_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.DoScript(_random);
+    }
+
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         Refresh_ImagesSet1();

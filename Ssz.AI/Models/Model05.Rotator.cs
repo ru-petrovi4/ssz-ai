@@ -132,7 +132,7 @@ namespace Ssz.AI.Models
 #if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
             Array.Clear(DataToDisplayHolder.MiniColumsBitsCountInHashDistribution);
 #endif
-        }
+        }        
 
         public async Task DoSteps_MNISTAsync(int stepsCount, Random random, bool randomInitialization, bool reorderMemoriesPeriodically)
         {
@@ -711,6 +711,14 @@ namespace Ssz.AI.Models
         //        }
         //    }
         //}
+
+        public void DoScript(Random random)
+        {
+            for (float v = 0; v < 1.0f; v += 1.0f)
+            {
+
+            }
+        }
 
         #endregion
 

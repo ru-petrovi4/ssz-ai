@@ -28,6 +28,7 @@
 			<Button Content="Потоп!" Click="FloodButton_OnClick" />			
 			<Button Content="Show Test Window" Click="ShowTestWindowButton_OnClick" />
       <CheckBox Name="SuperactivityThreshold" Content="Порог на суперактивность" Click="SuperactivityThreshold_OnClick" />
+      <Button Content="Do Script" Click="DoScript_OnClick" />
 		</StackPanel>
 
 		<Grid Grid.Row="1">
