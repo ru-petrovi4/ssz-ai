@@ -116,7 +116,7 @@ namespace Ssz.AI.Models
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
                                 continue;                            
-                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
+                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
                                 mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r - 1.0f), nearestMc));

@@ -920,12 +920,12 @@ namespace Ssz.AI.Models
             ///     Расстояние между детекторами по горизонтали и вертикали 
             ///     [0..MNISTImageWidth]
             /// </summary>
-            public double DetectorDelta => 0.05;
+            public double DetectorDelta => 0.1;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 1000;  // ORIG 250         
+            public int MiniColumnVisibleDetectorsCount => 500;  // ORIG 250         
 
             public int HashLength => 300;
 
