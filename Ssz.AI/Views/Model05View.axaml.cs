@@ -7,6 +7,8 @@ using Ssz.AI.Helpers;
 using Ssz.AI.Models;
 using Ssz.Utils;
 using System;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
@@ -47,8 +49,7 @@ public partial class Model05View : UserControl
     {
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
-        Model = new Model05(constants);
-        Model.ResetMemories();
+        Model = new Model05(constants);        
         _random = new Random(5); // Pseudorandom
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
@@ -195,12 +196,7 @@ public partial class Model05View : UserControl
     private void PositionScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
         Refresh_ImagesSet1();
-    }
-
-    private void DoScript_OnClick(object? sender, RoutedEventArgs args)
-    {
-        Model.DoScript(_random);
-    }
+    }    
 
     private void AngleScrollBar_OnValueChanged(object? sender, RangeBaseValueChangedEventArgs e)
     {
@@ -229,7 +225,47 @@ public partial class Model05View : UserControl
     private void Refresh_ImagesSet2()
     {
         ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs2();
-    }            
+    }
+
+    private async void DoScript_OnClick(object? sender, RoutedEventArgs args)
+    {
+        IsEnabled = false;
+
+        var constants = new Model05.ModelConstants();
+        GetDataFromControls(constants);
+
+        Directory.CreateDirectory($"Data\\Script");
+
+        int interationN = 0;
+        for (float v = 1.0f; v < 2.0f; v += 0.05f) // v = 1.5 good
+        {
+            interationN += 1;
+
+            constants.K5 = v;
+
+            _random = new Random(5); // Pseudorandom
+            Model = new Model05(constants);
+            Model.CurrentInputIndex = -1; // Перед первым элементом 
+
+            await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+
+            Model.Flood(_random, 2.5f);
+
+            Refresh_ImagesSet2();
+
+            var memoriesColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
+                Model.Cortex.MiniColumns.Dimensions[0] / 2,
+                Model.Cortex.MiniColumns.Dimensions[1] / 2,
+                Model.Cortex.SubArea_MiniColumns_Radius + 2);
+
+            memoriesColorImage.Save($"Data\\Script\\Result{interationN:D6} - {v}.png", ImageFormat.Png);
+
+            await Task.Delay(50);            
+        }
+
+        IsEnabled = true;               
+    }
 
     private Random _random = null!;
 }

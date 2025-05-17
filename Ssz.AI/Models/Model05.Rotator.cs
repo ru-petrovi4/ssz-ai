@@ -712,13 +712,13 @@ namespace Ssz.AI.Models
         //    }
         //}
 
-        public void DoScript(Random random)
-        {
-            for (float v = 0; v < 1.0f; v += 1.0f)
-            {
+        //public void DoScript(Random random)
+        //{
+        //    for (float v = 0; v < 1.0f; v += 1.0f)
+        //    {
 
-            }
-        }
+        //    }
+        //}
 
         #endregion
 
