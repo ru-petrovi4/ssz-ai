@@ -50,7 +50,7 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
         Model = new Model05(constants);        
-        _random = new Random(5); // Pseudorandom
+        _random = new Random(4); // Pseudorandom // 5 good
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
 
@@ -237,32 +237,45 @@ public partial class Model05View : UserControl
         Directory.CreateDirectory($"Data\\Script");
 
         int interationN = 0;
-        for (float v = 1.0f; v < 2.0f; v += 0.05f) // v = 1.5 good
-        {
-            interationN += 1;
+        for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
+            for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
+            {
+                interationN += 1;
 
-            constants.K5 = v;
+                constants.K3[1] = k31;
+                constants.K3[2] = k32;
 
-            _random = new Random(5); // Pseudorandom
-            Model = new Model05(constants);
-            Model.CurrentInputIndex = -1; // Перед первым элементом 
+                _random = new Random(5); // Pseudorandom
+                Model = new Model05(constants);
+                Model.CurrentInputIndex = -1; // Перед первым элементом 
 
-            await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+                await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
-            Model.Flood(_random, 2.5f);
+                Model.Flood(_random, 2.5f);
 
-            Refresh_ImagesSet2();
+                Refresh_ImagesSet2();
 
-            var memoriesColorImage = BitmapHelper.GetSubBitmap(
-                Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
-                Model.Cortex.MiniColumns.Dimensions[0] / 2,
-                Model.Cortex.MiniColumns.Dimensions[1] / 2,
-                Model.Cortex.SubArea_MiniColumns_Radius + 2);
+                var memoriesColorImage = BitmapHelper.GetSubBitmap(
+                    Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
+                    Model.Cortex.MiniColumns.Dimensions[0] / 2,
+                    Model.Cortex.MiniColumns.Dimensions[1] / 2,
+                    Model.Cortex.SubArea_MiniColumns_Radius + 2);
 
-            memoriesColorImage.Save($"Data\\Script\\Result{interationN:D6} - {v}.png", ImageFormat.Png);
+                // Разделяем на целую и дробную части
+                //int whole = (int)v;
+                //double fractional = v - whole;
+                //memoriesColorImage.Save($"Data\\Script\\Result {whole:D3}.{fractional.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
 
-            await Task.Delay(50);            
-        }
+                int whole1 = (int)k31;
+                double fractional1 = k31 - whole1;
+                
+                int whole2 = (int)k32;
+                double fractional2 = k32 - whole1;
+                memoriesColorImage.Save($"Data\\Script\\Result {whole1:D3}.{fractional1.ToString("F3").Split('.')[1]} {whole2:D3}.{fractional2.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
+
+
+                await Task.Delay(50);            
+            }
 
         IsEnabled = true;               
     }

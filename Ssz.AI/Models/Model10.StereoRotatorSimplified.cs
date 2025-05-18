@@ -856,7 +856,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
-            public int AngleRangeDegree_LimitMagnitude => 1200;
+            public int AngleRangeDegree_LimitMagnitude { get; set; } = 1200;
 
             public double DetectorMinGradientMagnitude => 5;
 
@@ -864,9 +864,9 @@ namespace Ssz.AI.Models
 
             public int GeneratedMaxGradientMagnitude => 1200;
 
-            public int AngleRangeDegreeMin => 120;
+            public int AngleRangeDegreeMin { get; set; } = 120;
 
-            public int AngleRangeDegreeMax => 360;
+            public int AngleRangeDegreeMax { get; set; } = 360;
 
             public int MagnitudeRangesCount => 4;
 

@@ -136,6 +136,8 @@ namespace Ssz.AI.Models
 
         public async Task DoSteps_MNISTAsync(int stepsCount, Random random, bool randomInitialization, bool reorderMemoriesPeriodically)
         {
+            Stopwatch sw = Stopwatch.StartNew();
+
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
                 CurrentInputIndex += 1;
@@ -145,7 +147,9 @@ namespace Ssz.AI.Models
                 await DoStepAsync(CurrentInputIndex, gradientMatrix, Temp_ActivitiyMaxInfo, random, randomInitialization, reorderMemoriesPeriodically);
             }
 
-            UserFriendlyLogger.LogInformation($"DoSteps() finished. stepsCount: {stepsCount}");
+            sw.Stop();
+
+            UserFriendlyLogger.LogInformation($"DoSteps() finished. stepsCount: {stepsCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
         }
 
         public void Flood(Random random, float floodRadius)
@@ -904,9 +908,9 @@ namespace Ssz.AI.Models
 
             public int GeneratedMaxGradientMagnitude => 1200;
 
-            public int AngleRangeDegreeMin => 90;
+            public int AngleRangeDegreeMin { get; set; } = 90;
 
-            public int AngleRangeDegreeMax => 360;
+            public int AngleRangeDegreeMax { get; set; } = 365;
 
             public int MagnitudeRangesCount => 5;
 
@@ -993,7 +997,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Граница, до которой убывает чувствительность к углу градиента.
             /// </summary>
-            public int AngleRangeDegree_LimitMagnitude => 300;
+            public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
@@ -1013,7 +1017,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     K значимости соседей
             /// </summary>
-            public float[] K3 { get; set; } = [ 0.16f, 0.05f, 0.000f ];
+            public float[] K3 { get; set; } = [ 1.0f, 0.15f, 0.056f ];
 
             /// <summary>
             ///     Порог суперактивности

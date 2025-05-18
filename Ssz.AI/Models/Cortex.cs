@@ -115,11 +115,12 @@ namespace Ssz.AI.Models
 
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
-                                continue;                            
-                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
+                                continue;       
+                            // TESTCODE
+                            float r = (int)MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r - 1.0f), nearestMc));
+                                mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r), nearestMc));
                             }
                         }
                 });            
@@ -527,9 +528,9 @@ namespace Ssz.AI.Models
 
             int GeneratedMaxGradientMagnitude { get; }
 
-            int AngleRangeDegreeMin { get; }
+            int AngleRangeDegreeMin { get; set; }
 
-            int AngleRangeDegreeMax { get; }
+            int AngleRangeDegreeMax { get; set; }
 
             int MagnitudeRangesCount { get; }
 
@@ -619,7 +620,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Граница, до которой убывает чувствительность к углу градиента.
             /// </summary>
-            int AngleRangeDegree_LimitMagnitude { get; }
+            int AngleRangeDegree_LimitMagnitude { get; set; }
 
             /// <summary>
             ///     Нулевой уровень косинусного расстояния

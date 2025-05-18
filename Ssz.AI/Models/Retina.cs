@@ -58,19 +58,22 @@ namespace Ssz.AI.Models
             DetectorsRanges = new DenseMatrix<DetectorRange>(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);                                  
 
             float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
-            
+
             //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
-            //float angleRange1 = 2.0f * MathF.PI;
+            float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
+            float angleRange1 = constants.AngleRangeDegreeMax * MathF.PI / 180;
             foreach (int gradientMagnitudeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[0]))
             {
                 int gradientMagnitude = gradientMagnitudeIdx;
                 if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
                     gradientMagnitude = constants.GeneratedMinGradientMagnitude;
-                float angleRange;                
-                //if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
-                //    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
-                //else                    
-                    angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;                    
+                float angleRange;
+                if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
+                    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
+                else
+                    angleRange = angleRange0;
+
+                //angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
 
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;
@@ -224,8 +227,10 @@ namespace Ssz.AI.Models
 
             int gradientAngleDegree = (int)MathHelper.RadiansToDegrees((float)Temp_GradientInPoint.Angle);
 
-            DetectorRange detectorRange = retina.DetectorsRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree];
-            
+            // TESTCODE
+            //DetectorRange detectorRange = retina.DetectorsRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree];
+            DetectorRange detectorRange = retina.DetectorsRanges[(int)GradientMagnitudeMax, 0];
+
             float gradientMagnitudeMin = GradientMagnitudeMax - detectorRange.GradientMagnitudeRange;
 
             bool activated = (Temp_GradientInPoint.Magnitude >= gradientMagnitudeMin) && (Temp_GradientInPoint.Magnitude < GradientMagnitudeMax);
