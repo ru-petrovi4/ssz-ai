@@ -239,7 +239,7 @@ public partial class Model05View : UserControl
         int interationN = 0;
         //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
         //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-        for (float v = 1.3f; v < 1.5f; v += 0.01f)
+        for (float v = 0.1f; v < 4.0f; v += 0.01f)
         {
                 interationN += 1;
 
