@@ -117,10 +117,13 @@ namespace Ssz.AI.Models
                             if (nearestMc is null)
                                 continue;       
                             // TESTCODE
-                            float r = (int)MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
+                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r), nearestMc));
+                                //TESTCODE
+                                //mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r), nearestMc));
+                                // mc.NearestMiniColumnInfos.Add((-0.05f + 0.2f / r, nearestMc));
+                                mc.NearestMiniColumnInfos.Add((0.0167f + 0.1333f / (r * r), nearestMc));
                             }
                         }
                 });            

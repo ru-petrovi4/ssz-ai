@@ -237,15 +237,17 @@ public partial class Model05View : UserControl
         Directory.CreateDirectory($"Data\\Script");
 
         int interationN = 0;
-        for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
-            for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-            {
+        //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
+        //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
+        for (float v = 1.3f; v < 1.5f; v += 0.01f)
+        {
                 interationN += 1;
 
-                constants.K3[1] = k31;
-                constants.K3[2] = k32;
+            //constants.K3[1] = k31;
+            //constants.K3[2] = k32;
+            constants.K5 = v;
 
-                _random = new Random(5); // Pseudorandom
+            _random = new Random(5); // Pseudorandom
                 Model = new Model05(constants);
                 Model.CurrentInputIndex = -1; // Перед первым элементом 
 
@@ -261,20 +263,19 @@ public partial class Model05View : UserControl
                     Model.Cortex.MiniColumns.Dimensions[1] / 2,
                     Model.Cortex.SubArea_MiniColumns_Radius + 2);
 
-                // Разделяем на целую и дробную части
-                //int whole = (int)v;
-                //double fractional = v - whole;
-                //memoriesColorImage.Save($"Data\\Script\\Result {whole:D3}.{fractional.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
+            //Разделяем на целую и дробную части
+            int whole = (int)v;
+            double fractional = v - whole;
+            memoriesColorImage.Save($"Data\\Script\\Result {whole:D3}.{fractional.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
 
-                int whole1 = (int)k31;
-                double fractional1 = k31 - whole1;
-                
-                int whole2 = (int)k32;
-                double fractional2 = k32 - whole1;
-                memoriesColorImage.Save($"Data\\Script\\Result {whole1:D3}.{fractional1.ToString("F3").Split('.')[1]} {whole2:D3}.{fractional2.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
+            //int whole1 = (int)k31;
+            //double fractional1 = k31 - whole1;                
+            //int whole2 = (int)k32;
+            //double fractional2 = k32 - whole1;
+            //memoriesColorImage.Save($"Data\\Script\\Result {whole1:D3}.{fractional1.ToString("F3").Split('.')[1]} {whole2:D3}.{fractional2.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
 
 
-                await Task.Delay(50);            
+            await Task.Delay(50);            
             }
 
         IsEnabled = true;               
