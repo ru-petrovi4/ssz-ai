@@ -59,8 +59,8 @@ namespace Ssz.AI.Models
 
             float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
 
-            //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
-            float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
+            float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
+            //float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
             float angleRange1 = constants.AngleRangeDegreeMax * MathF.PI / 180;
             foreach (int gradientMagnitudeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[0]))
             {
@@ -71,9 +71,8 @@ namespace Ssz.AI.Models
                 if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
                     angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 else
-                    angleRange = angleRange0;
-
-                //angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
+                    //angleRange = angleRange0;
+                    angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
 
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;
