@@ -50,7 +50,7 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
         Model = new Model05(constants);        
-        _random = new Random(4); // Pseudorandom // 5 good
+        _random = new Random(5); // Pseudorandom // 5 good
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
 

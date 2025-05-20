@@ -1000,7 +1000,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Граница, до которой убывает чувствительность к углу градиента.
             /// </summary>
-            public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
+            public int AngleRangeDegree_LimitMagnitude { get; set; } = 0;
 
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
