@@ -50,7 +50,7 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
         Model = new Model05(constants);        
-        _random = new Random(5); // Pseudorandom // 5 good
+        _random = new Random(5); // Pseudorandom
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
 
@@ -239,15 +239,14 @@ public partial class Model05View : UserControl
         int interationN = 0;
         //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
         //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-        for (float v = 10f; v < 600f; v += 5f)
+        for (float v = 10f; v < 800f; v += 10f)
         {
                 interationN += 1;
 
             //constants.K3[1] = k31;
             //constants.K3[2] = k32;
             constants.AngleRangeDegree_LimitMagnitude = (int)v;
-
-            _random = new Random(5); // Pseudorandom
+           
                 Model = new Model05(constants);
                 Model.CurrentInputIndex = -1; // Перед первым элементом 
 
