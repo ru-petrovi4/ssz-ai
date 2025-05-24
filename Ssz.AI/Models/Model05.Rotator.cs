@@ -918,7 +918,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public int AngleRangeDegreeMax { get; set; } = 365;
 
-            public int MagnitudeRangesCount => 4;
+            public int MagnitudeRangesCount => 3;
 
             public int GeneratedImageWidth => 280;
 
@@ -1033,7 +1033,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора-
             /// </summary>
-            public float K5 { get; set; } = 1.46f; // 1.8, 1.82 локальный оптимум для суперактивности в центре
+            public float K5 { get; set; } = 1.87f; // 1.8, 1.82 локальный оптимум для суперактивности в центре
 
             /// <summary>
             ///     Включен ли порог на суперактивность при накоплении воспоминаний
