@@ -913,6 +913,9 @@ namespace Ssz.AI.Models
             /// </summary>
             public int AngleRangeDegreeMin { get; set; } = 90;
 
+            /// <summary>
+            ///     (не используется)
+            /// </summary>
             public int AngleRangeDegreeMax { get; set; } = 365;
 
             public int MagnitudeRangesCount => 4;
@@ -998,7 +1001,7 @@ namespace Ssz.AI.Models
             public float Angle_BigPoints_Radius => 0.015f;
 
             /// <summary>
-            ///     Граница, до которой убывает чувствительность к углу градиента.
+            ///     Граница, до которой убывает чувствительность к углу градиента (не используется).
             /// </summary>
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 0;
 
