@@ -239,13 +239,13 @@ public partial class Model05View : UserControl
         int interationN = 0;
         //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
         //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-        for (float v = 10f; v < 800f; v += 10f)
+        for (float v = 0.02f; v < 3.0f; v += 0.02f)
         {
                 interationN += 1;
 
             //constants.K3[1] = k31;
             //constants.K3[2] = k32;
-            constants.AngleRangeDegree_LimitMagnitude = (int)v;
+            constants.K5 = v;
            
                 Model = new Model05(constants);
                 Model.CurrentInputIndex = -1; // Перед первым элементом 

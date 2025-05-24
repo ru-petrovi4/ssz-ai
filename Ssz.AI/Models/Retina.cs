@@ -72,7 +72,7 @@ namespace Ssz.AI.Models
                 //    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 //else
                     //angleRange = angleRange0;
-                angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
+                angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 5.0f;
 
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;
