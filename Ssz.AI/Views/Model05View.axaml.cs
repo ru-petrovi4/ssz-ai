@@ -239,28 +239,32 @@ public partial class Model05View : UserControl
         int interationN = 0;
         //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
         //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-        for (float v = 1.0f; v < 2.0f; v += 0.02f)
+        for (float v = 1.4f; v < 2.0f; v += 0.02f)
         {
-                interationN += 1;
+            interationN += 1;
 
             //constants.K3[1] = k31;
             //constants.K3[2] = k32;
             constants.K5 = v;
            
-                Model = new Model05(constants);
-                Model.CurrentInputIndex = -1; // Перед первым элементом 
+            Model = new Model05(constants);
+            Model.CurrentInputIndex = -1; // Перед первым элементом 
 
-                await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+            await Model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
-                Model.Flood(_random, 2.5f);
+            await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+            {                
+            });
 
-                Refresh_ImagesSet2();
+            Model.Flood(_random, 5.0f);
 
-                var memoriesColorImage = BitmapHelper.GetSubBitmap(
-                    Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
-                    Model.Cortex.MiniColumns.Dimensions[0] / 2,
-                    Model.Cortex.MiniColumns.Dimensions[1] / 2,
-                    Model.Cortex.SubArea_MiniColumns_Radius + 2);
+            Refresh_ImagesSet2();
+
+            var memoriesColorImage = BitmapHelper.GetSubBitmap(
+                Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
+                Model.Cortex.MiniColumns.Dimensions[0] / 2,
+                Model.Cortex.MiniColumns.Dimensions[1] / 2,
+                Model.Cortex.SubArea_MiniColumns_Radius + 2);
 
             //Разделяем на целую и дробную части
             int whole = (int)v;
