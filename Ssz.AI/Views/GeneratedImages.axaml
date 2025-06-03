@@ -28,6 +28,6 @@
 			<localViews:GeneratedImage Grid.Column="1" Name="GeneratedImage1" />
 		</Grid>
 		<Separator Grid.Row="2" />
-		<localViews:RotatorGeneratedImage Grid.Row="3" Grid.ColumnSpan="3" Name="RotatorGeneratedImage" />
+		<localViews:PinwheelGeneratedImage Grid.Row="3" Grid.ColumnSpan="3" Name="PinwheelGeneratedImage" />
 	</Grid>
 </UserControl>

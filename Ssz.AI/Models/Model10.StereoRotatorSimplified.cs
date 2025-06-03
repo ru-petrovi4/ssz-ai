@@ -308,7 +308,7 @@ namespace Ssz.AI.Models
             return [originalBitmap, gradientBitmap, detectorsActivationBitmap, miniColumsActivityBitmap];
         }
 
-        public void GenerateRotator(Random random)
+        public void GeneratePinwheel(Random random)
         {
             foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
@@ -920,7 +920,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 4;
+            public float MiniColumnsMaxDistance => 4;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
@@ -973,6 +973,10 @@ namespace Ssz.AI.Models
             public float K5 { get; set; }
 
             public bool SuperactivityThreshold { get; set; }
+
+            public float[] PositiveK { get; set; } = [0.16f, 0.05f];
+
+            public float[] NegativeK { get; set; } = [0.16f, 0.05f];
         }        
     }
 }

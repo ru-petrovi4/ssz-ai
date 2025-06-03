@@ -2,11 +2,13 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging;
 using MsBox.Avalonia;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
 using Ssz.Utils;
 using System;
+using System.Collections.Generic;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -33,7 +35,7 @@ public partial class Model05View : UserControl
         LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar30.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar31.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar32.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        //LevelScrollBar32.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
         LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
 
@@ -49,9 +51,14 @@ public partial class Model05View : UserControl
     {
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
-        Model = new Model05(constants);        
-        _random = new Random(5); // Pseudorandom
+        Model = new Model05(constants);
+        InitializePseudoRandom(); // Pseudorandom
         Model.CurrentInputIndex = -1; // Перед первым элементом              
+    }
+
+    private void InitializePseudoRandom()
+    {
+        _random = new Random(8);
     }
 
     private void SetDataToControls(Model05.ModelConstants constants)
@@ -60,11 +67,20 @@ public partial class Model05View : UserControl
         LevelScrollBar1.Value = constants.K1;
         LevelScrollBar2.Value = constants.K2;
         LevelScrollBar30.Value = constants.K3[0];
-        LevelScrollBar31.Value = constants.K3[1];
-        LevelScrollBar32.Value = constants.K3[2];
+        LevelScrollBar31.Value = constants.K3[1];        
         LevelScrollBar4.Value = constants.K4;
         LevelScrollBar5.Value = constants.K5;
         SuperactivityThreshold.IsChecked = constants.SuperactivityThreshold;
+
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[0];
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[1];
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[2];
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value = constants.PositiveK[3];
+
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = constants.NegativeK[0];
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = constants.NegativeK[1];
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = constants.NegativeK[2];
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value = constants.NegativeK[3];
     }
 
     private void GetDataFromControls(IConstants constants)
@@ -73,11 +89,20 @@ public partial class Model05View : UserControl
         constants.K1 = (float)LevelScrollBar1.Value;
         constants.K2 = (float)LevelScrollBar2.Value;
         constants.K3[0] = (float)LevelScrollBar30.Value;
-        constants.K3[1] = (float)LevelScrollBar31.Value;
-        constants.K3[2] = (float)LevelScrollBar32.Value;
+        constants.K3[1] = (float)LevelScrollBar31.Value;        
         constants.K4 = (float)LevelScrollBar4.Value;
         constants.K5 = (float)LevelScrollBar5.Value;
         constants.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;
+
+        constants.PositiveK[0] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
+        constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
+        constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value;
+        constants.PositiveK[3] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value;
+
+        constants.NegativeK[0] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value;
+        constants.NegativeK[1] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value;
+        constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value;
+        constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value;
     }
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
@@ -96,9 +121,16 @@ public partial class Model05View : UserControl
         Model.CurrentInputIndex -= 1;
     }
 
-    private void GenerateRotator_OnClick(object? sender, RoutedEventArgs args)
+    private void GeneratePinwheel_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.GenerateRotator(_random);
+        Model.GeneratePinwheel(_random);
+
+        Refresh_ImagesSet2();
+    }
+
+    private void GeneratePinwheel2_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.GeneratePinwheel2(_random);
 
         Refresh_ImagesSet2();
     }
@@ -227,6 +259,60 @@ public partial class Model05View : UserControl
         ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs2();
     }
 
+    //private async void DoScript_OnClick(object? sender, RoutedEventArgs args)
+    //{
+    //    IsEnabled = false;
+
+    //    var constants = new Model05.ModelConstants();
+    //    GetDataFromControls(constants);
+
+    //    Directory.CreateDirectory($"Data\\Script");
+
+    //    int interationN = 0;
+
+    //    for (float v = 1.7f; v < 2.0f; v += 0.005f)
+    //    {
+    //        interationN += 1;
+
+    //        constants.K5 = v;
+
+    //        Model = new Model05(constants);
+    //        InitializePseudoRandom();
+    //        Model.CurrentInputIndex = -1; // Перед первым элементом 
+
+    //        await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+
+    //        await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+    //        {
+    //        });
+
+    //        Model.Flood(_random, 5.0f);
+
+    //        Refresh_ImagesSet2();
+
+    //        var memoriesColorImage = BitmapHelper.GetSubBitmap(
+    //            Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
+    //            Model.Cortex.MiniColumns.Dimensions[0] / 2,
+    //            Model.Cortex.MiniColumns.Dimensions[1] / 2,
+    //            Model.Cortex.SubArea_MiniColumns_Radius + 2);
+
+    //        // Разделяем на целую и дробную части
+    //        int whole = (int)v;
+    //        double fractional = v - whole;
+    //        memoriesColorImage.Save($"Data\\Script\\Result {whole:D3}.{fractional.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
+
+    //        //int whole1 = (int)k31;
+    //        //double fractional1 = k31 - whole1;                
+    //        //int whole2 = (int)k32;
+    //        //double fractional2 = k32 - whole1;
+    //        //memoriesColorImage.Save($"Data\\Script\\Result {whole1:D3}.{fractional1.ToString("F3").Split('.')[1]} {whole2:D3}.{fractional2.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
+
+    //        await Task.Delay(1);
+    //    }
+
+    //    IsEnabled = true;
+    //}
+
     private async void DoScript_OnClick(object? sender, RoutedEventArgs args)
     {
         IsEnabled = false;
@@ -236,57 +322,84 @@ public partial class Model05View : UserControl
 
         Directory.CreateDirectory($"Data\\Script");
 
+        BestPinwheelSettings bestPinwheelSettings = new();
+
         int interationN = 0;
-        //for (float k31 = 0.14f; k31 < 0.17f; k31 += 0.002f)
-        //    for (float k32 = 0.04f; k32 < 0.07f; k32 += 0.002f)
-        for (float v = 1.4f; v < 2.0f; v += 0.02f)
-        {
-            interationN += 1;
+        for (float pk1 = 0.11f; pk1 < 0.20f; pk1 += 1.01f)
+            for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
+                for (float pk3 = 0.000f; pk3 < pk2; pk3 += 1.01f)
+                    for (float nk1 = pk1; nk1 <= pk1; nk1 += 1.01f)
+                        for (float nk2 = pk2 + 0.005f; nk2 < nk1; nk2 += 0.005f)
+                            for (float nk3 = 0.000f; nk3 < nk2; nk3 += 1.01f)
+                            {
+                                interationN += 1;
 
-            //constants.K3[1] = k31;
-            //constants.K3[2] = k32;
-            constants.K5 = v;
-           
-            Model = new Model05(constants);
-            Model.CurrentInputIndex = -1; // Перед первым элементом 
+                                constants.PositiveK[1] = pk1;
+                                constants.PositiveK[2] = pk2;
+                                constants.PositiveK[3] = pk3;
+                                constants.NegativeK[1] = nk1;
+                                constants.NegativeK[2] = nk2;
+                                constants.NegativeK[3] = nk3;
 
-            await Model.DoSteps_MNISTAsync(10000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
+                                Model = new Model05(constants);
+                                InitializePseudoRandom();
+                                Model.CurrentInputIndex = -1; // Перед первым элементом 
 
-            await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
-            {                
-            });
+                                await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
-            Model.Flood(_random, 5.0f);
+                                await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+                                {
+                                });
 
-            Refresh_ImagesSet2();
+                                float pinwheellIndex = Model.GetPinwheelIndex();
+                                if (pinwheellIndex > bestPinwheelSettings.MaxPinwheelIndex)
+                                {
+                                    bestPinwheelSettings.MaxPinwheelIndex = pinwheellIndex;
+                                    bestPinwheelSettings.Pk1 = pk1;
+                                    bestPinwheelSettings.Pk2 = pk2;
+                                    bestPinwheelSettings.Pk3 = pk3;
+                                    bestPinwheelSettings.Nk1 = nk1;
+                                    bestPinwheelSettings.Nk2 = nk2;
+                                    bestPinwheelSettings.Nk3 = nk3;
+                                }
 
-            var memoriesColorImage = BitmapHelper.GetSubBitmap(
-                Visualisation.GetBitmapFromMiniColumsMemoriesColor(Model.Cortex),
-                Model.Cortex.MiniColumns.Dimensions[0] / 2,
-                Model.Cortex.MiniColumns.Dimensions[1] / 2,
-                Model.Cortex.SubArea_MiniColumns_Radius + 2);
+                                Model.UserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
+                                    interationN,
+                                    bestPinwheelSettings.MaxPinwheelIndex,
+                                    bestPinwheelSettings.Pk1,
+                                    bestPinwheelSettings.Pk2,
+                                    bestPinwheelSettings.Pk3,
+                                    bestPinwheelSettings.Nk1,
+                                    bestPinwheelSettings.Nk2,
+                                    bestPinwheelSettings.Nk3,
+                                    "Current",
+                                    pinwheellIndex,
+                                    pk1,
+                                    pk2,
+                                    pk3,
+                                    nk1,
+                                    nk2,
+                                    nk3));
+                            }
 
-            //Разделяем на целую и дробную части
-            int whole = (int)v;
-            double fractional = v - whole;
-            memoriesColorImage.Save($"Data\\Script\\Result {whole:D3}.{fractional.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
 
-            //int whole1 = (int)k31;
-            //double fractional1 = k31 - whole1;                
-            //int whole2 = (int)k32;
-            //double fractional2 = k32 - whole1;
-            //memoriesColorImage.Save($"Data\\Script\\Result {whole1:D3}.{fractional1.ToString("F3").Split('.')[1]} {whole2:D3}.{fractional2.ToString("F3").Split('.')[1]}.png", ImageFormat.Png);
-
-
-            await Task.Delay(50);            
-            }
-
-        IsEnabled = true;               
+        IsEnabled = true;
     }
 
     private Random _random = null!;
-}
 
+    private class BestPinwheelSettings
+    {
+        public float MaxPinwheelIndex = float.MinValue;
+
+        public float Pk1;
+        public float Pk2;
+        public float Pk3;
+        public float Nk1;
+        public float Nk2;
+        public float Nk3;
+    }
+}
 
 //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = 1.00;
 //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = 0.16;

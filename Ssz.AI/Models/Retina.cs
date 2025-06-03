@@ -72,7 +72,7 @@ namespace Ssz.AI.Models
                 //    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 //else
                     //angleRange = angleRange0;
-                angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 5.0f;
+                angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
 
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;
@@ -223,14 +223,12 @@ namespace Ssz.AI.Models
                 Temp_IsActivated = false;
                 return;
             }
-
-            int gradientAngleDegree = (int)MathHelper.RadiansToDegrees((float)Temp_GradientInPoint.Angle);
-
-            // TESTCODE
-            //DetectorRange detectorRange = retina.DetectorsRanges[(int)Temp_GradientInPoint.Magnitude, gradientAngleDegree];
+            
             DetectorRange detectorRange = retina.DetectorsRanges[(int)GradientMagnitudeMax, 0];
 
             float gradientMagnitudeMin = GradientMagnitudeMax - detectorRange.GradientMagnitudeRange;
+            if (gradientMagnitudeMin < 0.0f)
+                gradientMagnitudeMin = 0.0f;
 
             bool activated = (Temp_GradientInPoint.Magnitude >= gradientMagnitudeMin) && (Temp_GradientInPoint.Magnitude < GradientMagnitudeMax);
             if (!activated)
@@ -239,8 +237,10 @@ namespace Ssz.AI.Models
                 return;
             }
 
+            DetectorRange detectorRange2 = retina.DetectorsRanges[(int)MathF.Round((GradientMagnitudeMax + gradientMagnitudeMin) / 2.0f, 0), 0];
+
             // [-pi, pi)
-            float gradientAngleMin = MathHelper.NormalizeAngle(GradientAngleMax - detectorRange.GradientAngleRange);            
+            float gradientAngleMin = MathHelper.NormalizeAngle(GradientAngleMax - detectorRange2.GradientAngleRange);            
                 
             if (GradientAngleMax > gradientAngleMin + 0.01f)
                 activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) && (Temp_GradientInPoint.Angle < GradientAngleMax);

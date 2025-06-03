@@ -9,9 +9,9 @@ using System;
 
 namespace Ssz.AI.Views;
 
-public partial class RotatorGeneratedImage : UserControl
+public partial class PinwheelGeneratedImage : UserControl
 {
-    public RotatorGeneratedImage()
+    public PinwheelGeneratedImage()
     {
         InitializeComponent();
     }

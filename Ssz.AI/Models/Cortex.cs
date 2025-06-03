@@ -95,16 +95,24 @@ namespace Ssz.AI.Models
             SubArea_MiniColumns = subArea_MiniColumns.ToArray();
             SubArea_Detectors = subArea_DetectorsHashSet.ToArray();
 
+            //float sigma0 = constants.K3[0];
+            //float sigma1 = constants.K3[1];
+
             // Находим ближайшие миниколонки для каждой миниколонки
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: SubArea_MiniColumns.Length,
                 mci =>
                 {
-                    MiniColumn mc = SubArea_MiniColumns[mci];                    
+                    MiniColumn mc = SubArea_MiniColumns[mci];
 
-                    for (int mcy = mc.MCY - constants.MiniColumnsMaxDistance; mcy <= mc.MCY + constants.MiniColumnsMaxDistance; mcy += 1)
-                        for (int mcx = mc.MCX - constants.MiniColumnsMaxDistance; mcx <= mc.MCX + constants.MiniColumnsMaxDistance; mcx += 1)
+                    //float k00 = GetNormalDistributionValue(sigma0, 0.0f);
+                    //float k01 = GetNormalDistributionValue(sigma1, 0.0f);
+                    //mc.K0 = (k00, k01);
+                    mc.K0 = (constants.PositiveK[0], constants.NegativeK[0]);
+
+                    for (int mcy = mc.MCY - (int)constants.MiniColumnsMaxDistance - 1; mcy <= mc.MCY + (int)constants.MiniColumnsMaxDistance + 1; mcy += 1)
+                        for (int mcx = mc.MCX - (int)constants.MiniColumnsMaxDistance - 1; mcx <= mc.MCX + (int)constants.MiniColumnsMaxDistance + 1; mcx += 1)
                         {
                             if (mcx < 0 ||
                                     mcx >= constants.CortexWidth ||
@@ -115,15 +123,15 @@ namespace Ssz.AI.Models
 
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
-                                continue;       
-                            // TESTCODE
+                                continue;                                   
                             float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
                             {
-                                //TESTCODE
-                                //mc.NearestMiniColumnInfos.Add((MathHelper.GetInterpolatedValue(constants.K3, r), nearestMc));
-                                // mc.NearestMiniColumnInfos.Add((-0.05f + 0.2f / r, nearestMc));
-                                mc.NearestMiniColumnInfos.Add((0.0167f + 0.1333f / (r * r), nearestMc));
+                                //float k0 = GetNormalDistributionValue(sigma0, r);
+                                //float k1 = GetNormalDistributionValue(sigma1, r);
+                                float k0 = MathHelper.GetInterpolatedValue(constants.PositiveK, r);
+                                float k1 = MathHelper.GetInterpolatedValue(constants.NegativeK, r);
+                                mc.K_ForNearestMiniColumns.Add((k0, k1, nearestMc));
                             }
                         }
                 });            
@@ -131,7 +139,12 @@ namespace Ssz.AI.Models
             VisualizationTableItems = new(1000);
 
             InputAutoencoder = new Autoencoder();
-        }        
+        }
+
+        private float GetNormalDistributionValue(float sigma, float r)
+        {
+            return (1.0f / (sigma * MathF.Sqrt(2.0f * MathF.PI))) * MathF.Exp(-0.5f * r * r / (sigma * sigma));
+        }
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -254,7 +267,7 @@ namespace Ssz.AI.Models
                 Temp_Memories = new(constants.MemoriesMaxCount);                       
                 Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
-                NearestMiniColumnInfos = new List<(float, MiniColumn)>((int)(Math.PI * constants.MiniColumnsMaxDistance * constants.MiniColumnsMaxDistance) + 10);
+                K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * constants.MiniColumnsMaxDistance * constants.MiniColumnsMaxDistance) + 10);
             }
 
             public readonly IConstants Constants;
@@ -272,9 +285,15 @@ namespace Ssz.AI.Models
             public readonly int MCY;
 
             /// <summary>
-            ///     (Величина, обратно пропорциональная расстоянию; MiniColumn)
+            ///     K для расчета суперактивности.
+            ///     (K для позитива, K для негатива, MiniColumn)
             /// </summary>
-            public readonly List<(float, MiniColumn)> NearestMiniColumnInfos;
+            public readonly List<(float, float, MiniColumn)> K_ForNearestMiniColumns;
+
+            /// <summary>
+            ///     K0 для расчета суперактивности.
+            /// </summary>
+            public (float, float) K0;
 
             /// <summary>
             ///     [0..MNISTImageWidth]
@@ -312,9 +331,9 @@ namespace Ssz.AI.Models
 
             /// <summary>
             ///     Текущая активность миниколонки при подаче примера.
-            ///     Количество воспоминаний, reserved, активность.
+            ///     (Позитивная активность, Негативная активность, Количество воспоминаний)
             /// </summary>
-            public (int, float, float) Temp_Activity;
+            public (float, float, int) Temp_Activity;
 
             /// <summary>
             ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -600,7 +619,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            int MiniColumnsMaxDistance { get; }
+            float MiniColumnsMaxDistance { get; }
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
@@ -641,7 +660,7 @@ namespace Ssz.AI.Models
             float K2 { get; set; }
 
             /// <summary>
-            ///     K значимости соседей
+            ///     Сигмы значимости соседей
             /// </summary>
             float[] K3 { get; set; }
 
@@ -659,6 +678,10 @@ namespace Ssz.AI.Models
             ///     Включен ли порог на суперактивность при накоплении воспоминаний
             /// </summary>
             bool SuperactivityThreshold { get; set; }
+
+            float[] PositiveK { get; set; }
+
+            float[] NegativeK { get; set; }
         }
     }    
 }
@@ -725,7 +748,7 @@ namespace Ssz.AI.Models
 //            {
 //                MiniColumn mc = MiniColumns.Data[mci];
 
-//                mc.NearestMiniColumnInfos.Add(((1.0f, 1.0f), new List<MiniColumn>(8)));
+//                mc.K_ForNearestMiniColumns.Add(((1.0f, 1.0f), new List<MiniColumn>(8)));
 
 //                for (int mcy = mc.MCY - 1; mcy < mc.MCY + 1; mcy += 1)
 //                    for (int mcx = mc.MCX - 1; mcx < mc.MCX + 1; mcx += 1)
@@ -739,7 +762,7 @@ namespace Ssz.AI.Models
 
 //                        MiniColumn nearestMc = MiniColumns[mcx, mcy];
 
-//                        mc.NearestMiniColumnInfos[0].Item2.Add(nearestMc);
+//                        mc.K_ForNearestMiniColumns[0].Item2.Add(nearestMc);
 //                    }
 //            });            
 //    }
@@ -805,7 +828,7 @@ namespace Ssz.AI.Models
 //            Memories = new(constants.MemoriesMaxCount); // { new Memory { Hash = hash0 } };
 //            Temp_Memories = new(constants.MemoriesMaxCount);
 
-//            NearestMiniColumnInfos = new List<((float, float), List<MiniColumn>)>();
+//            K_ForNearestMiniColumns = new List<((float, float), List<MiniColumn>)>();
 //        }
 
 //        public readonly ICortexConstants Constants;
@@ -825,7 +848,7 @@ namespace Ssz.AI.Models
 //        /// <summary>
 //        ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
 //        /// </summary>
-//        public readonly List<((float, float), List<MiniColumn>)> NearestMiniColumnInfos;
+//        public readonly List<((float, float), List<MiniColumn>)> K_ForNearestMiniColumns;
 
 //        /// <summary>
 //        ///     [0..MNISTImageWidth]

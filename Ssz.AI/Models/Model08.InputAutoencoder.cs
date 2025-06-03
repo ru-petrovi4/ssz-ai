@@ -434,7 +434,7 @@ namespace Ssz.AI.Models
                     foreach (MiniColumn miniColumn in syncedMiniColumnsToProcess.ToArray())
                     {
                         bool anyToProcessNearestMiniColumn = false;
-                        //foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
+                        //foreach (var nearestMiniColumn in miniColumn.K_ForNearestMiniColumns[0])
                         //{
                         //    if (!nearestMiniColumn.Temp_IsSynced)
                         //    {
@@ -473,7 +473,7 @@ namespace Ssz.AI.Models
                         miniColumn.Autoencoder!.Calculate_ForwardPass(miniColumn.Temp_Hash);
                         miniColumn.GetShortHashConverted(miniColumn.Autoencoder!.Temp_ShortHash, miniColumn.Temp_ShortHashConverted);
 
-                        //foreach (var nearestMiniColumn in miniColumn.NearestMiniColumnInfos[0])
+                        //foreach (var nearestMiniColumn in miniColumn.K_ForNearestMiniColumns[0])
                         //{
                         //    if (!nearestMiniColumn.Temp_IsSynced)
                         //    {
@@ -775,7 +775,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 1;
+            public float MiniColumnsMaxDistance => 1;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
@@ -813,6 +813,10 @@ namespace Ssz.AI.Models
             public float K5 { get; set; }
 
             public bool SuperactivityThreshold { get; set; }
+
+            public float[] PositiveK { get; set; } = [0.16f, 0.05f];
+
+            public float[] NegativeK { get; set; } = [0.16f, 0.05f];
         }        
     }
 }

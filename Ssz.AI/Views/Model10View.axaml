@@ -18,7 +18,7 @@
 		<StackPanel Orientation="Horizontal">
 			<Button Content="Reset" Click="ResetButton_OnClick" />
 			<Button Content="1 Step Back" Click="Back1Button_OnClick" />
-			<Button Content="GenerateRotator" Click="GenerateRotator_OnClick" />
+			<Button Content="GeneratePinwheel" Click="GeneratePinwheel_OnClick" />
 			<Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />
 			<Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
 			<Button Content="Reorder Memories (Sleep)" Click="ReorderMemoriesButton_OnClick" />

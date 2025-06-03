@@ -20,12 +20,12 @@ public partial class GeneratedImages : UserControl
         GeneratedImage0.AngleScrollBar.ValueChanged += GeneratedImage0_AngleScrollBar_ValueChanged;
         GeneratedImage1.MagnitudeScrollBar.ValueChanged += GeneratedImage1_MagnitudeScrollBar_ValueChanged;
         GeneratedImage1.AngleScrollBar.ValueChanged += GeneratedImage1_AngleScrollBar_ValueChanged;
-        RotatorGeneratedImage.MagnitudeScrollBar.ValueChanged += RotatorGeneratedImage_MagnitudeScrollBar_ValueChanged;
-        RotatorGeneratedImage.AngleScrollBar.ValueChanged += RotatorGeneratedImage_AngleScrollBar_ValueChanged;
+        PinwheelGeneratedImage.MagnitudeScrollBar.ValueChanged += PinwheelGeneratedImage_MagnitudeScrollBar_ValueChanged;
+        PinwheelGeneratedImage.AngleScrollBar.ValueChanged += PinwheelGeneratedImage_AngleScrollBar_ValueChanged;
 
         _model05View = model05View;
 
-        RotatorGeneratedImage.Refresh(model05View.Model);
+        PinwheelGeneratedImage.Refresh(model05View.Model);
     }
 
     private void GeneratedImage0_MagnitudeScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
@@ -56,14 +56,14 @@ public partial class GeneratedImages : UserControl
         Refresh();
     }
 
-    private void RotatorGeneratedImage_MagnitudeScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    private void PinwheelGeneratedImage_MagnitudeScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        RotatorGeneratedImage.Refresh(_model05View.Model);
+        PinwheelGeneratedImage.Refresh(_model05View.Model);
     }
 
-    private void RotatorGeneratedImage_AngleScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    private void PinwheelGeneratedImage_AngleScrollBar_ValueChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
-        RotatorGeneratedImage.Refresh(_model05View.Model);
+        PinwheelGeneratedImage.Refresh(_model05View.Model);
     }
 
     private void Refresh()

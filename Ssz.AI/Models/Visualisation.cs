@@ -411,12 +411,13 @@ namespace Ssz.AI.Models
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item3))
+                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item1) && !float.IsNaN(mc.Temp_Activity.Item2))
                     {
-                        if (mc.Temp_Activity.Item3 > activityMax)
-                            activityMax = mc.Temp_Activity.Item3;
-                        if (mc.Temp_Activity.Item3 < activityMin)
-                            activityMin = mc.Temp_Activity.Item3;
+                        float activity = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+                        if (activity > activityMax)
+                            activityMax = activity;
+                        if (activity < activityMin)
+                            activityMin = activity;
                     }
                 }
 
@@ -424,17 +425,18 @@ namespace Ssz.AI.Models
                 foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
                 {
                     var mc = cortex.MiniColumns[mcx, mcy];
-                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item3))
+                    if (mc is not null && !float.IsNaN(mc.Temp_Activity.Item1) && !float.IsNaN(mc.Temp_Activity.Item2))
                     {
                         if (activityMax > activityMin)
                         {
-                            if (mc.Temp_Activity.Item3 == activityMax)                            
+                            float activity = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
+                            if (activity == activityMax)                            
                             {
                                 bitmap.SetPixel(mcx, mcy, Color.White);                                
                             }
                             else
                             {
-                                int brightness = (int)(255 * (mc.Temp_Activity.Item3 - activityMin) / (activityMax - activityMin));
+                                int brightness = (int)(255 * (activity - activityMin) / (activityMax - activityMin));
                                 bitmap.SetPixel(mcx, mcy, Color.FromArgb(brightness, brightness, 0));
                             }
                         }
@@ -485,10 +487,7 @@ namespace Ssz.AI.Models
                                     (activitiyMaxInfo is null &&
                                     mc.Temp_SuperActivity == superActivityMax))
                             {
-                                if (mc.Temp_Activity.Item2 == 0.0f)
-                                    bitmap.SetPixel(mcx, mcy, Color.White);
-                                else
-                                    bitmap.SetPixel(mcx, mcy, Color.Blue);                                
+                                bitmap.SetPixel(mcx, mcy, Color.White);
                             }
                             else
                             {

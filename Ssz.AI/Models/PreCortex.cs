@@ -215,7 +215,7 @@ namespace Ssz.AI.Models
 //            {
 //                MiniColumn mc = MiniColumns.Data[mci];
 
-//                mc.NearestMiniColumnInfos.Add(((1.0f, 1.0f), new List<MiniColumn>(8)));
+//                mc.K_ForNearestMiniColumns.Add(((1.0f, 1.0f), new List<MiniColumn>(8)));
 
 //                for (int mcy = mc.MCY - 1; mcy < mc.MCY + 1; mcy += 1)
 //                    for (int mcx = mc.MCX - 1; mcx < mc.MCX + 1; mcx += 1)
@@ -229,7 +229,7 @@ namespace Ssz.AI.Models
 
 //                        MiniColumn nearestMc = MiniColumns[mcx, mcy];
 
-//                        mc.NearestMiniColumnInfos[0].Item2.Add(nearestMc);
+//                        mc.K_ForNearestMiniColumns[0].Item2.Add(nearestMc);
 //                    }
 //            });            
 //    }
@@ -295,7 +295,7 @@ namespace Ssz.AI.Models
 //            Memories = new(constants.MemoriesMaxCount); // { new Memory { Hash = hash0 } };
 //            Temp_Memories = new(constants.MemoriesMaxCount);
 
-//            NearestMiniColumnInfos = new List<((float, float), List<MiniColumn>)>();
+//            K_ForNearestMiniColumns = new List<((float, float), List<MiniColumn>)>();
 //        }
 
 //        public readonly IPreCortexConstants Constants;
@@ -315,7 +315,7 @@ namespace Ssz.AI.Models
 //        /// <summary>
 //        ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
 //        /// </summary>
-//        public readonly List<((float, float), List<MiniColumn>)> NearestMiniColumnInfos;
+//        public readonly List<((float, float), List<MiniColumn>)> K_ForNearestMiniColumns;
 
 //        /// <summary>
 //        ///     [0..MNISTImageWidth]

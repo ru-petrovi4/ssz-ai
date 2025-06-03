@@ -31,7 +31,7 @@ public partial class Model10View : UserControl
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = 0.0;
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = 0.0;
 
-        foreach (int i in Enumerable.Range(0, _model.Constants.MiniColumnsMaxDistance + 1))
+        foreach (int i in Enumerable.Range(0, (int)_model.Constants.MiniColumnsMaxDistance + 1))
         {
             ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();
             ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[i].PropertyChanged += (s, e) => GetDataFromControls();            
@@ -85,11 +85,11 @@ public partial class Model10View : UserControl
         _model.CurrentInputIndex -= 1;
     }
 
-    private void GenerateRotator_OnClick(object? sender, RoutedEventArgs args)
+    private void GeneratePinwheel_OnClick(object? sender, RoutedEventArgs args)
     {
         Reset();
 
-        _model.GenerateRotator(_random);
+        _model.GeneratePinwheel(_random);
 
         Refresh_ImagesSet2();
     }

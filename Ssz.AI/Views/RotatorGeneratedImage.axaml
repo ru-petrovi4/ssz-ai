@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
 			 xmlns:localViews="clr-namespace:Ssz.AI.Views"	
-             x:Class="Ssz.AI.Views.RotatorGeneratedImage">
+             x:Class="Ssz.AI.Views.PinwheelGeneratedImage">
 	<Grid>
 		<Grid.RowDefinitions>			
 			<RowDefinition Height="auto" />

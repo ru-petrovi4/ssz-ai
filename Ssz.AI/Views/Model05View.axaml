@@ -6,19 +6,26 @@
 			 xmlns:localViews="clr-namespace:Ssz.AI.Views"			 
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"			 
              x:Class="Ssz.AI.Views.Model05View">
-	<Grid>		
+	<Grid>
+    <Grid.Styles>
+      <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="8"/>        
+      </Style>
+    </Grid.Styles>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="auto" />
 			<RowDefinition Height="*" />
-			<RowDefinition Height="*" />
-			<RowDefinition Height="*" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+			<RowDefinition Height="*" />      
 		</Grid.RowDefinitions>
 		
 		<StackPanel Orientation="Horizontal">
 			<Button Content="Reset" Click="ResetButton_OnClick" />
 			<Button Content="1 Step Back" Click="Back1Button_OnClick" />
-			<Button Content="GenerateRotator" Click="GenerateRotator_OnClick" />
+			<Button Content="GeneratePinwheel" Click="GeneratePinwheel_OnClick" />
+      <Button Content="GeneratePinwheel2" Click="GeneratePinwheel2_OnClick" />
 			<Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />
       <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
 			<Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
@@ -40,8 +47,9 @@
 			<Grid.RowDefinitions>
 				<RowDefinition Height="auto" />
 				<RowDefinition Height="auto" />
-				<RowDefinition Height="auto" />				
-			</Grid.RowDefinitions>
+				<RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+      </Grid.RowDefinitions>
 			<TextBlock Text="Смещение (пиксели):" />
 			<TextBlock Name="PositionTextBlock" Grid.Column="1" />
 			<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
@@ -52,9 +60,31 @@
 			<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
 		</Grid>
 
-		<localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />		
+		<localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+
+    <Grid Grid.Row="3">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="auto" />        
+        <ColumnDefinition Width="*" />        
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="100" />
+        <RowDefinition Height="100" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Text="Притяжение:" />      
+      <local:Sliders Name="PositiveSliders" Grid.Column="1" />
+      <TextBlock Text="Отталкивание:" Grid.Row="1" Grid.Column="0" />      
+      <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
+    </Grid>
 		
-		<Grid Grid.Row="3">
+		<Grid Grid.Row="4">
       <Grid.Styles>
         <Style Selector="TextBlock">
           <Setter Property="TextWrapping" Value="Wrap"/>
@@ -67,8 +97,8 @@
 				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
 			<Grid.RowDefinitions>				
-				<RowDefinition Height="auto" />
-				<RowDefinition Height="auto" />
+				<RowDefinition Height="0" />
+				<RowDefinition Height="0" />
 				<RowDefinition Height="auto" />
 				<RowDefinition Height="auto" />
 				<RowDefinition Height="auto" />
@@ -76,18 +106,8 @@
         <RowDefinition Height="auto" />
         <RowDefinition Height="auto" />
         <RowDefinition Height="auto" />
-        <RowDefinition Height="auto" />
-        <RowDefinition Height="auto" />
-        <RowDefinition Height="*" />
+        <RowDefinition Height="auto" />        
 			</Grid.RowDefinitions>
-			
-			<!--<TextBlock Text="Притяжение:" />
-			<TextBlock Name="PositiveTextBlock" Grid.Column="1" />
-			<local:Sliders Name="PositiveSliders" Grid.Column="2" />
-
-			<TextBlock Text="Отталкивание:" Grid.Row="1" />
-			<TextBlock Name="NegativeTextBlock" Grid.Row="1" Grid.Column="1" />
-			<local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="2" />-->
 			
 			<TextBlock Text="Нулевой уровень активности:" Grid.Row="2" />
 			<TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
@@ -105,21 +125,24 @@
       <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="7" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar5" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />
       
-      <TextBlock Text="K значимости соседей 1:" Grid.Row="8" />
+      <TextBlock Text="Сигма позитивной значимости соседей:" Grid.Row="8" />
 			<TextBlock Text="{Binding #LevelScrollBar30.Value}" Grid.Row="8" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar30" Grid.Row="8" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="1" />
+			<ScrollBar Name="LevelScrollBar30" Grid.Row="8" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="5" />
     
-      <TextBlock Text="K значимости соседей 2:" Grid.Row="9" />
+      <TextBlock Text="Сигма негативной значимости соседей:" Grid.Row="9" />
 			<TextBlock Text="{Binding #LevelScrollBar31.Value}" Grid.Row="9" Grid.Column="1" />
-			<ScrollBar Name="LevelScrollBar31" Grid.Row="9" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="1" />
-  
+			<ScrollBar Name="LevelScrollBar31" Grid.Row="9" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="5" />
+
+      <!--
       <TextBlock Text="K значимости соседей 3:" Grid.Row="10" />
 			<TextBlock Text="{Binding #LevelScrollBar32.Value}" Grid.Row="10" Grid.Column="1" />
 			<ScrollBar Name="LevelScrollBar32" Grid.Row="10" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="1" />
-		</Grid>
+      -->
+    </Grid>
 
-		<localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />			
+		<localViews:ImagesSet Grid.Row="5" Name="ImagesSet2" />			
 		<!--
 		<StackPanel Name="StackPanel3" Grid.Row="5" Orientation="Horizontal"></StackPanel>-->
 	</Grid>	
 </UserControl>
+

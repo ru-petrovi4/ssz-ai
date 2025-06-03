@@ -264,7 +264,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 1;
+            public float MiniColumnsMaxDistance => 1;
 
             public float DistanceBetweenEyes => 0.064f;
 
@@ -318,6 +318,10 @@ namespace Ssz.AI.Models
             public float K5 { get; set; }
 
             public bool SuperactivityThreshold { get; set; }
+
+            public float[] PositiveK { get; set; } = [0.16f, 0.05f];
+
+            public float[] NegativeK { get; set; } = [0.16f, 0.05f];
         }        
     }
 }

@@ -1,1 +1,4 @@
-﻿
+﻿Logging:  
+  SszLogger:    
+    # базовое имя файлов журналов
+    LogFileName: "AI.Debug.log"

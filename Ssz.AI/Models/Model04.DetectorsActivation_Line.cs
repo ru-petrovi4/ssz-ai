@@ -273,7 +273,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public int MiniColumnsMaxDistance => 5;            
+            public float MiniColumnsMaxDistance => 5;            
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)
@@ -326,6 +326,10 @@ namespace Ssz.AI.Models
             public float K5 { get; set; }
 
             public bool SuperactivityThreshold { get; set; }
+
+            public float[] PositiveK { get; set; } = [0.16f, 0.05f];
+
+            public float[] NegativeK { get; set; } = [0.16f, 0.05f];
         }
     }
 }

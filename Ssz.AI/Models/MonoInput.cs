@@ -23,7 +23,7 @@ namespace Ssz.AI.Models
 
         /// <summary>
         ///     MonoInputItems.Length = Images.Length + constants.SubAreaMiniColumnsCount
-        ///     Last Items - generated ideal Rotator
+        ///     Last Items - generated ideal Pinwheel
         /// </summary>
         public MonoInputItem[] MonoInputItems = null!;
 
