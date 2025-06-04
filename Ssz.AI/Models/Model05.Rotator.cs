@@ -1380,7 +1380,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Порог суперактивности
             /// </summary>
-            public float K4 { get; set; } = 0.77f;
+            public float K4 { get; set; } = 1.0f;
 
             /// <summary>
             ///     Коэффициент для расчета диапазона угла чувствительности детектора-
@@ -1392,9 +1392,13 @@ namespace Ssz.AI.Models
             /// </summary>
             public bool SuperactivityThreshold { get; set; }
 
-            public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.05f, 0.00f];
+            //public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.05f, 0.00f];
 
-            public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.07f, 0.00f];
+            //public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.07f, 0.00f];
+
+            public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.065f, 0.00f];
+
+            public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
         }        
     }
 }

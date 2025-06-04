@@ -58,7 +58,7 @@ public partial class Model05View : UserControl
 
     private void InitializePseudoRandom()
     {
-        _random = new Random(8);
+        _random = new Random(10);
     }
 
     private void SetDataToControls(Model05.ModelConstants constants)
@@ -325,7 +325,7 @@ public partial class Model05View : UserControl
         BestPinwheelSettings bestPinwheelSettings = new();
 
         int interationN = 0;
-        for (float pk1 = 0.11f; pk1 < 0.20f; pk1 += 1.01f)
+        for (float pk1 = 0.11f; pk1 < 0.15f; pk1 += 0.01f)
             for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
                 for (float pk3 = 0.000f; pk3 < pk2; pk3 += 1.01f)
                     for (float nk1 = pk1; nk1 <= pk1; nk1 += 1.01f)
