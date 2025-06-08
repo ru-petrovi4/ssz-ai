@@ -20,7 +20,7 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -55,32 +55,32 @@ namespace Ssz.AI.Models
             GradientDistribution rightEye_GradientDistribution = new();
 
             StereoInput = new StereoInput(inputImagesSize);
-            StereoInput.GenerateOwnedData(
-                random,
-                Constants,
-                leftEye_GradientDistribution,
-                rightEye_GradientDistribution,
-                inputImagesLabels,
-                inputImageDatas,
-                LeftEye,
-                RightEye);
+            //StereoInput.GenerateOwnedData(
+            //    random,
+            //    Constants,
+            //    leftEye_GradientDistribution,
+            //    rightEye_GradientDistribution,
+            //    inputImagesLabels,
+            //    inputImageDatas,
+            //    LeftEye,
+            //    RightEye);
             //Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
             StereoInput.Prepare();
-            //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
+            //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);            
 
-            LeftEye.Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            //LeftEye.Retina.GenerateOwnedData(random, Constants, leftEye_GradientDistribution);            
-            Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
+            LeftEye.Retina = new Retina(Constants);
+            LeftEye.Retina.GenerateOwnedData(random, Constants, leftEye_GradientDistribution);            
+            //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
             LeftEye.Retina.Prepare();
             //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
-            RightEye.Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            //RightEye.Retina.GenerateOwnedData(random, Constants, rightEye_GradientDistribution);            
-            Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
+            RightEye.Retina = new Retina(Constants);
+            RightEye.Retina.GenerateOwnedData(random, Constants, rightEye_GradientDistribution);            
+            //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
             RightEye.Retina.Prepare();
             //Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);
 
-            PreCortex = new PreCortex(Constants, LeftEye, RightEye);
+            PreCortex = new Cortex_Simplified2(Constants, LeftEye, RightEye);
             PreCortex.GenerateOwnedData();            
             //Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", PreCortex, null);
             PreCortex.Prepare();            
@@ -106,7 +106,7 @@ namespace Ssz.AI.Models
 
         public readonly Eye RightEye;        
 
-        public readonly PreCortex PreCortex = null!;        
+        public readonly Cortex_Simplified2 PreCortex = null!;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -122,16 +122,16 @@ namespace Ssz.AI.Models
 
         public Image[] GetImages1(double positionK, double angleK)
         {
-            byte[] image = StereoInput.StereoInputItems[CurrentInputIndex].InputImageData;
-            Direction imageNormalDirection = new() { XRadians = (float)(positionK - 0.5) * MathF.PI, YRadians = (float)(angleK - 0.5) * MathF.PI };
+            //byte[] image = StereoInput.StereoInputItems[CurrentInputIndex].InputImageData;
+            //Direction imageNormalDirection = new() { XRadians = (float)(positionK - 0.5) * MathF.PI, YRadians = (float)(angleK - 0.5) * MathF.PI };
 
-            var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);
-            var temp_RightEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, RightEye);
+            //var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);
+            //var temp_RightEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, RightEye);
 
-            return [ MNISTHelper.GetBitmap(temp_LeftEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels),
-                MNISTHelper.GetBitmap(temp_RightEye_Image, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels) ];
+            //return [ MNISTHelper.GetBitmap(temp_LeftEye_Image, Constants.RetinaImageWidthPixels, Constants.RetinaImageHeightPixels),
+            //    MNISTHelper.GetBitmap(temp_RightEye_Image, Constants.RetinaImageWidthPixels, Constants.RetinaImageHeightPixels) ];
 
-            //return [];
+            return [];
         }        
 
         public Image[] GetImages2()
@@ -164,11 +164,10 @@ namespace Ssz.AI.Models
 
         private Eye CreateEye(Vector3DFloat pupil)
         {
-            float kX = (float)Constants.EyeImageWidthPixels / (float)MNISTHelper.MNISTImageWidthPixels;
-            float kY = (float)Constants.EyeImageHeightPixels / (float)MNISTHelper.MNISTImageHeightPixels;
+            float kX = (float)Constants.RetinaImageWidthPixels / (float)MNISTHelper.MNISTImageWidthPixels;
+            float kY = (float)Constants.RetinaImageHeightPixels / (float)MNISTHelper.MNISTImageHeightPixels;
             Eye eye = new();
-            eye.Pupil = pupil;
-            eye.Retina = new Retina(Constants, Constants.EyeImageWidthPixels, Constants.EyeImageHeightPixels);
+            eye.Pupil = pupil;            
             eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
             eye.RetinaUpperLeftYRadians = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
             eye.RetinaBottomRightXRadians = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
@@ -181,11 +180,14 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
+            public int RetinaImageWidthPixels => 320;
+
+            public int RetinaImageHeightPixels => 320;
+
             /// <summary>
-            ///     Расстояние между детекторами по горизонтали и вертикали  
-            ///     [0..MNISTImageWidth]
+            ///     Расстояние между детекторами по горизонтали и вертикали              
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
@@ -199,17 +201,7 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegreeMax { get; set; } = 60;
 
-            public int MagnitudeRangesCount => 4;
-
-            /// <summary>
-            ///     Ширина основного изображения
-            /// </summary>
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
-
-            /// <summary>
-            ///     Высота основного изображения
-            /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+            public int MagnitudeRangesCount => 4;            
 
             public int GeneratedImageWidth => 280;
 
@@ -273,10 +265,6 @@ namespace Ssz.AI.Models
             public float ImageWidth => 0.1f;
 
             public float ImageHeight => 0.1f;
-
-            public int EyeImageWidthPixels = 320;
-
-            public int EyeImageHeightPixels = 320;
 
             public int DependantDetectorsRangeWidthCount = 50;
 

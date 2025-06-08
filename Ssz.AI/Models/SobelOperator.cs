@@ -4,7 +4,7 @@ using System;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Models
 {
@@ -290,9 +290,7 @@ namespace Ssz.AI.Models
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
 
-                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);
-                    if (angleDegree == 360)
-                        angleDegree = 0;
+                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);                    
                     gradientDistribution.AngleData[angleDegree] += 1;
                 }
             }

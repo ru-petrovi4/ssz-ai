@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Numerics.Tensors;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Models
 {
@@ -17,20 +17,22 @@ namespace Ssz.AI.Models
     {
         #region construction and destruction
 
-        public Retina(IConstants constants, int imageWidth, int imageHeight)
-        {
-            Detectors = new DenseMatrix<Detector>((int)(imageWidth / constants.DetectorDelta), (int)(imageHeight / constants.DetectorDelta));
-            foreach (int dy in Enumerable.Range(0, Detectors.Dimensions[1]))
-                foreach (int dx in Enumerable.Range(0, Detectors.Dimensions[0]))
+        public Retina(IConstants constants)
+        {  
+            Detectors = new DenseMatrix<Detector>(
+                (int)Math.Round(constants.RetinaImageWidthPixels / constants.RetinaDetectorsDeltaPixels, 0), 
+                (int)Math.Round(constants.RetinaImageHeightPixels / constants.RetinaDetectorsDeltaPixels, 0));
+            foreach (int detectorY in Enumerable.Range(0, Detectors.Dimensions[1]))
+                foreach (int detectorX in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
                     Detector detector = new()
                     {
-                        X = dx,
-                        Y = dy,
-                        CenterX = dx * constants.DetectorDelta,
-                        CenterY = dy * constants.DetectorDelta,
+                        DetectorX = detectorX,
+                        DetectorY = detectorY,
+                        CenterXPixels = detectorX * constants.RetinaDetectorsDeltaPixels,
+                        CenterYPixels = detectorY * constants.RetinaDetectorsDeltaPixels,
                     };
-                    Detectors[dx, dy] = detector;
+                    Detectors[detectorX, detectorY] = detector;
                 }
         }
 
@@ -50,7 +52,7 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
-        public void GenerateOwnedData(Random random, IConstants constants, GradientDistribution gradientDistribution)
+        public void GenerateOwnedData(Random initializationRandom, IConstants constants, GradientDistribution gradientDistribution)
         {
             // TODO gradientDistribution -> DetectorRanges            
             int gradientMagnitudeRange = constants.GeneratedMaxGradientMagnitude / constants.MagnitudeRangesCount;
@@ -123,15 +125,15 @@ namespace Ssz.AI.Models
 
             foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
             {
-                int rawIndex = DistributionHelper.GetRandom(random, detectorDensities_Accumulative.Data);
+                int rawIndex = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative.Data);
                 //var indices = detectorDensities_Accumulative.GetIndices(rawIndex);                
-                var indices = (random.Next(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange), random.Next(360));
+                var indices = (initializationRandom.Next(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange), initializationRandom.Next(360));
 
                 Detector detector = Detectors.Data[di];
 
                 detector.GradientMagnitudeMax = indices.Item1;                
                 detector.GradientAngleMax = (float)MathHelper.DegreesToRadians(indices.Item2);                
-                detector.BitIndexInHash = random.Next(constants.HashLength);
+                detector.BitIndexInHash = initializationRandom.Next(constants.HashLength);
                 //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
             }            
         }
@@ -187,19 +189,19 @@ namespace Ssz.AI.Models
 
     public class Detector
     {
-        public int X;
+        public int DetectorX;
 
-        public int Y;        
+        public int DetectorY;        
 
         /// <summary>
         ///     [0..MNISTImageWidth]
         /// </summary>
-        public double CenterX { get; init; }
+        public double CenterXPixels { get; init; }
 
         /// <summary>
         ///     [0..MNISTImageHeight]
         /// </summary>
-        public double CenterY { get; init; }
+        public double CenterYPixels { get; init; }
         
         public float GradientMagnitudeMax;        
 
@@ -216,7 +218,7 @@ namespace Ssz.AI.Models
 
         public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, IConstants constants, Vector2 offset = default)
         {
-            Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
+            Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
             if (Temp_GradientInPoint.Magnitude < constants.DetectorMinGradientMagnitude)
             {
@@ -251,7 +253,7 @@ namespace Ssz.AI.Models
 
         public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstants constants, Vector2 offset = default)
         {
-            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterX - offset.X, CenterY - offset.Y, gradientMatrix);
+            (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
             if (magnitude < constants.DetectorMinGradientMagnitude)
                 return false;

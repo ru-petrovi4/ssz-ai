@@ -5,15 +5,15 @@ using Ssz.Utils.Serialization;
 using System;
 using System.Linq;
 using System.Numerics.Tensors;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Models
 {
-    public class MonoInput : ISerializableModelObject
+    public class MonoInput_Simplified : ISerializableModelObject
     {
         #region construction and destruction
 
-        public MonoInput()
+        public MonoInput_Simplified()
         {    
         }
 

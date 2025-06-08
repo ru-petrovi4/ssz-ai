@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Tensors;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Models
 {
@@ -15,7 +15,7 @@ namespace Ssz.AI.Models
         /// <returns></returns>
         public static (float, float, int) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, IConstants constants)
         {
-            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)                
+            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
                 return (float.NaN, float.NaN, 0);
 
             float positiveActivity = 0.0f;
@@ -47,7 +47,7 @@ namespace Ssz.AI.Models
                         negativeActivity += activity;
                         negativeMemoriesCount += 1;
                     }
-                }                
+                }
             }
 
             if (positiveMemoriesCount > 0)
@@ -67,7 +67,7 @@ namespace Ssz.AI.Models
             float superActivity;
 
             if (miniColumn.Temp_Activity.Item3 > 0)
-                superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.Item1 + miniColumn.K0.Item2 * miniColumn.Temp_Activity.Item2;            
+                superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.Item1 + miniColumn.K0.Item2 * miniColumn.Temp_Activity.Item2;
             else
                 superActivity = miniColumn.K0.Item1 * (constants.K2 - constants.K0); // Best proximity
 
@@ -84,32 +84,89 @@ namespace Ssz.AI.Models
                         it.Item2 * nearestMiniColumn.Temp_Activity.Item2;
                 //else
                 //    superActivity += it.Item1 * (constants.K2 - constants.K0); // Best proximity
-            }            
+            }
 
             return superActivity;
         }
-    }    
 
-    public class ActivitiyMaxInfo
-    {
-        public MiniColumn? Temp_WinnerMiniColumn;
+        // ================================================================
 
-        public float MaxActivity = float.MinValue;
-        public readonly List<Cortex.MiniColumn> ActivityMax_MiniColumns = new();
-
-        public float MaxSuperActivity = float.MinValue;
-        public readonly List<Cortex.MiniColumn> SuperActivityMax_MiniColumns = new();
-        public Cortex.MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+        public static (float, float, int) GetActivity(Cortex_Simplified.MiniColumn miniColumn, float[] hash, IConstants constants)
         {
-            if (SuperActivityMax_MiniColumns.Count == 0)
-                return null;
-            if (SuperActivityMax_MiniColumns.Count == 1)
-                return SuperActivityMax_MiniColumns[0];
-            var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
-            Temp_WinnerMiniColumn = SuperActivityMax_MiniColumns[winnerIndex];
-            return Temp_WinnerMiniColumn;
+            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
+                return (float.NaN, float.NaN, 0);
+
+            float positiveActivity = 0.0f;
+            int positiveMemoriesCount = 0;
+            float negativeActivity = 0.0f;
+            int negativeMemoriesCount = 0;
+
+            foreach (var mi in Enumerable.Range(0, miniColumn.Memories.Count))
+            {
+                var memory = miniColumn.Memories[mi];
+                if (memory is null)
+                    continue;
+
+                float memoryCosineSimilarity = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
+                if (float.IsNaN(memoryCosineSimilarity))
+                    throw new Exception();
+
+                //memoryCosineSimilarity = memoryCosineSimilarity * memoryCosineSimilarity;                
+                if (memoryCosineSimilarity > constants.K1)
+                {
+                    float activity = memoryCosineSimilarity - constants.K0;
+                    if (activity >= 0)
+                    {
+                        positiveActivity += activity;
+                        positiveMemoriesCount += 1;
+                    }
+                    else
+                    {
+                        negativeActivity += activity;
+                        negativeMemoriesCount += 1;
+                    }
+                }
+            }
+
+            if (positiveMemoriesCount > 0)
+                positiveActivity /= positiveMemoriesCount;
+
+            if (negativeMemoriesCount > 0)
+                negativeActivity /= negativeMemoriesCount;
+
+            return (positiveActivity, negativeActivity, positiveMemoriesCount + negativeMemoriesCount);
         }
-    }
+
+        public static float GetSuperActivity(Cortex_Simplified.MiniColumn miniColumn, IConstants constants)
+        {
+            if (float.IsNaN(miniColumn.Temp_Activity.Item3))
+                return float.NaN;
+
+            float superActivity;
+
+            if (miniColumn.Temp_Activity.Item3 > 0)
+                superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.Item1 + miniColumn.K0.Item2 * miniColumn.Temp_Activity.Item2;
+            else
+                superActivity = miniColumn.K0.Item1 * (constants.K2 - constants.K0); // Best proximity
+
+            foreach (var it in miniColumn.K_ForNearestMiniColumns)
+            {
+                var nearestMiniColumn = it.Item3;
+
+                if (float.IsNaN(nearestMiniColumn.Temp_Activity.Item1) ||
+                        float.IsNaN(nearestMiniColumn.Temp_Activity.Item2))
+                    continue;
+
+                if (nearestMiniColumn.Temp_Activity.Item3 > 0)
+                    superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item1 +
+                        it.Item2 * nearestMiniColumn.Temp_Activity.Item2;
+                //else
+                //    superActivity += it.Item1 * (constants.K2 - constants.K0); // Best proximity
+            }
+
+            return superActivity;
+        }
+    }        
 }
 
 

@@ -29,8 +29,8 @@ namespace Ssz.AI.Models
         ///     Generates model data after construction.
         /// </summary>
         public void GenerateOwnedData(
-            Random random,
-            Model9.ModelConstants constants,
+            Random initializationRandom,
+            Model11.ModelConstants constants,
             GradientDistribution leftEye_GradientDistribution,
             GradientDistribution rightEye_GradientDistribution,
             byte[] inputImagesLabels, 
@@ -47,17 +47,17 @@ namespace Ssz.AI.Models
                 stereoInputItem.Label = inputImagesLabels[i];
                 stereoInputItem.InputImageData = inputImageData;
                 stereoInputItem.ImageNormalDirection = new Direction();
-                stereoInputItem.ImageNormalDirection.XRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
-                stereoInputItem.ImageNormalDirection.YRadians = -MathF.PI / 4 + random.NextSingle() * MathF.PI / 2;
+                stereoInputItem.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
+                stereoInputItem.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
 
                 stereoInputItem.LeftEyeImageData = GetEyeImageData(constants, inputImageData, InputImagesSize, stereoInputItem.ImageNormalDirection, leftEye);
                 stereoInputItem.RightEyeImageData = GetEyeImageData(constants, inputImageData, InputImagesSize, stereoInputItem.ImageNormalDirection, rightEye);
 
                 // Применяем оператор Собеля
-                stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftEyeImageData, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
+                stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftEyeImageData, constants.RetinaImageWidthPixels, constants.RetinaImageHeightPixels);                
                 SobelOperator.CalculateDistribution(stereoInputItem.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
 
-                stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightEyeImageData, constants.EyeImageWidthPixels, constants.EyeImageHeightPixels);                
+                stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightEyeImageData, constants.RetinaImageWidthPixels, constants.RetinaImageHeightPixels);                
                 SobelOperator.CalculateDistribution(stereoInputItem.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
             }
         }
@@ -90,24 +90,24 @@ namespace Ssz.AI.Models
             }
         }
 
-        public static byte[] GetEyeImageData(Model9.ModelConstants constants, byte[] inputImageData, PixelSize inputImageSize, Direction imageNormalDirection, Eye eye)
+        public static byte[] GetEyeImageData(Model11.ModelConstants constants, byte[] inputImageData, PixelSize inputImageSize, Direction imageNormalDirection, Eye eye)
         {
             float widthRadians = eye.RetinaBottomRightXRadians - eye.RetinaUpperLeftXRadians;
             float heightRadians = eye.RetinaBottomRightYRadians - eye.RetinaUpperLeftYRadians;
 
-            byte[] eyeImage = new byte[constants.EyeImageWidthPixels * constants.EyeImageHeightPixels];
-            for (int y = 0; y < constants.EyeImageHeightPixels; y += 1)
+            byte[] eyeImage = new byte[constants.RetinaImageWidthPixels * constants.RetinaImageHeightPixels];
+            for (int y = 0; y < constants.RetinaImageHeightPixels; y += 1)
             {
-                for (int x = 0; x < constants.EyeImageWidthPixels; x += 1)
+                for (int x = 0; x < constants.RetinaImageWidthPixels; x += 1)
                 {
                     Direction eyeDirection = new();
-                    eyeDirection.XRadians = eye.RetinaUpperLeftXRadians + widthRadians * x / constants.EyeImageWidthPixels;
-                    eyeDirection.YRadians = eye.RetinaUpperLeftYRadians + heightRadians * y / constants.EyeImageHeightPixels;
+                    eyeDirection.XRadians = eye.RetinaUpperLeftXRadians + widthRadians * x / constants.RetinaImageWidthPixels;
+                    eyeDirection.YRadians = eye.RetinaUpperLeftYRadians + heightRadians * y / constants.RetinaImageHeightPixels;
                     (float centerX, float centerY) = GetPointOnImage(constants, eye.Pupil, eyeDirection, imageNormalDirection, inputImageSize);
                     // Значение пикселя из массива байтов
                     byte pixelValue = BitmapHelper.GetInterpolatedValue(inputImageData, inputImageSize, centerX, centerY);
 
-                    eyeImage[x + y * constants.EyeImageWidthPixels] = pixelValue;
+                    eyeImage[x + y * constants.RetinaImageWidthPixels] = pixelValue;
                 }
             }
             return eyeImage;            
@@ -115,7 +115,7 @@ namespace Ssz.AI.Models
 
         #endregion                
 
-        private static (float centerX, float centerY) GetPointOnImage(Model9.ModelConstants constants, Vector3DFloat pupil, Direction eyeDirection, Direction imageNormalDirection, PixelSize inputImageSize)
+        private static (float centerX, float centerY) GetPointOnImage(Model11.ModelConstants constants, Vector3DFloat pupil, Direction eyeDirection, Direction imageNormalDirection, PixelSize inputImageSize)
         {
             // Входные данные
             // Координаты точки A и углы линии Л
@@ -124,7 +124,7 @@ namespace Ssz.AI.Models
             float lineAngleYZ = eyeDirection.YRadians; // угол в плоскости YZ
 
             // Координаты точки B и углы нормали плоскости П
-            float Bx = constants.ImageCenter.X, By = constants.ImageCenter.Y, Bz = constants.ImageCenter.Z;
+            float Bx = constants.PhysicalImageCenter.X, By = constants.PhysicalImageCenter.Y, Bz = constants.PhysicalImageCenter.Z;
             float normalAngleXZ = imageNormalDirection.XRadians; // угол в плоскости XZ
             float normalAngleYZ = imageNormalDirection.YRadians; // угол в плоскости YZ
 
@@ -184,11 +184,11 @@ namespace Ssz.AI.Models
             float planeCoordX = BIntersectX * planeXDirX + BIntersectY * planeXDirY + BIntersectZ * planeXDirZ;
             float planeCoordY = BIntersectX * planeYDirX + BIntersectY * planeYDirY + BIntersectZ * planeYDirZ;
 
-            planeCoordX -= constants.ImageCenter.X - constants.ImageWidth / 2;
-            planeCoordY -= constants.ImageCenter.Y - constants.ImageHeight / 2;
+            planeCoordX -= constants.PhysicalImageCenter.X - constants.PhysicalImageWidth / 2;
+            planeCoordY -= constants.PhysicalImageCenter.Y - constants.PhysicalImageHeight / 2;
 
-            planeCoordX /= constants.ImageWidth / inputImageSize.Width;
-            planeCoordY /= constants.ImageHeight / inputImageSize.Height;
+            planeCoordX /= constants.PhysicalImageWidth / inputImageSize.Width;
+            planeCoordY /= constants.PhysicalImageHeight / inputImageSize.Height;
 
             return (planeCoordX, planeCoordY);
         }

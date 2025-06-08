@@ -17,47 +17,84 @@ namespace Ssz.AI.Models
         /// </summary>
         /// <param name="constants"></param>        
         public Cortex(
-            IConstants constants,            
-            Retina retina)
+            Model11.ModelConstants constants, 
+            Eye leftEye,
+            Eye rightEye)
         {
             Constants = constants;
 
-            //PositiveK = new float[Constants.MiniColumnsMaxDistance + 1];
-            //NegativeK = new float[Constants.MiniColumnsMaxDistance + 1];
+            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.Detectors.Data.Length];
 
-            DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
+            //foreach (var di in Enumerable.Range(0, rightEye.Retina.Detectors.Data.Length))
+            //{
+            //    Detector detetctor = rightEye.Retina.Detectors.Data[di];
+            //    DetectorCorrelation detectorCorrelation = new();
+
+            //    detectorCorrelation.RangeLeftUpperX = detetctor.DetectorX - Constants.DependantDetectorsRangeWidthCount / 2;
+            //    if (detectorCorrelation.RangeLeftUpperX < 0)
+            //        detectorCorrelation.RangeLeftUpperX = 0;
+
+            //    detectorCorrelation.RangeLeftUpperY = detetctor.DetectorY - Constants.DependantDetectorsRangeHeightCount / 2;
+            //    if (detectorCorrelation.RangeLeftUpperY < 0)
+            //        detectorCorrelation.RangeLeftUpperY = 0;
+
+            //    detectorCorrelation.RangeRightBottomX = detetctor.DetectorX + Constants.DependantDetectorsRangeWidthCount / 2;
+            //    if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.Detectors.Dimensions[0])
+            //        detectorCorrelation.RangeRightBottomX = leftEye.Retina.Detectors.Dimensions[0];
+
+            //    detectorCorrelation.RangeRightBottomY = detetctor.DetectorY + Constants.DependantDetectorsRangeHeightCount / 2;
+            //    if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.Detectors.Dimensions[1])
+            //        detectorCorrelation.RangeRightBottomY = leftEye.Retina.Detectors.Dimensions[1];
+
+            //    detectorCorrelation.CorrelationMatrix = new MatrixFloat(
+            //        detectorCorrelation.RangeRightBottomX - detectorCorrelation.RangeLeftUpperX,
+            //        detectorCorrelation.RangeRightBottomY - detectorCorrelation.RangeLeftUpperY);
+
+            //    DetectorCorrelations[di] = detectorCorrelation;
+            //}
+
+            DetectorsVisibleRadiusPixels = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.RetinaDetectorsDeltaPixels * constants.RetinaDetectorsDeltaPixels / Math.PI);
 
             MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
-            double minCenterX = DetectorsVisibleRadius;
-            double maxCenterX = constants.ImageWidthPixels - DetectorsVisibleRadius;
-            double deltaCenterX = (maxCenterX - minCenterX) / (constants.CortexWidth - 1);
-            double minCenterY = DetectorsVisibleRadius;
-            double maxCenterY = constants.ImageHeightPixels - DetectorsVisibleRadius;
-            double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);
-            
+            double minCenterXPixels = DetectorsVisibleRadiusPixels;
+            double maxCenterXPixels = constants.RetinaImageWidthPixels - DetectorsVisibleRadiusPixels;
+            double deltaCenterXPixels = (maxCenterXPixels - minCenterXPixels) / (constants.CortexWidth - 1);
+            double minCenterYPixels = DetectorsVisibleRadiusPixels;
+            double maxCenterYPixels = constants.RetinaImageHeightPixels - DetectorsVisibleRadiusPixels;
+            double deltaCenterYPixels = (maxCenterYPixels - minCenterYPixels) / (constants.CortexHeight - 1);
+
             if (constants.SubAreaMiniColumnsCount is not null)
                 SubArea_MiniColumns_Radius = Math.Sqrt(constants.SubAreaMiniColumnsCount.Value / Math.PI);
             else
-                SubArea_MiniColumns_Radius = 0.0;            
+                SubArea_MiniColumns_Radius = 1000000.0;
 
             // Создаем только миниколонки для подобласти            
             foreach (int mcy in Enumerable.Range(0, constants.CortexHeight))
                 foreach (int mcx in Enumerable.Range(0, constants.CortexWidth))
                 {
                     double miniColumnR = Math.Sqrt((mcx - constants.SubAreaCenter_Cx) * (mcx - constants.SubAreaCenter_Cx) + (mcy - constants.SubAreaCenter_Cy) * (mcy - constants.SubAreaCenter_Cy));
-                    if (SubArea_MiniColumns_Radius == 0.0 || miniColumnR < SubArea_MiniColumns_Radius)
+                    if (miniColumnR < SubArea_MiniColumns_Radius)
                     {
-                        double centerX = minCenterX + mcx * deltaCenterX;
-                        double centerY = minCenterY + mcy * deltaCenterY;
+                        double centerXPixels = minCenterXPixels + mcx * deltaCenterXPixels;
+                        double centerYPixels = minCenterYPixels + mcy * deltaCenterYPixels;
 
                         List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                        for (int dy = (int)((centerY - DetectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + DetectorsVisibleRadius) / constants.DetectorDelta) && dy < retina.Detectors.Dimensions[1]; dy += 1)
-                            for (int dx = (int)((centerX - DetectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + DetectorsVisibleRadius) / constants.DetectorDelta) && dx < retina.Detectors.Dimensions[0]; dx += 1)
+                        for (int detectorY = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorY < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorY < leftEye.Retina.Detectors.Dimensions[1]; detectorY += 1)
+                            for (int detectorX = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorX < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorX < leftEye.Retina.Detectors.Dimensions[0]; detectorX += 1)
                             {
-                                Detector detector = retina.Detectors[dx, dy];
-                                double r = Math.Sqrt((detector.CenterX - centerX) * (detector.CenterX - centerX) + (detector.CenterY - centerY) * (detector.CenterY - centerY));
-                                if (r < DetectorsVisibleRadius)
+                                Detector detector = leftEye.Retina.Detectors[detectorX, detectorY];
+                                double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                                if (rPixels < DetectorsVisibleRadiusPixels)
+                                    miniColumnDetectors.Add(detector);
+                            }
+
+                        for (int detectorY = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorY < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorY < rightEye.Retina.Detectors.Dimensions[1]; detectorY += 1)
+                            for (int detectorX = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorX < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorX < rightEye.Retina.Detectors.Dimensions[0]; detectorX += 1)
+                            {
+                                Detector detector = rightEye.Retina.Detectors[detectorX, detectorY];
+                                double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                                if (rPixels < DetectorsVisibleRadiusPixels)
                                     miniColumnDetectors.Add(detector);
                             }
 
@@ -66,18 +103,18 @@ namespace Ssz.AI.Models
                             mcx,
                             mcy,
                             miniColumnDetectors,
-                            centerX,
-                            centerY);
+                            centerXPixels,
+                            centerYPixels);
 
                         MiniColumns[mcx, mcy] = miniColumn;
 
                         if (miniColumnR < 0.000001)
-                            CenterMiniColumn = miniColumn;                        
+                            CenterMiniColumn = miniColumn;
                     }
-                }            
+                }
 
-            HashSet<Detector> subArea_DetectorsHashSet = new(retina.Detectors.Dimensions[0] * retina.Detectors.Dimensions[1]);
-            List<MiniColumn> subArea_MiniColumns = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
+            HashSet<Detector> subAreaOrAll_DetectorsHashSet = new(2 * leftEye.Retina.Detectors.Dimensions[0] * leftEye.Retina.Detectors.Dimensions[1]);
+            List<MiniColumn> subAreaOrAll_MiniColumns = new(constants.SubAreaMiniColumnsCount ?? (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
 
             foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
@@ -85,30 +122,24 @@ namespace Ssz.AI.Models
                     var mc = MiniColumns[mcx, mcy];
                     if (mc is not null)
                     {
-                        subArea_MiniColumns.Add(mc);
+                        subAreaOrAll_MiniColumns.Add(mc);
                         foreach (var d in mc.Detectors)
                         {
-                            subArea_DetectorsHashSet.Add(d);
+                            subAreaOrAll_DetectorsHashSet.Add(d);
                         }
                     }
                 }
-            SubArea_MiniColumns = subArea_MiniColumns.ToArray();
-            SubArea_Detectors = subArea_DetectorsHashSet.ToArray();
-
-            //float sigma0 = constants.K3[0];
-            //float sigma1 = constants.K3[1];
-
+            SubAreaOrAll_MiniColumns = subAreaOrAll_MiniColumns.ToArray();
+            SubAreaOrAll_Detectors = subAreaOrAll_DetectorsHashSet.ToArray();
+            
             // Находим ближайшие миниколонки для каждой миниколонки
             Parallel.For(
                 fromInclusive: 0,
-                toExclusive: SubArea_MiniColumns.Length,
+                toExclusive: SubAreaOrAll_MiniColumns.Length,
                 mci =>
                 {
-                    MiniColumn mc = SubArea_MiniColumns[mci];
-
-                    //float k00 = GetNormalDistributionValue(sigma0, 0.0f);
-                    //float k01 = GetNormalDistributionValue(sigma1, 0.0f);
-                    //mc.K0 = (k00, k01);
+                    MiniColumn mc = SubAreaOrAll_MiniColumns[mci];
+                    
                     mc.K0 = (constants.PositiveK[0], constants.NegativeK[0]);
 
                     for (int mcy = mc.MCY - (int)constants.MiniColumnsMaxDistance - 1; mcy <= mc.MCY + (int)constants.MiniColumnsMaxDistance + 1; mcy += 1)
@@ -119,57 +150,53 @@ namespace Ssz.AI.Models
                                     mcy < 0 ||
                                     mcy >= constants.CortexHeight ||
                                     (mcx == mc.MCX && mcy == mc.MCY))
-                                continue;                            
+                                continue;
 
                             MiniColumn nearestMc = MiniColumns[mcx, mcy];
                             if (nearestMc is null)
-                                continue;                                   
-                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
+                                continue;
+                            float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
                             if (r < constants.MiniColumnsMaxDistance + 0.00001f)
-                            {
-                                //float k0 = GetNormalDistributionValue(sigma0, r);
-                                //float k1 = GetNormalDistributionValue(sigma1, r);
+                            {                                
                                 float k0 = MathHelper.GetInterpolatedValue(constants.PositiveK, r);
                                 float k1 = MathHelper.GetInterpolatedValue(constants.NegativeK, r);
                                 mc.K_ForNearestMiniColumns.Add((k0, k1, nearestMc));
                             }
                         }
-                });            
+                });
 
             VisualizationTableItems = new(1000);
 
             InputAutoencoder = new Autoencoder();
         }
+       
+        public Model11.ModelConstants Constants { get; }
 
-        private float GetNormalDistributionValue(float sigma, float r)
-        {
-            return (1.0f / (sigma * MathF.Sqrt(2.0f * MathF.PI))) * MathF.Exp(-0.5f * r * r / (sigma * sigma));
-        }
-
-        /// <summary>
-        ///     [0..MNISTImageWidth]
-        /// </summary>
-        public double DetectorsVisibleRadius { get; }
-
-        public IConstants Constants { get; }
-
-        //public float[] PositiveK;
-
-        //public float[] NegativeK;
+        public DetectorCorrelation[] DetectorCorrelations { get; }
 
         public DenseMatrix<MiniColumn> MiniColumns;
 
-        public MiniColumn? CenterMiniColumn { get; private set; }       
+        public double DetectorsVisibleRadiusPixels { get; }
 
-        public MiniColumn[] SubArea_MiniColumns { get; } = null!;
-        public Detector[] SubArea_Detectors { get; } = null!;        
+        public MiniColumn? CenterMiniColumn { get; private set; }
+
+        /// <summary>
+        ///     Sub Area or All MiniColumns
+        /// </summary>
+        public MiniColumn[] SubAreaOrAll_MiniColumns { get; } = null!;
+
+        /// <summary>
+        ///     Sub Area or All Detectors
+        /// </summary>
+        public Detector[] SubAreaOrAll_Detectors { get; } = null!;
+
         public double SubArea_MiniColumns_Radius;
 
         public Autoencoder InputAutoencoder { get; } = null!;
 
         public List<VisualizationTableItem> VisualizationTableItems { get; }
 
-        public Cortex.MiniColumn? Temp_SuperActivityMax_MiniColumn
+        public MiniColumn? Temp_SuperActivityMax_MiniColumn
         {
             get;
             set;
@@ -178,94 +205,114 @@ namespace Ssz.AI.Models
         public double Temp_WinnerMiniColumn_AverageGradientInPoint_Delta { get; set; }
         public double Temp_WinnerMiniColumn_AverageGradientInPoint_Magnitude { get; set; }
 
-        public void GenerateOwnedData(Retina retina)
-        {
-            //InputAutoencoder.GenerateOwnedData(retina.Detectors.Dimensions[0], retina.Detectors.Dimensions[1], bottleneckK: 10.0f, inputSpotDiameterK: 10.0f);
-            //InputAutoencoder.GenerateOwnedData(retina.Detectors.Data.Length, retina.Detectors.Data.Length / 10, null);
+        public void GenerateOwnedData()
+        {           
         }
 
         public void Prepare()
         {
-            //InputAutoencoder.Prepare();
+            
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            if (context as string == "autoencoders")
+            using (writer.EnterBlock(1))
             {
-                using (writer.EnterBlock(1))
-                {
-                    writer.Write(MiniColumns.Data.Length);
-                    for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
-                    {
-                        using (writer.EnterBlock(1))
-                        {
-                            MiniColumn miniColumn = MiniColumns.Data[mci];
-                            writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
-                        }
-                    }
-                }
-            }
-            else if (context as string == "autoencoder")
-            {
-                using (writer.EnterBlock(1))
-                {
-                    InputAutoencoder.SerializeOwnedData(writer, null);
-                }
+                
             }
         }
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            if (context as string == "autoencoders")
+            using (Block block = reader.EnterBlock())
             {
-                using (Block block = reader.EnterBlock())
+                switch (block.Version)
                 {
-                    switch (block.Version)
-                    {
-                        case 1:
-                            int miniColumnsDataLength = reader.ReadInt32();
-                            for (int mci = 0; mci < miniColumnsDataLength; mci += 1)
-                            {
-                                using (Block block2 = reader.EnterBlock())
-                                {
-                                    MiniColumn? miniColumn = MiniColumns.Data[mci];
-                                    if (miniColumn is not null)
-                                        reader.ReadOwnedDataSerializableAndRecreatable<MiniColumn>(() => miniColumn, context);
-                                }
-                            }
-                            break;
-                    }
+                    case 1:
+                        
+                        break;
                 }
             }
-            else if (context as string == "autoencoder")
-            {
-                using (Block block = reader.EnterBlock())
-                {
-                    switch (block.Version)
-                    {
-                        case 1:
-                            InputAutoencoder.DeserializeOwnedData(reader, null);
-                            break;
-                    }
-                }
-            }
-        }        
+        }
+
+        public void Calculate(
+            StereoInput stereoInput, 
+            Eye leftEye,
+            Eye rightEye)
+        {
+            //StereoInputItem[] stereoInputItems = stereoInput.StereoInputItems;
+
+            //foreach (var i in Enumerable.Range(0, 5000))
+            //{
+            //    var stereoInputItem = stereoInputItems[i];
+
+            //    var leftEye_GradientMatrix = stereoInputItem.LeftEye_GradientMatrix;
+            //    var leftEye_Detectors = leftEye.Retina.Detectors;
+            //    Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: leftEye_Detectors.Data.Length,
+            //        di =>
+            //        {
+            //            var d = leftEye_Detectors.Data[di];
+            //            d.CalculateIsActivated(leftEye.Retina, leftEye_GradientMatrix, Constants);
+            //        });
+                
+            //    var rightEye_GradientMatrix = stereoInputItem.RightEye_GradientMatrix;
+            //    var rightEye_Detectors = rightEye.Retina.Detectors;
+            //    Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: rightEye_Detectors.Data.Length,
+            //        di =>
+            //        {
+            //            var d = rightEye_Detectors.Data[di];
+            //            d.CalculateIsActivated(rightEye.Retina, rightEye_GradientMatrix, Constants);
+            //        });
+
+            //    Parallel.For(
+            //        fromInclusive: 0,
+            //        toExclusive: rightEye_Detectors.Data.Length,
+            //        di =>
+            //        {
+            //            var rightEye_Detector = rightEye_Detectors.Data[di];
+            //            var detectorCorrelation = DetectorCorrelations[di];
+            //            for (int dy = detectorCorrelation.RangeLeftUpperY; dy < detectorCorrelation.RangeRightBottomY; dy += 1)
+            //            {
+            //                for (int dx = detectorCorrelation.RangeLeftUpperX; dx < detectorCorrelation.RangeRightBottomX; dx += 1)
+            //                {
+            //                    var leftEye_Detector_IsActivated = leftEye_Detectors[dx, dy].Temp_IsActivated;
+            //                    if (leftEye_Detector_IsActivated && rightEye_Detector.Temp_IsActivated)
+            //                    {
+            //                        detectorCorrelation.CorrelationMatrix[dx - detectorCorrelation.RangeLeftUpperX, dy - detectorCorrelation.RangeLeftUpperY] += 1.0f;
+            //                    }
+            //                }
+            //            }   
+            //        });
+            //}
+        }
+
+        public struct DetectorCorrelation
+        {
+            public int RangeLeftUpperX;
+            public int RangeLeftUpperY;
+            public int RangeRightBottomX;
+            public int RangeRightBottomY;
+            public MatrixFloat CorrelationMatrix;
+        }
 
         public class MiniColumn : ISerializableModelObject
         {
-            public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
+            public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerXPixels, double centerYPixels)
             {
                 Constants = constants;
                 Detectors = detectors;
                 MCX = mcx;
                 MCY = mcy;
-                CenterX = centerX;
-                CenterY = centerY;
-                Temp_Hash = new float[constants.HashLength];                
+                CenterXPixels = centerXPixels;
+                CenterYPixels = centerYPixels;
+                Temp_Hash = new float[constants.HashLength];
                 Memories = new(constants.MemoriesMaxCount);
-                Temp_Memories = new(constants.MemoriesMaxCount);                       
-                Temp_ShortHashConverted = new float[constants.ShortHashLength];                
+                Temp_Memories = new(constants.MemoriesMaxCount);
+                Temp_ShortHashConverted = new float[constants.ShortHashLength];
 
                 K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * constants.MiniColumnsMaxDistance * constants.MiniColumnsMaxDistance) + 10);
             }
@@ -296,14 +343,14 @@ namespace Ssz.AI.Models
             public (float, float) K0;
 
             /// <summary>
-            ///     [0..MNISTImageWidth]
+            ///     [0..RetinaImageWidthPixels]
             /// </summary>
-            public readonly double CenterX;
+            public readonly double CenterXPixels;
 
             /// <summary>
-            ///     [0..MNISTImageHeight]
+            ///     [0..RetinaImageHeightPixels]
             /// </summary>
-            public readonly double CenterY;
+            public readonly double CenterYPixels;
 
             /// <summary>
             ///     Сохраненные хэш-коды
@@ -372,7 +419,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Handle in ObjectMamager: SyncedMiniColumnsToProcess
             /// </summary>
-            public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;            
+            public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;
 
             public MatrixFloat? Temp_ShortHashConversionMatrix;
 
@@ -381,7 +428,7 @@ namespace Ssz.AI.Models
             public readonly float[] Temp_ShortHashConverted;
 
             public bool Temp_IsShortHashMustBeCalculated;
-            
+
             public void GetHash(float[] hash)
             {
                 Array.Clear(hash);
@@ -439,7 +486,7 @@ namespace Ssz.AI.Models
                     }
                 }
             }
-            
+
             /// <summary>
             ///     Max, Min, Average
             /// </summary>
@@ -531,416 +578,27 @@ namespace Ssz.AI.Models
             ///     Input image index for this memory.
             /// </summary>
             public int PictureInputIndex;
-        }        
+        }
 
-        public interface IConstants
+        public class ActivitiyMaxInfo
         {
-            /// <summary>
-            ///     Расстояние между детекторами по горизонтали и вертикали  
-            ///     [0..MNISTImageWidth]
-            /// </summary>
-            double DetectorDelta { get; }            
+            public MiniColumn? Temp_WinnerMiniColumn;
 
-            /// <summary>
-            ///     Минимальная чувствительность к модулю градиента
-            /// </summary>
-            double DetectorMinGradientMagnitude { get; }
+            public float MaxActivity = float.MinValue;
+            public readonly List<MiniColumn> ActivityMax_MiniColumns = new();
 
-            int GeneratedMinGradientMagnitude { get; }
-
-            int GeneratedMaxGradientMagnitude { get; }
-
-            int AngleRangeDegreeMin { get; set; }
-
-            int AngleRangeDegreeMax { get; set; }
-
-            int MagnitudeRangesCount { get; }
-
-            /// <summary>
-            ///     Количество миниколонок в зоне коры по оси X
-            /// </summary>
-            int CortexWidth { get; }
-
-            /// <summary>
-            ///     Количество миниколонок в зоне коры по оси Y
-            /// </summary>
-            int CortexHeight { get; }
-
-            /// <summary>
-            ///     Ширина основного изображения
-            /// </summary>
-            int ImageWidthPixels { get; }
-
-            /// <summary>
-            ///     Высота основного изображения
-            /// </summary>
-            int ImageHeightPixels { get; }
-
-            /// <summary>
-            ///     Количество детекторов, видимых одной миниколонкой
-            /// </summary>
-            int MiniColumnVisibleDetectorsCount { get; }            
-
-            /// <summary>
-            ///     Количество миниколонок в подобласти
-            /// </summary>
-            int? SubAreaMiniColumnsCount { get; }
-
-            /// <summary>
-            ///     Индекс X центра подобласти
-            /// </summary>
-            int SubAreaCenter_Cx { get; }
-
-            /// <summary>
-            ///     Индекс Y центра подобласти
-            /// </summary>
-            int SubAreaCenter_Cy { get; }
-
-            /// <summary>
-            ///     Длина хэш-вектора
-            /// </summary>
-            int HashLength { get; }
-
-            /// <summary>
-            ///     Длина короткого хэш-вектора
-            /// </summary>
-            int ShortHashLength { get; }
-
-            /// <summary>
-            ///     Количество бит в коротком хэш-векторе
-            /// </summary>
-            int ShortHashBitsCount { get; }            
-
-            /// <summary>
-            ///     Минимальное число бит в хэше, что бы быть сохраненным в память
-            /// </summary>
-            int MinBitsInHashForMemory { get; }
-
-            /// <summary>
-            ///     Максимальное расстояние до ближайших миниколонок
-            /// </summary>
-            float MiniColumnsMaxDistance { get; }
-
-            /// <summary>
-            ///     Верхний предел количества воспоминаний (для кэширования)
-            /// </summary>
-            int MemoriesMaxCount { get; }
-
-            /// <summary>
-            ///     Порог для кластеризации воспоминаний
-            /// </summary>
-            float MemoryClustersThreshold { get; }
-
-            int Angle_SmallPoints_Count { get; }
-
-            float Angle_SmallPoints_Radius { get; }
-
-            int Angle_BigPoints_Count { get; }
-
-            float Angle_BigPoints_Radius { get; }
-
-            /// <summary>
-            ///     Граница, до которой убывает чувствительность к углу градиента.
-            /// </summary>
-            int AngleRangeDegree_LimitMagnitude { get; set; }
-
-            /// <summary>
-            ///     Нулевой уровень косинусного расстояния
-            /// </summary>
-            float K0 { get; set; }
-
-            /// <summary>
-            ///     Порог косинусного расстояния для учета 
-            /// </summary>
-            float K1 { get; set; }
-
-            /// <summary>
-            ///     Косинусное расстояние для пустой колонки
-            /// </summary>
-            float K2 { get; set; }
-
-            /// <summary>
-            ///     Сигмы значимости соседей
-            /// </summary>
-            float[] K3 { get; set; }
-
-            /// <summary>
-            ///     Порог суперактивности
-            /// </summary>
-            float K4 { get; set; }
-
-            /// <summary>
-            ///     Коэффициент для расчета диапазона угла чувствительности детектора
-            /// </summary>
-            float K5 { get; set; }
-
-            /// <summary>
-            ///     Включен ли порог на суперактивность при накоплении воспоминаний
-            /// </summary>
-            bool SuperactivityThreshold { get; set; }
-
-            float[] PositiveK { get; set; }
-
-            float[] NegativeK { get; set; }
+            public float MaxSuperActivity = float.MinValue;
+            public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();
+            public MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+            {
+                if (SuperActivityMax_MiniColumns.Count == 0)
+                    return null;
+                if (SuperActivityMax_MiniColumns.Count == 1)
+                    return SuperActivityMax_MiniColumns[0];
+                var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
+                Temp_WinnerMiniColumn = SuperActivityMax_MiniColumns[winnerIndex];
+                return Temp_WinnerMiniColumn;
+            }
         }
     }    
 }
-
-
-//public class Cortex : IOwnedDataSerializable
-//{
-//    /// <summary>
-//    ///     
-//    /// </summary>
-//    /// <param name="constants"></param>        
-//    public Cortex(
-//        ICortexConstants constants,
-//        Retina retina)
-//    {
-//        Constants = constants;
-
-//        Random random = new();
-
-//        DetectorsVisibleRadius = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.DetectorDelta * constants.DetectorDelta / Math.PI);
-
-//        MiniColumns = new DenseTensor<MiniColumn>(constants.CortexWidth, constants.CortexHeight);
-//        double minCenterX = DetectorsVisibleRadius;
-//        double maxCenterX = constants.ImageWidth - DetectorsVisibleRadius;
-//        double deltaCenterX = (maxCenterX - minCenterX) / (constants.CortexWidth - 1);
-//        double minCenterY = DetectorsVisibleRadius;
-//        double maxCenterY = constants.ImageHeight - DetectorsVisibleRadius;
-//        double deltaCenterY = (maxCenterY - minCenterY) / (constants.CortexHeight - 1);                        
-
-//        foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
-//            foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
-//            {
-//                double centerX = minCenterX + mcx * deltaCenterX;
-//                double centerY = minCenterY + mcy * deltaCenterY;
-
-//                List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
-
-//                for (int dy = (int)((centerY - DetectorsVisibleRadius) / constants.DetectorDelta); dy < (int)((centerY + DetectorsVisibleRadius) / constants.DetectorDelta) && dy < retina.Detectors.Dimensions[1]; dy += 1)
-//                    for (int dx = (int)((centerX - DetectorsVisibleRadius) / constants.DetectorDelta); dx < (int)((centerX + DetectorsVisibleRadius) / constants.DetectorDelta) && dx < retina.Detectors.Dimensions[0]; dx += 1)
-//                    {
-//                        Detector detector = retina.Detectors[dx, dy];
-//                        double r = Math.Sqrt((detector.CenterX - centerX) * (detector.CenterX - centerX) + (detector.CenterY - centerY) * (detector.CenterY - centerY));
-//                        if (r < DetectorsVisibleRadius)
-//                            miniColumnDetectors.Add(detector);
-//                    }
-
-//                MiniColumn miniColumn = new MiniColumn(
-//                    constants,
-//                    mcx,
-//                    mcy,
-//                    miniColumnDetectors,
-//                    centerX,
-//                    centerY,
-//                    random);
-
-//                MiniColumns[mcx, mcy] = miniColumn;
-//            }            
-
-//        // Находим ближайшие миниколонки для каждой миниколонки
-//        Parallel.For(
-//            fromInclusive: 0,
-//            toExclusive: MiniColumns.Data.Length,
-//            mci =>
-//            {
-//                MiniColumn mc = MiniColumns.Data[mci];
-
-//                mc.K_ForNearestMiniColumns.Add(((1.0f, 1.0f), new List<MiniColumn>(8)));
-
-//                for (int mcy = mc.MCY - 1; mcy < mc.MCY + 1; mcy += 1)
-//                    for (int mcx = mc.MCX - 1; mcx < mc.MCX + 1; mcx += 1)
-//                    {
-//                        if (mcx < 0 ||
-//                                mcx >= constants.CortexWidth ||
-//                                mcy < 0 ||
-//                                mcy >= constants.CortexHeight ||
-//                                (mcx == mc.MCX && mcy == mc.MCY))
-//                            continue;
-
-//                        MiniColumn nearestMc = MiniColumns[mcx, mcy];
-
-//                        mc.K_ForNearestMiniColumns[0].Item2.Add(nearestMc);
-//                    }
-//            });            
-//    }
-
-//    /// <summary>
-//    ///     In big picture coordinates
-//    /// </summary>
-//    public double DetectorsVisibleRadius { get; }
-
-//    public ICortexConstants Constants { get; }
-
-//    public DenseTensor<MiniColumn> MiniColumns { get; }
-
-//    public void SerializeOwnedData(SerializationWriter writer, object? context)
-//    {
-//        if (context as string == "autoencoders")
-//        {
-//            using (writer.EnterBlock(1))
-//            {
-//                writer.Write(MiniColumns.Data.Length);
-//                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
-//                {
-//                    MiniColumn miniColumn = MiniColumns.Data[mci];
-//                    writer.WriteOwnedDataSerializableAndRecreatable(miniColumn.Autoencoder, null);
-//                }
-//            }
-//        }            
-//    }
-
-//    public void DeserializeOwnedData(SerializationReader reader, object? context)
-//    {
-//        if (context as string == "autoencoders")
-//        {
-//            using (Block block = reader.EnterBlock())
-//            {
-//                switch (block.Version)
-//                {
-//                    case 1:
-//                        int miniColumnsDataLength = reader.ReadInt32();
-//                        for (int mci = 0; mci < miniColumnsDataLength; mci += 1)
-//                        {
-//                            MiniColumn miniColumn = MiniColumns.Data[mci];
-//                            miniColumn.Autoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
-//                        }
-//                        break;
-//                }
-//            }
-//        }
-//    }
-
-//    public class MiniColumn
-//    {
-//        public MiniColumn(ICortexConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY, Random random)
-//        {
-//            Constants = constants;
-//            Detectors = detectors;
-//            MCX = mcx;
-//            MCY = mcy;
-//            CenterX = centerX;
-//            CenterY = centerY;
-//            Temp_Hash = new float[constants.HashLength];
-
-//            Memories = new(constants.MemoriesMaxCount); // { new Memory { Hash = hash0 } };
-//            Temp_Memories = new(constants.MemoriesMaxCount);
-
-//            K_ForNearestMiniColumns = new List<((float, float), List<MiniColumn>)>();
-//        }
-
-//        public readonly ICortexConstants Constants;
-
-//        public readonly List<Detector> Detectors;
-
-//        /// <summary>
-//        ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
-//        /// </summary>
-//        public readonly int MCX;
-
-//        /// <summary>
-//        ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
-//        /// </summary>
-//        public readonly int MCY;
-
-//        /// <summary>
-//        ///     (Величина, обратно пропорциональная расстоянию; List MiniColumn)
-//        /// </summary>
-//        public readonly List<((float, float), List<MiniColumn>)> K_ForNearestMiniColumns;
-
-//        /// <summary>
-//        ///     [0..MNISTImageWidth]
-//        /// </summary>
-//        public readonly double CenterX;
-
-//        /// <summary>
-//        ///     [0..MNISTImageHeight]
-//        /// </summary>
-//        public readonly double CenterY;
-
-//        /// <summary>
-//        ///     Сохраненные хэш-коды
-//        /// </summary>
-//        public List<Memory> Memories;            
-
-//        /// <summary>
-//        ///     Временный список для сохраненных хэш-кодов
-//        /// </summary>
-//        public List<Memory> Temp_Memories;
-
-//        public Autoencoder? Autoencoder;
-
-//        /// <summary>
-//        ///     Текущий хэш активных детекторов при подаче примера.
-//        /// </summary>
-//        public readonly float[] Temp_Hash;            
-
-//        public int Temp_IterationsCount;
-
-//        public float Temp_CosineSimilarity;
-
-//        public float Temp_ControlCosineSimilarity;            
-
-//        public void CalculateHash(float[] hash)
-//        {
-//            Array.Clear(hash);
-
-//            foreach (var detector in Detectors)
-//            {
-//                if (detector.Temp_IsActivated)
-//                    hash[detector.BitIndexInHash] = 1.0f;
-//            }
-//        }            
-//    }
-
-//    public struct Memory
-//    {
-//        public float[] Hash;
-//        public bool IsDeleted;
-//    }
-
-//    public interface ICortexConstants : IRetinaConstants
-//    {
-//        /// <summary>
-//        ///     Количество миниколонок в зоне коры по оси X
-//        /// </summary>
-//        int CortexWidth { get; }
-
-//        /// <summary>
-//        ///     Количество миниколонок в зоне коры по оси Y
-//        /// </summary>
-//        int CortexHeight { get; }
-
-//        /// <summary>
-//        ///     Ширина основного изображения
-//        /// </summary>
-//        int ImageWidth { get; }
-
-//        /// <summary>
-//        ///     Высота основного изображения
-//        /// </summary>
-//        int ImageHeight { get; }
-
-//        /// <summary>
-//        ///     Количество детекторов, видимых одной миниколонкой
-//        /// </summary>
-//        int MiniColumnVisibleDetectorsCount { get; }               
-
-//        /// <summary>
-//        ///     Длина хэш-вектора
-//        /// </summary>
-//        int HashLength { get; }            
-
-//        /// <summary>
-//        ///     Минимальное число бит в хэше, что бы быть сохраненным в память
-//        /// </summary>
-//        int MinBitsInHashForMemory { get; }            
-
-//        /// <summary>
-//        ///     Верхний предел количества воспоминаний (для кэширования)
-//        /// </summary>
-//        int MemoriesMaxCount { get; }
-//    }
-//}

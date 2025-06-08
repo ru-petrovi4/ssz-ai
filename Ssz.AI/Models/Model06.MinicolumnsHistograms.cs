@@ -14,7 +14,7 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -46,10 +46,10 @@ namespace Ssz.AI.Models
 
             Random random = new();
 
-            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina = new Retina(Constants);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
 
-            Cortex = new Cortex(Constants, Retina);            
+            Cortex = new Cortex_Simplified(Constants, Retina);            
             
             CurrentInputIndex = -1; // Перед первым элементом
 
@@ -70,7 +70,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex Cortex;        
+        public readonly Cortex_Simplified Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -368,7 +368,7 @@ namespace Ssz.AI.Models
             //        });
         }
 
-        private void SetColors_VisualizationTableItems(Cortex cortex)
+        private void SetColors_VisualizationTableItems(Cortex_Simplified cortex)
         {
             Random random = new();
 
@@ -497,7 +497,7 @@ namespace Ssz.AI.Models
             }
         }
 
-        private void SetColors_VisualizationTableItems2(Cortex cortex)
+        private void SetColors_VisualizationTableItems2(Cortex_Simplified cortex)
         {
             Random random = new();            
 
@@ -639,12 +639,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Ширина основного изображения
             /// </summary>
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
+            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
 
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
@@ -678,7 +678,7 @@ namespace Ssz.AI.Models
             ///     Расстояние между детекторами по горизонтали и вертикали
             ///     [0..MNISTImageWidth]
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой

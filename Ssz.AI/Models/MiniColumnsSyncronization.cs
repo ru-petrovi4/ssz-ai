@@ -6,7 +6,7 @@ namespace Ssz.AI.Models
 {
     public static class MiniColumnsSyncronization
     {
-        public static bool TrainSyncronization(Cortex.MiniColumn miniColumn, float[] shortHashConverted)
+        public static bool TrainSyncronization(Cortex_Simplified.MiniColumn miniColumn, float[] shortHashConverted)
         {
             if (miniColumn.Temp_ShortHashConversionMatrix_TrainingCount < 700)
             {

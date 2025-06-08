@@ -12,7 +12,7 @@ using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -45,11 +45,11 @@ namespace Ssz.AI.Models
             Random random = new(1);
 
             //_retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
-            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina = new Retina(Constants);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
             Retina.Prepare();
 
-            Cortex = new Cortex(Constants, Retina);            
+            Cortex = new Cortex_Simplified(Constants, Retina);            
             Cortex.GenerateOwnedData(Retina);
             //Helpers.SerializationHelper.LoadFromFileIfExists(@"autoencoder.bin", Cortex, "autoencoder");
             Cortex.Prepare();
@@ -101,7 +101,7 @@ namespace Ssz.AI.Models
 
         public Retina Retina;
 
-        public Cortex Cortex { get; }
+        public Cortex_Simplified Cortex { get; }
 
         public Image[] GetImages(double positionK, double angleK)
         {
@@ -201,10 +201,6 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {            
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
-
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
-
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
             public double DetectorMinGradientMagnitude => 5;
@@ -232,11 +228,14 @@ namespace Ssz.AI.Models
             /// </summary>
             public int CortexHeight => 200;
 
+            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
+
+            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+
             /// <summary>
-            ///     Расстояние между детекторами по горизонтали и вертикали  
-            ///     [0..MNISTImageWidth]
+            ///     Расстояние между детекторами по горизонтали и вертикали              
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой

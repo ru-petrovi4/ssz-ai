@@ -1,7 +1,7 @@
 ﻿using Ssz.AI.Models;
 using System;
 using System.Drawing;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Grafana
 {

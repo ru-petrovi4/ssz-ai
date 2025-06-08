@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models
 {
-    public class PreCortex : ISerializableModelObject
+    public class Cortex_Simplified2 : ISerializableModelObject
     {
         /// <summary>
         ///     Если задано SubAreaMiniColumnsCount, то генерируется только подмножество миниколонок с центром SubAreaCenter_Cx, SubAreaCenter_Cy и количеством SubAreaMiniColumnsCount
         /// </summary>
         /// <param name="constants"></param>        
-        public PreCortex(
+        public Cortex_Simplified2(
             Model9.ModelConstants constants, 
             Eye leftEye,
             Eye rightEye)
@@ -29,19 +29,19 @@ namespace Ssz.AI.Models
                 Detector detetctor = rightEye.Retina.Detectors.Data[di];
                 DetectorCorrelation detectorCorrelation = new();
 
-                detectorCorrelation.RangeLeftUpperX = detetctor.X - Constants.DependantDetectorsRangeWidthCount / 2;
+                detectorCorrelation.RangeLeftUpperX = detetctor.DetectorX - Constants.DependantDetectorsRangeWidthCount / 2;
                 if (detectorCorrelation.RangeLeftUpperX < 0)
                     detectorCorrelation.RangeLeftUpperX = 0;
 
-                detectorCorrelation.RangeLeftUpperY = detetctor.Y - Constants.DependantDetectorsRangeHeightCount / 2;
+                detectorCorrelation.RangeLeftUpperY = detetctor.DetectorY - Constants.DependantDetectorsRangeHeightCount / 2;
                 if (detectorCorrelation.RangeLeftUpperY < 0)
                     detectorCorrelation.RangeLeftUpperY = 0;
 
-                detectorCorrelation.RangeRightBottomX = detetctor.X + Constants.DependantDetectorsRangeWidthCount / 2;
+                detectorCorrelation.RangeRightBottomX = detetctor.DetectorX + Constants.DependantDetectorsRangeWidthCount / 2;
                 if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.Detectors.Dimensions[0])
                     detectorCorrelation.RangeRightBottomX = leftEye.Retina.Detectors.Dimensions[0];
 
-                detectorCorrelation.RangeRightBottomY = detetctor.Y + Constants.DependantDetectorsRangeHeightCount / 2;
+                detectorCorrelation.RangeRightBottomY = detetctor.DetectorY + Constants.DependantDetectorsRangeHeightCount / 2;
                 if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.Detectors.Dimensions[1])
                     detectorCorrelation.RangeRightBottomY = leftEye.Retina.Detectors.Dimensions[1];
 

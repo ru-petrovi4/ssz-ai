@@ -47,6 +47,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\GeneratedImages11.axaml.cs">
+      <DependentUpon>GeneratedImages11.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\Model11View.axaml.cs">
+      <DependentUpon>Model11View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\Model10View.axaml.cs">
       <DependentUpon>Model10View.axaml</DependentUpon>
     </Compile>
@@ -70,6 +76,12 @@
     </Compile>
     <Compile Update="Views\Model09View.axaml.cs">
       <DependentUpon>Model09View.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\PinwheelGeneratedImage11.axaml.cs">
+      <DependentUpon>PinwheelGeneratedImage11.axaml</DependentUpon>
+    </Compile>
+    <Compile Update="Views\PinwheelGeneratedImage.axaml.cs">
+      <DependentUpon>PinwheelGeneratedImage.axaml</DependentUpon>
     </Compile>
   </ItemGroup>
   

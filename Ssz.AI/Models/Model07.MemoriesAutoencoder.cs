@@ -18,7 +18,7 @@ using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -52,13 +52,13 @@ namespace Ssz.AI.Models
                 //SobelOperator.CalculateDistribution(gm, gradientDistribution);
             }
 
-            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina = new Retina(Constants);
             //Retina.GenerateOwnedData(Constants, gradientDistribution);
             //Helpers.SerializationHelper.SaveToFile("retina.bin", Retina, null);
             Helpers.SerializationHelper.LoadFromFileIfExists("retina.bin", Retina, null);
             Retina.Prepare();
 
-            Cortex = new Cortex(Constants, Retina);
+            Cortex = new Cortex_Simplified(Constants, Retina);
 
             CurrentInputIndex = -1; // Перед первым элементом
 
@@ -86,7 +86,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex Cortex;        
+        public readonly Cortex_Simplified Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -610,11 +610,15 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
+            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
+
+            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали  
             ///     [0..MNISTImageWidth]
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
@@ -628,17 +632,7 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegreeMax { get; set; } = 60;
 
-            public int MagnitudeRangesCount => 4;
-
-            /// <summary>
-            ///     Ширина основного изображения
-            /// </summary>
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
-
-            /// <summary>
-            ///     Высота основного изображения
-            /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;            
+            public int MagnitudeRangesCount => 4;               
 
             public int GeneratedImageWidth => 280;
 

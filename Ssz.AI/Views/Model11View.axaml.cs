@@ -18,16 +18,16 @@ using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Views;
 
-public partial class Model05View : UserControl
+public partial class Model11View : UserControl
 {
-    public Model05View()
+    public Model11View()
     {
         InitializeComponent();
 
         if (Design.IsDesignMode)
             return;
         
-        var constants = new Model05.ModelConstants();
+        var constants = new Model11.ModelConstants();
         SetDataToControls(constants);
 
         LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
@@ -45,13 +45,13 @@ public partial class Model05View : UserControl
         Refresh_ImagesSet2();
     }
 
-    public Model05 Model = null!;
+    public Model11 Model = null!;
 
     private void Reset()
     {
-        var constants = new Model05.ModelConstants();
+        var constants = new Model11.ModelConstants();
         GetDataFromControls(constants);
-        Model = new Model05(constants);
+        Model = new Model11(constants);
         InitializePseudoRandom(); // Pseudorandom
         Model.CurrentInputIndex = -1; // Перед первым элементом              
     }
@@ -61,7 +61,7 @@ public partial class Model05View : UserControl
         _random = new Random(12);
     }
 
-    private void SetDataToControls(Model05.ModelConstants constants)
+    private void SetDataToControls(Model11.ModelConstants constants)
     {
         LevelScrollBar0.Value = constants.K0;
         LevelScrollBar1.Value = constants.K1;
@@ -220,7 +220,7 @@ public partial class Model05View : UserControl
     {
         Window testWindow = new();
 
-        testWindow.Content = new GeneratedImages(this);
+        testWindow.Content = new GeneratedImages11(this);
         
         testWindow.Show((Window)Window.GetTopLevel(this)!);
     }       
@@ -263,7 +263,7 @@ public partial class Model05View : UserControl
     //{
     //    IsEnabled = false;
 
-    //    var constants = new Model05.ModelConstants();
+    //    var constants = new Model11.ModelConstants();
     //    GetDataFromControls(constants);
 
     //    Directory.CreateDirectory($"Data\\Script");
@@ -276,7 +276,7 @@ public partial class Model05View : UserControl
 
     //        constants.K5 = v;
 
-    //        Model = new Model05(constants);
+    //        Model = new Model11(constants);
     //        InitializePseudoRandom();
     //        Model.CurrentInputIndex = -1; // Перед первым элементом 
 
@@ -317,7 +317,7 @@ public partial class Model05View : UserControl
     {
         IsEnabled = false;
 
-        var constants = new Model05.ModelConstants();
+        var constants = new Model11.ModelConstants();
         GetDataFromControls(constants);
 
         Directory.CreateDirectory($"Data\\Script");
@@ -341,7 +341,7 @@ public partial class Model05View : UserControl
                                 constants.NegativeK[2] = nk2;
                                 constants.NegativeK[3] = nk3;
 
-                                Model = new Model05(constants);
+                                Model = new Model11(constants);
                                 InitializePseudoRandom();
                                 Model.CurrentInputIndex = -1; // Перед первым элементом 
 

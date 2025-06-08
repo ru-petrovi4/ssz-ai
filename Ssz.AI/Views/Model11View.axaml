@@ -1,0 +1,148 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:local="clr-namespace:Ssz.AI"
+			 xmlns:localViews="clr-namespace:Ssz.AI.Views"			 
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"			 
+             x:Class="Ssz.AI.Views.Model11View">
+	<Grid>
+    <Grid.Styles>
+      <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="8"/>        
+      </Style>
+    </Grid.Styles>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="auto" />
+			<RowDefinition Height="*" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+			<RowDefinition Height="*" />      
+		</Grid.RowDefinitions>
+		
+		<StackPanel Orientation="Horizontal">
+			<Button Content="Reset" Click="ResetButton_OnClick" />
+			<Button Content="1 Step Back" Click="Back1Button_OnClick" />
+			<Button Content="GeneratePinwheel" Click="GeneratePinwheel_OnClick" />
+      <Button Content="GeneratePinwheel2" Click="GeneratePinwheel2_OnClick" />
+			<Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />
+      <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
+			<Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
+			<Button Content="Reorder Memories (Sleep)" Click="ReorderMemoriesButton_OnClick" />
+			<Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />
+			<Button Content="Process Memory" Click="ProcessMemoryButton_OnClick" />
+			<Button Content="Потоп!" Click="FloodButton_OnClick" />			
+			<Button Content="Show Test Window" Click="ShowTestWindowButton_OnClick" />
+      <CheckBox Name="SuperactivityThreshold" Content="Порог на суперактивность" Click="SuperactivityThreshold_OnClick" />
+      <Button Content="Do Script" Click="DoScript_OnClick" />
+		</StackPanel>
+
+		<Grid Grid.Row="1">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+      </Grid.RowDefinitions>
+			<TextBlock Text="Смещение (пиксели):" />
+			<TextBlock Name="PositionTextBlock" Grid.Column="1" />
+			<ScrollBar Name="PositionScrollBar" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" ValueChanged="PositionScrollBar_OnValueChanged" />
+			<TextBlock Text="Угол (градусы):" Grid.Row="1" />
+			<TextBlock Name="AngleTextBlock" Grid.Row="1" Grid.Column="1" />
+			<ScrollBar Name="AngleScrollBar" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="360" ValueChanged="AngleScrollBar_OnValueChanged" />
+			<TextBlock Text="Косинусное расстояние:" Grid.Row="2" />
+			<TextBlock Name="ScalarProductTextBlock" Grid.Row="2" Grid.Column="1" />
+		</Grid>
+
+		<localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+
+    <Grid Grid.Row="3">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="auto" />        
+        <ColumnDefinition Width="*" />        
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="100" />
+        <RowDefinition Height="100" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Text="Притяжение:" />      
+      <local:Sliders Name="PositiveSliders" Grid.Column="1" />
+      <TextBlock Text="Отталкивание:" Grid.Row="1" Grid.Column="0" />      
+      <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
+    </Grid>
+		
+		<Grid Grid.Row="4">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="200" />
+				<ColumnDefinition Width="*" />
+			</Grid.ColumnDefinitions>
+			<Grid.RowDefinitions>				
+				<RowDefinition Height="0" />
+				<RowDefinition Height="0" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+				<RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />        
+			</Grid.RowDefinitions>
+			
+			<TextBlock Text="Нулевой уровень активности:" Grid.Row="2" />
+			<TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <TextBlock Text="Порог для учета активности соседей:" Grid.Row="3" />
+			<TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <TextBlock Text="Активность пустой колонки:" Grid.Row="4" />
+		  <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />      
+      <TextBlock Text="Порог суперактивности:" Grid.Row="6" />
+      <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="6" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
+      <TextBlock Text="Коэффициент диапазона угла" Grid.Row="7" />
+      <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="7" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar5" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />
+      
+      <TextBlock Text="Сигма позитивной значимости соседей:" Grid.Row="8" />
+			<TextBlock Text="{Binding #LevelScrollBar30.Value}" Grid.Row="8" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar30" Grid.Row="8" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="5" />
+    
+      <TextBlock Text="Сигма негативной значимости соседей:" Grid.Row="9" />
+			<TextBlock Text="{Binding #LevelScrollBar31.Value}" Grid.Row="9" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar31" Grid.Row="9" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="5" />
+
+      <!--
+      <TextBlock Text="K значимости соседей 3:" Grid.Row="10" />
+			<TextBlock Text="{Binding #LevelScrollBar32.Value}" Grid.Row="10" Grid.Column="1" />
+			<ScrollBar Name="LevelScrollBar32" Grid.Row="10" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="1" />
+      -->
+    </Grid>
+
+		<localViews:ImagesSet Grid.Row="5" Name="ImagesSet2" />			
+		<!--
+		<StackPanel Name="StackPanel3" Grid.Row="5" Orientation="Horizontal"></StackPanel>-->
+	</Grid>	
+</UserControl>
+

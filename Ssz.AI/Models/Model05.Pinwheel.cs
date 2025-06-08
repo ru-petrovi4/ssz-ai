@@ -21,7 +21,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -31,7 +31,7 @@ namespace Ssz.AI.Models
         #region construction and destruction
 
         /// <summary>
-        ///     Построение "вертушки"
+        ///     Построение "вертушки" на искуственных данных
         /// </summary>
         public Model05(ModelConstants constants)
         {
@@ -62,7 +62,7 @@ namespace Ssz.AI.Models
             Random random = new(6);
             var t = sw.ElapsedMilliseconds;
 
-            MonoInput = new MonoInput();
+            MonoInput = new MonoInput_Simplified();
             MonoInput.GenerateOwnedData_Simplified2(
                 random,
                 Constants,
@@ -74,7 +74,7 @@ namespace Ssz.AI.Models
             //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);                  
 
             bool generateRetina = true;
-            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina = new Retina(Constants);
             if (generateRetina)
                 Retina.GenerateOwnedData(random, Constants, gradientDistribution);
             if (!generateRetina)
@@ -83,7 +83,7 @@ namespace Ssz.AI.Models
             if (generateRetina)
                 SerializationHelper.SaveToFile("Retina.bin", Retina, null);            
 
-            Cortex = new Cortex(Constants, Retina);
+            Cortex = new Cortex_Simplified(Constants, Retina);
             Cortex.GenerateOwnedData(Retina);
             Cortex.Prepare();            
 
@@ -111,7 +111,7 @@ namespace Ssz.AI.Models
 
         public readonly ModelConstants Constants;        
 
-        public MonoInput MonoInput { get; set; } = null!;
+        public MonoInput_Simplified MonoInput { get; set; } = null!;
 
         public ActivitiyMaxInfo Temp_ActivitiyMaxInfo { get; } = new();        
 
@@ -122,7 +122,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex Cortex;        
+        public readonly Cortex_Simplified Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -330,7 +330,7 @@ namespace Ssz.AI.Models
                 gradientBitmap,
                 (int)(Cortex.CenterMiniColumn!.CenterX * 10),
                 (int)(Cortex.CenterMiniColumn!.CenterY * 10),
-                (int)(Cortex.DetectorsVisibleRadius * 10));
+                (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
             var activatedDetectors = Cortex.SubArea_Detectors.Where(d => d.Temp_IsActivated).ToList();
             var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
@@ -1181,7 +1181,7 @@ namespace Ssz.AI.Models
             return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
         }
 
-        private float GetPinwheelIndex(Cortex.MiniColumn centerMiniColumn)
+        private float GetPinwheelIndex(Cortex_Simplified.MiniColumn centerMiniColumn)
         {
             float pinwheelIndex = 0.0f;
             for (int dx = -2; dx <= 2; dx += 1)
@@ -1244,16 +1244,6 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
-            /// <summary>
-            ///     Ширина основного изображения
-            /// </summary>
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
-
-            /// <summary>
-            ///     Высота основного изображения
-            /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;            
-
             public double DetectorMinGradientMagnitude => 5;
 
             public int GeneratedMinGradientMagnitude => 5;
@@ -1286,11 +1276,14 @@ namespace Ssz.AI.Models
             /// </summary>
             public int CortexHeight => 200;
 
+            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
+
+            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+
             /// <summary>
-            ///     Расстояние между детекторами по горизонтали и вертикали 
-            ///     [0..MNISTImageWidth]
+            ///     Расстояние между детекторами по горизонтали и вертикали             
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой

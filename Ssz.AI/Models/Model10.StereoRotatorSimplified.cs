@@ -19,7 +19,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Ude.Core;
-using static Ssz.AI.Models.Cortex;
+using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
 namespace Ssz.AI.Models
@@ -46,7 +46,7 @@ namespace Ssz.AI.Models
             Random random = new(6);
             var t = sw.ElapsedMilliseconds;
 
-            MonoInput = new MonoInput();
+            MonoInput = new MonoInput_Simplified();
             MonoInput.GenerateOwnedData_Simplified_WithAngle(
                 random,
                 Constants,                
@@ -57,13 +57,13 @@ namespace Ssz.AI.Models
             MonoInput.Prepare();
             //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);             
 
-            Retina = new Retina(Constants, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
+            Retina = new Retina(Constants);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
             //SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
             Retina.Prepare();
             //SerializationHelper.SaveToFile("Retina.bin", Retina, null);
 
-            Cortex = new Cortex(Constants, Retina);
+            Cortex = new Cortex_Simplified(Constants, Retina);
             Cortex.GenerateOwnedData(Retina);
             Cortex.Prepare();
 
@@ -80,7 +80,7 @@ namespace Ssz.AI.Models
 
         public readonly ModelConstants Constants = new();        
 
-        public MonoInput MonoInput { get; set; } = null!;
+        public MonoInput_Simplified MonoInput { get; set; } = null!;
 
         public ActivitiyMaxInfo Temp_ActivitiyMaxInfo { get; } = new();        
 
@@ -91,7 +91,7 @@ namespace Ssz.AI.Models
 
         public readonly Retina Retina;
 
-        public readonly Cortex Cortex;        
+        public readonly Cortex_Simplified Cortex;        
 
         public int Generated_CenterX { get; set; }
         public int Generated_CenterXDelta { get; set; }
@@ -127,7 +127,7 @@ namespace Ssz.AI.Models
 
         public void Flood(Random random, float floodRadius)
         {
-            Cortex.MiniColumn maxMemoryMiniColumn = Cortex.CenterMiniColumn!;
+            Cortex_Simplified.MiniColumn maxMemoryMiniColumn = Cortex.CenterMiniColumn!;
             foreach (int mcy in Enumerable.Range(0, Cortex.MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, Cortex.MiniColumns.Dimensions[0]))
                 {
@@ -225,7 +225,7 @@ namespace Ssz.AI.Models
                 gradientBitmap,
                 (int)(Cortex.CenterMiniColumn!.CenterX * 10),
                 (int)(Cortex.CenterMiniColumn!.CenterY * 10),
-                (int)(Cortex.DetectorsVisibleRadius * 10));
+                (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
             var detectorsActivationBitmap = Visualisation.GetBitmap(Cortex.SubArea_Detectors.Where(d => d.Temp_IsActivated).ToList());
 
@@ -849,12 +849,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Ширина основного изображения
             /// </summary>
-            public int ImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
+            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
 
             /// <summary>
             ///     Высота основного изображения
             /// </summary>
-            public int ImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 1200;
 
@@ -888,7 +888,7 @@ namespace Ssz.AI.Models
             ///     Расстояние между детекторами по горизонтали и вертикали 
             ///     [0..MNISTImageWidth]
             /// </summary>
-            public double DetectorDelta => 0.1;
+            public float RetinaDetectorsDeltaPixels => 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
