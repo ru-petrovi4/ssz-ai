@@ -1248,17 +1248,7 @@ namespace Ssz.AI.Models
 
             public int GeneratedMinGradientMagnitude => 5;
 
-            public int GeneratedMaxGradientMagnitude => 1200;
-
-            /// <summary>
-            ///     (не используется)
-            /// </summary>
-            public int AngleRangeDegreeMin { get; set; } = 90;
-
-            /// <summary>
-            ///     (не используется)
-            /// </summary>
-            public int AngleRangeDegreeMax { get; set; } = 365;
+            public int GeneratedMaxGradientMagnitude => 1200;            
 
             public int MagnitudeRangesCount => 3;
 

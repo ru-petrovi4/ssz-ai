@@ -58,7 +58,7 @@ public partial class Model05View : UserControl
 
     private void InitializePseudoRandom()
     {
-        _random = new Random(12);
+        _random = new Random(10);
     }
 
     private void SetDataToControls(Model05.ModelConstants constants)
