@@ -200,7 +200,7 @@ public partial class Model11View : UserControl
 
     private void ProcessMemoryButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.DoStep_Memory(_random);
+        //Model.DoStep_Memory(_random);
 
         Refresh_ImagesSet2();
     }

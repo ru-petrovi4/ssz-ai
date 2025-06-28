@@ -1,4 +1,5 @@
-﻿using Avalonia.Layout;
+﻿using Avalonia;
+using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
@@ -220,7 +221,7 @@ namespace Ssz.AI.Models
 
             DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
-            dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution = new ulong[Constants.CortexWidth, Constants.CortexHeight, Constants.HashLength];
+            dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution = new ulong[Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns, Constants.HashLength];
 
             foreach (var _ in Enumerable.Range(0, stepsCount))
             {
@@ -636,15 +637,7 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
-            /// <summary>
-            ///     Ширина основного изображения
-            /// </summary>
-            public int RetinaImageWidthPixels => MNISTHelper.MNISTImageWidthPixels;
-
-            /// <summary>
-            ///     Высота основного изображения
-            /// </summary>
-            public int RetinaImageHeightPixels => MNISTHelper.MNISTImageHeightPixels;
+            public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
@@ -667,18 +660,18 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси X
             /// </summary>
-            public int CortexWidth => 200;
+            public int CortexWidth_MiniColumns => 200;
 
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси Y
             /// </summary>
-            public int CortexHeight => 200;
+            public int CortexHeight_MiniColumns => 200;
 
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали
             ///     [0..MNISTImageWidth]
             /// </summary>
-            public float RetinaDetectorsDeltaPixels => 0.1f;
+            public float RetinaDetectorsDeltaPixels { get; set; } = 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
@@ -690,17 +683,29 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => null;
+            public float? CalculationsSubAreaRadius_MiniColumns => null;
 
             /// <summary>
-            ///     Индекс X центра подобласти [0..CortexWidth]
+            ///     Примерный радиус гиперколонки (измеренный в миниколонках).
             /// </summary>
-            public int SubAreaCenter_Cx => 100;
+            public float HyperColumnSupposedRadius_MiniColumns => 10;
+
+            public float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns => 10;
+
+			/// <summary>
+			///     Количество гиперколнок в рецептивном поле миниколонки.
+			/// </summary>
+			public float DetectorsField_HyperColumns => 10;
+
+			/// <summary>
+			///     Индекс X центра подобласти [0..CortexWidth]
+			/// </summary>
+			public int CalculationsSubAreaCenter_Cx => 100;
 
             /// <summary>
             ///     Индекс Y центра подобласти [0..CortexHeight]
             /// </summary>
-            public int SubAreaCenter_Cy => 100;           
+            public int CalculationsSubAreaCenter_Cy => 100;           
 
             /// <summary>
             ///     Количество бит в хэше в первоначальном случайном воспоминании миниколонки.
@@ -715,7 +720,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public float MiniColumnsMaxDistance => 7;
+            public float SuperActivityRadius_MiniColumns => 7;
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

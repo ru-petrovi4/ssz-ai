@@ -52,22 +52,33 @@ namespace Ssz.AI.Helpers
         //    return (byte)interpolatedValue;
         //}
 
-        //public static Bitmap ConvertImageDataToBitmap(byte[] imageData, int width, int height)
-        //{
-        //    Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
+        public static Bitmap ConvertImageDataToBitmap(byte[] imageData, int width, int height)
+        {
+            Bitmap bitmap = new Bitmap(width, height);
 
-        //    // Create a BitmapData and lock all pixels to be written 
-        //    BitmapData bitmapData = bitmap.LockBits(
-        //                        new Rectangle(0, 0, bitmap.Width, bitmap.Height),
-        //                        ImageLockMode.WriteOnly, bitmap.PixelFormat);
-        //    // Copy the data from the byte array into BitmapData.Scan0
-        //    Marshal.Copy(imageData, 0, bitmapData.Scan0, imageData.Length);
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    byte pixelValue = imageData[x + y * width];
+                    bitmap.SetPixel(x, y, Color.FromArgb(pixelValue, pixelValue, pixelValue));
+                }
+            }
 
-        //    // Unlock the pixels
-        //    bitmap.UnlockBits(bitmapData);
+            //Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppRgb);
 
-        //    return bitmap;
-        //}               
+            //// Create a BitmapData and lock all pixels to be written 
+            //BitmapData bitmapData = bitmap.LockBits(
+            //                    new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+            //                    ImageLockMode.WriteOnly, bitmap.PixelFormat);
+            //// Copy the data from the byte array into BitmapData.Scan0
+            //Marshal.Copy(imageData, 0, bitmapData.Scan0, imageData.Length);
+
+            //// Unlock the pixels
+            //bitmap.UnlockBits(bitmapData);
+
+            return bitmap;
+        }
 
         public static Avalonia.Media.Imaging.Bitmap ConvertImageToAvaloniaBitmap(Image image)
         {
@@ -97,8 +108,12 @@ namespace Ssz.AI.Helpers
             // Проходим по каждому пикселю и устанавливаем его в Bitmap
             for (int y = (int)(centerY - radius); y < (int)(centerY + radius); y += 1)
             {
+                if (y < 0 || y >= bitmap.Height)
+                    continue;
                 for (int x = (int)(centerX - radius); x < (int)(centerX + radius); x += 1)
                 {
+                    if (x < 0 || x >= bitmap.Width)
+                        continue;
                     var r = Math.Sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
                     if (r > radius)
                     {

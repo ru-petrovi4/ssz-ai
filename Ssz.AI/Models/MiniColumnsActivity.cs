@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Tensors;
-using static Ssz.AI.Models.Cortex_Simplified;
 
 namespace Ssz.AI.Models
 {
@@ -10,14 +9,12 @@ namespace Ssz.AI.Models
     {
         /// <summary>
         ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), общая активность
+        ///     Всегда не NaN
         /// </summary>
         /// <param name="hash"></param>
         /// <returns></returns>
         public static (float, float, int) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, IConstants constants)
         {
-            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
-                return (float.NaN, float.NaN, 0);
-
             float positiveActivity = 0.0f;
             int positiveMemoriesCount = 0;
             float negativeActivity = 0.0f;
@@ -30,11 +27,7 @@ namespace Ssz.AI.Models
                     continue;
 
                 float memoryCosineSimilarity = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
-                if (float.IsNaN(memoryCosineSimilarity))
-                    throw new Exception();
-
-                //memoryCosineSimilarity = memoryCosineSimilarity * memoryCosineSimilarity;                
-                if (memoryCosineSimilarity > constants.K1)
+                //if (memoryCosineSimilarity > constants.K1)
                 {
                     float activity = memoryCosineSimilarity - constants.K0;
                     if (activity >= 0)
@@ -60,10 +53,7 @@ namespace Ssz.AI.Models
         }
 
         public static float GetSuperActivity(Cortex.MiniColumn miniColumn, IConstants constants)
-        {
-            if (float.IsNaN(miniColumn.Temp_Activity.Item3))
-                return float.NaN;
-
+        {            
             float superActivity;
 
             if (miniColumn.Temp_Activity.Item3 > 0)
@@ -73,11 +63,7 @@ namespace Ssz.AI.Models
 
             foreach (var it in miniColumn.K_ForNearestMiniColumns)
             {
-                var nearestMiniColumn = it.Item3;
-
-                if (float.IsNaN(nearestMiniColumn.Temp_Activity.Item1) ||
-                        float.IsNaN(nearestMiniColumn.Temp_Activity.Item2))
-                    continue;
+                var nearestMiniColumn = it.Item3;                
 
                 if (nearestMiniColumn.Temp_Activity.Item3 > 0)
                     superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item1 +

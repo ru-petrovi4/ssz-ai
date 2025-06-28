@@ -1,15 +1,21 @@
-﻿namespace Ssz.AI.Models
+﻿using Avalonia;
+using System;
+
+namespace Ssz.AI.Models
 {
     public interface IConstants
     {
-        int RetinaImageWidthPixels { get; }
-
-        int RetinaImageHeightPixels { get; }
+        PixelSize RetinaImagePixelSize { get; set; }
 
         /// <summary>
         ///     Расстояние между детекторами по горизонтали и вертикали              
         /// </summary>
-        float RetinaDetectorsDeltaPixels { get; }        
+        float RetinaDetectorsDeltaPixels { get; set; }
+
+        /// <summary>
+        ///     Количество детекторов, видимых одной миниколонкой
+        /// </summary>
+        int MiniColumnVisibleDetectorsCount { get; }
 
         /// <summary>
         ///     Минимальная чувствительность к модулю градиента
@@ -25,32 +31,46 @@
         /// <summary>
         ///     Количество миниколонок в зоне коры по оси X
         /// </summary>
-        int CortexWidth { get; }
+        int CortexWidth_MiniColumns { get; }
 
         /// <summary>
         ///     Количество миниколонок в зоне коры по оси Y
         /// </summary>
-        int CortexHeight { get; }
-
-        /// <summary>
-        ///     Количество детекторов, видимых одной миниколонкой
-        /// </summary>
-        int MiniColumnVisibleDetectorsCount { get; }
+        int CortexHeight_MiniColumns { get; }        
 
         /// <summary>
         ///     Количество миниколонок в подобласти
         /// </summary>
-        int? SubAreaMiniColumnsCount { get; }
+        float? CalculationsSubAreaRadius_MiniColumns { get; }
+
+        int CalculationsSubArea_MiniColumns_Count => (int)(MathF.PI * CalculationsSubAreaRadius_MiniColumns!.Value * CalculationsSubAreaRadius_MiniColumns.Value);
 
         /// <summary>
         ///     Индекс X центра подобласти
         /// </summary>
-        int SubAreaCenter_Cx { get; }
+        int CalculationsSubAreaCenter_Cx { get; }
 
         /// <summary>
         ///     Индекс Y центра подобласти
         /// </summary>
-        int SubAreaCenter_Cy { get; }
+        int CalculationsSubAreaCenter_Cy { get; }
+
+        /// <summary>
+        ///     Примерный радиус гиперколонки (измеренный в миниколонках).
+        /// </summary>
+        float HyperColumnSupposedRadius_MiniColumns { get; }
+
+        float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns { get; }
+
+        /// <summary>
+        ///     Количество гиперколнок в рецептивном поле миниколонки.
+        /// </summary>
+        float DetectorsField_HyperColumns { get; }
+
+        /// <summary>
+        ///     Максимальное расстояние до ближайших миниколонок, при подсчете суперактивности
+        /// </summary>
+        float SuperActivityRadius_MiniColumns { get; }        
 
         /// <summary>
         ///     Длина хэш-вектора
@@ -70,12 +90,7 @@
         /// <summary>
         ///     Минимальное число бит в хэше, что бы быть сохраненным в память
         /// </summary>
-        int MinBitsInHashForMemory { get; }
-
-        /// <summary>
-        ///     Максимальное расстояние до ближайших миниколонок
-        /// </summary>
-        float MiniColumnsMaxDistance { get; }
+        int MinBitsInHashForMemory { get; }        
 
         /// <summary>
         ///     Верхний предел количества воспоминаний (для кэширования)

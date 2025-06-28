@@ -47,7 +47,7 @@ namespace Ssz.AI.Models
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];            
+            MonoInputItems = new MonoInputItem[images.Length + constants.CalculationsSubAreaRadius_MiniColumns is not null ? constants.CalculationsSubArea_MiniColumns_Count : 0];            
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 MonoInputItem monoInputItem = new();                
@@ -87,7 +87,7 @@ namespace Ssz.AI.Models
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
+            MonoInputItems = new MonoInputItem[images.Length + constants.CalculationsSubAreaRadius_MiniColumns is not null ? constants.CalculationsSubArea_MiniColumns_Count : 0];
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 MonoInputItem monoInputItem = new();
@@ -128,8 +128,8 @@ namespace Ssz.AI.Models
         {
             Labels = labels;
             Images = images;
-            if (constants.SubAreaMiniColumnsCount is not null)
-                MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount.Value + 10]; // С запасом
+            if (constants.CalculationsSubAreaRadius_MiniColumns is not null)
+                MonoInputItems = new MonoInputItem[images.Length + constants.CalculationsSubArea_MiniColumns_Count + 10]; // С запасом
             else
                 MonoInputItems = new MonoInputItem[images.Length];
             foreach (int i in Enumerable.Range(0, images.Length))
@@ -178,7 +178,7 @@ namespace Ssz.AI.Models
         {
             Labels = labels;
             Images = images;
-            MonoInputItems = new MonoInputItem[images.Length + constants.SubAreaMiniColumnsCount ?? 0];
+            MonoInputItems = new MonoInputItem[images.Length + constants.CalculationsSubAreaRadius_MiniColumns is not null ? constants.CalculationsSubArea_MiniColumns_Count : 0];
             foreach (int i in Enumerable.Range(0, images.Length))
             {
                 // Вычисляем магнитуду и угол градиента

@@ -20,8 +20,8 @@ namespace Ssz.AI.Models
         public Retina(IConstants constants)
         {  
             Detectors = new DenseMatrix<Detector>(
-                (int)Math.Round(constants.RetinaImageWidthPixels / constants.RetinaDetectorsDeltaPixels, 0), 
-                (int)Math.Round(constants.RetinaImageHeightPixels / constants.RetinaDetectorsDeltaPixels, 0));
+                (int)Math.Round(constants.RetinaImagePixelSize.Width / constants.RetinaDetectorsDeltaPixels, 0), 
+                (int)Math.Round(constants.RetinaImagePixelSize.Height / constants.RetinaDetectorsDeltaPixels, 0));
             foreach (int detectorY in Enumerable.Range(0, Detectors.Dimensions[1]))
                 foreach (int detectorX in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
@@ -59,7 +59,7 @@ namespace Ssz.AI.Models
 
             DetectorsRanges = new DenseMatrix<DetectorRange>(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);                                  
 
-            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / MathF.Sqrt(constants.SubAreaMiniColumnsCount!.Value / MathF.PI);
+            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / constants.HyperColumnSupposedRadius_MiniColumns;
 
             //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
             //float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;

@@ -54,7 +54,7 @@ namespace Ssz.AI.Models
             GradientDistribution leftEye_GradientDistribution = new();
             GradientDistribution rightEye_GradientDistribution = new();
 
-            StereoInput = new StereoInput(inputImagesSize);
+            StereoInput = new StereoInput();
             //StereoInput.GenerateOwnedData(
             //    random,
             //    Constants,
@@ -128,8 +128,8 @@ namespace Ssz.AI.Models
             //var temp_LeftEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, LeftEye);
             //var temp_RightEye_Image = StereoInput.GetEyeImageData(Constants, image, StereoInput.InputImagesSize, imageNormalDirection, RightEye);
 
-            //return [ MNISTHelper.GetBitmap(temp_LeftEye_Image, Constants.RetinaImageWidthPixels, Constants.RetinaImageHeightPixels),
-            //    MNISTHelper.GetBitmap(temp_RightEye_Image, Constants.RetinaImageWidthPixels, Constants.RetinaImageHeightPixels) ];
+            //return [ MNISTHelper.GetBitmap(temp_LeftEye_Image, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height),
+            //    MNISTHelper.GetBitmap(temp_RightEye_Image, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height) ];
 
             return [];
         }        
@@ -164,8 +164,8 @@ namespace Ssz.AI.Models
 
         private Eye CreateEye(Vector3DFloat pupil)
         {
-            float kX = (float)Constants.RetinaImageWidthPixels / (float)MNISTHelper.MNISTImageWidthPixels;
-            float kY = (float)Constants.RetinaImageHeightPixels / (float)MNISTHelper.MNISTImageHeightPixels;
+            float kX = (float)Constants.RetinaImagePixelSize.Width / (float)MNISTHelper.MNISTImageWidthPixels;
+            float kY = (float)Constants.RetinaImagePixelSize.Height / (float)MNISTHelper.MNISTImageHeightPixels;
             Eye eye = new();
             eye.Pupil = pupil;            
             eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
@@ -180,14 +180,12 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
-            public int RetinaImageWidthPixels => 320;
-
-            public int RetinaImageHeightPixels => 320;
+            public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(320, 320);
 
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали              
             /// </summary>
-            public float RetinaDetectorsDeltaPixels => 0.1f;
+            public float RetinaDetectorsDeltaPixels { get; set; } = 0.1f;
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
@@ -210,12 +208,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси X
             /// </summary>
-            public int CortexWidth => 200;
+            public int CortexWidth_MiniColumns => 200;
 
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси Y
             /// </summary>
-            public int CortexHeight => 200;
+            public int CortexHeight_MiniColumns => 200;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
@@ -241,22 +239,34 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в подобласти
             /// </summary>
-            public int? SubAreaMiniColumnsCount => 400;
+            public float? CalculationsSubAreaRadius_MiniColumns => 10;
 
             /// <summary>
-            ///     Индекс X центра подобласти [0..CortexWidth]
+            ///     Примерный радиус гиперколонки (измеренный в миниколонках).
             /// </summary>
-            public int SubAreaCenter_Cx => 100;
+            public float HyperColumnSupposedRadius_MiniColumns => 10;
+
+            public float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns => 10;
+
+			/// <summary>
+			///     Количество гиперколнок в рецептивном поле миниколонки.
+			/// </summary>
+			public float DetectorsField_HyperColumns => 10;
+
+			/// <summary>
+			///     Индекс X центра подобласти [0..CortexWidth]
+			/// </summary>
+			public int CalculationsSubAreaCenter_Cx => 100;
 
             /// <summary>
             ///     Индекс Y центра подобласти [0..CortexHeight]
             /// </summary>
-            public int SubAreaCenter_Cy => 100;
+            public int CalculationsSubAreaCenter_Cy => 100;
 
             /// <summary>
             ///     Максимальное расстояние до ближайших миниколонок
             /// </summary>
-            public float MiniColumnsMaxDistance => 1;
+            public float SuperActivityRadius_MiniColumns => 1;
 
             public float DistanceBetweenEyes => 0.064f;
 

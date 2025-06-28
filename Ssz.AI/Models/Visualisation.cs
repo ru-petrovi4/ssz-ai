@@ -106,6 +106,26 @@ namespace Ssz.AI.Models
             return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
         }
 
+        public static Bitmap GetBitmap(IEnumerable<Detector> activatedDetectors, int widthPixels, int heightPixels)
+        {
+            Bitmap bitmap = new Bitmap(widthPixels, heightPixels);
+
+            for (int y = 0; y < heightPixels; y += 1)
+            {
+                for (int x = 0; x < widthPixels; x += 1)
+                {
+                    bitmap.SetPixel(x, y, Color.Black);
+                }
+            }
+
+            foreach (var detector in activatedDetectors)
+            {
+                bitmap.SetPixel((int)detector.CenterXPixels, (int)detector.CenterYPixels, Color.FromArgb(255, 200, 200, 200));
+            }
+
+            return bitmap;
+        }
+
         public static Bitmap GetBitmap(List<Detector> activatedDetectors)
         {
             int width = MNISTHelper.MNISTImageWidthPixels * 10;
