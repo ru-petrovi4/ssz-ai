@@ -1,4 +1,5 @@
 ﻿//#define CALC_BITS_COUNT_IN_HASH_HISTOGRAM
+#define GENERATE_INPUT_DATA
 
 using Avalonia;
 using Avalonia.Layout;
@@ -42,7 +43,7 @@ namespace Ssz.AI.Models
             float detectorsFieldsWidthCount = (hyperColumnsWidthCount / constants.DetectorsField_HyperColumns) + 1.0f;
             float imageRadiusDegrees = 4.0f;                        
 
-            Rect2DFloat subImageRect = new Rect2DFloat(x: 0.4f, y: 0.4f, width: 0.2f, height: 0.2f);
+            Rect2DFloat subImageRect = new Rect2DFloat(x: 0.45f, y: 0.45f, width: 0.1f, height: 0.1f);
             constants.RetinaImagePixelSize = new PixelSize((int)(200 * subImageRect.Width), (int)(200 * subImageRect.Height));
 
             float minicolumnFieldRadiusPixels = constants.RetinaImagePixelSize.Width / (detectorsFieldsWidthCount * 2.0f);
@@ -67,10 +68,12 @@ namespace Ssz.AI.Models
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            //(byte[] inputImagesLabels, byte[][] inputImageDatas, PixelSize inputImagesSize) = MNIST_Ex_Helper.ReadMNISTEx(
-            //    labelsPath: @"Data\WriterInfo.npy",
-            //    imagesPath: @"Data\Images(500x500).npy"
-            //    );
+#if GENERATE_INPUT_DATA
+            (byte[] inputImagesLabels, byte[][] inputImageDatas, PixelSize inputImagesSize) = MNIST_Ex_Helper.ReadMNISTEx(
+                labelsPath: @"Data\WriterInfo.npy",
+                imagesPath: @"Data\Images(500x500).npy"
+                );
+#endif
 
             Random initializationRandom = new(6);
             var t = sw.ElapsedMilliseconds;
@@ -82,19 +85,24 @@ namespace Ssz.AI.Models
             GradientDistribution rightEye_GradientDistribution = new();
 
             StereoInput = new StereoInput();
-            //StereoInput.GenerateOwnedData(
-            //    inputImagesSize
-            //    initializationRandom,
-            //    Constants,
-            //    leftEye_GradientDistribution,
-            //    rightEye_GradientDistribution,
-            //    inputImagesLabels,
-            //    inputImageDatas,
-            //    LeftEye,
-            //    RightEye);
+#if GENERATE_INPUT_DATA
+            StereoInput.GenerateOwnedData(
+                inputImagesSize,
+                initializationRandom,
+                Constants,
+                leftEye_GradientDistribution,
+                rightEye_GradientDistribution,
+                inputImagesLabels,
+                inputImageDatas,
+                LeftEye,
+                RightEye);
+#else
             Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
+#endif
             StereoInput.Prepare();
-            //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
+#if GENERATE_INPUT_DATA
+            Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
+#endif
 
             LeftEye.Retina = new Retina(Constants);
             LeftEye.Retina.GenerateOwnedData(initializationRandom, Constants, leftEye_GradientDistribution);            
@@ -1187,12 +1195,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси X
             /// </summary>
-            public int CortexWidth_MiniColumns => 200;
+            public int CortexWidth_MiniColumns => 20;
 
             /// <summary>
             ///     Количество миниколонок в зоне коры по оси Y
             /// </summary>
-            public int CortexHeight_MiniColumns => 200;
+            public int CortexHeight_MiniColumns => 20;
 
             public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(200, 200);
 
