@@ -33,6 +33,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TensorFlow.NET", "TensorFlo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ssz.AI.Tests", "Ssz.AI.Tests\Ssz.AI.Tests.csproj", "{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EPPlus", "..\Ssz.Utils\ThirdParties\EPPlus\EPPlus.csproj", "{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -83,6 +85,10 @@ Global
 		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Debug|x64.Build.0 = Debug|Any CPU
 		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Release|x64.ActiveCfg = Release|Any CPU
 		{2DBAF327-01CB-7F4E-DEB1-D0208397BE24}.Release|x64.Build.0 = Release|Any CPU
+		{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA}.Debug|x64.Build.0 = Debug|Any CPU
+		{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA}.Release|x64.ActiveCfg = Release|Any CPU
+		{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -98,6 +104,7 @@ Global
 		{E19FC393-9B92-3290-9B61-C02907951A13} = {DEAC9A7A-41BF-4CF3-898F-D6FD5FE1920C}
 		{74C27639-8EAA-848F-E272-C395A2699C1A} = {DEAC9A7A-41BF-4CF3-898F-D6FD5FE1920C}
 		{DEAC9A7A-41BF-4CF3-898F-D6FD5FE1920C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{7CBB83C5-2D30-8282-BFA6-A14A1E8674BA} = {00166DC2-181F-4D2F-A649-2C78EF03F8F6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8C0F748A-8AAA-4928-8C5F-A38D96107B53}

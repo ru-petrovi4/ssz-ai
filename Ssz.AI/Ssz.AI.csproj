@@ -47,6 +47,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\AdvancedEmbeddingViews\ModelView.axaml.cs">
+      <DependentUpon>ModelView.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\GeneratedImages11.axaml.cs">
       <DependentUpon>GeneratedImages11.axaml</DependentUpon>
     </Compile>
@@ -83,6 +86,6 @@
     <Compile Update="Views\PinwheelGeneratedImage.axaml.cs">
       <DependentUpon>PinwheelGeneratedImage.axaml</DependentUpon>
     </Compile>
-  </ItemGroup>
+  </ItemGroup>  
   
 </Project>

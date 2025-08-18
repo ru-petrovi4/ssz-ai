@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Ssz.AI.Grafana;
 using Avalonia.Rendering.Composition.Animations;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Ssz.AI
 {
@@ -27,7 +28,7 @@ namespace Ssz.AI
         {
             Host = CreateHostBuilder(args).Build();
 
-            var t = Host.RunAsync();            
+            var t = Host.RunAsync();
 
             BuildAvaloniaApp()
                 .StartWithClassicDesktopLifetime(args);
