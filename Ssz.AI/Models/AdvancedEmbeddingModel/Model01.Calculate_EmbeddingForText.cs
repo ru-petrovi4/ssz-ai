@@ -15,7 +15,7 @@ using Ssz.Utils.Logging;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {
-    public partial class Model
+    public partial class Model01
     {
         public float[] GetEmbeddingForPhrase(string phrase)
         {
@@ -53,7 +53,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return wordString.ToLowerInvariant().Replace('ё', 'е');
         }
 
-        private WordsNewEmbeddings Calculate_WordsNewEmbeddings(ILoggersSet loggersSet)
+        private WordsNewEmbeddings Calculate_WordsNewEmbeddings(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var totalStopwatch = Stopwatch.StartNew();
 
@@ -62,7 +62,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             string programDataDirectoryFullName = Directory.GetCurrentDirectory();
 
             CaseInsensitiveDictionary<Word> wordsDictionary = new();
-            foreach (var word in Words_RU)
+            foreach (var word in languageInfo.Words)
             {
                 wordsDictionary[word.Name] = word;
             }

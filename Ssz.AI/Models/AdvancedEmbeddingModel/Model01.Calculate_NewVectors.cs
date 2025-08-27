@@ -23,10 +23,12 @@ using Ssz.Utils.Logging;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
-    public partial class Model
+    public partial class Model01
     {
-        public void Calculate_NewVector_ToDisplay(Word word, int wordNum)
+        public void Calculate_NewVector_ToDisplay(List<Word> words, Word word, int wordNum)
         {
+            Clusterization_Algorithm? CurrentClusterization_Algorithm_ToDisplay = null;
+
             if (CurrentClusterization_Algorithm_ToDisplay?.PrimaryWords is not null &&
                 CurrentNewVectorsAndMatrices_ToDisplay?.Temp_Top8ProxPrimaryWords is not null &&
                 CurrentNewVectorsAndMatrices_ToDisplay?.Temp_Top8ProxWords is not null &&
@@ -38,9 +40,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 switch (wordNum)
                 {
                     case 1:
-                        for (int wordIndex = 0; wordIndex < Words_RU.Count; wordIndex += 1)
+                        for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
                         {
-                            Words_RU[wordIndex].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.None;
+                            words[wordIndex].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.None;
                         }
                         for (int index = 0; index < CurrentClusterization_Algorithm_ToDisplay.PrimaryWords.Length; index += 1)
                         {
@@ -149,36 +151,32 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //    return result;
         //}
 
-        public NewVectorsAndMatrices Calculate_NewVectorsAndMatrices(Clusterization_Algorithm clusterization_Algorithm,
-            ProjectionOptimization_Algorithm projectionOptimization_Algorithm,
-            ILoggersSet loggersSet)
+        public NewVectorsAndMatrices Calculate_NewVectorsAndMatrices(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();            
 
             NewVectorsAndMatrices result = new();
-            result.Initialize(Words_RU.Count);
-            result.InitializeTemp(clusterization_Algorithm, Words_RU, ProxWordsOldMatrix);
-            result.Calculate_Full(Words_RU, projectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
+            result.Initialize(languageInfo.Words.Count);
+            result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
+            result.Calculate_Full(languageInfo.Words, languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + clusterization_Algorithm.Name + "; ProjectionOptimization:" + projectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_Algorithm.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return result;
         }
 
-        public NewVectorsAndMatrices Calculate_NewVectors(Clusterization_Algorithm clusterization_Algorithm, 
-            ProjectionOptimization_Algorithm projectionOptimization_Algorithm,
-            ILoggersSet loggersSet)
+        public NewVectorsAndMatrices Calculate_NewVectors(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();
 
             NewVectorsAndMatrices result = new();
-            result.Initialize(Words_RU.Count);
-            result.InitializeTemp(clusterization_Algorithm, Words_RU, ProxWordsOldMatrix);
-            result.CalculateNewVectors(Words_RU.ToArray(), projectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
+            result.Initialize(languageInfo.Words.Count);
+            result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
+            result.CalculateNewVectors(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + projectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return result;
         }

@@ -10,7 +10,7 @@ using System.Numerics.Tensors;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {
-    public partial class Model
+    public partial class Model01
     {
         private void CompareOldAndNewPhraseEmbeddings(ILoggersSet loggersSet)
         {

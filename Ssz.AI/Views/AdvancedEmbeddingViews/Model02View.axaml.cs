@@ -18,18 +18,18 @@ using Ssz.AI.Models.AdvancedEmbeddingModel;
 
 namespace Ssz.AI.Views.AdvancedEmbeddingViews;
 
-public partial class ModelView : UserControl
+public partial class Model02View : UserControl
 {
-    public ModelView()
+    public Model02View()
     {
         InitializeComponent();
 
         if (Design.IsDesignMode)
             return;
 
-        Model = new Model();
+        Model = new Model02();
         Model.Initialize();
     }
 
-    public Model Model = null!;
+    public Model02 Model = null!;
 }

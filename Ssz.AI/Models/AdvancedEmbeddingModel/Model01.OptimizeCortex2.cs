@@ -23,12 +23,12 @@ using Ssz.Utils.Serialization;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
-    public partial class Model
+    public partial class Model01
     {
         public const int TopProxPointsCount2 = 60;
         public const int TopProxPrimaryPointsCount2 = 300;
 
-        public void OptimizeCortex2(ILoggersSet loggersSet, Clusterization_Algorithm clusterization_Algorithm)
+        public void OptimizeCortex2(LanguageInfo languageInfo, ILoggersSet loggersSet, Clusterization_Algorithm clusterization_Algorithm)
         { 
             var totalStopwatch = Stopwatch.StartNew();
             var stopwatch = new Stopwatch();
@@ -36,7 +36,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             #region Initialization
 
-            Cortex = new(xCount: (int)Math.Sqrt(Words_RU.Count) + 1, yCount: (int)Math.Sqrt(Words_RU.Count) + 1);
+            Cortex = new(xCount: (int)Math.Sqrt(languageInfo.Words.Count) + 1, yCount: (int)Math.Sqrt(languageInfo.Words.Count) + 1);
             //if (Words.Count > Cortex.Array.Length)
             //{
             //    loggersSet.UserFriendlyLogger.LogError("Cortex size too low; Words.Count = " + Words.Count);
@@ -47,7 +47,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             #region Random Points positions in Cortex  
             
-            for (int wordIndex = 0; wordIndex < Words_RU.Count; wordIndex += 1)
+            for (int wordIndex = 0; wordIndex < languageInfo.Words.Count; wordIndex += 1)
             {
                 for (; ; )
                 {
@@ -62,7 +62,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                             V = [ix, iy]
                         };
                         pointRef = point;
-                        Words_RU[wordIndex].Point = point;
+                        languageInfo.Words[wordIndex].Point = point;
                         break;
                     }
                 }
@@ -80,7 +80,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                             V = [ix, iy]
                         };
                         pointRef = emptyPoint;
-                        Words_RU[0].Point = emptyPoint; // Ref to any empty point.
+                        languageInfo.Words[0].Point = emptyPoint; // Ref to any empty point.
                     }
                 }
             }
@@ -93,9 +93,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             stopwatch.Restart();
 
-            for (int wordIndex = 0; wordIndex < Words_RU.Count; wordIndex += 1)
+            for (int wordIndex = 0; wordIndex < languageInfo.Words.Count; wordIndex += 1)
             {
-                Words_RU[wordIndex].Temp_Flag = false;
+                languageInfo.Words[wordIndex].Temp_Flag = false;
             }
             for (int i = 0; i < clusterization_Algorithm.PrimaryWords!.Length; i += 1)
             {
@@ -114,19 +114,19 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     }
                     else
                     {
-                        int indexBias = point.WordIndex * Words_RU.Count;
+                        int indexBias = point.WordIndex * languageInfo.Words.Count;
                         point.Temp_TopProxPoints = Cortex.Array
                             .Where(point2 => point2.WordIndex != -1 && point2.WordIndex != point.WordIndex)
-                            .Select(point2 => (ProxWordsOldMatrix[indexBias + point2.WordIndex], point2))
+                            .Select(point2 => (languageInfo.ProxWordsOldMatrix.Data[indexBias + point2.WordIndex], point2))
                             .OrderByDescending(i => i.Item1)
                             .Take(TopProxPointsCount2)
                             .Where(it => it.Item1 > 0.0)
                             .ToArray();
-                        if (Words_RU[point.WordIndex].Temp_Flag) // Primary word
+                        if (languageInfo.Words[point.WordIndex].Temp_Flag) // Primary word
                         {
                             point.Temp_TopProxPrimaryPoints = Cortex.Array
-                                .Where(point2 => point2.WordIndex != -1 && point2.WordIndex != point.WordIndex && Words_RU[point2.WordIndex].Temp_Flag)
-                                .Select(point2 => (ProxWordsOldMatrix[indexBias + point2.WordIndex], point2))
+                                .Where(point2 => point2.WordIndex != -1 && point2.WordIndex != point.WordIndex && languageInfo.Words[point2.WordIndex].Temp_Flag)
+                                .Select(point2 => (languageInfo.ProxWordsOldMatrix.Data[indexBias + point2.WordIndex], point2))
                                 .OrderByDescending(i => i.Item1)
                                 .Take(TopProxPrimaryPointsCount2)
                                 .ToArray();

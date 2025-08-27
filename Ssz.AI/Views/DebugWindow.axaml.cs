@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
 using Ssz.Utils;
 using System;
@@ -31,12 +32,15 @@ public partial class DebugWindow : Window
         {
             if (_instance is null)
             {
-                _instance = new DebugWindow();                
-                _instance.Closed += (sender, args) => { _instance = null; };
-                _instance.Show();
+                Dispatcher.UIThread.Invoke(() =>
+                {
+                    _instance = new DebugWindow();
+                    _instance.Closed += (sender, args) => { _instance = null; };
+                    _instance.Show();
+                });                
             }
 
-            return _instance;
+            return _instance!;
         }
     }
 
@@ -44,14 +48,20 @@ public partial class DebugWindow : Window
 
     public void Clear()
     {
-        MainTextEditor.Clear();
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            MainTextEditor.Clear();
+        });
     }
 
     public void AddLine(string line)
     {
-        MainTextEditor.Text += line + "\n";
+        Dispatcher.UIThread.Invoke(() =>
+        {
+            MainTextEditor.Text += line + "\n";
 
-        MainTextEditor.ScrollToEnd();
+            MainTextEditor.ScrollToEnd();
+        });        
     }
 
     public static void AddLine(LogLevel logLevel, EventId eventId, string message)

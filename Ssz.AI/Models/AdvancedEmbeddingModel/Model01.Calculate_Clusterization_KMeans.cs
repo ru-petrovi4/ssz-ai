@@ -17,11 +17,13 @@ using Ssz.Utils.Serialization;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
-    public partial class Model
+    public partial class Model01
     {
-        public void Calculate_Clusterization_Algorithm_KMeans(ILoggersSet loggersSet)
+        public void Calculate_Clusterization_Algorithm_KMeans(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
-            Clusterization_Algorithm_KMeans.ClusterIndices = new int[Words_RU.Count];
+            var words = languageInfo.Words;
+            var clusterization_Algorithm_KMeans = languageInfo.Clusterization_Algorithm;
+            clusterization_Algorithm_KMeans.ClusterIndices = new int[words.Count];
 
             var totalStopwatch = Stopwatch.StartNew();
 
@@ -32,7 +34,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             {
                 for (; ; )
                 {
-                    var word = Words_RU[r.Next(Words_RU.Count)];
+                    var word = words[r.Next(words.Count)];
                     if (word.Temp_Flag)
                         continue;
 
@@ -42,8 +44,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 }
             }
 
-            int Q = 0;
-            const int Q_MAX = Int32.MaxValue;
+            int Q = 0;            
             double delta_llh = 0;
             
             WordCluster[] wordClusters = new WordCluster[PrimaryWordsCount];
@@ -53,25 +54,25 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 {
                     CentroidOldVector = new float[OldVectorLength],                    
                 };
-                Array.Copy(primaryWords_Random[clusterIndex].OldVector, wordClustrer.CentroidOldVector, OldVectorLength);
+                Array.Copy(primaryWords_Random[clusterIndex].OldVectorNormalized, wordClustrer.CentroidOldVector, OldVectorLength);
                 wordClusters[clusterIndex] = wordClustrer;
             }
 
-            Array.Clear(Clusterization_Algorithm_KMeans.ClusterIndices);
+            Array.Clear(clusterization_Algorithm_KMeans.ClusterIndices);
 
             while (TimeSpan.FromMilliseconds(totalStopwatch.ElapsedMilliseconds) < TimeSpan.FromHours(1))
             {
                 var stopwatch = Stopwatch.StartNew();
                 Q += 1;
 
-                int[] newClusterIndices = new int[Words_RU.Count];
+                int[] newClusterIndices = new int[words.Count];
 
                 #region ЕXPECTATION                
 
-                Parallel.For(0, Words_RU.Count, wordIndex =>
+                Parallel.For(0, words.Count, wordIndex =>
                 {
-                    Word word = Words_RU[wordIndex];
-                    var oldVectror = word.OldVector;
+                    Word word = words[wordIndex];
+                    var oldVectror = word.OldVectorNormalized;
                     int nearestClusterIndex = -1;
                     float nearestDotProduct = 0.0f;
                     for (int clusterIndex = 0; clusterIndex < wordClusters.Length; clusterIndex += 1)
@@ -94,13 +95,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 loggersSet.UserFriendlyLogger.LogInformation("ЕXPECTATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
                 stopwatch.Restart();
 
-                if (newClusterIndices.SequenceEqual(Clusterization_Algorithm_KMeans.ClusterIndices))
+                if (newClusterIndices.SequenceEqual(clusterization_Algorithm_KMeans.ClusterIndices))
                 {
                     loggersSet.UserFriendlyLogger.LogInformation("newClusterIndices.SequenceEqual(clusterIndices)");
                     break;
                 }
 
-                Clusterization_Algorithm_KMeans.ClusterIndices = newClusterIndices;
+                clusterization_Algorithm_KMeans.ClusterIndices = newClusterIndices;
 
                 #region MAXIMIZATION   
 
@@ -110,14 +111,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     Array.Clear(wordCluster_CentroidOldVector);
                 });
 
-                Parallel.For(0, Words_RU.Count, wordIndex =>
+                Parallel.For(0, words.Count, wordIndex =>
                 {
-                    Word word = Words_RU[wordIndex];
-                    var oldVectror = word.OldVector;
-                    var wordCluster_CentroidOldVector = wordClusters[Clusterization_Algorithm_KMeans.ClusterIndices[wordIndex]].CentroidOldVector; 
+                    Word word = words[wordIndex];
+                    var oldVectror = word.OldVectorNormalized;
+                    var wordCluster_CentroidOldVector = wordClusters[clusterization_Algorithm_KMeans.ClusterIndices[wordIndex]].CentroidOldVector; 
                     lock (wordCluster_CentroidOldVector) 
                     {
-                        TensorPrimitives.Add(wordCluster_CentroidOldVector, word.OldVector, wordCluster_CentroidOldVector);
+                        TensorPrimitives.Add(wordCluster_CentroidOldVector, word.OldVectorNormalized, wordCluster_CentroidOldVector);
                     }                    
                 });
 
@@ -142,10 +143,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
                 int nearestWordIndex = -1;
                 float nearestDotProduct = 0.0f;
-                for (int wordIndex = 0; wordIndex < Words_RU.Count; wordIndex += 1)
+                for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
                 {
-                    Word word = Words_RU[wordIndex];
-                    var oldVectror = word.OldVector;
+                    Word word = words[wordIndex];
+                    var oldVectror = word.OldVectorNormalized;
 
                     float dotProduct = TensorPrimitives.Dot(oldVectror, wordCluster_CentroidOldVector);
                     if (dotProduct > nearestDotProduct)
@@ -155,10 +156,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     }
                 }
 
-                primaryWords_KMeans[clusterIndex] = Words_RU[nearestWordIndex];
+                primaryWords_KMeans[clusterIndex] = words[nearestWordIndex];
             });
 
-            Clusterization_Algorithm_KMeans.PrimaryWords = primaryWords_KMeans;
+            clusterization_Algorithm_KMeans.PrimaryWords = primaryWords_KMeans;
 
             totalStopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithm_KMeans.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
