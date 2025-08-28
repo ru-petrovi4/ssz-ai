@@ -79,60 +79,18 @@ public partial class Model02
             }
 
 
-            int N_ru = R.Cols();
-            int N_en = E.Cols();
-            var x_anchor = new float[dim];
-            var y_anchor = new float[dim];
-
-            // Центр масс русского
-            for (int i = 0; i < dim; i++)
+            var mapper = new BilingualLinearMapper(dim, _loggersSet);
+            var opt = new BilingualLinearMapper.TrainOptions
             {
-                float sum = 0f;
-                for (int j = 0; j < N_ru; j++) sum += R[i, j];
-                x_anchor[i] = sum / N_ru;
-            }
-
-            // Центр масс английского
-            for (int i = 0; i < dim; i++)
-            {
-                float sum = 0f;
-                for (int j = 0; j < N_en; j++) sum += E[i, j];
-                y_anchor[i] = sum / N_en;
-            }
-            
-
-            var mapper = new BiDirectionalMapperAnchored(dim);
-
-            mapper.FitUnsupervisedAnchored(
-                R, E,
-                x_anchor, y_anchor,
-                epochs: 600,
-                lr: 1e-3f,
-                lambdaOrtho: 1e-3f,
-                unitNorm: false,
-                center: false,
-                projectWEvery: true,
-                WProjectionPeriod: 50,
-                projectBEvery: true,
-                BProjectionPeriod: 50,
-                onEpoch: (ep, lru, len, lo) =>
-                {
-                    if (ep % 50 == 0 || ep == 1)
-                        _loggersSet.UserFriendlyLogger.LogInformation($"Epoch {ep}: RU={lru:F6} EN={len:F6} ORTHO={lo:F6}");
-                });
-
-            var (mseR, mseE) = mapper.EvaluateCycleErrors(R, E);
-            _loggersSet.UserFriendlyLogger.LogInformation($"Cycle MSE RU={mseR:F6} EN={mseE:F6}");
-
-            // Проверка жёсткого якоря:
-            var mapped = mapper.F12(x_anchor);
-            float err = 0f;
-            for (int i = 0; i < dim; i++)
-            {
-                float dlt = mapped[i] - y_anchor[i];
-                err += dlt * dlt;
-            }
-            _loggersSet.UserFriendlyLogger.LogInformation($"Anchor MSE (F12 x* vs y*) = {err:F9} (должно быть ~0)");
+                Epochs = 30,
+                BatchSize = 512,
+                LearningRate = 0.05f,
+                WCycle = 1.0f,
+                WOrth = 0.1f,
+                WMmd = 1.0f,
+                MmdSigma = 1.0f
+            };
+            mapper.Fit(R, E, opt);
 
 
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";

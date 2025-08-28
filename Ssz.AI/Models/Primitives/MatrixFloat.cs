@@ -51,7 +51,7 @@ public class MatrixFloat : IOwnedDataSerializable
 
     public MatrixFloat Clone()
     {
-        var clone = new MatrixFloat(Dimensions);
+        var clone = new MatrixFloat((int[])Dimensions.Clone());
         Array.Copy(Data, clone.Data, Data.Length);
         return clone;
     }
