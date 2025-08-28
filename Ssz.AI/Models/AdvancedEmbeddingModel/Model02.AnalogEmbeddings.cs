@@ -109,8 +109,8 @@ public partial class Model02
                 epochs: 600,
                 lr: 1e-3f,
                 lambdaOrtho: 1e-3f,
-                unitNorm: true,
-                center: true,
+                unitNorm: false,
+                center: false,
                 projectWEvery: true,
                 WProjectionPeriod: 50,
                 projectBEvery: true,
@@ -155,7 +155,7 @@ public partial class Model02
                 var col = LanguageInfo_RU.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    R[i, j] = col.OldVectorNormalized[i];
+                    R[i, j] = col.OldVector[i];
                 }
             }
 
@@ -167,7 +167,7 @@ public partial class Model02
                 var col = LanguageInfo_EN.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    E[i, j] = col.OldVectorNormalized[i];
+                    E[i, j] = col.OldVector[i];
                 }
             }
 
@@ -177,8 +177,10 @@ public partial class Model02
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, A, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, B, null);
-            var r = LinAlg.MatVec(A, LanguageInfo_RU.Words[50].OldVectorNormalized);
-            _loggersSet.UserFriendlyLogger.LogInformation($"{TensorPrimitives.Distance(r, LanguageInfo_RU.Words[50].OldVectorNormalized)}");
+            var r = LinAlg.MatVec(A, LanguageInfo_RU.Words[50].OldVector);
+            r = LinAlg.MatVec(B, r);
+            var distance = TensorPrimitives.Distance(r, LanguageInfo_RU.Words[50].OldVector);
+            _loggersSet.UserFriendlyLogger.LogInformation($"{distance}");
         });
     }
 

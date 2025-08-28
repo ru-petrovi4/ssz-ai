@@ -28,7 +28,7 @@ public partial class Model02View : UserControl
             return;
 
         Model = new Model02();
-        Model.Initialize();
+        Model.CheckResult();
     }
 
     public Model02 Model = null!;
