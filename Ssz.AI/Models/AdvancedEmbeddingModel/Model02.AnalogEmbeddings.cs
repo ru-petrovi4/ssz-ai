@@ -56,47 +56,54 @@ public partial class Model02
         {
             WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
             var dim = WordsHelper.OldVectorLength_RU;
-            var R = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
+            var ruEmb = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
             for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
             {
                 var col = LanguageInfo_RU.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    R[i, j] = col.OldVector[i];
+                    ruEmb[i, j] = col.OldVector[i];
                 }
             }
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
             dim = WordsHelper.OldVectorLength_EN;
-            var E = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
+            var enEmb = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
             for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
             {
                 var col = LanguageInfo_EN.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    E[i, j] = col.OldVector[i];
+                    enEmb[i, j] = col.OldVector[i];
                 }
             }
 
 
-            var mapper = new BilingualLinearMapper(dim, _loggersSet);
-            var opt = new BilingualLinearMapper.TrainOptions
+            var mapper = new BilingualMapper(300, _loggersSet);
+            mapper.NormalizeAndCenter(ruEmb);
+            mapper.NormalizeAndCenter(enEmb);
+
+            var opts = new BilingualMapper.TrainOptions
             {
-                Epochs = 30,
-                BatchSize = 512,
-                LearningRate = 0.05f,
-                WCycle = 1.0f,
-                WOrth = 0.1f,
-                WMmd = 1.0f,
-                MmdSigma = 1.0f
+                Epochs = 200,
+                BatchSize = 2048,
+                Lr = 0.01f,
+                CycleWeight = 1.0f,
+                CoralWeight = 1.0f,
+                MeanWeight = 0.1f,
+                OrthoWeight = 0.1f,
+                CoupleWeight = 0.1f,
+                OrthoRetraction = 0.01f,
+                RetractionEvery = 10
             };
-            mapper.Fit(R, E, opt);
+
+            mapper.Fit(ruEmb, enEmb, opts);
 
 
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.A, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.B, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W21, null);
             _loggersSet.UserFriendlyLogger.LogInformation($"Saved");
         });            
     }
@@ -135,9 +142,10 @@ public partial class Model02
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, A, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, B, null);
-            var r = LinAlg.MatVec(A, LanguageInfo_RU.Words[50].OldVector);
-            r = LinAlg.MatVec(B, r);
-            var distance = TensorPrimitives.Distance(r, LanguageInfo_RU.Words[50].OldVector);
+            var r = new float[300];
+            LinAlg.MatVec(A, LanguageInfo_RU.Words[50].OldVectorNormalized, r);
+            LinAlg.MatVec(B, r, r);
+            var distance = TensorPrimitives.Distance(r, LanguageInfo_RU.Words[50].OldVectorNormalized);
             _loggersSet.UserFriendlyLogger.LogInformation($"{distance}");
         });
     }

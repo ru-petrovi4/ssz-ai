@@ -7,475 +7,365 @@ using System.Runtime.CompilerServices;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public sealed class BilingualLinearMapper
+public class BilingualMapper
 {
-    public MatrixFloat A; // d x d
-    public MatrixFloat B; // d x d
-    
-    public float[] MuRu;  // d
-    public float[] MuEn;  // d
+    public readonly int D;
+    public MatrixFloat W12; // ru -> en
+    public MatrixFloat W21; // en -> ru
 
-    public int Dim { get; }
 
     private ILoggersSet _loggersSet;
+    private readonly Adam opt12;
+    private readonly Adam opt21;
+    private readonly Random rng;
 
-    public BilingualLinearMapper(int dim, ILoggersSet loggersSet)
+    public BilingualMapper(int dim, ILoggersSet loggersSet, int seed = 42)
     {
-        Dim = dim;
         _loggersSet = loggersSet;
-        A = new MatrixFloat(dim, dim);
-        B = new MatrixFloat(dim, dim);
-        MuRu = new float[dim];
-        MuEn = new float[dim];
-        SetIdentity(A);
-        SetIdentity(B);        
+        D = dim;
+        W12 = new MatrixFloat(D, D);
+        W21 = new MatrixFloat(D, D);
+        InitWeights();
+        opt12 = new Adam(W12.Data.Length);
+        opt21 = new Adam(W21.Data.Length);
+        rng = new Random(seed);
     }
 
-    // F12(x) = A * (x - MuRu) + MuEn
-    public void F12(ReadOnlySpan<float> x, Span<float> y)
+    private void InitWeights()
     {
-        if (x.Length != Dim || y.Length != Dim)
-            throw new ArgumentException("F12: vector length mismatch.");
-
-        Span<float> xc = stackalloc float[Dim];
-        Subtract(x, MuRu, xc);
-        MatVec(A, xc, y);
-        AddInPlace(y, MuEn);
+        // Инициализация: почти тождественные + слабый шум, W21 = W12^T для старта
+        LinAlg.SetIdentity(W12);
+        LinAlg.SetIdentity(W21);
+        var tmp = new float[D];
+        for (int j = 0; j < D; j++)
+        {
+            var col = W12.GetColumn(j);
+            for (int i = 0; i < D; i++)
+            {
+                float noise = (float)(0.01 * (new Random(j * 7919 + i * 104729).NextDouble() - 0.5));
+                col[i] += noise;
+            }
+        }
+        // Симметризация на старте
+        for (int j = 0; j < D; j++)
+        {
+            for (int i = 0; i < D; i++)
+            {
+                W21[i, j] = W12[j, i];
+            }
+        }
+        // Легкая орто-проекция шага
+        OrthoRetractionInPlace(W12, 0.01f);
+        OrthoRetractionInPlace(W21, 0.01f);
     }
 
-    // F21(y) = B * (y - MuEn) + MuRu
-    public void F21(ReadOnlySpan<float> y, Span<float> x)
+    public void NormalizeAndCenter(MatrixFloat X)
     {
-        if (y.Length != Dim || x.Length != Dim)
-            throw new ArgumentException("F21: vector length mismatch.");
-
-        Span<float> yc = stackalloc float[Dim];
-        Subtract(y, MuEn, yc);
-        MatVec(B, yc, x);
-        AddInPlace(x, MuRu);
-    }
-
-    public void ApplyF12(MatrixFloat src, MatrixFloat dst)
-    {
-        if (src.Rows() != Dim || dst.Rows() != Dim || dst.Cols() != src.Cols())
-            throw new ArgumentException("ApplyF12: shape mismatch.");
-        int n = src.Cols();
+        int n = X.Dimensions[1];
+        var mean = new float[D];
+        // L2-нормировка столбцов и накопление среднего
         for (int j = 0; j < n; j++)
         {
-            var s = src.GetColumn(j);
-            var d = dst.GetColumn(j);
-            F12(s, d);
+            var col = X.GetColumn(j);
+            float nrm2 = (float)Math.Sqrt(LinAlg.Dot(col, col));
+            if (nrm2 > 0) LinAlg.ScaleInPlace(col, 1f / nrm2);
+            for (int i = 0; i < D; i++) mean[i] += col[i];
+        }
+        for (int i = 0; i < D; i++) mean[i] /= n;
+        // Центрирование
+        for (int j = 0; j < n; j++)
+        {
+            var col = X.GetColumn(j);
+            for (int i = 0; i < D; i++) col[i] -= mean[i];
         }
     }
 
-    public void ApplyF21(MatrixFloat src, MatrixFloat dst)
+    public struct TrainOptions
     {
-        if (src.Rows() != Dim || dst.Rows() != Dim || dst.Cols() != src.Cols())
-            throw new ArgumentException("ApplyF21: shape mismatch.");
-        int n = src.Cols();
-        for (int j = 0; j < n; j++)
-        {
-            var s = src.GetColumn(j);
-            var d = dst.GetColumn(j);
-            F21(s, d);
-        }
+        public int Epochs;
+        public int BatchSize;
+        public float Lr;
+        public float CycleWeight;     // вес L_cycle
+        public float CoralWeight;     // вес выравнивания ковариаций
+        public float MeanWeight;      // вес выравнивания средних
+        public float OrthoWeight;     // вес ||W^T W - I||^2
+        public float CoupleWeight;    // вес ||W21 - W12^T||^2
+        public float OrthoRetraction; // шаг мягкой проекции на ортогональную группу
+        public int RetractionEvery;   // каждые N шагов
     }
 
-    public sealed class TrainOptions
+    public void Fit(MatrixFloat Xru, MatrixFloat Xen, TrainOptions opt)
     {
-        public int Epochs = 30;
-        public int BatchSize = 512;
-        public float LearningRate = 0.05f;
+        int nru = Xru.Dimensions[1];
+        int nen = Xen.Dimensions[1];
 
-        public float WCycle = 1.0f;
-        public float WOrth = 0.1f;
-        public float WMmd = 1.0f;
+        // Буферы
+        var x = new float[D];
+        var y = new float[D];
+        var z = new float[D];
+        var t = new float[D];
+        var muRu = new float[D];
+        var muEn = new float[D];
 
-        public float MmdSigma = 1.0f;
-        public int Seed = 42;
-    }
+        // Градиенты
+        var g12 = new MatrixFloat(D, D);
+        var g21 = new MatrixFloat(D, D);
 
-    public void Fit(MatrixFloat ruEmb, MatrixFloat enEmb, TrainOptions? opt = null)
-    {
-        opt ??= new TrainOptions();
-        if (ruEmb.Rows() != Dim || enEmb.Rows() != Dim)
-            throw new ArgumentException("Embeddings must have shape (dim x n).");
+        // Временные матрицы для регуляризаторов/CoRAL
+        var M12 = new MatrixFloat(D, D);
+        var M21 = new MatrixFloat(D, D);
+        var T12 = new MatrixFloat(D, D);
+        var T21 = new MatrixFloat(D, D);
 
-        ComputeMean(ruEmb, MuRu);
-        ComputeMean(enEmb, MuEn);
+        var covY = new MatrixFloat(D, D);
+        var covTgt = new MatrixFloat(D, D);
+        var Sry = new MatrixFloat(D, D);
+        var Set = new MatrixFloat(D, D);
 
-        var Xc = ruEmb.Clone();
-        var Yc = enEmb.Clone();
-        CenterColumnsInPlace(Xc, MuRu);
-        CenterColumnsInPlace(Yc, MuEn);
+        var Cdiff = new MatrixFloat(D, D);
+        var tmpGrad = new MatrixFloat(D, D);
 
-        SetIdentity(A);
-        SetIdentity(B);
-
-        var rng = new Random(opt.Seed);
-        int nRu = Xc.Cols();
-        int nEn = Yc.Cols();
-        int b = Math.Min(opt.BatchSize, Math.Min(nRu, nEn));
-
-        var Xb = new MatrixFloat(Dim, b);
-        var Yb = new MatrixFloat(Dim, b);
-        var AX = new MatrixFloat(Dim, b);
-        var BY = new MatrixFloat(Dim, b);
-        var BAX = new MatrixFloat(Dim, b);
-        var ABY = new MatrixFloat(Dim, b);
-
-        var gA = new MatrixFloat(Dim, Dim);
-        var gB = new MatrixFloat(Dim, Dim);
-        var tmpDxN = new MatrixFloat(Dim, b);
-        var tmpDxD = new MatrixFloat(Dim, Dim);
-
-        var AtA = new MatrixFloat(Dim, Dim);
-        var BtB = new MatrixFloat(Dim, Dim);
-        var I = new MatrixFloat(Dim, Dim);
-        SetIdentity(I);
-
-        var gZ_A = new MatrixFloat(Dim, b);
-        var gZ_B = new MatrixFloat(Dim, b);
-
-        int stepsPerEpoch = Math.Max(1, Math.Min(nRu, nEn) / b);
+        int steps = 0;
 
         for (int epoch = 0; epoch < opt.Epochs; epoch++)
         {
-            for (int step = 0; step < stepsPerEpoch; step++)
+            // Перемешанные индексы
+            var idxRu = ShuffledIndices(nru);
+            var idxEn = ShuffledIndices(nen);
+
+            int batches = Math.Max((nru + opt.BatchSize - 1) / opt.BatchSize,
+                                   (nen + opt.BatchSize - 1) / opt.BatchSize);
+
+            for (int b = 0; b < batches; b++)
             {
-                SampleColumns(rng, Xc, Xb);
-                SampleColumns(rng, Yc, Yb);
+                g12.Clear();
+                g21.Clear();
 
-                MatMat(A, Xb, AX);   // (d x d) * (d x b) = (d x b)
-                MatMat(B, Yb, BY);   // (d x d) * (d x b) = (d x b)
-                MatMat(B, AX, BAX);  // (d x d) * (d x b) = (d x b)
-                MatMat(A, BY, ABY);  // (d x d) * (d x b) = (d x b)
+                // RU batch
+                int startRu = b * opt.BatchSize;
+                int endRu = Math.Min(nru, startRu + opt.BatchSize);
+                int br = Math.Max(1, endRu - startRu);
 
-                gA.Clear();
-                gB.Clear();
+                // EN batch
+                int startEn = b * opt.BatchSize;
+                int endEn = Math.Min(nen, startEn + opt.BatchSize);
+                int be = Math.Max(1, endEn - startEn);
 
-                // Циклическая часть
-                SubtractInPlace(BAX, Xb);                       // E_x
-                MatMatT_LeftT(B, BAX, tmpDxN);                  // tmp = B^T * E_x (d x b)
-                AccumulateOuter(tmpDxN, Xb, gA, scale: 2.0f);   // gA += 2 * tmp * Xb^T
-
-                AccumulateOuter(BAX, AX, gB, scale: 2.0f);      // gB += 2 * E_x * (AX)^T
-
-                SubtractInPlace(ABY, Yb);                       // E_y
-                AccumulateOuter(ABY, BY, gA, scale: 2.0f);      // gA += 2 * E_y * (BY)^T
-
-                MatMatT_LeftT(A, ABY, tmpDxN);                  // tmp = A^T * E_y
-                AccumulateOuter(tmpDxN, Yb, gB, scale: 2.0f);   // gB += 2 * tmp * Yb^T
-
-                // MMD градиенты
-                gZ_A.Clear();
-                gZ_B.Clear();
-                ComputeMmdGradZ(AX, Yb, opt.MmdSigma, gZ_A);    // dL/d(AX)
-                ComputeMmdGradZ(BY, Xb, opt.MmdSigma, gZ_B);    // dL/d(BY)
-                AccumulateOuter(gZ_A, Xb, gA, scale: opt.WMmd);
-                AccumulateOuter(gZ_B, Yb, gB, scale: opt.WMmd);
-
-                // Ортогональность: 4 * A (A^T A - I), 4 * B (B^T B - I)
-                MatMatT_RightT(A, A, AtA);   // AtA = A^T * A
-                SubtractInPlace(AtA, I);
-                MatMat(A, AtA, tmpDxD);
-                AddScaledInPlace(gA, tmpDxD, 4.0f * opt.WOrth);
-
-                MatMatT_RightT(B, B, BtB);   // BtB = B^T * B
-                SubtractInPlace(BtB, I);
-                MatMat(B, BtB, tmpDxD);
-                AddScaledInPlace(gB, tmpDxD, 4.0f * opt.WOrth);
-
-                // Обновление
-                ScaleInPlace(gA, opt.LearningRate / b);
-                ScaleInPlace(gB, opt.LearningRate / b);
-                SubtractInPlace(A, gA);
-                SubtractInPlace(B, gB);
-            }
-            _loggersSet.UserFriendlyLogger.LogInformation($"Epoch done. {epoch}");
-        }
-    }
-
-    // Утилиты
-
-    static void SetIdentity(MatrixFloat M)
-    {
-        M.Clear();
-        int d = Math.Min(M.Rows(), M.Cols());
-        for (int i = 0; i < d; i++) M[i, i] = 1.0f;
-    }
-
-    static void ComputeMean(MatrixFloat X, Span<float> mean)
-    {
-        if (mean.Length != X.Rows()) throw new ArgumentException("mean length != rows");
-        mean.Clear();
-        int d = X.Rows();
-        int n = X.Cols();
-        for (int j = 0; j < n; j++)
-        {
-            var col = X.GetColumn(j);
-            // mean += col
-            for (int i = 0; i < d; i++) mean[i] += col[i];
-        }
-        float invN = 1.0f / Math.Max(1, n);
-        for (int i = 0; i < d; i++) mean[i] *= invN;
-    }
-
-    static void CenterColumnsInPlace(MatrixFloat X, ReadOnlySpan<float> mean)
-    {
-        if (mean.Length != X.Rows()) throw new ArgumentException("mean length != rows");
-        int n = X.Cols();
-        for (int j = 0; j < n; j++)
-        {
-            var col = X.GetColumn(j);
-            TensorPrimitives.Subtract(col, mean, col);
-        }
-    }
-
-    // y = M * x, где M(rows x cols), x(cols), y(rows)
-    static void MatVec(MatrixFloat M, ReadOnlySpan<float> x, Span<float> y)
-    {
-        if (x.Length != M.Cols() || y.Length != M.Rows())
-            throw new ArgumentException("MatVec: shape mismatch.");
-        y.Clear();
-        int rows = M.Rows();
-        int cols = M.Cols();
-        for (int k = 0; k < cols; k++)
-        {
-            float alpha = x[k];
-            if (alpha == 0) continue;
-            var mcol = M.GetColumn(k); // длина rows
-            for (int i = 0; i < rows; i++)
-                y[i] += mcol[i] * alpha;
-        }
-    }
-
-    // Z = M * X, где M(rows x k), X(k x n), Z(rows x n)
-    static void MatMat(MatrixFloat M, MatrixFloat X, MatrixFloat Z)
-    {
-        int rows = M.Rows();
-        int k = M.Cols();
-        if (X.Rows() != k) throw new ArgumentException("MatMat: inner dim mismatch (M.Cols() != X.Rows()).");
-        int n = X.Cols();
-        if (Z.Rows() != rows || Z.Cols() != n) throw new ArgumentException("MatMat: output shape mismatch.");
-
-        for (int j = 0; j < n; j++)
-        {
-            var x = X.GetColumn(j); // len k
-            var z = Z.GetColumn(j); // len rows
-            z.Clear();
-            for (int c = 0; c < k; c++)
-            {
-                float alpha = x[c];
-                if (alpha == 0) continue;
-                var mcol = M.GetColumn(c); // len rows
-                for (int i = 0; i < rows; i++)
-                    z[i] += mcol[i] * alpha;
-            }
-        }
-    }
-
-    // tmp = L^T * R, L(r x k) -> L^T(k x r), R(r x n) => tmp(k x n)
-    static void MatMatT_LeftT(MatrixFloat L, MatrixFloat R, MatrixFloat tmp)
-    {
-        int r = L.Rows();
-        int k = L.Cols();
-        if (R.Rows() != r) throw new ArgumentException("MatMatT_LeftT: inner dim mismatch (L.Rows() != R.Rows()).");
-        int n = R.Cols();
-        if (tmp.Rows() != k || tmp.Cols() != n) throw new ArgumentException("MatMatT_LeftT: output shape mismatch.");
-
-        for (int j = 0; j < n; j++)
-        {
-            var rcol = R.GetColumn(j); // len r
-            var tcol = tmp.GetColumn(j); // len k
-            tcol.Clear();
-            for (int i = 0; i < k; i++)
-            {
-                var lcoli = L.GetColumn(i); // len r == L[:,i]
-                float s = 0f;
-                for (int p = 0; p < r; p++)
-                    s += lcoli[p] * rcol[p];
-                tcol[i] = s;
-            }
-        }
-    }
-
-    // C = A^T * B, A(r x k) -> A^T(k x r), B(r x m) => C(k x m)
-    static void MatMatT_RightT(MatrixFloat A, MatrixFloat B, MatrixFloat C)
-    {
-        int r = A.Rows();
-        int k = A.Cols();
-        if (B.Rows() != r) throw new ArgumentException("MatMatT_RightT: inner dim mismatch (A.Rows() != B.Rows()).");
-        int m = B.Cols();
-        if (C.Rows() != k || C.Cols() != m) throw new ArgumentException("MatMatT_RightT: output shape mismatch.");
-
-        C.Clear();
-        for (int j = 0; j < m; j++)
-        {
-            var bcol = B.GetColumn(j); // len r
-            for (int i = 0; i < k; i++)
-            {
-                var acol_i = A.GetColumn(i); // len r
-                float s = 0f;
-                for (int p = 0; p < r; p++)
-                    s += acol_i[p] * bcol[p];
-                C[i, j] = s;
-            }
-        }
-    }
-
-    // G += scale * (U * V^T), U(ru x n), V(rv x n) => G(ru x rv)
-    static void AccumulateOuter(MatrixFloat U, MatrixFloat V, MatrixFloat G, float scale)
-    {
-        int ru = U.Rows();
-        int n = U.Cols();
-        if (V.Cols() != n) throw new ArgumentException("AccumulateOuter: batch mismatch (U.Cols() != V.Cols()).");
-        int rv = V.Rows();
-        if (G.Rows() != ru || G.Cols() != rv) throw new ArgumentException("AccumulateOuter: output shape mismatch.");
-
-        for (int j = 0; j < n; j++)
-        {
-            var u = U.GetColumn(j); // len ru
-            var v = V.GetColumn(j); // len rv
-            for (int i = 0; i < ru; i++)
-            {
-                float ui = u[i] * scale;
-                if (ui == 0) continue;
-                for (int k = 0; k < rv; k++)
-                    G[i, k] += ui * v[k];
-            }
-        }
-    }
-
-    static void AddInPlace(Span<float> a, ReadOnlySpan<float> b)
-    {
-        TensorPrimitives.Add(a, b, a);
-    }
-
-    static void Subtract(ReadOnlySpan<float> a, ReadOnlySpan<float> b, Span<float> dst)
-    {
-        TensorPrimitives.Subtract(a, b, dst);
-    }
-
-    static void SubtractInPlace(MatrixFloat A, MatrixFloat B)
-    {
-        if (A.Rows() != B.Rows() || A.Cols() != B.Cols())
-            throw new ArgumentException("SubtractInPlace: shape mismatch.");
-        TensorPrimitives.Subtract(A.Data, B.Data, A.Data);
-    }
-
-    static void AddScaledInPlace(MatrixFloat A, MatrixFloat B, float scale)
-    {
-        if (A.Rows() != B.Rows() || A.Cols() != B.Cols())
-            throw new ArgumentException("AddScaledInPlace: shape mismatch.");
-        int len = A.Data.Length;
-        for (int i = 0; i < len; i++)
-            A.Data[i] += scale * B.Data[i];
-    }
-
-    static void ScaleInPlace(MatrixFloat A, float scale)
-    {
-        TensorPrimitives.Multiply(A.Data, scale, A.Data);
-    }
-
-    static void SubtractInPlace(MatrixFloat A, MatrixFloat grad, bool checkShape = true)
-    {
-        if (checkShape && (A.Rows() != grad.Rows() || A.Cols() != grad.Cols()))
-            throw new ArgumentException("SubtractInPlace(A, grad): shape mismatch.");
-        TensorPrimitives.Subtract(A.Data, grad.Data, A.Data);
-    }
-
-    static void SampleColumns(Random rng, MatrixFloat src, MatrixFloat dst)
-    {
-        if (src.Rows() != dst.Rows()) throw new ArgumentException("SampleColumns: rows mismatch.");
-        int n = src.Cols();
-        int b = dst.Cols();
-        for (int j = 0; j < b; j++)
-        {
-            int idx = rng.Next(n);
-            var s = src.GetColumn(idx);
-            var t = dst.GetColumn(j);
-            s.CopyTo(t);
-        }
-    }
-
-    static void ComputeMmdGradZ(MatrixFloat Z, MatrixFloat Y, float sigma, MatrixFloat gZ)
-    {
-        if (Z.Rows() != Y.Rows() || Z.Rows() != gZ.Rows() || Z.Cols() != gZ.Cols())
-            throw new ArgumentException("ComputeMmdGradZ: shape mismatch.");
-
-        int d = Z.Rows();
-        int n = Z.Cols();
-        int m = Y.Cols();
-
-        float s2 = sigma * sigma;
-        float inv2s2 = 1.0f / (2f * s2);
-        float cZZ = (n > 1) ? 2.0f / (n * (n - 1)) : 0f;
-        float cZY = (n > 0 && m > 0) ? -2.0f / (n * m) : 0f;
-
-        for (int i = 0; i < n; i++)
-        {
-            var zi = Z.GetColumn(i);
-            var g = gZ.GetColumn(i);
-
-            if (cZZ != 0f)
-            {
-                for (int j = 0; j < n; j++)
+                // Средние по батчу
+                Array.Clear(muRu, 0, D);
+                Array.Clear(muEn, 0, D);
+                for (int j = startRu; j < endRu; j++)
                 {
-                    if (j == i) continue;
-                    var zj = Z.GetColumn(j);
-                    float dist2 = SquaredDistance(zi, zj);
-                    float k = MathF.Exp(-dist2 * inv2s2);
-                    float coef = cZZ * k * (2f / s2);
-                    AccumulateDiffScaled(zi, zj, g, coef);
+                    var col = Xru.GetColumn(idxRu[j]);
+                    LinAlg.AddInPlace(muRu.AsSpan(), col);
+                }
+                for (int j = 0; j < D; j++) muRu[j] /= br;
+
+                for (int j = startEn; j < endEn; j++)
+                {
+                    var col = Xen.GetColumn(idxEn[j]);
+                    LinAlg.AddInPlace(muEn.AsSpan(), col);
+                }
+                for (int j = 0; j < D; j++) muEn[j] /= be;
+
+                // 1) Cycle-consistency градиенты
+                // RU side: e = W21*(W12*x) - x
+                for (int j = startRu; j < endRu; j++)
+                {
+                    var col = Xru.GetColumn(idxRu[j]);
+                    LinAlg.Copy(col, x);
+
+                    LinAlg.MatVec(W12, x, y);      // y = W12 x
+                    LinAlg.MatVec(W21, y, z);      // z = W21 y
+                    for (int i = 0; i < D; i++) z[i] -= x[i]; // e = z - x
+
+                    // dW21 += 2/br * e y^T
+                    LinAlg.OuterAdd(z.AsSpan(), y, g21, 2f / br * opt.CycleWeight);
+
+                    // t = W21^T e
+                    LinAlg.MatTVec(W21, z, t);
+                    // dW12 += 2/br * t x^T
+                    LinAlg.OuterAdd(t.AsSpan(), x, g12, 2f / br * opt.CycleWeight);
+                }
+
+                // EN side: e2 = W12*(W21*x) - x
+                for (int j = startEn; j < endEn; j++)
+                {
+                    var col = Xen.GetColumn(idxEn[j]);
+                    LinAlg.Copy(col, x);
+
+                    LinAlg.MatVec(W21, x, y);      // y = W21 x
+                    LinAlg.MatVec(W12, y, z);      // z = W12 y
+                    for (int i = 0; i < D; i++) z[i] -= x[i];
+
+                    // dW12 += 2/be * e2 y^T
+                    LinAlg.OuterAdd(z.AsSpan(), y, g12, 2f / be * opt.CycleWeight);
+
+                    // t = W12^T e2
+                    LinAlg.MatTVec(W12, z, t);
+                    // dW21 += 2/be * t x^T
+                    LinAlg.OuterAdd(t.AsSpan(), x, g21, 2f / be * opt.CycleWeight);
+                }
+
+                // 2) Mean alignment: ||W12*muRu - muEn||^2 + ||W21*muEn - muRu||^2
+                LinAlg.MatVec(W12, muRu, y);
+                for (int i = 0; i < D; i++) y[i] -= muEn[i]; // e_mu12
+                LinAlg.OuterAdd(y.AsSpan(), muRu, g12, 2f * opt.MeanWeight);
+
+                LinAlg.MatVec(W21, muEn, y);
+                for (int i = 0; i < D; i++) y[i] -= muRu[i]; // e_mu21
+                LinAlg.OuterAdd(y.AsSpan(), muEn, g21, 2f * opt.MeanWeight);
+
+                // 3) CORAL (ковариации) для RU->EN
+                covY.Clear(); covTgt.Clear(); Sry.Clear();
+                // Сначала накопим cov(Xen_c)
+                for (int j = startEn; j < endEn; j++)
+                {
+                    var xe = Xen.GetColumn(idxEn[j]);
+                    for (int i = 0; i < D; i++) t[i] = xe[i] - muEn[i]; // t = xe_c
+                    LinAlg.OuterAdd(t.AsSpan(), t, covTgt, 1f);
+                }
+                if (be > 1) LinAlg.ScaleMatrixInPlace(covTgt, 1f / (be - 1));
+
+                // Теперь Y = W12 * (x_ru - muRu), covY и S = sum(y * xr^T)
+                for (int j = startRu; j < endRu; j++)
+                {
+                    var xr = Xru.GetColumn(idxRu[j]);
+                    for (int i = 0; i < D; i++) x[i] = xr[i] - muRu[i]; // x = xr_c
+                    LinAlg.MatVec(W12, x, y);
+                    LinAlg.OuterAdd(y.AsSpan(), y, covY, 1f);
+                    LinAlg.OuterAdd(y.AsSpan(), x, Sry, 1f);
+                }
+                if (br > 1) LinAlg.ScaleMatrixInPlace(covY, 1f / (br - 1));
+
+                // Cdiff = covY - covTgt
+                LinAlg.SubtractMatrices(covY, covTgt, Cdiff);
+
+                // tmpGrad = (Cdiff) * (Sry) ; g12 += 4/(br-1) * CoralWeight * tmpGrad
+                tmpGrad.Clear();
+                LinAlg.MatMulAdd(Cdiff, Sry, tmpGrad, 1f);
+                float coralScaleRu = (br > 1) ? (4f * opt.CoralWeight / (br - 1)) : 0f;
+                LinAlg.ScaleMatrixInPlace(tmpGrad, coralScaleRu);
+                LinAlg.AddMatricesInPlace(g12, tmpGrad);
+
+                // 4) CORAL для EN->RU
+                covY.Clear(); covTgt.Clear(); Set.Clear();
+                // cov(Xru_c)
+                for (int j = startRu; j < endRu; j++)
+                {
+                    var xr = Xru.GetColumn(idxRu[j]);
+                    for (int i = 0; i < D; i++) t[i] = xr[i] - muRu[i]; // t = xr_c
+                    LinAlg.OuterAdd(t.AsSpan(), t, covTgt, 1f);
+                }
+                if (br > 1) LinAlg.ScaleMatrixInPlace(covTgt, 1f / (br - 1));
+
+                // Y = W21 * (x_en - muEn), covY и S = sum(y * xe_c^T)
+                for (int j = startEn; j < endEn; j++)
+                {
+                    var xe = Xen.GetColumn(idxEn[j]);
+                    for (int i = 0; i < D; i++) x[i] = xe[i] - muEn[i]; // x = xe_c
+                    LinAlg.MatVec(W21, x, y);
+                    LinAlg.OuterAdd(y.AsSpan(), y, covY, 1f);
+                    LinAlg.OuterAdd(y.AsSpan(), x, Set, 1f);
+                }
+                if (be > 1) LinAlg.ScaleMatrixInPlace(covY, 1f / (be - 1));
+
+                LinAlg.SubtractMatrices(covY, covTgt, Cdiff);
+                tmpGrad.Clear();
+                LinAlg.MatMulAdd(Cdiff, Set, tmpGrad, 1f);
+                float coralScaleEn = (be > 1) ? (4f * opt.CoralWeight / (be - 1)) : 0f;
+                LinAlg.ScaleMatrixInPlace(tmpGrad, coralScaleEn);
+                LinAlg.AddMatricesInPlace(g21, tmpGrad);
+
+                // 5) Ортогональность: grad += 4*lambda * W (W^T W - I)
+                M12.Clear(); M21.Clear();
+                LinAlg.Gram(W12, M12);
+                LinAlg.SubIdentityInPlace(M12, 1f);
+                // T12 = W12 * M12
+                T12.Clear();
+                LinAlg.MatMulAdd(W12, M12, T12, 1f);
+                LinAlg.ScaleMatrixInPlace(T12, 4f * opt.OrthoWeight);
+                LinAlg.AddMatricesInPlace(g12, T12);
+
+                LinAlg.Gram(W21, M21);
+                LinAlg.SubIdentityInPlace(M21, 1f);
+                T21.Clear();
+                LinAlg.MatMulAdd(W21, M21, T21, 1f);
+                LinAlg.ScaleMatrixInPlace(T21, 4f * opt.OrthoWeight);
+                LinAlg.AddMatricesInPlace(g21, T21);
+
+                // 6) Связка W21 ≈ W12^T: ||W21 - W12^T||^2
+                for (int j = 0; j < D; j++)
+                {
+                    for (int i = 0; i < D; i++)
+                    {
+                        float diff = W21[i, j] - W12[j, i];
+                        g21[i, j] += 2f * opt.CoupleWeight * diff;
+                        g12[j, i] += -2f * opt.CoupleWeight * diff; // эквивалентно 2*(W12 - W21^T)
+                    }
+                }
+
+                // Adam шаг
+                opt12.Step(W12.Data, g12.Data, opt.Lr);
+                opt21.Step(W21.Data, g21.Data, opt.Lr);
+
+                steps++;
+                if (opt.RetractionEvery > 0 && (steps % opt.RetractionEvery) == 0)
+                {
+                    OrthoRetractionInPlace(W12, opt.OrthoRetraction);
+                    OrthoRetractionInPlace(W21, opt.OrthoRetraction);
                 }
             }
-
-            if (cZY != 0f)
-            {
-                for (int j = 0; j < m; j++)
-                {
-                    var yj = Y.GetColumn(j);
-                    float dist2 = SquaredDistance(zi, yj);
-                    float k = MathF.Exp(-dist2 * inv2s2);
-                    float coef = cZY * k * (2f / s2);
-                    AccumulateDiffScaled(zi, yj, g, coef);
-                }
-            }
+            
+            if ((epoch % 10) == 0)
+                _loggersSet.UserFriendlyLogger.LogInformation($"Epoch {epoch}");
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static float SquaredDistance(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
+    // Мягкая проекция на множество ортогональных матриц:
+    // W <- (1+beta)W - beta * W (W^T W)
+    private static void OrthoRetractionInPlace(MatrixFloat W, float beta)
     {
-        float s = 0f;
-        for (int i = 0; i < a.Length; i++)
+        if (beta <= 0f) return;
+        int D = W.Dimensions[0];
+        var G = new MatrixFloat(D, D);
+        LinAlg.Gram(W, G);           // G = W^T W
+        var WGt = new MatrixFloat(D, D);
+        LinAlg.MatMulAdd(W, G, WGt, 1f); // WGt = W * G
+                                         // W = (1+beta)W - beta*WGt
+        for (int i = 0; i < W.Data.Length; i++)
+            W.Data[i] = (1f + beta) * W.Data[i] - beta * WGt.Data[i];
+    }
+
+    public void ApplyF12(ReadOnlySpan<float> src, Span<float> dst) => LinAlg.MatVec(W12, src, dst);
+    public void ApplyF21(ReadOnlySpan<float> src, Span<float> dst) => LinAlg.MatVec(W21, src, dst);
+
+    public MatrixFloat MapAllF12(MatrixFloat X)
+    {
+        int n = X.Dimensions[1];
+        var Y = new MatrixFloat(D, n);
+        var x = new float[D];
+        var y = new float[D];
+        for (int j = 0; j < n; j++)
         {
-            float d = a[i] - b[i];
-            s += d * d;
+            LinAlg.Copy(X.GetColumn(j), x);
+            LinAlg.MatVec(W12, x, y);
+            Y.GetColumn(j).CopyTo(y);
+            for (int i = 0; i < D; i++) Y[i, j] = y[i];
         }
-        return s;
+        return Y;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    static void AccumulateDiffScaled(ReadOnlySpan<float> zi, ReadOnlySpan<float> zj, Span<float> g, float scale)
+    private static int[] ShuffledIndices(int n)
     {
-        for (int k = 0; k < zi.Length; k++)
-            g[k] += scale * (zi[k] - zj[k]);
-    }
-
-    static float MSE(MatrixFloat A, MatrixFloat B)
-    {
-        if (A.Rows() != B.Rows() || A.Cols() != B.Cols())
-            throw new ArgumentException("MSE: shape mismatch.");
-        float s = 0f;
-        int len = A.Data.Length;
-        for (int i = 0; i < len; i++)
+        var rnd = new Random(123456);
+        var idx = new int[n];
+        for (int i = 0; i < n; i++) idx[i] = i;
+        for (int i = n - 1; i > 0; i--)
         {
-            float d = A.Data[i] - B.Data[i];
-            s += d * d;
+            int j = rnd.Next(i + 1);
+            (idx[i], idx[j]) = (idx[j], idx[i]);
         }
-        // среднее на вектор (по колонкам)
-        return s / Math.Max(1, A.Cols());
+        return idx;
     }
 }
