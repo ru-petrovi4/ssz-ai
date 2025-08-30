@@ -65,6 +65,7 @@ public partial class Model02
                     ruEmb[i, j] = col.OldVector[i];
                 }
             }
+            LinAlg.NormalizeAndCenter(ruEmb);
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
             dim = WordsHelper.OldVectorLength_EN;
@@ -77,15 +78,13 @@ public partial class Model02
                     enEmb[i, j] = col.OldVector[i];
                 }
             }
+            LinAlg.NormalizeAndCenter(enEmb);
 
 
-            var mapper = new BilingualMapper(300, _loggersSet);
-            mapper.NormalizeAndCenter(ruEmb);
-            mapper.NormalizeAndCenter(enEmb);
-
+            var mapper = new BilingualMapper(300, _loggersSet);            
             var opts = new BilingualMapper.TrainOptions
             {
-                Epochs = 200,
+                Epochs = 100,
                 BatchSize = 2048,
                 Lr = 0.01f,
                 CycleWeight = 1.0f,
@@ -96,7 +95,6 @@ public partial class Model02
                 OrthoRetraction = 0.01f,
                 RetractionEvery = 10
             };
-
             mapper.Fit(ruEmb, enEmb, opts);
 
 
@@ -114,39 +112,56 @@ public partial class Model02
         {
             WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
             var dim = WordsHelper.OldVectorLength_RU;
-            var R = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
+            var ruEmb = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
             for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
             {
                 var col = LanguageInfo_RU.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    R[i, j] = col.OldVector[i];
+                    ruEmb[i, j] = col.OldVector[i];
                 }
             }
+            LinAlg.NormalizeAndCenter(ruEmb);
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
             dim = WordsHelper.OldVectorLength_EN;
-            var E = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
+            var enEmb = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
             for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
             {
                 var col = LanguageInfo_EN.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    E[i, j] = col.OldVector[i];
+                    enEmb[i, j] = col.OldVector[i];
                 }
             }
+            LinAlg.NormalizeAndCenter(enEmb);
 
-            MatrixFloat A = new();
-            MatrixFloat B = new();
+            var mapper = new BilingualMapper(300, _loggersSet);
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, A, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, B, null);
-            var r = new float[300];
-            LinAlg.MatVec(A, LanguageInfo_RU.Words[50].OldVectorNormalized, r);
-            LinAlg.MatVec(B, r, r);
-            var distance = TensorPrimitives.Distance(r, LanguageInfo_RU.Words[50].OldVectorNormalized);
-            _loggersSet.UserFriendlyLogger.LogInformation($"{distance}");
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W21, null);
+
+            var r1 = new float[300];
+            var r2 = new float[300];
+            var e1 = new float[300];
+            var e2 = new float[300];
+            for (int i = 50; i < 100; i++)
+            {
+                var ruW = ruEmb.GetColumn(i);
+                mapper.ApplyF12(ruW, r1);
+                mapper.ApplyF21(r1, r2);
+                var dot = TensorPrimitives.Dot(ruW, r2);
+                var enIndex = LinAlg.NearestColumnIndex(enEmb, r1);
+                _loggersSet.UserFriendlyLogger.LogInformation($"W21(W12(v)) dot v: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
+
+                var enW = enEmb.GetColumn(i);
+                mapper.ApplyF12(enW, e1);
+                mapper.ApplyF21(e1, e2);
+                dot = TensorPrimitives.Dot(enW, e2);
+                enIndex = LinAlg.NearestColumnIndex(enEmb, e1);
+                _loggersSet.UserFriendlyLogger.LogInformation($"W21(W12(v)) dot v: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[enIndex].Name}");
+            }
         });
     }
 
