@@ -7,6 +7,7 @@ namespace Ssz.AI.Helpers;
 
 public static class LinAlg
 {
+
     // Скопировать массив src в dst, предполагая одинаковую длину
     public static void Copy(ReadOnlySpan<float> src, Span<float> dst)
         => src.CopyTo(dst);

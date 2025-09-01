@@ -62,10 +62,9 @@ public partial class Model02
                 var col = LanguageInfo_RU.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    ruEmb[i, j] = col.OldVector[i];
+                    ruEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
-            LinAlg.NormalizeAndCenter(ruEmb);
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
             dim = WordsHelper.OldVectorLength_EN;
@@ -75,27 +74,26 @@ public partial class Model02
                 var col = LanguageInfo_EN.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    enEmb[i, j] = col.OldVector[i];
+                    enEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
-            LinAlg.NormalizeAndCenter(enEmb);
 
 
-            var mapper = new BilingualMapper(300, _loggersSet);            
-            var opts = new BilingualMapper.TrainOptions
-            {
-                Epochs = 100,
-                BatchSize = 2048,
-                Lr = 0.01f,
-                CycleWeight = 1.0f,
-                CoralWeight = 1.0f,
-                MeanWeight = 0.1f,
-                OrthoWeight = 0.1f,
-                CoupleWeight = 0.1f,
-                OrthoRetraction = 0.01f,
-                RetractionEvery = 10
-            };
-            mapper.Fit(ruEmb, enEmb, opts);
+            var mapper = new BilingualAligner(_loggersSet);            
+            //var opts = new BilingualMapper.TrainOptions
+            //{
+            //    Epochs = 100,
+            //    BatchSize = 2048,
+            //    Lr = 0.01f,
+            //    CycleWeight = 1.0f,
+            //    CoralWeight = 1.0f,
+            //    MeanWeight = 0.1f,
+            //    OrthoWeight = 0.1f,
+            //    CoupleWeight = 0.1f,
+            //    OrthoRetraction = 0.01f,
+            //    RetractionEvery = 10
+            //};
+            mapper.Train(ruEmb, enEmb);
 
 
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
@@ -118,10 +116,9 @@ public partial class Model02
                 var col = LanguageInfo_RU.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    ruEmb[i, j] = col.OldVector[i];
+                    ruEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
-            LinAlg.NormalizeAndCenter(ruEmb);
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
             dim = WordsHelper.OldVectorLength_EN;
@@ -131,12 +128,11 @@ public partial class Model02
                 var col = LanguageInfo_EN.Words[j];
                 for (int i = 0; i < dim; i++)
                 {
-                    enEmb[i, j] = col.OldVector[i];
+                    enEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
-            LinAlg.NormalizeAndCenter(enEmb);
 
-            var mapper = new BilingualMapper(300, _loggersSet);
+            var mapper = new BilingualAligner(_loggersSet);
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
