@@ -223,7 +223,7 @@ public static class LinAlg
             for (int j = 0; j < n; j++)
             {
                 var col = X.GetColumn(j);
-                float dot = TensorPrimitives.Dot(col, query); // SIMD-ускоренный dot без аллокаций
+                float dot = TensorPrimitives.CosineSimilarity(col, query); // SIMD-ускоренный dot без аллокаций
                 if (dot > bestDot)
                 {
                     bestDot = dot;

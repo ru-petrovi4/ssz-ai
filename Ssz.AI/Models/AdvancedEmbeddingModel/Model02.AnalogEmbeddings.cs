@@ -79,7 +79,7 @@ public partial class Model02
             }
 
 
-            var mapper = new BilingualAligner(_loggersSet);            
+            var mapper = new NNAligner(_loggersSet);            
             //var opts = new BilingualMapper.TrainOptions
             //{
             //    Epochs = 100,
@@ -93,13 +93,13 @@ public partial class Model02
             //    OrthoRetraction = 0.01f,
             //    RetractionEvery = 10
             //};
-            mapper.Train(ruEmb, enEmb);
+            mapper.Train(ruEmb, enEmb, new NNAligner.TrainConfig());
 
 
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W12, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.G.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W21, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.G.W21, null);
             _loggersSet.UserFriendlyLogger.LogInformation($"Saved");
         });            
     }
@@ -132,11 +132,11 @@ public partial class Model02
                 }
             }
 
-            var mapper = new BilingualAligner(_loggersSet);
+            var mapper = new NNAligner(_loggersSet);
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W12, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.G.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W21, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.G.W21, null);
 
             var r1 = new float[300];
             var r2 = new float[300];
@@ -147,16 +147,22 @@ public partial class Model02
                 var ruW = ruEmb.GetColumn(i);
                 mapper.ApplyF12(ruW, r1);
                 mapper.ApplyF21(r1, r2);
-                var dot = TensorPrimitives.Dot(ruW, r2);
+                var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
                 var enIndex = LinAlg.NearestColumnIndex(enEmb, r1);
-                _loggersSet.UserFriendlyLogger.LogInformation($"W21(W12(v)) dot v: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
+                if (enIndex < LanguageInfo_EN.Words.Count)
+                    _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
+                else
+                    _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; EN: ---");
 
                 var enW = enEmb.GetColumn(i);
-                mapper.ApplyF12(enW, e1);
-                mapper.ApplyF21(e1, e2);
-                dot = TensorPrimitives.Dot(enW, e2);
-                enIndex = LinAlg.NearestColumnIndex(enEmb, e1);
-                _loggersSet.UserFriendlyLogger.LogInformation($"W21(W12(v)) dot v: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[enIndex].Name}");
+                mapper.ApplyF21(enW, e1);
+                mapper.ApplyF12(e1, e2);
+                dot = TensorPrimitives.CosineSimilarity(enW, e2);
+                int ruIndex = LinAlg.NearestColumnIndex(ruEmb, e1);
+                if (ruIndex < LanguageInfo_RU.Words.Count)
+                    _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
+                else
+                    _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: ---");
             }
         });
     }
