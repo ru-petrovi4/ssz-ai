@@ -42,7 +42,7 @@ public class NNAligner
     public class TrainConfig
     {
         public int Dim = 300;
-        public int Epochs = 100;
+        public int Epochs = 200;
         public int BatchSize = 256;
         public float LrGen = 1e-3f;
         public float LrDisc = 1e-3f;
@@ -113,7 +113,11 @@ public class NNAligner
         Span<float> y_ = stackalloc float[d];
         Span<float> z_ = stackalloc float[d];
 
+        var ru_to_en = new MatrixFloat(d, cfg.BatchSize); // F12(ru)
+        var en_to_ru = new MatrixFloat(d, cfg.BatchSize); // F21(en)
 
+        var gradW_en = new float[d]; float gradb_en = 0f;
+        var gradW_ru = new float[d]; float gradb_ru = 0f;
 
 
         for (int epoch = 0; epoch < cfg.Epochs; epoch++)
@@ -128,14 +132,13 @@ public class NNAligner
                 var batchEN = SampleBatch(en, enIdx, step, cfg.BatchSize);
 
                 // 2) Прямой проход генераторов
-                var ru_to_en = new MatrixFloat(d, batchRU.Dimensions[1]); // F12(ru)
-                var en_to_ru = new MatrixFloat(d, batchEN.Dimensions[1]); // F21(en)
+                
                 ApplyLinear(G.W12, G.b12, batchRU, ru_to_en, po);
                 ApplyLinear(G.W21, G.b21, batchEN, en_to_ru, po);
 
                 // 3) Обновление дискриминаторов (линейная логрегрессия)
-                var gradW_en = new float[d]; float gradb_en = 0f;
-                var gradW_ru = new float[d]; float gradb_ru = 0f;
+                Array.Clear(gradW_en); gradb_en = 0f;
+                Array.Clear(gradW_ru); gradb_ru = 0f;
 
                 // EN дискриминатор
                 AccumulateDiscGrad(batchEN, 1f, D.W_en, D.b_en, gradW_en, ref gradb_en);
@@ -244,7 +247,7 @@ public class NNAligner
                     errorEn = e;
             }
 
-            _loggersSet.UserFriendlyLogger.LogInformation($"Epoch {epoch} done. Worst Ru: {errorRu}; Worst En: {errorEn}");
+            _loggersSet.UserFriendlyLogger.LogInformation($"Epoch {epoch} done. Worst Cosine Ru: {errorRu}; Worst Cosine En: {errorEn}");
         }
 
         return (G, D);
