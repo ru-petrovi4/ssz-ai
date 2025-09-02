@@ -248,6 +248,33 @@ public class NNAligner
             }
 
             _loggersSet.UserFriendlyLogger.LogInformation($"Epoch {epoch} done. Worst Cosine Ru: {errorRu}; Worst Cosine En: {errorEn}");
+
+            //var r1 = new float[300];
+            //var r2 = new float[300];
+            //var e1 = new float[300];
+            //var e2 = new float[300];
+            //for (int i = 50; i < 55; i++)
+            //{
+            //    var ruW = ru.GetColumn(i);
+            //    ApplyF12(ruW, r1);
+            //    ApplyF21(r1, r2);
+            //    var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
+            //    var enIndex = LinAlg.NearestColumnIndex(en, r1);
+            //    if (enIndex < LanguageInfo_EN.Words.Count)
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
+            //    else
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; EN: ---");
+
+            //    var enW = en.GetColumn(i);
+            //    ApplyF21(enW, e1);
+            //    ApplyF12(e1, e2);
+            //    dot = TensorPrimitives.CosineSimilarity(enW, e2);
+            //    int ruIndex = LinAlg.NearestColumnIndex(ruEmb, e1);
+            //    if (ruIndex < LanguageInfo_RU.Words.Count)
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
+            //    else
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: ---");
+            //}
         }
 
         return (G, D);
@@ -303,7 +330,7 @@ public class NNAligner
         float nb = TensorPrimitives.Norm(b);
         if (na <= 1e-9f || nb <= 1e-9f) { grad.Clear(); return; }
 
-        float cos = TensorPrimitives.Dot(a, b) / (na * nb);
+        float cos = TensorPrimitives.Dot(a, b); // VALFIX
         float C1 = scale * cos / (nb * nb);
         float C2 = -scale / (na * nb);
 

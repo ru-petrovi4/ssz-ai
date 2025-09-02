@@ -142,7 +142,7 @@ public partial class Model02
             var r2 = new float[300];
             var e1 = new float[300];
             var e2 = new float[300];
-            for (int i = 50; i < 100; i++)
+            for (int i = 50; i < 55; i++)
             {
                 var ruW = ruEmb.GetColumn(i);
                 mapper.ApplyF12(ruW, r1);
