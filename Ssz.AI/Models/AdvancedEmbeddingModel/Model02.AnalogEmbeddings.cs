@@ -79,7 +79,7 @@ public partial class Model02
             }
 
 
-            var mapper = new NNAligner(_loggersSet);            
+            var mapper = new BilingualMapper(300, _loggersSet);            
             //var opts = new BilingualMapper.TrainOptions
             //{
             //    Epochs = 100,
@@ -93,13 +93,17 @@ public partial class Model02
             //    OrthoRetraction = 0.01f,
             //    RetractionEvery = 10
             //};
-            mapper.Train(ruEmb, enEmb, new NNAligner.TrainConfig());
+            mapper.Train(
+                ruEmb, 
+                enEmb,
+                seedRuIdx: [0],
+                seedEnIdx: [19]);
 
 
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.G.W12, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.G.W21, null);
+            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W21, null);
             _loggersSet.UserFriendlyLogger.LogInformation($"Saved");
         });            
     }
@@ -132,11 +136,11 @@ public partial class Model02
                 }
             }
 
-            var mapper = new NNAligner(_loggersSet);
+            var mapper = new BilingualMapper(300, _loggersSet);
             string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.G.W12, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W12, null);
             fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.G.W21, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W21, null);
 
             var r1 = new float[300];
             var r2 = new float[300];
@@ -148,7 +152,7 @@ public partial class Model02
                 mapper.ApplyF12(ruW, r1);
                 mapper.ApplyF21(r1, r2);
                 var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
-                var enIndex = LinAlg.NearestColumnIndex(enEmb, r1);
+                var enIndex = mapper.PredictRuToEnIndex(enEmb, ruW);
                 if (enIndex < LanguageInfo_EN.Words.Count)
                     _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
                 else
@@ -158,7 +162,7 @@ public partial class Model02
                 mapper.ApplyF21(enW, e1);
                 mapper.ApplyF12(e1, e2);
                 dot = TensorPrimitives.CosineSimilarity(enW, e2);
-                int ruIndex = LinAlg.NearestColumnIndex(ruEmb, e1);
+                int ruIndex = mapper.PredictEnToRuIndex(ruEmb, enW);
                 if (ruIndex < LanguageInfo_RU.Words.Count)
                     _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
                 else
