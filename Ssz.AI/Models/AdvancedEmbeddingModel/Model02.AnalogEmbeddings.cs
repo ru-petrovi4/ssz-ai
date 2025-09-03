@@ -55,55 +55,48 @@ public partial class Model02
         Task.Run(async () =>
         {
             WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-            var dim = WordsHelper.OldVectorLength_RU;
-            var ruEmb = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
+            var d = WordsHelper.OldVectorLength_RU;
+            var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
             for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
             {
                 var col = LanguageInfo_RU.Words[j];
-                for (int i = 0; i < dim; i++)
+                for (int i = 0; i < d; i++)
                 {
                     ruEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
-            dim = WordsHelper.OldVectorLength_EN;
-            var enEmb = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
+            d = WordsHelper.OldVectorLength_EN;
+            var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
             for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
             {
                 var col = LanguageInfo_EN.Words[j];
-                for (int i = 0; i < dim; i++)
+                for (int i = 0; i < d; i++)
                 {
                     enEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
 
 
-            var mapper = new BilingualMapper(300, _loggersSet);            
-            //var opts = new BilingualMapper.TrainOptions
-            //{
-            //    Epochs = 100,
-            //    BatchSize = 2048,
-            //    Lr = 0.01f,
-            //    CycleWeight = 1.0f,
-            //    CoralWeight = 1.0f,
-            //    MeanWeight = 0.1f,
-            //    OrthoWeight = 0.1f,
-            //    CoupleWeight = 0.1f,
-            //    OrthoRetraction = 0.01f,
-            //    RetractionEvery = 10
-            //};
-            mapper.Train(
-                ruEmb, 
-                enEmb,
-                seedRuIdx: [0],
-                seedEnIdx: [19]);
+            var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);            
 
+            // Инициализация W случайной ортогональной матрицей (упрощённо — единичная)
+            var W = new MatrixFloat(new[] { d, d });
+            for (int i = 0; i < d; i++) W[i, i] = 1f;
 
-            string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W12, null);
-            fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, mapper.W21, null);
+            // (Опционально) Несколько шагов «ортогонализирующего» апдейта для стабилизации
+            for (int t = 0; t < 5; t++) align.Orthonormalize(W);
+
+            // Уточнение по Procrustes с синтетическим словарём (одна итерация; можно 2–3)
+            for (int it = 0; it < 2; it++)
+            {
+                W = align.Refine(ruEmb, enEmb, W);
+                align.Orthonormalize(W);
+            }
+
+            string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
+            Helpers.SerializationHelper.SaveToFile(fileName, W, null);            
             _loggersSet.UserFriendlyLogger.LogInformation($"Saved");
         });            
     }
@@ -113,34 +106,34 @@ public partial class Model02
         Task.Run(async () =>
         {
             WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-            var dim = WordsHelper.OldVectorLength_RU;
-            var ruEmb = new MatrixFloat(dim, LanguageInfo_RU.Words.Count);
+            var d = WordsHelper.OldVectorLength_RU;
+            var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
             for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
             {
                 var col = LanguageInfo_RU.Words[j];
-                for (int i = 0; i < dim; i++)
+                for (int i = 0; i < d; i++)
                 {
                     ruEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
 
             WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
-            dim = WordsHelper.OldVectorLength_EN;
-            var enEmb = new MatrixFloat(dim, LanguageInfo_EN.Words.Count);
+            d = WordsHelper.OldVectorLength_EN;
+            var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
             for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
             {
                 var col = LanguageInfo_EN.Words[j];
-                for (int i = 0; i < dim; i++)
+                for (int i = 0; i < d; i++)
                 {
                     enEmb[i, j] = col.OldVectorNormalized[i];
                 }
             }
 
-            var mapper = new BilingualMapper(300, _loggersSet);
-            string fileName = "AdvancedEmbedding_LanguageInfo_A.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W12, null);
-            fileName = "AdvancedEmbedding_LanguageInfo_B.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, mapper.W21, null);
+            var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);
+
+            var W = new MatrixFloat(new[] { d, d });
+            string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, W, null);            
 
             var r1 = new float[300];
             var r2 = new float[300];
@@ -148,21 +141,25 @@ public partial class Model02
             var e2 = new float[300];
             for (int i = 50; i < 55; i++)
             {
+                
+
                 var ruW = ruEmb.GetColumn(i);
-                mapper.ApplyF12(ruW, r1);
-                mapper.ApplyF21(r1, r2);
+                //mapper.ApplyF12(ruW, r1);
+                //mapper.ApplyF21(r1, r2);
                 var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
-                var enIndex = mapper.PredictRuToEnIndex(enEmb, ruW);
+                // Перевод слова с индексом i
+                int enIndex = align.Translate(enEmb, ruEmb, W, iSrc: i);
                 if (enIndex < LanguageInfo_EN.Words.Count)
                     _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
                 else
                     _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; EN: ---");
 
                 var enW = enEmb.GetColumn(i);
-                mapper.ApplyF21(enW, e1);
-                mapper.ApplyF12(e1, e2);
+                //mapper.ApplyF21(enW, e1);
+                //mapper.ApplyF12(e1, e2);
                 dot = TensorPrimitives.CosineSimilarity(enW, e2);
-                int ruIndex = mapper.PredictEnToRuIndex(ruEmb, enW);
+                // Перевод слова с индексом i
+                int ruIndex = align.Translate(ruEmb, enEmb, W, iSrc: i);
                 if (ruIndex < LanguageInfo_RU.Words.Count)
                     _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
                 else

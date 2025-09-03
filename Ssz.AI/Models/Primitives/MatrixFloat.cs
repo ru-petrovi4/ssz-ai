@@ -13,7 +13,7 @@ public class MatrixFloat : IOwnedDataSerializable
         if (dimensions == null || dimensions.Length != 2)
             throw new ArgumentException("Размерности матрица неверны.");
 
-        Dimensions = dimensions;
+        Dimensions = (int[])dimensions.Clone();
         Data = new float[dimensions[0] * dimensions[1]];
     }        
 
