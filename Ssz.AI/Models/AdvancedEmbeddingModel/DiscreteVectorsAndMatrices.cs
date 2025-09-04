@@ -13,22 +13,22 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public class NewVectorsAndMatrices : IOwnedDataSerializable
+public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
 {
     /// <summary>
     ///     New vectors for each word.
     /// </summary>
-    public float[][] NewVectors = null!;
+    public float[][] DiscreteVectors = null!;
 
     /// <summary>
     ///     New vectors for each word.
     /// </summary>
-    public float[][] NewVectors_PrimaryOnly = null!;
+    public float[][] DiscreteVectors_PrimaryOnly = null!;
 
     /// <summary>
     ///     New vectors for each word.
     /// </summary>
-    public float[][] NewVectors_SecondaryOnly = null!;
+    public float[][] DiscreteVectors_SecondaryOnly = null!;
 
     /// <summary>
     ///     [WordIndex1, WordIndex2] Words correlation matrix.
@@ -85,22 +85,22 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
 
     public void Initialize(int wordsCount)
     {
-        NewVectors = new float[wordsCount][];            
+        DiscreteVectors = new float[wordsCount][];            
         foreach (int wordIndex in Enumerable.Range(0, wordsCount))
         {
-            NewVectors[wordIndex] = new float[Model01.NewVectorLength];
+            DiscreteVectors[wordIndex] = new float[Model01.Constants.DiscreteVectorLength];
         }
 
-        NewVectors_PrimaryOnly = new float[wordsCount][];            
+        DiscreteVectors_PrimaryOnly = new float[wordsCount][];            
         foreach (int wordIndex in Enumerable.Range(0, wordsCount))
         {
-            NewVectors_PrimaryOnly[wordIndex] = new float[Model01.NewVectorLength];
+            DiscreteVectors_PrimaryOnly[wordIndex] = new float[Model01.Constants.DiscreteVectorLength];
         }
 
-        NewVectors_SecondaryOnly = new float[wordsCount][];            
+        DiscreteVectors_SecondaryOnly = new float[wordsCount][];            
         foreach (int wordIndex in Enumerable.Range(0, wordsCount))
         {
-            NewVectors_SecondaryOnly[wordIndex] = new float[Model01.NewVectorLength];
+            DiscreteVectors_SecondaryOnly[wordIndex] = new float[Model01.Constants.DiscreteVectorLength];
         }
 
         ProxWordsNewMatrix = new float[wordsCount * wordsCount];
@@ -189,7 +189,7 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
     {
         var wordsSubArray = words.ToArray();
 
-        CalculateNewVectors(wordsSubArray,
+        CalculateDiscreteVectors(wordsSubArray,
             wordsProjectionIndices,
             loggersSet);
 
@@ -200,16 +200,16 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
             int wordIndex1 = wordsSubArray[i1].Index;
             int indexBias = wordIndex1 * words.Count;
 
-            var newVector = NewVectors[wordIndex1];
-            var newVector_PrimaryOnly = NewVectors_PrimaryOnly[wordIndex1];
-            var newVector_SecondaryOnly = NewVectors_SecondaryOnly[wordIndex1];
+            var discreteVector = DiscreteVectors[wordIndex1];
+            var discreteVector_PrimaryOnly = DiscreteVectors_PrimaryOnly[wordIndex1];
+            var discreteVector_SecondaryOnly = DiscreteVectors_SecondaryOnly[wordIndex1];
             for (var i2 = 0; i2 < wordsSubArray.Length; i2 += 1)
             {
                 int wordIndex2 = wordsSubArray[i2].Index;
                 int matrixIndex = indexBias + wordIndex2;
-                ProxWordsNewMatrix[matrixIndex] = TensorPrimitives.Dot(newVector, NewVectors[wordIndex2]);
-                ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(newVector_PrimaryOnly, NewVectors_PrimaryOnly[wordIndex2]);
-                ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(newVector_SecondaryOnly, NewVectors_SecondaryOnly[wordIndex2]);
+                ProxWordsNewMatrix[matrixIndex] = TensorPrimitives.Dot(discreteVector, DiscreteVectors[wordIndex2]);
+                ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
+                ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
             }
         });
 
@@ -223,7 +223,7 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
     {
         var stopwatch = Stopwatch.StartNew();
 
-        CalculateNewVectors(wordsSubArray,
+        CalculateDiscreteVectors(wordsSubArray,
             wordsProjectionIndices,
             loggersSet);
         
@@ -232,9 +232,9 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
             int wordIndex1 = words[i1].Index;
             int indexBias = wordIndex1 * words.Count;
 
-            var newVector = NewVectors[wordIndex1];
-            //var newVector_PrimaryOnly = NewVectors_PrimaryOnly[wordIndex1];
-            //var newVector_SecondaryOnly = NewVectors_SecondaryOnly[wordIndex1];
+            var discreteVector = DiscreteVectors[wordIndex1];
+            //var discreteVector_PrimaryOnly = DiscreteVectors_PrimaryOnly[wordIndex1];
+            //var discreteVector_SecondaryOnly = DiscreteVectors_SecondaryOnly[wordIndex1];
             for (var i2 = 0; i2 < wordsSubArray.Length; i2 += 1)
             {
                 int wordIndex2 = wordsSubArray[i2].Index;
@@ -242,16 +242,16 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
                 if (Temp_ProxWordsNewMatrix_InPairGroups[matrixIndex])
                     ProxWordsNewMatrix[wordIndex2 * words.Count + wordIndex1] = 
                         ProxWordsNewMatrix[matrixIndex] = 
-                        TensorPrimitives.Dot(newVector, NewVectors[wordIndex2]);
-                //ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(newVector_PrimaryOnly, NewVectors_PrimaryOnly[wordIndex2]);
-                //ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(newVector_SecondaryOnly, NewVectors_SecondaryOnly[wordIndex2]);
+                        TensorPrimitives.Dot(discreteVector, DiscreteVectors[wordIndex2]);
+                //ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
+                //ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
             }
         });            
 
         //loggersSet.UserFriendlyLogger.LogInformation("Calculate_Parital done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
-    public void CalculateNewVectors(Word[] wordsSubArray,            
+    public void CalculateDiscreteVectors(Word[] wordsSubArray,            
         int[] wordsProjectionIndices,
         ILoggersSet loggersSet)
     {
@@ -259,12 +259,12 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
 
         foreach (Word word in wordsSubArray)
         {
-            var newVector = NewVectors[word.Index];
-            var newVector_PrimaryOnly = NewVectors_PrimaryOnly[word.Index];
-            var newVector_SecondaryOnly = NewVectors_SecondaryOnly[word.Index];
-            Array.Clear(newVector);
-            Array.Clear(newVector_PrimaryOnly);
-            Array.Clear(newVector_SecondaryOnly);
+            var discreteVector = DiscreteVectors[word.Index];
+            var discreteVector_PrimaryOnly = DiscreteVectors_PrimaryOnly[word.Index];
+            var discreteVector_SecondaryOnly = DiscreteVectors_SecondaryOnly[word.Index];
+            Array.Clear(discreteVector);
+            Array.Clear(discreteVector_PrimaryOnly);
+            Array.Clear(discreteVector_SecondaryOnly);
             var temp_Top8ProxPrimaryWords = Temp_Top8ProxPrimaryWords[word.Index];
             var temp_Top8ProxWords = Temp_Top8ProxWords[word.Index];
             for (int i = 0; i < temp_Top8ProxPrimaryWords!.Length; i += 1)
@@ -272,8 +272,8 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
                 int wordProjectionIndex = wordsProjectionIndices[temp_Top8ProxPrimaryWords[i].Item2.Index];
                 if (wordProjectionIndex >= 0)
                 {
-                    newVector[wordProjectionIndex] = 1.0f;
-                    newVector_PrimaryOnly[wordProjectionIndex] = 1.0f;
+                    discreteVector[wordProjectionIndex] = 1.0f;
+                    discreteVector_PrimaryOnly[wordProjectionIndex] = 1.0f;
                 }
             }
             for (int i = 0; i < temp_Top8ProxWords.Length; i += 1)
@@ -281,39 +281,39 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
                 int wordProjectionIndex = wordsProjectionIndices[temp_Top8ProxWords[i].Item2.Index];
                 if (wordProjectionIndex >= 0)
                 {
-                    newVector[wordProjectionIndex] = 1.0f;
-                    newVector_SecondaryOnly[wordProjectionIndex] = 1.0f;
+                    discreteVector[wordProjectionIndex] = 1.0f;
+                    discreteVector_SecondaryOnly[wordProjectionIndex] = 1.0f;
                 }
             }
         }
 
         stopwatch.Stop();
-        //loggersSet.UserFriendlyLogger.LogInformation("CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+        //loggersSet.UserFriendlyLogger.LogInformation("CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
     public void SerializeOwnedData(SerializationWriter serializationWriter, object? context)
     {
         using (serializationWriter.EnterBlock(1))
         {
-            serializationWriter.Write(NewVectors.Length);
-            if (NewVectors is not null)
-                foreach (var vectorNew in NewVectors)
+            serializationWriter.Write(DiscreteVectors.Length);
+            if (DiscreteVectors is not null)
+                foreach (var vectorNew in DiscreteVectors)
                 {
                     serializationWriter.WriteArray(vectorNew);
                 }
             //serializationWriter.WriteArray(algorithm.ProxWordsNewMatrix);
 
-            serializationWriter.Write(NewVectors_PrimaryOnly.Length);
-            if (NewVectors_PrimaryOnly is not null)
-                foreach (var vectorNew in NewVectors_PrimaryOnly)
+            serializationWriter.Write(DiscreteVectors_PrimaryOnly.Length);
+            if (DiscreteVectors_PrimaryOnly is not null)
+                foreach (var vectorNew in DiscreteVectors_PrimaryOnly)
                 {
                     serializationWriter.WriteArray(vectorNew);
                 }
             //serializationWriter.WriteArray(algorithm.ProxWordsNewMatrix_PrimaryOnly);
 
-            serializationWriter.Write(NewVectors_SecondaryOnly.Length);
-            if (NewVectors_SecondaryOnly is not null)
-                foreach (var vectorNew in NewVectors_SecondaryOnly)
+            serializationWriter.Write(DiscreteVectors_SecondaryOnly.Length);
+            if (DiscreteVectors_SecondaryOnly is not null)
+                foreach (var vectorNew in DiscreteVectors_SecondaryOnly)
                 {
                     serializationWriter.WriteArray(vectorNew);
                 }
@@ -327,39 +327,39 @@ public class NewVectorsAndMatrices : IOwnedDataSerializable
             switch (block.Version)
             {
                 case 1:
-                    int newVectorsLength = serializationReader.ReadInt32();
-                    if (newVectorsLength > 0)
+                    int discreteVectorsLength = serializationReader.ReadInt32();
+                    if (discreteVectorsLength > 0)
                     {
-                        var newVectors = new float[newVectorsLength][];
-                        foreach (int i in Enumerable.Range(0, newVectorsLength))
+                        var discreteVectors = new float[discreteVectorsLength][];
+                        foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            newVectors[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors[i] = serializationReader.ReadArray<float>()!;
                         }
-                        NewVectors = newVectors;
+                        DiscreteVectors = discreteVectors;
                     }
                     //algorithm.ProxWordsNewMatrix = serializationReader.ReadArray<float>();
 
-                    newVectorsLength = serializationReader.ReadInt32();
-                    if (newVectorsLength > 0)
+                    discreteVectorsLength = serializationReader.ReadInt32();
+                    if (discreteVectorsLength > 0)
                     {
-                        var newVectors_PrimaryOnly = new float[newVectorsLength][];
-                        foreach (int i in Enumerable.Range(0, newVectorsLength))
+                        var discreteVectors_PrimaryOnly = new float[discreteVectorsLength][];
+                        foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            newVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
                         }
-                        NewVectors_PrimaryOnly = newVectors_PrimaryOnly;
+                        DiscreteVectors_PrimaryOnly = discreteVectors_PrimaryOnly;
                     }
                     //algorithm.ProxWordsNewMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
 
-                    newVectorsLength = serializationReader.ReadInt32();
-                    if (newVectorsLength > 0)
+                    discreteVectorsLength = serializationReader.ReadInt32();
+                    if (discreteVectorsLength > 0)
                     {
-                        var newVectors_SecondaryOnly = new float[newVectorsLength][];
-                        foreach (int i in Enumerable.Range(0, newVectorsLength))
+                        var discreteVectors_SecondaryOnly = new float[discreteVectorsLength][];
+                        foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            newVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
                         }
-                        NewVectors_SecondaryOnly = newVectors_SecondaryOnly;
+                        DiscreteVectors_SecondaryOnly = discreteVectors_SecondaryOnly;
                     }
                     //algorithm.ProxWordsNewMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
                     break;

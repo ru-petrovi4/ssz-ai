@@ -35,7 +35,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
         //    foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
         //    {
-        //        wordsProjectionIndices[wordIndex] = r.Next(NewVectorLength);
+        //        wordsProjectionIndices[wordIndex] = r.Next(DiscreteVectorLength);
         //    }
         //    //int[] pointProjectionArray = Enumerable.Repeat(-1, Cortex.Array.Length).ToArray();
         //    //for (int i = 0; i < BooleanVectorLength; i += 1)

@@ -19,19 +19,19 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         public float[] GetEmbeddingForPhrase(string phrase)
         {
-            if (CurrentWordsNewEmbeddings is null || CurrentNewVectorsAndMatrices_ToDisplay is null)
+            if (CurrentWordsNewEmbeddings is null || CurrentDiscreteVectorsAndMatrices_ToDisplay is null)
                 return new float[0];
 
             var wordsDictionary = CurrentWordsNewEmbeddings.Words;
-            var newVectors = CurrentNewVectorsAndMatrices_ToDisplay.NewVectors;
+            var discreteVectors = CurrentDiscreteVectorsAndMatrices_ToDisplay.DiscreteVectors;
 
-            float[] embedding = new float[NewVectorLength];
+            float[] embedding = new float[Constants.DiscreteVectorLength];
 
             foreach (var wordString in phrase.Split())
             {
                 if (wordsDictionary.TryGetValue(NormalizeWord2(wordString), out int index))
                 {
-                    TensorPrimitives.Add(embedding, newVectors[index], embedding);
+                    TensorPrimitives.Add(embedding, discreteVectors[index], embedding);
                 }
                 else
                 {

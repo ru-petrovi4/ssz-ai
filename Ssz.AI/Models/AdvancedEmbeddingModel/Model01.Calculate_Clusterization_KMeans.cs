@@ -29,7 +29,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             Random r = new();
 
-            var primaryWords_Random = new Word[PrimaryWordsCount];
+            var primaryWords_Random = new Word[Constants.PrimaryWordsCount];
             for (int index = 0; index < primaryWords_Random.Length; index += 1)
             {
                 for (; ; )
@@ -47,14 +47,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             int Q = 0;            
             double delta_llh = 0;
             
-            WordCluster[] wordClusters = new WordCluster[PrimaryWordsCount];
+            WordCluster[] wordClusters = new WordCluster[Constants.PrimaryWordsCount];
             for (int clusterIndex = 0; clusterIndex < wordClusters.Length; clusterIndex += 1)
             {
                 WordCluster wordClustrer = new()
                 {
-                    CentroidOldVector = new float[OldVectorLength],                    
+                    CentroidOldVector = new float[Constants.OldVectorLength],                    
                 };
-                Array.Copy(primaryWords_Random[clusterIndex].OldVectorNormalized, wordClustrer.CentroidOldVector, OldVectorLength);
+                Array.Copy(primaryWords_Random[clusterIndex].OldVectorNormalized, wordClustrer.CentroidOldVector, Constants.OldVectorLength);
                 wordClusters[clusterIndex] = wordClustrer;
             }
 
@@ -135,7 +135,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 loggersSet.UserFriendlyLogger.LogInformation("MAXIMIZATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
             }
 
-            Word[] primaryWords_KMeans = new Word[PrimaryWordsCount];
+            Word[] primaryWords_KMeans = new Word[Constants.PrimaryWordsCount];
 
             Parallel.For(0, wordClusters.Length, clusterIndex =>
             {

@@ -25,17 +25,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
     public partial class Model01
     {
-        public void Calculate_NewVector_ToDisplay(List<Word> words, Word word, int wordNum)
+        public void Calculate_DiscreteVector_ToDisplay(List<Word> words, Word word, int wordNum)
         {
             Clusterization_Algorithm? CurrentClusterization_Algorithm_ToDisplay = null;
 
             if (CurrentClusterization_Algorithm_ToDisplay?.PrimaryWords is not null &&
-                CurrentNewVectorsAndMatrices_ToDisplay?.Temp_Top8ProxPrimaryWords is not null &&
-                CurrentNewVectorsAndMatrices_ToDisplay?.Temp_Top8ProxWords is not null &&
+                CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxPrimaryWords is not null &&
+                CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxWords is not null &&
                 CurrentProjectionOptimization_Algorithm_ToDisplay is not null)
             {                
-                Word[] topProxPrimaryWords = CurrentNewVectorsAndMatrices_ToDisplay.Temp_Top8ProxPrimaryWords[word.Index].Select(it => it.Item2).ToArray();
-                Word[] topProxSecondaryWords = CurrentNewVectorsAndMatrices_ToDisplay.Temp_Top8ProxWords[word.Index].Select(it => it.Item2).ToArray();
+                Word[] topProxPrimaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxPrimaryWords[word.Index].Select(it => it.Item2).ToArray();
+                Word[] topProxSecondaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxWords[word.Index].Select(it => it.Item2).ToArray();
                 
                 switch (wordNum)
                 {
@@ -74,34 +74,34 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     //    break;
                 }                
 
-                var newVector =  new float[NewVectorLength];
+                var discreteVector =  new float[Constants.DiscreteVectorLength];
                 for (int i = 0; i < topProxPrimaryWords.Length; i += 1)
                 {
-                    newVector[CurrentProjectionOptimization_Algorithm_ToDisplay.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 3.0f;
+                    discreteVector[CurrentProjectionOptimization_Algorithm_ToDisplay.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 3.0f;
                 }
                 for (int i = 0; i < topProxSecondaryWords.Length; i += 1)
                 {
-                    newVector[CurrentProjectionOptimization_Algorithm_ToDisplay.WordsProjectionIndices[topProxSecondaryWords[i].Index]] += 1.0f;
+                    discreteVector[CurrentProjectionOptimization_Algorithm_ToDisplay.WordsProjectionIndices[topProxSecondaryWords[i].Index]] += 1.0f;
                 }
 
-                word.NewVector_ToDisplay = newVector;                             
+                word.DiscreteVector_ToDisplay = discreteVector;                             
 
                 CreateCortexCopy();
             }
         }
 
-        //public NewVectorsAndMatrices Calculate_NewVectors_NoClusters(Clusterization_Algorithm clusterization_Algorithm,
+        //public DiscreteVectorsAndMatrices Calculate_DiscreteVectors_NoClusters(Clusterization_Algorithm clusterization_Algorithm,
         //    ProjectionOptimization_Algorithm projectionOptimization_Algorithm,
         //    ILoggersSet loggersSet)
         //{
         //    var stopwatch = Stopwatch.StartNew();
 
-        //    var newVectors = new float[Words.Count][];
-        //    newVectors[0] = new float[0];
-        //    var newVectors_PrimaryOnly = new float[Words.Count][];
-        //    newVectors_PrimaryOnly[0] = new float[0];
-        //    var newVectors_SecondaryOnly = new float[Words.Count][];
-        //    newVectors_SecondaryOnly[0] = new float[0];
+        //    var discreteVectors = new float[Words.Count][];
+        //    discreteVectors[0] = new float[0];
+        //    var discreteVectors_PrimaryOnly = new float[Words.Count][];
+        //    discreteVectors_PrimaryOnly[0] = new float[0];
+        //    var discreteVectors_SecondaryOnly = new float[Words.Count][];
+        //    discreteVectors_SecondaryOnly[0] = new float[0];
 
         //    ParallelLoopResult parallelLoopResult = Parallel.For(0, Words.Count, wordIndex =>
         //    {
@@ -109,74 +109,74 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //        int indexBias = word.Index * Words.Count;
         //        Word[] topProxPrimaryWords = clusterization_Algorithm.PrimaryWords!
         //            .OrderByDescending(x => ProxWordsOldMatrix[indexBias + x.Index])
-        //            .Take(PrimaryWords_NewVector_BitsCount).ToArray();
+        //            .Take(PrimaryWords_DiscreteVector_BitsCount).ToArray();
         //        Word[] topProxSecondaryWords = Words
         //            .OrderByDescending(x => ProxWordsOldMatrix[indexBias + x.Index])
-        //            .Take(SecondaryWords_NewVector_BitsCount).ToArray();
+        //            .Take(SecondaryWords_DiscreteVector_BitsCount).ToArray();
 
-        //        var newVector = new float[NewVectorLength];
+        //        var discreteVector = new float[DiscreteVectorLength];
         //        for (int i = 0; i < topProxPrimaryWords.Length; i += 1)
         //        {
-        //            newVector[projectionOptimization_Algorithm.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 1.0f;
+        //            discreteVector[projectionOptimization_Algorithm.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 1.0f;
         //        }
         //        for (int i = 0; i < topProxSecondaryWords.Length; i += 1)
         //        {
-        //            newVector[projectionOptimization_Algorithm.WordsProjectionIndices[topProxSecondaryWords[i].Index]] = 1.0f;
+        //            discreteVector[projectionOptimization_Algorithm.WordsProjectionIndices[topProxSecondaryWords[i].Index]] = 1.0f;
         //        }
-        //        newVectors[wordIndex] = newVector;
+        //        discreteVectors[wordIndex] = discreteVector;
 
-        //        var newVector_PrimaryOnly = new float[NewVectorLength];
+        //        var discreteVector_PrimaryOnly = new float[DiscreteVectorLength];
         //        for (int i = 0; i < topProxPrimaryWords.Length; i += 1)
         //        {
-        //            newVector_PrimaryOnly[projectionOptimization_Algorithm.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 1.0f;
+        //            discreteVector_PrimaryOnly[projectionOptimization_Algorithm.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 1.0f;
         //        }                
-        //        newVectors_PrimaryOnly[wordIndex] = newVector_PrimaryOnly;
+        //        discreteVectors_PrimaryOnly[wordIndex] = discreteVector_PrimaryOnly;
 
-        //        var newVector_SecondaryOnly = new float[NewVectorLength];                
+        //        var discreteVector_SecondaryOnly = new float[DiscreteVectorLength];                
         //        for (int i = 0; i < topProxSecondaryWords.Length; i += 1)
         //        {
-        //            newVector_SecondaryOnly[projectionOptimization_Algorithm.WordsProjectionIndices[topProxSecondaryWords[i].Index]] = 1.0f;
+        //            discreteVector_SecondaryOnly[projectionOptimization_Algorithm.WordsProjectionIndices[topProxSecondaryWords[i].Index]] = 1.0f;
         //        }
-        //        newVectors_SecondaryOnly[wordIndex] = newVector_SecondaryOnly;
+        //        discreteVectors_SecondaryOnly[wordIndex] = discreteVector_SecondaryOnly;
         //    });
 
-        //    NewVectorsAndMatrices result = new();
-        //    result.NewVectors = newVectors.ToList();
-        //    result.NewVectors_PrimaryOnly = newVectors_PrimaryOnly.ToList();
-        //    result.NewVectors_SecondaryOnly = newVectors_SecondaryOnly.ToList();
+        //    DiscreteVectorsAndMatrices result = new();
+        //    result.DiscreteVectors = discreteVectors.ToList();
+        //    result.DiscreteVectors_PrimaryOnly = discreteVectors_PrimaryOnly.ToList();
+        //    result.DiscreteVectors_SecondaryOnly = discreteVectors_SecondaryOnly.ToList();
 
         //    stopwatch.Stop();
-        //    loggersSet.UserFriendlyLogger.LogInformation(clusterization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+        //    loggersSet.UserFriendlyLogger.LogInformation(clusterization_Algorithm.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
         //    return result;
         //}
 
-        public NewVectorsAndMatrices Calculate_NewVectorsAndMatrices(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsAndMatrices(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();            
 
-            NewVectorsAndMatrices result = new();
+            DiscreteVectorsAndMatrices result = new();
             result.Initialize(languageInfo.Words.Count);
             result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
             result.Calculate_Full(languageInfo.Words, languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_Algorithm.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_Algorithm.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return result;
         }
 
-        public NewVectorsAndMatrices Calculate_NewVectors(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        public DiscreteVectorsAndMatrices Calculate_DiscreteVectors(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();
 
-            NewVectorsAndMatrices result = new();
+            DiscreteVectorsAndMatrices result = new();
             result.Initialize(languageInfo.Words.Count);
             result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
-            result.CalculateNewVectors(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
+            result.CalculateDiscreteVectors(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateNewVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return result;
         }

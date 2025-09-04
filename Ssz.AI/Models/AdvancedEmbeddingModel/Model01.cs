@@ -31,24 +31,13 @@ public partial class Model01
     public Model01()
     {
         _loggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
-    }            
+    }
 
     #endregion
 
-    #region public functions
+    #region public functions       
 
-    public const int OldVectorLength = 300;
-
-    public const int NewVectorLength = 200;
-
-    /// <summary>
-    ///     For algorithms with fixed primary words count.
-    /// </summary>
-    public int PrimaryWordsCount = 300;
-
-    public int PrimaryWords_NewVector_BitsCount = 8;
-
-    public int SecondaryWords_NewVector_BitsCount = 8;
+    public static readonly ModelConstants Constants = new();
 
     /// <summary>
     ///     RusVectores        
@@ -72,15 +61,23 @@ public partial class Model01
     
     public ProjectionOptimization_Algorithm? CurrentProjectionOptimization_Algorithm_ToDisplay;
 
-    public NewVectorsAndMatrices? CurrentNewVectorsAndMatrices_ToDisplay;
+    public DiscreteVectorsAndMatrices? CurrentDiscreteVectorsAndMatrices_ToDisplay;
 
-    public WordsNewEmbeddings? CurrentWordsNewEmbeddings;
+    public WordsNewEmbeddings? CurrentWordsNewEmbeddings;    
 
     public void Initialize()
     {
         Task.Run(async () =>
         {
-            InitializeWords(_loggersSet);
+            #region RU Words Initialization
+            WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
+            LanguageInfo_RU.Clusterization_Algorithm = new Clusterization_Algorithm(LanguageInfo_RU.Words) { Name = "KMeans" };
+            #endregion
+
+            #region EN Words Initialization
+            WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+            LanguageInfo_EN.Clusterization_Algorithm = new Clusterization_Algorithm(LanguageInfo_EN.Words) { Name = "KMeans" };
+            #endregion
 
             ProxWordsOldMatrix_Calculate(LanguageInfo_RU, _loggersSet);
             string fileName = "AdvancedEmbedding_LanguageInfo_ProxWordsOldMatrix_RU.bin";
@@ -114,32 +111,32 @@ public partial class Model01
             Helpers.SerializationHelper.SaveToFile(fileName, LanguageInfo_EN.ProjectionOptimization_Algorithm, null);
             //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, LanguageInfo_EN.ProjectionOptimization_Algorithm_Variant3, null);    
 
-            //CalculateNewVectors(Clusterization_Algorithm_Random, ProjectionOptimization_Algorithm_Random, _loggersSet);
-            //SaveToFile_NewVectors(Clusterization_Algorithm_Random, _loggersSet);
-            //LoadFromFile_NewVectorsAndMatrices(Clusterization_Algorithm_Random, _loggersSet);
+            //CalculateDiscreteVectors(Clusterization_Algorithm_Random, ProjectionOptimization_Algorithm_Random, _loggersSet);
+            //SaveToFile_DiscreteVectors(Clusterization_Algorithm_Random, _loggersSet);
+            //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_Algorithm_Random, _loggersSet);
             //ProxWordsNewMatrix_Calculate(Clusterization_Algorithm_Random, _loggersSet);
 
-            NewVectorsAndMatrices newVectorsAndMatrices = Calculate_NewVectors(LanguageInfo_RU, _loggersSet);
-            fileName = "AdvancedEmbedding_NewVectors_RU.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, newVectorsAndMatrices, null);
-            //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, newVectorsAndMatrices, null);    
+            DiscreteVectorsAndMatrices discreteVectorsAndMatrices = Calculate_DiscreteVectors(LanguageInfo_RU, _loggersSet);
+            fileName = "AdvancedEmbedding_DiscreteVectors_RU.bin";
+            Helpers.SerializationHelper.SaveToFile(fileName, discreteVectorsAndMatrices, null);
+            //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, discreteVectorsAndMatrices, null);    
 
-            newVectorsAndMatrices = Calculate_NewVectors(LanguageInfo_EN, _loggersSet);
-            fileName = "AdvancedEmbedding_NewVectors_EN.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, newVectorsAndMatrices, null);
-            //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, newVectorsAndMatrices, null);  
+            discreteVectorsAndMatrices = Calculate_DiscreteVectors(LanguageInfo_EN, _loggersSet);
+            fileName = "AdvancedEmbedding_DiscreteVectors_EN.bin";
+            Helpers.SerializationHelper.SaveToFile(fileName, discreteVectorsAndMatrices, null);
+            //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, discreteVectorsAndMatrices, null);  
             
-            CurrentNewVectorsAndMatrices_ToDisplay = newVectorsAndMatrices;
+            CurrentDiscreteVectorsAndMatrices_ToDisplay = discreteVectorsAndMatrices;
             //CurrentClusterization_Algorithm_ToDisplay = Clusterization_Algorithm_KMeans;
             //CurrentProjectionOptimization_Algorithm_ToDisplay = ProjectionOptimization_Algorithm_Variant3;
             
-            //LoadFromFile_NewVectorsAndMatrices(Clusterization_Algorithm_KMeans, _loggersSet);
+            //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_Algorithm_KMeans, _loggersSet);
             //ProxWordsNewMatrix_Calculate(Clusterization_Algorithm_KMeans, _loggersSet);
 
-            //NewVectorsAndMatrices newVectorsAndMatrices = Calculate_NewVectors(Clusterization_Algorithm_Classes, ProjectionOptimization_Algorithm_Random, _loggersSet);
-            //CurrentNewVectorsAndMatrices_ToDisplay = newVectorsAndMatrices;
-            //SaveToFile_NewVectorsAndMatrices(Algorithm_Classes, _loggersSet);
-            //LoadFromFile_NewVectorsAndMatrices(Clusterization_Algorithm_Classes, _loggersSet);
+            //DiscreteVectorsAndMatrices discreteVectorsAndMatrices = Calculate_DiscreteVectors(Clusterization_Algorithm_Classes, ProjectionOptimization_Algorithm_Random, _loggersSet);
+            //CurrentDiscreteVectorsAndMatrices_ToDisplay = discreteVectorsAndMatrices;
+            //SaveToFile_DiscreteVectorsAndMatrices(Algorithm_Classes, _loggersSet);
+            //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_Algorithm_Classes, _loggersSet);
             //ProxWordsNewMatrix_Calculate(Clusterization_Algorithm_Classes, _loggersSet);
 
             //CurrentWordsNewEmbeddings = Calculate_WordsNewEmbeddings(_loggersSet);
@@ -156,26 +153,7 @@ public partial class Model01
     #endregion
 
     #region private functions
-
-    private void InitializeWords(ILoggersSet loggersSet)
-    {
-        #region RU Words Initialization
-
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, loggersSet);
-
-        LanguageInfo_RU.Clusterization_Algorithm = new Clusterization_Algorithm(LanguageInfo_RU.Words) { Name = "KMeans" };
-
-        #endregion                       
-
-        #region EN Words Initialization
-
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, loggersSet);
-
-        LanguageInfo_EN.Clusterization_Algorithm = new Clusterization_Algorithm(LanguageInfo_EN.Words) { Name = "KMeans" };
-
-        #endregion   
-    }
-
+    
     private void CreateCortexCopy()
     {
         lock (CortexCopySyncRoot)
@@ -300,15 +278,31 @@ public partial class Model01
     private readonly float[] _v1 = new float[2];
 
     #endregion
+
+    public class ModelConstants
+    {
+        public int OldVectorLength { get; } = 300;
+
+        public int DiscreteVectorLength { get; } = 200;
+
+        /// <summary>
+        ///     For algorithms with fixed primary words count.
+        /// </summary>
+        public int PrimaryWordsCount { get; } = 300;
+
+        public int PrimaryWords_DiscreteVector_BitsCount { get; } = 8;
+
+        public int SecondaryWords_DiscreteVector_BitsCount { get; } = 8;
+    }
 }
 
 public class Word
 {
     public Word()
     {
-        OldVector = new float[Model01.OldVectorLength];
-        OldVectorNormalized = new float[Model01.OldVectorLength];
-        NewVector_ToDisplay = new float[Model01.NewVectorLength];
+        OldVector = new float[Model01.Constants.OldVectorLength];
+        OldVectorNormalized = new float[Model01.Constants.OldVectorLength];
+        DiscreteVector_ToDisplay = new float[Model01.Constants.DiscreteVectorLength];
     }
 
     /// <summary>
@@ -336,7 +330,7 @@ public class Word
     /// </summary>
     public readonly float[] OldVectorNormalized;
 
-    public float[]? NewVector_ToDisplay;        
+    public float[]? DiscreteVector_ToDisplay;        
 
     public bool Temp_Flag;        
 }    
@@ -483,7 +477,7 @@ public enum PointGroupId_ToDisplay
 public class WordsNewEmbeddings
 {
     /// <summary>
-    ///     [Словоформа, NewVector Index]
+    ///     [Словоформа, DiscreteVector Index]
     /// </summary>
     public CaseInsensitiveDictionary<int> Words = new();
 }
@@ -492,10 +486,10 @@ public class WordsNewEmbeddings
 ///// <summary>
 /////     
 ///// </summary>
-///// <param name="newVectorsAndMatrices"></param>
+///// <param name="discreteVectorsAndMatrices"></param>
 ///// <param name="fileName"></param>
 ///// <param name="loggersSet"></param>
-//private void LoadFromFile_NewVectorsAndMatrices(NewVectorsAndMatrices newVectorsAndMatrices, string fileName, ILoggersSet loggersSet)
+//private void LoadFromFile_DiscreteVectorsAndMatrices(DiscreteVectorsAndMatrices discreteVectorsAndMatrices, string fileName, ILoggersSet loggersSet)
 //{
 //    var stopwatch = Stopwatch.StartNew();
 
@@ -503,45 +497,45 @@ public class WordsNewEmbeddings
 //    byte[] bytes = File.ReadAllBytes(Path.Combine(programDataDirectoryFullName, fileName));
 //    using (SerializationReader serializationReader = new(bytes))
 //    {
-//        int newVectorsLength = serializationReader.ReadInt32();
-//        if (newVectorsLength > 0)
+//        int discreteVectorsLength = serializationReader.ReadInt32();
+//        if (discreteVectorsLength > 0)
 //        {
-//            var newVectors = new float[newVectorsLength][];
-//            foreach (int i in Enumerable.Range(0, newVectorsLength))
+//            var discreteVectors = new float[discreteVectorsLength][];
+//            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                newVectors[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors[i] = serializationReader.ReadArray<float>()!;
 //            }
-//            newVectorsAndMatrices.NewVectors = newVectors;
+//            discreteVectorsAndMatrices.DiscreteVectors = discreteVectors;
 //        }
 //        //algorithm.ProxWordsNewMatrix = serializationReader.ReadArray<float>();
 
-//        newVectorsLength = serializationReader.ReadInt32();
-//        if (newVectorsLength > 0)
+//        discreteVectorsLength = serializationReader.ReadInt32();
+//        if (discreteVectorsLength > 0)
 //        {
-//            var newVectors_PrimaryOnly = new float[newVectorsLength][];
-//            foreach (int i in Enumerable.Range(0, newVectorsLength))
+//            var discreteVectors_PrimaryOnly = new float[discreteVectorsLength][];
+//            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                newVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
 //            }
-//            newVectorsAndMatrices.NewVectors_PrimaryOnly = newVectors_PrimaryOnly;
+//            discreteVectorsAndMatrices.DiscreteVectors_PrimaryOnly = discreteVectors_PrimaryOnly;
 //        }
 //        //algorithm.ProxWordsNewMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
 
-//        newVectorsLength = serializationReader.ReadInt32();
-//        if (newVectorsLength > 0)
+//        discreteVectorsLength = serializationReader.ReadInt32();
+//        if (discreteVectorsLength > 0)
 //        {
-//            var newVectors_SecondaryOnly = new float[newVectorsLength][];
-//            foreach (int i in Enumerable.Range(0, newVectorsLength))
+//            var discreteVectors_SecondaryOnly = new float[discreteVectorsLength][];
+//            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                newVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
 //            }
-//            newVectorsAndMatrices.NewVectors_SecondaryOnly = newVectors_SecondaryOnly;
+//            discreteVectorsAndMatrices.DiscreteVectors_SecondaryOnly = discreteVectors_SecondaryOnly;
 //        }
 //        //algorithm.ProxWordsNewMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
 //    }
 
 //    stopwatch.Stop();
-//    loggersSet.UserFriendlyLogger.LogInformation("LoadFromFile_NewVectorsAndMatrices done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+//    loggersSet.UserFriendlyLogger.LogInformation("LoadFromFile_DiscreteVectorsAndMatrices done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 //}
 
 ///// <summary>
