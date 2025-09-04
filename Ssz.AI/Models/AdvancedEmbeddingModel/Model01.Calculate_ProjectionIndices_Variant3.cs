@@ -23,17 +23,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         public void Calculate_ProjectionIndices_Variant3(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
-            Clusterization_AlgorithmData clusterization_AlgorithmData = languageInfo.Clusterization_AlgorithmData;
-           
             var words = languageInfo.Words;
-            
-            var projectionOptimization_AlgorithmData_Variant3 = languageInfo.ProjectionOptimization_AlgorithmData;
+
+            var projectionOptimization_AlgorithmData_Variant3 = new ProjectionOptimization_AlgorithmData { Name = "Variant3" };
+            projectionOptimization_AlgorithmData_Variant3.GenerateOwnedData(words.Count);
+            languageInfo.ProjectionOptimization_AlgorithmData = projectionOptimization_AlgorithmData_Variant3;
+
+            var clusterization_AlgorithmData = languageInfo.Clusterization_AlgorithmData;    
 
             var totalStopwatch = Stopwatch.StartNew();
 
             var r = new Random();
-
-            projectionOptimization_AlgorithmData_Variant3.WordsProjectionIndices = new int[words.Count];
+            
             //LoadFromFile_ProjectionIndices(ProjectionOptimization_AlgorithmData_Variant3, "ProjectionOptimization.bin", _loggersSet);
             var wordsProjectionIndices = projectionOptimization_AlgorithmData_Variant3.WordsProjectionIndices;
 

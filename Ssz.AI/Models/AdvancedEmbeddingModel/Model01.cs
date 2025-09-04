@@ -83,26 +83,22 @@ public partial class Model01
             //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, LanguageInfo_EN.ProxWordsOldMatrix, null);
 
             //Calculate_Clusterization_AlgorithmData_Random(_loggersSet);
-
-            LanguageInfo_RU.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU) { Name = "KMeans" };
+            
             Calculate_Clusterization_AlgorithmData_KMeans(LanguageInfo_RU, _loggersSet);
             fileName = "AdvancedEmbedding_Clusterization_AlgorithmData_KMeans_RU.bin";
             Helpers.SerializationHelper.SaveToFile(fileName, LanguageInfo_RU.Clusterization_AlgorithmData, null);
             //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, LanguageInfo_RU.Clusterization_AlgorithmData_KMeans, null);                
-
-            LanguageInfo_EN.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_EN) { Name = "KMeans" };
+            
             Calculate_Clusterization_AlgorithmData_KMeans(LanguageInfo_EN, _loggersSet);
             fileName = "AdvancedEmbedding_Clusterization_AlgorithmData_KMeans_EN.bin";
             Helpers.SerializationHelper.SaveToFile(fileName, LanguageInfo_EN.Clusterization_AlgorithmData, null);
             //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, LanguageInfo_EN.Clusterization_AlgorithmData_KMeans, null); 
-
-            LanguageInfo_RU.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData { Name = "Variant3" };
+            
             Calculate_ProjectionIndices_Variant3(LanguageInfo_RU, _loggersSet);
             fileName = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_Variant3_RU.bin";
             Helpers.SerializationHelper.SaveToFile(fileName, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, null);
             //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, LanguageInfo_RU.ProjectionOptimization_AlgorithmData_Variant3, null); 
-
-            LanguageInfo_EN.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData { Name = "Variant3" };
+            
             Calculate_ProjectionIndices_Variant3(LanguageInfo_EN, _loggersSet);
             fileName = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_Variant3_EN.bin";
             Helpers.SerializationHelper.SaveToFile(fileName, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, null);

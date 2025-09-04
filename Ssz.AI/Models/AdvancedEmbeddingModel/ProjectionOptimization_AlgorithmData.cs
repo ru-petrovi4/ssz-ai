@@ -2,11 +2,16 @@
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public class ProjectionOptimization_AlgorithmData : IOwnedDataSerializable
+public class ProjectionOptimization_AlgorithmData : ISerializableModelObject
 {
     public string Name = null!;
 
     public int[] WordsProjectionIndices = null!;
+
+    public void GenerateOwnedData(int wordsCount)
+    {
+        WordsProjectionIndices = new int[wordsCount];
+    }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {

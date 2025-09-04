@@ -7,7 +7,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     /// <summary>
     ///     Primary Words Selection AlgorithmData
     /// </summary>
-    public class Clusterization_AlgorithmData : IOwnedDataSerializable
+    public class Clusterization_AlgorithmData : ISerializableModelObject
     {
         #region construction and destruction
 
@@ -22,12 +22,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
         public string Name = null!;
 
-        public Word[]? PrimaryWords;
+        public Word[] PrimaryWords = null!;
 
         /// <summary>
         ///    For each Word. ClusterIndices.Length == Words.Length
         /// </summary>
-        public int[]? ClusterIndices;
+        public int[] ClusterIndices = null!;
+
+        public void GenerateOwnedData(int primaryWordsCount, int wordsCount)
+        {
+            PrimaryWords = new Word[primaryWordsCount];
+            ClusterIndices = new int[wordsCount];
+        }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
@@ -52,7 +58,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                         //    throw new InvalidOperationException();
 
                         PrimaryWords = list.Select(i => LanguageInfo.Words[i]).ToArray();
-                        ClusterIndices = reader.ReadArray<int>();
+                        ClusterIndices = reader.ReadArray<int>()!;
                         break;
                 }
             }

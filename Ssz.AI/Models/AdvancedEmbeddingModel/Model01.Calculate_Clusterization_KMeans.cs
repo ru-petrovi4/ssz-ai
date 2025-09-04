@@ -22,8 +22,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         public void Calculate_Clusterization_AlgorithmData_KMeans(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var words = languageInfo.Words;
-            var clusterization_AlgorithmData_KMeans = languageInfo.Clusterization_AlgorithmData;
-            clusterization_AlgorithmData_KMeans.ClusterIndices = new int[words.Count];
+
+            var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo) { Name = "KMeans" };
+            clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.PrimaryWordsCount, words.Count);
+            languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
             var totalStopwatch = Stopwatch.StartNew();
 
@@ -135,7 +137,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 loggersSet.UserFriendlyLogger.LogInformation("MAXIMIZATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
             }
 
-            Word[] primaryWords_KMeans = new Word[Constants.PrimaryWordsCount];
+            Word[] primaryWords_KMeans = clusterization_AlgorithmData_KMeans.PrimaryWords;
 
             Parallel.For(0, wordClusters.Length, clusterIndex =>
             {
