@@ -11,14 +11,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         #region construction and destruction
 
-        public Clusterization_Algorithm(List<Word> words)
+        public Clusterization_Algorithm(LanguageInfo languageInfo)
         {
-            Words = words;
+            LanguageInfo = languageInfo;
         }
 
         #endregion
-
-        public readonly List<Word> Words;
+        
+        public readonly LanguageInfo LanguageInfo;
 
         public string Name = null!;
 
@@ -51,7 +51,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                         //if (list.Count != PrimaryWordsCount)
                         //    throw new InvalidOperationException();
 
-                        PrimaryWords = list.Select(i => Words[i]).ToArray();
+                        PrimaryWords = list.Select(i => LanguageInfo.Words[i]).ToArray();
                         ClusterIndices = reader.ReadArray<int>();
                         break;
                 }

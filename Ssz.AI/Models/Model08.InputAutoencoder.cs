@@ -292,12 +292,12 @@ namespace Ssz.AI.Models
 
             float[] input_Hash = new float[Retina.Detectors.Data.Length];
 
-            Cortex.InputAutoencoder.State_CosineSimilarity = float.MaxValue;
+            Cortex.InputAutoencoder.CosineSimilarity = float.MaxValue;
             float cosineSimilarity;
 
             try
             {
-                Cortex.InputAutoencoder.State_IterationsCount = 0;
+                Cortex.InputAutoencoder.IterationsCount = 0;
                 int stopIterationsCount = 0;
                 while (stopIterationsCount < 5)
                 {   
@@ -328,19 +328,19 @@ namespace Ssz.AI.Models
                         cosineSimilarity = Cortex.InputAutoencoder.Calculate(input_Hash, learningRate: 0.01f);
                         if (!float.IsNaN(cosineSimilarity))
                         {
-                            float cosineSimilarityDelta = cosineSimilarity - Cortex.InputAutoencoder.State_CosineSimilarity;
+                            float cosineSimilarityDelta = cosineSimilarity - Cortex.InputAutoencoder.CosineSimilarity;
                             if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
                                 stopIterationsCount += 1;
                             else
                                 stopIterationsCount = 0;
                         }
 
-                        Cortex.InputAutoencoder.State_CosineSimilarity = cosineSimilarity;
-                        Cortex.InputAutoencoder.State_IterationsCount += 1;
+                        Cortex.InputAutoencoder.CosineSimilarity = cosineSimilarity;
+                        Cortex.InputAutoencoder.IterationsCount += 1;
 
                         swLocal.Stop();
 
-                        Logger.LogInformation($"Image Processed: {CurrentInputIndex}; CosineSimilarity: {Cortex.InputAutoencoder.State_CosineSimilarity}; ElapsedMilliseconds: {swLocal.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");                        
+                        Logger.LogInformation($"Image Processed: {CurrentInputIndex}; CosineSimilarity: {Cortex.InputAutoencoder.CosineSimilarity}; ElapsedMilliseconds: {swLocal.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.IterationsCount}");                        
                     }                    
                 }
             }
@@ -382,16 +382,16 @@ namespace Ssz.AI.Models
             }
 
             if (calculateCountLocal > 0)
-                Cortex.InputAutoencoder.State_ControlCosineSimilarity = cosineSimilarity / calculateCountLocal;
+                Cortex.InputAutoencoder.ControlCosineSimilarity = cosineSimilarity / calculateCountLocal;
             else
-                Cortex.InputAutoencoder.State_ControlCosineSimilarity = 0;
+                Cortex.InputAutoencoder.ControlCosineSimilarity = 0;
 
             sw.Stop();
-            Cortex.InputAutoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;
+            Cortex.InputAutoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;
 
-            Logger.LogInformation($"CalculateAutoencoder(...) finished; ControlCosineSimilarity: {Cortex.InputAutoencoder.State_ControlCosineSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.State_IterationsCount}");
+            Logger.LogInformation($"CalculateAutoencoder(...) finished; ControlCosineSimilarity: {Cortex.InputAutoencoder.ControlCosineSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {Cortex.InputAutoencoder.IterationsCount}");
 
-            if (Cortex.InputAutoencoder.State_IterationsCount > 0)
+            if (Cortex.InputAutoencoder.IterationsCount > 0)
             {
                 Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoder");
             }
@@ -588,14 +588,14 @@ namespace Ssz.AI.Models
             autoencoder.GenerateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, bottleneck_MaxBitsCount: Constants.ShortHashBitsCount);
             autoencoder.Prepare();
 
-            autoencoder.State_CosineSimilarity = float.MaxValue;
+            autoencoder.CosineSimilarity = float.MaxValue;
             float cosineSimilarity = 1.0f;
             float cosineSimilarityDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
             int memoriesCount = 0;
 
-            autoencoder.State_IterationsCount = 0;
+            autoencoder.IterationsCount = 0;
             int stopIterationsCount = 0;
             while (stopIterationsCount < 5)
             {
@@ -620,15 +620,15 @@ namespace Ssz.AI.Models
                 if (memoriesCount > 0)
                     cosineSimilarity = cosineSimilarity / memoriesCount;
 
-                cosineSimilarityDelta = cosineSimilarity - autoencoder.State_CosineSimilarity;
+                cosineSimilarityDelta = cosineSimilarity - autoencoder.CosineSimilarity;
                 if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
                     stopIterationsCount += 1;
                 else
                     stopIterationsCount = 0;
 
-                autoencoder.State_IterationsCount += 1;
+                autoencoder.IterationsCount += 1;
 
-                autoencoder.State_CosineSimilarity = cosineSimilarity;                
+                autoencoder.CosineSimilarity = cosineSimilarity;                
             }
 
             cosineSimilarity = 0.0f;
@@ -653,12 +653,12 @@ namespace Ssz.AI.Models
             }
 
             if (memoriesCount > 0)
-                autoencoder.State_ControlCosineSimilarity = cosineSimilarity / memoriesCount;
+                autoencoder.ControlCosineSimilarity = cosineSimilarity / memoriesCount;
             else
-                autoencoder.State_ControlCosineSimilarity = 0;
+                autoencoder.ControlCosineSimilarity = 0;
 
             sw.Stop();
-            autoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
+            autoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
 
             return autoencoder;
         }        

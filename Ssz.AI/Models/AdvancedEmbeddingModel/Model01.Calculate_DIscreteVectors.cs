@@ -156,9 +156,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var stopwatch = Stopwatch.StartNew();            
 
             DiscreteVectorsAndMatrices result = new();
-            result.Initialize(languageInfo.Words.Count);
-            result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
-            result.Calculate_Full(languageInfo.Words, languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
+            result.GenerateOwnedData(languageInfo.Words.Count);
+            result.Prepare(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
+            result.Calculate_DiscreteVectorsAndMatrices(languageInfo.Words, languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_Algorithm.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
@@ -166,14 +166,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return result;
         }
 
-        public DiscreteVectorsAndMatrices Calculate_DiscreteVectors(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsOnly(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();
 
             DiscreteVectorsAndMatrices result = new();
-            result.Initialize(languageInfo.Words.Count);
-            result.InitializeTemp(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
-            result.CalculateDiscreteVectors(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
+            result.GenerateOwnedData(languageInfo.Words.Count);
+            result.Prepare(languageInfo.Clusterization_Algorithm, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
+            result.CalculateDiscreteVectorsOnly(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_Algorithm.WordsProjectionIndices, loggersSet);
 
             stopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_Algorithm.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);

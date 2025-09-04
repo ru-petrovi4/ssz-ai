@@ -271,7 +271,7 @@ namespace Ssz.AI.Models
                     miniColumn.Autoencoder = FindAutoencoder(miniColumn);                    
 
                     int processedCountLocal = Interlocked.Increment(ref processedCount);                    
-                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCountLocal}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.State_TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.State_ControlCosineSimilarity}");
+                    Logger.LogInformation($"FindAutoencoder(...) finished; Index: {mci}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCountLocal}/{miniColumnsToProcess.Length}; TrainingDurationMilliseconds: {miniColumn.Autoencoder.TrainingDurationMilliseconds}; ControlCosineSimilarity: {miniColumn.Autoencoder.ControlCosineSimilarity}");
                 });
 
             Logger.LogInformation($"CalculateAutoencoders(...) finished; ElapsedMilliseconds: {sw.ElapsedMilliseconds}; Processed: {processedCount}/{miniColumnsToProcess.Length}");
@@ -506,14 +506,14 @@ namespace Ssz.AI.Models
             autoencoder.GenerateOwnedData(inputSize: Constants.HashLength, bottleneckSize: Constants.ShortHashLength, bottleneck_MaxBitsCount: Constants.ShortHashBitsCount);
             autoencoder.Prepare();
 
-            autoencoder.State_CosineSimilarity = float.MaxValue;
+            autoencoder.CosineSimilarity = float.MaxValue;
             float cosineSimilarity = 1.0f;
             float cosineSimilarityDelta = 1.0f;
 
             int trainCount = (int)(miniColumn.Memories.Count * 0.9);
             int memoriesCount = 0;
 
-            autoencoder.State_IterationsCount = 0;
+            autoencoder.IterationsCount = 0;
             int stopIterationsCount = 0;
             while (stopIterationsCount < 5)
             {
@@ -538,15 +538,15 @@ namespace Ssz.AI.Models
                 if (memoriesCount > 0)
                     cosineSimilarity = cosineSimilarity / memoriesCount;
 
-                cosineSimilarityDelta = cosineSimilarity - autoencoder.State_CosineSimilarity;
+                cosineSimilarityDelta = cosineSimilarity - autoencoder.CosineSimilarity;
                 if (cosineSimilarityDelta > -0.0001f && cosineSimilarityDelta < 0.0001f)
                     stopIterationsCount += 1;
                 else
                     stopIterationsCount = 0;
 
-                autoencoder.State_IterationsCount += 1;
+                autoencoder.IterationsCount += 1;
 
-                autoencoder.State_CosineSimilarity = cosineSimilarity;                
+                autoencoder.CosineSimilarity = cosineSimilarity;                
             }
 
             cosineSimilarity = 0.0f;
@@ -571,12 +571,12 @@ namespace Ssz.AI.Models
             }
 
             if (memoriesCount > 0)
-                autoencoder.State_ControlCosineSimilarity = cosineSimilarity / memoriesCount;
+                autoencoder.ControlCosineSimilarity = cosineSimilarity / memoriesCount;
             else
-                autoencoder.State_ControlCosineSimilarity = 0;
+                autoencoder.ControlCosineSimilarity = 0;
 
             sw.Stop();
-            autoencoder.State_TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
+            autoencoder.TrainingDurationMilliseconds = sw.ElapsedMilliseconds;            
 
             return autoencoder;
         }        

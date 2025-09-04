@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
+public class DiscreteVectorsAndMatrices : ISerializableModelObject
 {
     /// <summary>
     ///     New vectors for each word.
@@ -36,7 +36,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
     /// <remarks>
     ///     New vectors scalar product. Each element - common bits count.
     /// </remarks>
-    public float[] ProxWordsNewMatrix = null!;
+    public float[] ProxWordsDiscreteMatrix = null!;
 
     /// <summary>
     ///     [WordIndex1, WordIndex2] Words correlation matrix.
@@ -44,7 +44,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
     /// <remarks>
     ///     New vectors scalar product. Each element - common bits count.
     /// </remarks>
-    public float[] ProxWordsNewMatrix_PrimaryOnly = null!;
+    public float[] ProxWordsDiscreteMatrix_PrimaryOnly = null!;
 
     /// <summary>
     ///     [WordIndex1, WordIndex2] Words correlation matrix.
@@ -52,7 +52,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
     /// <remarks>
     ///     New vectors scalar product. Each element - common bits count.
     /// </remarks>
-    public float[] ProxWordsNewMatrix_SecondaryOnly = null!;
+    public float[] ProxWordsDiscreteMatrix_SecondaryOnly = null!;
 
     /// <summary>
     ///     Top 8 word refs (ordered by proximity, nearest first) for each word.
@@ -81,9 +81,9 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
     /// <summary>
     /// 
     /// </summary>
-    public bool[] Temp_ProxWordsNewMatrix_InPairGroups = null!;
+    public bool[] Temp_ProxWordsDiscreteMatrix_InPairGroups = null!;
 
-    public void Initialize(int wordsCount)
+    public void GenerateOwnedData(int wordsCount)
     {
         DiscreteVectors = new float[wordsCount][];            
         foreach (int wordIndex in Enumerable.Range(0, wordsCount))
@@ -103,12 +103,12 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
             DiscreteVectors_SecondaryOnly[wordIndex] = new float[Model01.Constants.DiscreteVectorLength];
         }
 
-        ProxWordsNewMatrix = new float[wordsCount * wordsCount];
-        ProxWordsNewMatrix_PrimaryOnly = new float[wordsCount * wordsCount];
-        ProxWordsNewMatrix_SecondaryOnly = new float[wordsCount * wordsCount];
+        ProxWordsDiscreteMatrix = new float[wordsCount * wordsCount];
+        ProxWordsDiscreteMatrix_PrimaryOnly = new float[wordsCount * wordsCount];
+        ProxWordsDiscreteMatrix_SecondaryOnly = new float[wordsCount * wordsCount];
     }
 
-    public void InitializeTemp(Clusterization_Algorithm clusterization_Algorithm, List<Word> words, MatrixFloat proxWordsOldMatrix)
+    public void Prepare(Clusterization_Algorithm clusterization_Algorithm, List<Word> words, MatrixFloat proxWordsOldMatrix)
     {
         int wordsCount = words.Count;
         Word[] primaryWords = clusterization_Algorithm.PrimaryWords!;
@@ -157,7 +157,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
             }                
         }
 
-        Temp_ProxWordsNewMatrix_InPairGroups = new bool[wordsCount * wordsCount];
+        Temp_ProxWordsDiscreteMatrix_InPairGroups = new bool[wordsCount * wordsCount];
         Temp_DependentWords = new Word[dependentWords.Length][];  
         foreach (int wordIndex in Enumerable.Range(0, dependentWords.Length))
         {
@@ -176,20 +176,26 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                 .ToArray();
             foreach (int index in pairGroup)
             {
-                Temp_ProxWordsNewMatrix_InPairGroups[index] = true;
+                Temp_ProxWordsDiscreteMatrix_InPairGroups[index] = true;
             }
             Temp_PairGroups[rangeIndex] = pairGroup;
             high = low;
         }
     } 
     
-    public void Calculate_Full(List<Word> words,
+    /// <summary>
+    ///     Calculates all vectors and matrices.
+    /// </summary>
+    /// <param name="words"></param>
+    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="loggersSet"></param>
+    public void Calculate_DiscreteVectorsAndMatrices(List<Word> words,
         int[] wordsProjectionIndices, 
         ILoggersSet loggersSet)
     {
         var wordsSubArray = words.ToArray();
 
-        CalculateDiscreteVectors(wordsSubArray,
+        CalculateDiscreteVectorsOnly(wordsSubArray,
             wordsProjectionIndices,
             loggersSet);
 
@@ -207,23 +213,30 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
             {
                 int wordIndex2 = wordsSubArray[i2].Index;
                 int matrixIndex = indexBias + wordIndex2;
-                ProxWordsNewMatrix[matrixIndex] = TensorPrimitives.Dot(discreteVector, DiscreteVectors[wordIndex2]);
-                ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
-                ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
+                ProxWordsDiscreteMatrix[matrixIndex] = TensorPrimitives.Dot(discreteVector, DiscreteVectors[wordIndex2]);
+                ProxWordsDiscreteMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
+                ProxWordsDiscreteMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
             }
         });
 
         loggersSet.UserFriendlyLogger.LogInformation("Calculate_Full done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
-    public void Calculate_Partial(Word[] wordsSubArray,
+    /// <summary>
+    ///     Calculates all vectors and partially matrices.
+    /// </summary>
+    /// <param name="wordsSubArray"></param>
+    /// <param name="words"></param>
+    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="loggersSet"></param>
+    public void Calculate_DiscreteVectorsAndMatricesPartial(Word[] wordsSubArray,
         List<Word> words,
         int[] wordsProjectionIndices,
         ILoggersSet loggersSet)
     {
         var stopwatch = Stopwatch.StartNew();
 
-        CalculateDiscreteVectors(wordsSubArray,
+        CalculateDiscreteVectorsOnly(wordsSubArray,
             wordsProjectionIndices,
             loggersSet);
         
@@ -239,19 +252,25 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
             {
                 int wordIndex2 = wordsSubArray[i2].Index;
                 int matrixIndex = indexBias + wordIndex2;
-                if (Temp_ProxWordsNewMatrix_InPairGroups[matrixIndex])
-                    ProxWordsNewMatrix[wordIndex2 * words.Count + wordIndex1] = 
-                        ProxWordsNewMatrix[matrixIndex] = 
+                if (Temp_ProxWordsDiscreteMatrix_InPairGroups[matrixIndex])
+                    ProxWordsDiscreteMatrix[wordIndex2 * words.Count + wordIndex1] = 
+                        ProxWordsDiscreteMatrix[matrixIndex] = 
                         TensorPrimitives.Dot(discreteVector, DiscreteVectors[wordIndex2]);
-                //ProxWordsNewMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
-                //ProxWordsNewMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
+                //ProxWordsDiscreteMatrix_PrimaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_PrimaryOnly, DiscreteVectors_PrimaryOnly[wordIndex2]);
+                //ProxWordsDiscreteMatrix_SecondaryOnly[matrixIndex] = TensorPrimitives.Dot(discreteVector_SecondaryOnly, DiscreteVectors_SecondaryOnly[wordIndex2]);
             }
         });            
 
         //loggersSet.UserFriendlyLogger.LogInformation("Calculate_Parital done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
-    public void CalculateDiscreteVectors(Word[] wordsSubArray,            
+    /// <summary>
+    ///     Calculaters vectors only.
+    /// </summary>
+    /// <param name="wordsSubArray"></param>
+    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="loggersSet"></param>
+    public void CalculateDiscreteVectorsOnly(Word[] wordsSubArray,            
         int[] wordsProjectionIndices,
         ILoggersSet loggersSet)
     {
@@ -301,7 +320,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                 {
                     serializationWriter.WriteArray(vectorNew);
                 }
-            //serializationWriter.WriteArray(algorithm.ProxWordsNewMatrix);
+            //serializationWriter.WriteArray(algorithm.ProxWordsDiscreteMatrix);
 
             serializationWriter.Write(DiscreteVectors_PrimaryOnly.Length);
             if (DiscreteVectors_PrimaryOnly is not null)
@@ -309,7 +328,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                 {
                     serializationWriter.WriteArray(vectorNew);
                 }
-            //serializationWriter.WriteArray(algorithm.ProxWordsNewMatrix_PrimaryOnly);
+            //serializationWriter.WriteArray(algorithm.ProxWordsDiscreteMatrix_PrimaryOnly);
 
             serializationWriter.Write(DiscreteVectors_SecondaryOnly.Length);
             if (DiscreteVectors_SecondaryOnly is not null)
@@ -322,12 +341,14 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
 
     public void DeserializeOwnedData(SerializationReader serializationReader, object? context)
     {
+        int wordsCount = 0;
         using (Block block = serializationReader.EnterBlock())
         {
             switch (block.Version)
             {
                 case 1:
                     int discreteVectorsLength = serializationReader.ReadInt32();
+                    wordsCount = discreteVectorsLength;
                     if (discreteVectorsLength > 0)
                     {
                         var discreteVectors = new float[discreteVectorsLength][];
@@ -337,7 +358,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                         }
                         DiscreteVectors = discreteVectors;
                     }
-                    //algorithm.ProxWordsNewMatrix = serializationReader.ReadArray<float>();
+                    //algorithm.ProxWordsDiscreteMatrix = serializationReader.ReadArray<float>();
 
                     discreteVectorsLength = serializationReader.ReadInt32();
                     if (discreteVectorsLength > 0)
@@ -349,7 +370,7 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                         }
                         DiscreteVectors_PrimaryOnly = discreteVectors_PrimaryOnly;
                     }
-                    //algorithm.ProxWordsNewMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
+                    //algorithm.ProxWordsDiscreteMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
 
                     discreteVectorsLength = serializationReader.ReadInt32();
                     if (discreteVectorsLength > 0)
@@ -361,10 +382,14 @@ public class DiscreteVectorsAndMatrices : IOwnedDataSerializable
                         }
                         DiscreteVectors_SecondaryOnly = discreteVectors_SecondaryOnly;
                     }
-                    //algorithm.ProxWordsNewMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
+                    //algorithm.ProxWordsDiscreteMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
                     break;
             }
         }
+
+        ProxWordsDiscreteMatrix = new float[wordsCount * wordsCount];
+        ProxWordsDiscreteMatrix_PrimaryOnly = new float[wordsCount * wordsCount];
+        ProxWordsDiscreteMatrix_SecondaryOnly = new float[wordsCount * wordsCount];
     }
 }
 

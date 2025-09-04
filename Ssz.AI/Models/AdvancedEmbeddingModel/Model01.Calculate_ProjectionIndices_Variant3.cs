@@ -24,9 +24,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         public void Calculate_ProjectionIndices_Variant3(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
             Clusterization_Algorithm clusterization_Algorithm = languageInfo.Clusterization_Algorithm;
-            var words = clusterization_Algorithm.Words;
-
-            languageInfo.ProjectionOptimization_Algorithm = new ProjectionOptimization_Algorithm { Name = "Variant3" };
+           
+            var words = languageInfo.Words;
+            
             var projectionOptimization_Algorithm_Variant3 = languageInfo.ProjectionOptimization_Algorithm;
 
             var totalStopwatch = Stopwatch.StartNew();
@@ -36,6 +36,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             projectionOptimization_Algorithm_Variant3.WordsProjectionIndices = new int[words.Count];
             //LoadFromFile_ProjectionIndices(ProjectionOptimization_Algorithm_Variant3, "ProjectionOptimization.bin", _loggersSet);
             var wordsProjectionIndices = projectionOptimization_Algorithm_Variant3.WordsProjectionIndices;
+
             //Random initial hash
             foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
             {
@@ -43,9 +44,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             }                                      
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
-            discreteVectorsAndMatrices.Initialize(words.Count);
-            discreteVectorsAndMatrices.InitializeTemp(clusterization_Algorithm, words, languageInfo.ProxWordsOldMatrix);
-            discreteVectorsAndMatrices.Calculate_Full(words, wordsProjectionIndices, loggersSet);
+            discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
+            discreteVectorsAndMatrices.Prepare(clusterization_Algorithm, words, languageInfo.ProxWordsOldMatrix);
+            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsProjectionIndices, loggersSet);
 
             Buffers buffers = new(discreteVectorsAndMatrices);                                              
 
@@ -101,7 +102,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             {
                 wordsProjectionIndices[word.Index] = bitIndex;
 
-                discreteVectorsAndMatrices.Calculate_Partial(dependentWords,
+                discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatricesPartial(dependentWords,
                     languageInfo.Words,
                     wordsProjectionIndices,                    
                     loggersSet);
@@ -119,7 +120,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             wordsProjectionIndices[word.Index] = minEnergyBitIndex;
 
-            discreteVectorsAndMatrices.Calculate_Partial(dependentWords,
+            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatricesPartial(dependentWords,
                     languageInfo.Words,
                     wordsProjectionIndices,
                     loggersSet);
@@ -133,7 +134,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             Buffers buffers,
             ILoggersSet loggersSet)
         {
-            var proxWordsNewMatrix = discreteVectorsAndMatrices.ProxWordsNewMatrix;
+            var proxWordsDiscreteMatrix = discreteVectorsAndMatrices.ProxWordsDiscreteMatrix;
             var dispersionOfPairs = buffers.DispersionOfPairs;
 
             //var stopwatch = Stopwatch.StartNew();            
@@ -148,7 +149,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 float sum = 0.0f;
                 for (int i = 0; i < length; i += 1)
                 {
-                    float newDotProduct = proxWordsNewMatrix[pairGroup[i]];
+                    float newDotProduct = proxWordsDiscreteMatrix[pairGroup[i]];
                     newDotProducts[i] = newDotProduct;
                     sum += newDotProduct;
                 }
