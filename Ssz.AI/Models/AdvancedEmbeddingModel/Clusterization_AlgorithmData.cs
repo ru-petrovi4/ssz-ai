@@ -5,13 +5,13 @@ using System.Linq;
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {
     /// <summary>
-    ///     Primary Words Selection Algorithm
+    ///     Primary Words Selection AlgorithmData
     /// </summary>
-    public class Clusterization_Algorithm : IOwnedDataSerializable
+    public class Clusterization_AlgorithmData : IOwnedDataSerializable
     {
         #region construction and destruction
 
-        public Clusterization_Algorithm(LanguageInfo languageInfo)
+        public Clusterization_AlgorithmData(LanguageInfo languageInfo)
         {
             LanguageInfo = languageInfo;
         }

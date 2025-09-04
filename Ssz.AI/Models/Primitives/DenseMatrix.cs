@@ -13,7 +13,7 @@ namespace Ssz.AI.Models
             if (dimensions == null || dimensions.Length != 2)
                 throw new ArgumentException("Размерности матрица неверны.");
 
-            Dimensions = dimensions;
+            Dimensions = (int[])dimensions.Clone();
             Data = new T[dimensions[0] * dimensions[1]];
         }        
 

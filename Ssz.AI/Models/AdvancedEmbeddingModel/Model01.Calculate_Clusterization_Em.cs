@@ -240,7 +240,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //    }            
 
         //    totalStopwatch.Stop();
-        //    loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithm_Em.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
+        //    loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_Em.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
         //}        
     }    
 }

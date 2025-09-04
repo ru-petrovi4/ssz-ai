@@ -2,7 +2,7 @@
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public class ProjectionOptimization_Algorithm : IOwnedDataSerializable
+public class ProjectionOptimization_AlgorithmData : IOwnedDataSerializable
 {
     public string Name = null!;
 

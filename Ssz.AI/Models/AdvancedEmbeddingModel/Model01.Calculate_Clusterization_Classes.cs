@@ -19,11 +19,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
     public partial class Model01
     {
-        //public void Calculate_Clusterization_Algorithm_Classes(ILoggersSet loggersSet)
+        //public void Calculate_Clusterization_AlgorithmData_Classes(ILoggersSet loggersSet)
         //{
-        //    Clusterization_Algorithm Clusterization_Algorithm_Classes = new Clusterization_Algorithm { Name = "Classes" };
+        //    Clusterization_AlgorithmData Clusterization_AlgorithmData_Classes = new Clusterization_AlgorithmData { Name = "Classes" };
 
-        //    Clusterization_Algorithm_Classes.ClusterIndices = new int[Words_RU.Count];
+        //    Clusterization_AlgorithmData_Classes.ClusterIndices = new int[Words_RU.Count];
 
         //    var totalStopwatch = Stopwatch.StartNew();
 
@@ -56,7 +56,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //        }
         //    }
 
-        //    Array.Clear(Clusterization_Algorithm_Classes.ClusterIndices);
+        //    Array.Clear(Clusterization_AlgorithmData_Classes.ClusterIndices);
 
         //    while (TimeSpan.FromMilliseconds(totalStopwatch.ElapsedMilliseconds) < TimeSpan.FromHours(1))
         //    {
@@ -127,13 +127,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //        loggersSet.UserFriendlyLogger.LogInformation("ЕXPECTATION done. wordClusters.Count=" + wordClusters.Count + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
         //        stopwatch.Restart();
 
-        //        if (newClusterIndices.SequenceEqual(Clusterization_Algorithm_Classes.ClusterIndices))
+        //        if (newClusterIndices.SequenceEqual(Clusterization_AlgorithmData_Classes.ClusterIndices))
         //        {
         //            loggersSet.UserFriendlyLogger.LogInformation("newClusterIndices.SequenceEqual(clusterIndices)");
         //            break;
         //        }
 
-        //        Clusterization_Algorithm_Classes.ClusterIndices = newClusterIndices;
+        //        Clusterization_AlgorithmData_Classes.ClusterIndices = newClusterIndices;
 
         //        #region MAXIMIZATION   
 
@@ -147,7 +147,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //        {
         //            Word word = Words_RU[wordIndex];
         //            var oldVectror = word.OldVector;
-        //            var wordCluster_CentroidOldVector = wordClusters[Clusterization_Algorithm_Classes.ClusterIndices[wordIndex]].CentroidOldVector;
+        //            var wordCluster_CentroidOldVector = wordClusters[Clusterization_AlgorithmData_Classes.ClusterIndices[wordIndex]].CentroidOldVector;
         //            lock (wordCluster_CentroidOldVector)
         //            {
         //                TensorPrimitives.Add(wordCluster_CentroidOldVector, word.OldVector, wordCluster_CentroidOldVector);
@@ -170,13 +170,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //    Word[] primaryWords_Classes = new Word[wordClusters.Count];
         //    Parallel.For(0, wordClusters.Count, clusterIndex =>
         //    {
-        //        Word primaryWord = Clusterization_Algorithm_Classes.ClusterIndices.Select((ci, i) => (Words_RU[i], ci)).Where(it => it.Item2 == clusterIndex).MaxBy(it => it.Item1.Freq).Item1;
+        //        Word primaryWord = Clusterization_AlgorithmData_Classes.ClusterIndices.Select((ci, i) => (Words_RU[i], ci)).Where(it => it.Item2 == clusterIndex).MaxBy(it => it.Item1.Freq).Item1;
         //        primaryWords_Classes[clusterIndex] = primaryWord;
         //    });
-        //    Clusterization_Algorithm_Classes.PrimaryWords = primaryWords_Classes;
+        //    Clusterization_AlgorithmData_Classes.PrimaryWords = primaryWords_Classes;
 
         //    totalStopwatch.Stop();
-        //    loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithm_Classes.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
+        //    loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_Classes.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
         //}        
     }    
 }

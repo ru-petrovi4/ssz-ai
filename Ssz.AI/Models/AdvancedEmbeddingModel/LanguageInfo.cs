@@ -17,7 +17,7 @@ public class LanguageInfo
     /// </remarks>
     public MatrixFloat ProxWordsOldMatrix = null!;
 
-    public Clusterization_Algorithm Clusterization_Algorithm = null!;
+    public Clusterization_AlgorithmData Clusterization_AlgorithmData = null!;
 
-    public ProjectionOptimization_Algorithm ProjectionOptimization_Algorithm = null!;
+    public ProjectionOptimization_AlgorithmData ProjectionOptimization_AlgorithmData = null!;
 }

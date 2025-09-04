@@ -28,7 +28,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         public const int TopProxPointsCount2 = 60;
         public const int TopProxPrimaryPointsCount2 = 300;
 
-        public void OptimizeCortex2(LanguageInfo languageInfo, ILoggersSet loggersSet, Clusterization_Algorithm clusterization_Algorithm)
+        public void OptimizeCortex2(LanguageInfo languageInfo, ILoggersSet loggersSet, Clusterization_AlgorithmData clusterization_AlgorithmData)
         { 
             var totalStopwatch = Stopwatch.StartNew();
             var stopwatch = new Stopwatch();
@@ -97,9 +97,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             {
                 languageInfo.Words[wordIndex].Temp_Flag = false;
             }
-            for (int i = 0; i < clusterization_Algorithm.PrimaryWords!.Length; i += 1)
+            for (int i = 0; i < clusterization_AlgorithmData.PrimaryWords!.Length; i += 1)
             {
-                Word primaryWord = clusterization_Algorithm.PrimaryWords[i];
+                Word primaryWord = clusterization_AlgorithmData.PrimaryWords[i];
                 primaryWord.Temp_Flag = true; // PrimaryWord
             }
 

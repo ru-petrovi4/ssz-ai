@@ -10,9 +10,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
     public partial class Model01
     {
-        //public void Calculate_Clusterization_Algorithm_Random(ILoggersSet loggersSet)
+        //public void Calculate_Clusterization_AlgorithmData_Random(ILoggersSet loggersSet)
         //{
-        //    Clusterization_Algorithm Clusterization_Algorithm_Random = new Clusterization_Algorithm { Name = "Random" };
+        //    Clusterization_AlgorithmData Clusterization_AlgorithmData_Random = new Clusterization_AlgorithmData { Name = "Random" };
 
         //    var totalStopwatch = Stopwatch.StartNew();
 
@@ -37,7 +37,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //            break;
         //        }
         //    }
-        //    Clusterization_Algorithm_Random.PrimaryWords = primaryWords_Random;
+        //    Clusterization_AlgorithmData_Random.PrimaryWords = primaryWords_Random;
 
         //    totalStopwatch.Stop();
         //    loggersSet.UserFriendlyLogger.LogInformation("CalculatePrimaryWords_Random totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);

@@ -4,11 +4,11 @@ namespace Ssz.AI.Models
 {
     /// <summary>
     ///     Typical life cycle:
-    ///     -  Constructor
-    ///     -  GenerateOwnedData(...) or DeserializeOwnedData(...), Generates/Loads Owned Data.
-    ///     -  Prepare(...), Prepares Owned Data and Temp Data.
+    ///     -  obj.Constructor
+    ///     -  obj.GenerateOwnedData(...) or DeserializeOwnedData(...), Generates/Loads Owned Data.
+    ///     -  obj.Prepare(...), Prepares Temp Data.
     ///     -  Calculate*(...), Calculates Owned Data and Temp Data.
-    ///     -  SerializeOwnedData(...), Saves Owned Data.
+    ///     -  obj.SerializeOwnedData(...), Saves Owned Data.
     /// </summary>
     public interface ISerializableModelObject : IOwnedDataSerializable
     {        

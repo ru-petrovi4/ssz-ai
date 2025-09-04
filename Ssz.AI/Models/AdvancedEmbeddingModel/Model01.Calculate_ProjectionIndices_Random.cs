@@ -25,7 +25,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         //public void Calculate_ProjectionIndices_Random(ILoggersSet loggersSet)
         //{
-        //    ProjectionOptimization_Algorithm ProjectionOptimization_Algorithm_Random = new ProjectionOptimization_Algorithm { Name = "Random" };
+        //    ProjectionOptimization_AlgorithmData ProjectionOptimization_AlgorithmData_Random = new ProjectionOptimization_AlgorithmData { Name = "Random" };
 
         //    var totalStopwatch = Stopwatch.StartNew();
 
@@ -51,7 +51,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //    //    }
         //    //}
 
-        //    ProjectionOptimization_Algorithm_Random.WordsProjectionIndices = wordsProjectionIndices;
+        //    ProjectionOptimization_AlgorithmData_Random.WordsProjectionIndices = wordsProjectionIndices;
 
 
         //    totalStopwatch.Stop();

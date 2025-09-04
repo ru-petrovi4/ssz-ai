@@ -13,7 +13,7 @@ namespace Ssz.AI.Models
             if (dimensions == null || dimensions.Length == 0)
                 throw new ArgumentException("Размерности тензора не могут быть пустыми.");
 
-            Dimensions = dimensions;
+            Dimensions = (int[])dimensions.Clone();
             Data = new T[GetTotalSize(dimensions)];
         }        
 
