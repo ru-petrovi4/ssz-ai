@@ -28,7 +28,7 @@ public partial class Model01View : UserControl
             return;
 
         Model = new Model01();
-        Model.Initialize();
+        Model.FindDiscreteEmbeddings();
     }
 
     public Model01 Model = null!;

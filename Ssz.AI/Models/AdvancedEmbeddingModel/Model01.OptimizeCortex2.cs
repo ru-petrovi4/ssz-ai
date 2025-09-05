@@ -305,9 +305,226 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             }            
 
             return pointEnergy;
-        }        
-    }    
+        }
+
+        private void CreateCortexCopy()
+        {
+            lock (CortexCopySyncRoot)
+            {
+                for (int i = 0; i < Cortex.Array.Length; i += 1)
+                {
+                    CortexCopy.Array[i].CopyData(Cortex.Array[i]);
+                }
+            }
+        }
+
+        private void CortexSaveToFile(ILoggersSet loggersSet)
+        {
+            string programDataDirectoryFullName = Directory.GetCurrentDirectory();
+
+            using (MemoryStream memoryStream = new())
+            using (SerializationWriter serializationWriter = new(memoryStream))
+            {
+                Cortex.SerializeOwnedData(serializationWriter, null);
+                byte[] bytes = memoryStream.ToArray();
+                File.WriteAllBytes(Path.Combine(programDataDirectoryFullName, "Cortex.bin"), bytes);
+            }
+        }
+
+        private void CortexLoadFromFile(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            string programDataDirectoryFullName = Directory.GetCurrentDirectory();
+            byte[] bytes = File.ReadAllBytes(Path.Combine(programDataDirectoryFullName, "Cortex.bin"));
+            using (SerializationReader serializationReader = new(bytes))
+            {
+                Cortex = new Cortex();
+                Cortex.DeserializeOwnedData(serializationReader, null);
+            }
+
+            int ix, iy;
+            for (ix = 0; ix < Cortex.XCount; ix += 1)
+            {
+                for (iy = 0; iy < Cortex.YCount; iy += 1)
+                {
+                    ref var pointRef = ref Cortex[ix, iy];
+                    if (pointRef.WordIndex >= 0)
+                        languageInfo.Words[pointRef.WordIndex].Point = pointRef;
+                }
+            }
+
+            #region CortexCopy Initialization
+
+            lock (CortexCopySyncRoot)
+            {
+                CortexCopy = new Cortex(Cortex.XCount, Cortex.YCount);
+                for (int i = 0; i < Cortex.Array.Length; i += 1)
+                {
+                    Point point = new()
+                    {
+                        V = new float[2]
+                    };
+                    point.CopyData(Cortex.Array[i]);
+                    CortexCopy.Array[i] = point;
+                }
+            }
+
+            #endregion
+
+            stopwatch.Stop();
+            loggersSet.UserFriendlyLogger.LogInformation("CortexLoadFromFile done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+        }
+    }
+
+    public class Cortex : IOwnedDataSerializable
+    {
+        public Cortex()
+        {
+        }
+
+        public Cortex(int xCount, int yCount)
+        {
+            XCount = xCount;
+            YCount = yCount;
+            Array = new Point[xCount * yCount];
+        }
+
+        public int XCount;
+
+        public int YCount;
+
+        public Point[] Array = null!;
+
+        public ref Point this[int ix, int iy]
+        {
+            get { return ref Array[iy * XCount + ix]; }
+        }
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            writer.Write(XCount);
+            writer.Write(YCount);
+            writer.Write(Array.Length);
+            for (int i = 0; i < Array.Length; i += 1)
+            {
+                var point = Array[i];
+                writer.WriteOptimized(point.WordIndex);
+                writer.WriteOptimized(point.GroupId_ToDisplay);
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            XCount = reader.ReadInt32();
+            YCount = reader.ReadInt32();
+            int arrayLength = reader.ReadInt32();
+            Array = new Point[arrayLength];
+            int ix = 0;
+            int iy = 0;
+            for (int i = 0; i < arrayLength; i += 1)
+            {
+                Point point = new Point();
+                Array[i] = point;
+                point.WordIndex = reader.ReadOptimizedInt32();
+                point.GroupId_ToDisplay = reader.ReadOptimizedInt32();
+                point.V = new float[2];
+                point.V[0] = ix;
+                point.V[1] = iy;
+                ix += 1;
+                if (ix == XCount)
+                {
+                    ix = 0;
+                    iy += 1;
+                }
+            }
+        }
+    }
+
+    public class Point
+    {
+        /// <summary>
+        ///     Index in Words
+        /// </summary>
+        public int WordIndex;
+
+        public int GroupId_ToDisplay = (int)PointGroupId_ToDisplay.None;
+
+        /// <summary>
+        ///     |iX, iY| vector
+        /// </summary>
+        /// <remarks>Otimized for calculation</remarks>
+        public float[] V = null!;
+
+        /// <summary>
+        ///     Top N point refs (ordered by proximity)
+        ///     (Proximity, Point)
+        /// </summary>
+        public (float, Point)[]? Temp_TopProxPoints;
+
+        /// <summary>
+        ///     Top N primary point refs (ordered by proximity)
+        ///     (Proximity, Point)
+        ///     Not null only for primary words.
+        /// </summary>
+        public (float, Point)[]? Temp_TopProxPrimaryPoints;
+
+        public void CopyData(Point that)
+        {
+            WordIndex = that.WordIndex;
+            GroupId_ToDisplay = that.GroupId_ToDisplay;
+            V[0] = that.V[0];
+            V[1] = that.V[1];
+            Temp_TopProxPoints = that.Temp_TopProxPoints;
+            Temp_TopProxPrimaryPoints = that.Temp_TopProxPrimaryPoints;
+        }
+    }
 }
+
+public class WordCluster
+{
+    public float[] CentroidOldVector = null!;
+
+    public int PrimaryWordIndex;
+
+    public int WordsCount;
+}
+
+public enum CortexDisplayType
+{
+    GroupId_ToDisplay = 0,
+    Spot,
+}
+
+public enum DotProductVariant
+{
+    All = 0,
+    PrimaryOnly,
+    SecondaryOnly,
+}
+
+public enum PointGroupId_ToDisplay
+{
+    None = 0,
+    // 1-9 reserved for different colored groups
+    PrimaryPoint = 10,
+    MainPoint1 = 12,
+    PrimaryPoint_Selected1 = 13,
+    SecondaryPoint_Selected1 = 14,
+    PrimaryAndSecondaryPoint_Selected1 = 15,
+    //MainPoint2 = 15,
+    //PrimaryPoint_Selected2 = 16,
+    //SecondaryPoint_Selected2 = 17,
+}
+
+public class WordsNewEmbeddings
+{
+    /// <summary>
+    ///     [Словоформа, DiscreteVector Index]
+    /// </summary>
+    public CaseInsensitiveDictionary<int> Words = new();
+}
+
 
 
 //Parallel.ForEach<Point?, double>(

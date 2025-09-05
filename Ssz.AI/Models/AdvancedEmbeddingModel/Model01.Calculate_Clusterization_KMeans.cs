@@ -24,7 +24,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var words = languageInfo.Words;
 
             var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo) { Name = "KMeans" };
-            clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.PrimaryWordsCount, words.Count);
+            clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.PrimaryWordsCount);
             languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
             var totalStopwatch = Stopwatch.StartNew();
@@ -161,7 +161,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 primaryWords_KMeans[clusterIndex] = words[nearestWordIndex];
             });
 
+            Array.Clear(clusterization_AlgorithmData_KMeans.IsPrimaryWord);
             clusterization_AlgorithmData_KMeans.PrimaryWords = primaryWords_KMeans;
+            foreach (var primaryWord in primaryWords_KMeans)
+            {
+                clusterization_AlgorithmData_KMeans.IsPrimaryWord[primaryWord.Index] = true;
+            }
 
             totalStopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_KMeans.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);

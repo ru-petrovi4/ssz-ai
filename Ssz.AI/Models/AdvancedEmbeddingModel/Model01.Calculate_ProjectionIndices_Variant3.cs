@@ -38,10 +38,28 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             //LoadFromFile_ProjectionIndices(ProjectionOptimization_AlgorithmData_Variant3, "ProjectionOptimization.bin", _loggersSet);
             var wordsProjectionIndices = projectionOptimization_AlgorithmData_Variant3.WordsProjectionIndices;
 
+            bool[] isBitOccupied = new bool[Constants.DiscreteVectorLength];
+
             //Random initial hash
             foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
             {
-                wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
+                if (clusterization_AlgorithmData.IsPrimaryWord[wordIndex])
+                {
+                    int projectionIndex = 0;
+                    for (; ; )
+                    {
+                        projectionIndex = r.Next(Constants.DiscreteVectorLength);
+                        if (isBitOccupied[projectionIndex])
+                            continue;
+                        isBitOccupied[projectionIndex] = true;
+                        break;
+                    }
+                    wordsProjectionIndices[wordIndex] = projectionIndex;
+                }
+                else
+                {
+                    wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
+                }
             }                                      
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
@@ -58,8 +76,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 {
                     word.Temp_Flag = false;
                 }
-                for (int index = 0; index < words.Count; index += 1)
+                for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
                 {
+                    if (clusterization_AlgorithmData.IsPrimaryWord[wordIndex])
+                        continue;
+
                     for (; ; )
                     {
                         var word = words[r.Next(words.Count)];
