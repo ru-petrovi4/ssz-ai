@@ -11,16 +11,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         #region construction and destruction
 
-        public Clusterization_AlgorithmData(LanguageInfo languageInfo)
+        public Clusterization_AlgorithmData(LanguageInfo languageInfo, string name)
         {
             LanguageInfo = languageInfo;
+            Name = name;
         }
 
         #endregion
         
         public readonly LanguageInfo LanguageInfo;
 
-        public string Name = null!;
+        public readonly string Name = null!;
 
         public Word[] PrimaryWords = null!;
 
@@ -67,6 +68,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                         {
                             IsPrimaryWord[primaryWordIndex] = true;
                         }
+#if DEBUG
+                        //var sum = IsPrimaryWord.Sum(b => b ? 1 : 0);
+#endif
                         break;
                 }
             }

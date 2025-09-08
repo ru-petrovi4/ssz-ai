@@ -25,7 +25,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         {
             var words = languageInfo.Words;
 
-            var projectionOptimization_AlgorithmData_Variant3 = new ProjectionOptimization_AlgorithmData { Name = "Variant3" };
+            var projectionOptimization_AlgorithmData_Variant3 = new ProjectionOptimization_AlgorithmData(name: "Variant3");
             projectionOptimization_AlgorithmData_Variant3.GenerateOwnedData(words.Count);
             languageInfo.ProjectionOptimization_AlgorithmData = projectionOptimization_AlgorithmData_Variant3;
 
@@ -74,13 +74,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 var words_RandomOrder = new List<Word>(words.Count);
                 foreach (var word in words)
                 {
-                    word.Temp_Flag = false;
+                    word.Temp_Flag = clusterization_AlgorithmData.IsPrimaryWord[word.Index];
                 }
-                for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+                for (int _ = 0; _ < words.Count(w => !w.Temp_Flag); _ += 1)
                 {
-                    if (clusterization_AlgorithmData.IsPrimaryWord[wordIndex])
-                        continue;
-
                     for (; ; )
                     {
                         var word = words[r.Next(words.Count)];

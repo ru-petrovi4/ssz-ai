@@ -28,7 +28,10 @@ public partial class Model01View : UserControl
             return;
 
         Model = new Model01();
-        Model.FindDiscreteEmbeddings();
+        Task.Run(async () =>
+        {   
+            Model.FindDiscreteEmbeddings_Mapping();
+        });
     }
 
     public Model01 Model = null!;

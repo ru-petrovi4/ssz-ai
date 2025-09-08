@@ -3,7 +3,7 @@
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
 public class LanguageInfo
-{
+{    
     /// <summary>        
     ///     <para>Ordered Descending by Freq</para>      
     /// </summary>
@@ -20,4 +20,6 @@ public class LanguageInfo
     public Clusterization_AlgorithmData Clusterization_AlgorithmData = null!;
 
     public ProjectionOptimization_AlgorithmData ProjectionOptimization_AlgorithmData = null!;
+
+    public DiscreteVectorsAndMatrices DiscreteVectorsAndMatrices = null!;
 }

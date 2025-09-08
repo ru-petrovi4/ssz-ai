@@ -4,6 +4,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
 public class ProjectionOptimization_AlgorithmData : ISerializableModelObject
 {
+    #region construction and destruction
+
+    public ProjectionOptimization_AlgorithmData(string name)
+    {
+        Name = name;
+    }
+
+    #endregion
+
     public string Name = null!;
 
     public int[] WordsProjectionIndices = null!;

@@ -23,7 +23,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         {
             var words = languageInfo.Words;
 
-            var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo) { Name = "KMeans" };
+            var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo, name: "KMeans");
             clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.PrimaryWordsCount);
             languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
