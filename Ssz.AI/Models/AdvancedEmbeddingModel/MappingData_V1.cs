@@ -10,7 +10,7 @@ using System.Numerics.Tensors;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-public class MappingData : ISerializableModelObject
+public class MappingData_V1 : ISerializableModelObject
 {
     private ILoggersSet _loggersSet;
     public LanguageInfo LanguageInfo_RU;
@@ -59,7 +59,7 @@ public class MappingData : ISerializableModelObject
 
     //public float[] Temp_EnergyOfBitCollection = null!;
 
-    public MappingData(ILoggersSet loggersSet, LanguageInfo languageInfo_RU, LanguageInfo languageInfo_EN)
+    public MappingData_V1(ILoggersSet loggersSet, LanguageInfo languageInfo_RU, LanguageInfo languageInfo_EN)
     {
         _loggersSet = loggersSet;
         LanguageInfo_RU = languageInfo_RU;
