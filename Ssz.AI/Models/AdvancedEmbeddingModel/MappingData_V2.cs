@@ -225,7 +225,7 @@ public class MappingData_V2 : ISerializableModelObject
         var costMatrix = BuildStructureCostMatrix(Temp_ProxBits_RU, Temp_ProxBits_EN);
 
         // Ищем взаимно однозначное соответствие с минимальной структурной ошибкой
-        Mapping_RU_EN = Hungarian.HungarianAlgorithm(costMatrix);
+        Mapping_RU_EN = HungarianAlgorithm.FindAssignments(costMatrix);
 
         stopwatch.Stop();
         _loggersSet.UserFriendlyLogger.LogInformation("CalculateMapping totally done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
@@ -237,10 +237,10 @@ public class MappingData_V2 : ISerializableModelObject
     /// <param name="distA">Матрица расстояний для первого множества.</param>
     /// <param name="distB">Матрица расстояний для второго множества.</param>
     /// <returns>Матрица стоимости размера N x N, где элемент (i,j) — "разница структур" при сопоставлении i и j.</returns>
-    private static MatrixFloat BuildStructureCostMatrix(MatrixFloat distA, MatrixFloat distB)
+    private static int[,] BuildStructureCostMatrix(MatrixFloat distA, MatrixFloat distB)
     {
         int N = distA.Dimensions[0];
-        var costMatrix = new MatrixFloat(new int[] { N, N });
+        var costMatrix = new int[N, N];
 
         // Для каждого возможного соответствия рассчитываем сумму разниц по всем остальным парам
         for (int i = 0; i < N; i++)
@@ -256,7 +256,7 @@ public class MappingData_V2 : ISerializableModelObject
                         sum += MathF.Abs(distA[i, k] - distB[j, l]);
                     }
                 }
-                costMatrix[i, j] = sum;
+                costMatrix[i, j] = (int)(sum * 100.0f);
             }
         }
         return costMatrix;
