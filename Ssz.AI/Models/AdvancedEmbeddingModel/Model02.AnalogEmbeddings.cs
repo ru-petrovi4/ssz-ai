@@ -50,121 +50,118 @@ public partial class Model02
     /// </summary>
     public readonly LanguageInfo LanguageInfo_EN = new();        
 
-    public void Initialize()
+    public void Initialize_V1()
     {
-        Task.Run(async () =>
-        {
-            WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-            var d = WordsHelper.OldVectorLength_RU;
-            var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
-            for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
-            {
-                var col = LanguageInfo_RU.Words[j];
-                for (int i = 0; i < d; i++)
-                {
-                    ruEmb[i, j] = col.OldVectorNormalized[i];
-                }
-            }
+        //WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
+        //var d = WordsHelper.OldVectorLength_RU;
+        //var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
+        //for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
+        //{
+        //    var col = LanguageInfo_RU.Words[j];
+        //    for (int i = 0; i < d; i++)
+        //    {
+        //        ruEmb[i, j] = col.OldVectorNormalized[i];
+        //    }
+        //}
 
-            WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
-            d = WordsHelper.OldVectorLength_EN;
-            var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
-            for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
-            {
-                var col = LanguageInfo_EN.Words[j];
-                for (int i = 0; i < d; i++)
-                {
-                    enEmb[i, j] = col.OldVectorNormalized[i];
-                }
-            }
+        //WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+        //d = WordsHelper.OldVectorLength_EN;
+        //var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
+        //for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
+        //{
+        //    var col = LanguageInfo_EN.Words[j];
+        //    for (int i = 0; i < d; i++)
+        //    {
+        //        enEmb[i, j] = col.OldVectorNormalized[i];
+        //    }
+        //}
 
 
-            var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);            
+        //var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);
 
-            // Инициализация W случайной ортогональной матрицей (упрощённо — единичная)
-            var W = new MatrixFloat(new[] { d, d });
-            for (int i = 0; i < d; i++) W[i, i] = 1f;
+        //// Инициализация W случайной ортогональной матрицей (упрощённо — единичная)
+        //var W = new MatrixFloat(new[] { d, d });
+        //for (int i = 0; i < d; i++) W[i, i] = 1f;
 
-            // (Опционально) Несколько шагов «ортогонализирующего» апдейта для стабилизации
-            for (int t = 0; t < 5; t++) align.Orthonormalize(W);
+        //// (Опционально) Несколько шагов «ортогонализирующего» апдейта для стабилизации
+        //for (int t = 0; t < 5; t++) align.Orthonormalize(W);
 
-            // Уточнение по Procrustes с синтетическим словарём (одна итерация; можно 2–3)
-            for (int it = 0; it < 2; it++)
-            {
-                W = align.Refine(ruEmb, enEmb, W);
-                align.Orthonormalize(W);
-            }
+        //// Уточнение по Procrustes с синтетическим словарём (одна итерация; можно 2–3)
+        //for (int it = 0; it < 2; it++)
+        //{
+        //    W = align.Refine(ruEmb, enEmb, W);
+        //    align.Orthonormalize(W);
+        //}
 
-            string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
-            Helpers.SerializationHelper.SaveToFile(fileName, W, null);            
-            _loggersSet.UserFriendlyLogger.LogInformation($"Saved");
-        });            
+        //string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
+        //Helpers.SerializationHelper.SaveToFile(fileName, W, null);
+        //_loggersSet.UserFriendlyLogger.LogInformation($"Saved");
     }
 
     public void CheckResult()
     {
         Task.Run(async () =>
         {
-            WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-            var d = WordsHelper.OldVectorLength_RU;
-            var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
-            for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
-            {
-                var col = LanguageInfo_RU.Words[j];
-                for (int i = 0; i < d; i++)
-                {
-                    ruEmb[i, j] = col.OldVectorNormalized[i];
-                }
-            }
+            //WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
+            //var d = WordsHelper.OldVectorLength_RU;
+            //var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
+            //for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
+            //{
+            //    var col = LanguageInfo_RU.Words[j];
+            //    for (int i = 0; i < d; i++)
+            //    {
+            //        ruEmb[i, j] = col.OldVectorNormalized[i];
+            //    }
+            //}
 
-            WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
-            d = WordsHelper.OldVectorLength_EN;
-            var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
-            for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
-            {
-                var col = LanguageInfo_EN.Words[j];
-                for (int i = 0; i < d; i++)
-                {
-                    enEmb[i, j] = col.OldVectorNormalized[i];
-                }
-            }
+            //WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+            //d = WordsHelper.OldVectorLength_EN;
+            //var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
+            //for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
+            //{
+            //    var col = LanguageInfo_EN.Words[j];
+            //    for (int i = 0; i < d; i++)
+            //    {
+            //        enEmb[i, j] = col.OldVectorNormalized[i];
+            //    }
+            //}
 
-            var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);
+            //var align = new BilingualAlignment(_loggersSet, d: d, kCsls: 10, betaOrtho: 0.01f);
 
-            var W = new MatrixFloat(new[] { d, d });
-            string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, W, null);            
+            //var W = new MatrixFloat(new[] { d, d });
+            //string fileName = "AdvancedEmbedding_LanguageInfo_W.bin";
+            //Helpers.SerializationHelper.LoadFromFileIfExists(fileName, W, null);            
 
-            var r1 = new float[300];
-            var r2 = new float[300];
-            var e1 = new float[300];
-            var e2 = new float[300];
-            for (int i = 50; i < 55; i++)
-            {
+            //var r1 = new float[300];
+            //var r2 = new float[300];
+            //var e1 = new float[300];
+            //var e2 = new float[300];
+            //for (int i = 50; i < 55; i++)
+            //{
                 
 
-                var ruW = ruEmb.GetColumn(i);
-                //mapper.ApplyF12(ruW, r1);
-                //mapper.ApplyF21(r1, r2);
-                var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
-                // Перевод слова с индексом i
-                int enIndex = align.Translate(enEmb, ruEmb, W, iSrc: i);
-                if (enIndex < LanguageInfo_EN.Words.Count)
-                    _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
-                else
-                    _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; EN: ---");
+            //    var ruW = ruEmb.GetColumn(i);
+            //    //mapper.ApplyF12(ruW, r1);
+            //    //mapper.ApplyF21(r1, r2);
+            //    var dot = TensorPrimitives.CosineSimilarity(ruW, r2);
+            //    // Перевод слова с индексом i
+            //    int enIndex = align.Translate(enEmb, ruEmb, W, iSrc: i);
+            //    if (enIndex < LanguageInfo_EN.Words.Count)
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; RU: {LanguageInfo_RU.Words[i].Name}; EN: {LanguageInfo_EN.Words[enIndex].Name}");
+            //    else
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"RU: F21(F12(v)) cosine: {dot}; EN: ---");
 
-                var enW = enEmb.GetColumn(i);
-                //mapper.ApplyF21(enW, e1);
-                //mapper.ApplyF12(e1, e2);
-                dot = TensorPrimitives.CosineSimilarity(enW, e2);
-                // Перевод слова с индексом i
-                int ruIndex = align.Translate(ruEmb, enEmb, W, iSrc: i);
-                if (ruIndex < LanguageInfo_RU.Words.Count)
-                    _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
-                else
-                    _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: ---");
-            }
+            //    var enW = enEmb.GetColumn(i);
+            //    //mapper.ApplyF21(enW, e1);
+            //    //mapper.ApplyF12(e1, e2);
+            //    dot = TensorPrimitives.CosineSimilarity(enW, e2);
+            //    // Перевод слова с индексом i
+            //    int ruIndex = align.Translate(ruEmb, enEmb, W, iSrc: i);
+            //    if (ruIndex < LanguageInfo_RU.Words.Count)
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: {LanguageInfo_EN.Words[i].Name}; RU: {LanguageInfo_RU.Words[ruIndex].Name}");
+            //    else
+            //        _loggersSet.UserFriendlyLogger.LogInformation($"EN: F12(F21(v)) cosine: {dot}; EN: ---");
+            //}
         });
     }
 

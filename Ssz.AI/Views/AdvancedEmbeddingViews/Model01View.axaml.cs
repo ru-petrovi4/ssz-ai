@@ -30,7 +30,7 @@ public partial class Model01View : UserControl
         Model = new Model01();
         Task.Run(async () =>
         {   
-            Model.FindDiscreteEmbeddings_Mapping_V2();
+            Model.FindEmbeddings_Mapping_V3();
         });
     }
 

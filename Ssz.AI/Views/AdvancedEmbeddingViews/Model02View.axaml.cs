@@ -28,7 +28,10 @@ public partial class Model02View : UserControl
             return;
 
         Model = new Model02();
-        Model.Initialize();
+        Task.Run(async () =>
+        {
+            Model.Initialize_V1();
+        });
     }
 
     public Model02 Model = null!;

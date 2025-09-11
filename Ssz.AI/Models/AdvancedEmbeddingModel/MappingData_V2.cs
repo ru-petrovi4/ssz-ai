@@ -88,7 +88,7 @@ public class MappingData_V2 : ISerializableModelObject
         }
     }
 
-    public void Prepare2()
+    public void Prepare2_DiscreteVectors()
     {
         var fileData = CsvHelper.LoadCsvFile(Path.Combine(@"Data", FileName_PrimaryWords_RU_EN), includeFiles: false);
 
@@ -105,9 +105,12 @@ public class MappingData_V2 : ISerializableModelObject
             }
         }
 
+        var r = new Random(5);
+
         var d = primaryWords_RU_EN.Count;
+
+        Temp_BitWords_RU = WordsHelper.GetRandomOrderWords(primaryWords_RU_EN.Select(it => it.Item1).ToList(), r).ToArray();
         Temp_ProxBits_RU = new MatrixFloat(d, d);
-        Temp_BitWords_RU = new Word[d];
         foreach (var i in Enumerable.Range(0, d))
         {      
             var it = primaryWords_RU_EN[i];
@@ -123,8 +126,8 @@ public class MappingData_V2 : ISerializableModelObject
             }
         }
 
+        Temp_BitWords_EN = WordsHelper.GetRandomOrderWords(primaryWords_RU_EN.Select(it => it.Item2).ToList(), r).ToArray();
         Temp_ProxBits_EN = new MatrixFloat(d, d);
-        Temp_BitWords_EN = new Word[d];
         foreach (var i in Enumerable.Range(0, d))
         {
             var it = primaryWords_RU_EN[i];
@@ -139,9 +142,11 @@ public class MappingData_V2 : ISerializableModelObject
                     LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors[Temp_BitWords_EN[j].Index]);
             }
         }
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"Prepare2() Done. D = {d}");
     }
 
-    public void Prepare3()
+    public void Prepare3_AnalogVectors()
     {
         var fileData = CsvHelper.LoadCsvFile(Path.Combine(@"Data", FileName_PrimaryWords_RU_EN), includeFiles: false);
 
@@ -165,7 +170,7 @@ public class MappingData_V2 : ISerializableModelObject
             }
         }
 
-        var r = new Random();
+        var r = new Random(5);
 
         var d = primaryWords_RU_EN.Count;
         
