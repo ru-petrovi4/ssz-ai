@@ -107,7 +107,9 @@ public class MappingData_V3 : ISerializableModelObject
 
         // TEMPCODE
         //Temp_BitWords_EN = WordsHelper.GetRandomOrderWords(primaryWords_RU_EN.Select(it => it.Item2).ToList(), r).ToArray();
-        Temp_BitWords_EN = primaryWords_RU_EN.Select(it => it.Item2).ToArray();
+        //Temp_BitWords_EN = primaryWords_RU_EN.Select(it => it.Item2).ToArray();
+        Temp_BitWords_EN = WordsHelper.GetRandomOrderWords(primaryWords_RU_EN.Select(it => it.Item1).ToList(), r).ToArray();
+
         Temp_ProxBits_EN = new MatrixFloat(n, n);
         for (int i = 0; i < n; i += 1)
         {

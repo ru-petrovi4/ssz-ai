@@ -32,7 +32,7 @@ public class VectorSetAlignment
     /// Производительность: Hungarian O(n^3) для n=300 (~27M операций per iter) feasible; TensorPrimitives для dot.
     /// Предполагается наличие реализации HungarianMatching(float[,] costMatrix), где cost = -similarity для максимизации.
     /// </summary>
-    public MatrixFloat FindOptimalRotation(MatrixFloat A, MatrixFloat B, int maxIterations = 200, float epsilon = 1e-5f)
+    public MatrixFloat FindOptimalRotation(MatrixFloat A, MatrixFloat B, int maxIterations = 50, float epsilon = 1e-5f)
     {
         int vectorDim = A.Dimensions[0];
         int nVectors = A.Dimensions[1];
@@ -57,7 +57,8 @@ public class VectorSetAlignment
             int[,] costMatrix = new int[nVectors, nVectors];
             for (int i = 0; i < nVectors; ++i)
                 for (int j = 0; j < nVectors; ++j)
-                    costMatrix[i, j] = (int)(-MathF.Max(0f, similarityMatrix[i, j]) * 100.0f); // Только положительные, минус для максимизации
+                    costMatrix[i, j] = (int)(similarityMatrix[i, j] * -10000.0f);
+            //costMatrix[i, j] = (int)(-MathF.Max(0f, similarityMatrix[i, j]) * 100.0f); // Только положительные, минус для максимизации
 
             int[] matching = HungarianAlgorithm.FindAssignments(costMatrix); // Предполагаемая реализация: matching[i] = j для A_i -> B_j
 
@@ -345,7 +346,8 @@ public class VectorSetAlignment
         int[,] costMatrix = new int[nVectors, nVectors];
         for (int i = 0; i < nVectors; ++i)
             for (int j = 0; j < nVectors; ++j)
-                costMatrix[i, j] = (int)(-MathF.Max(0f, similarity[i, j]) * 100.0f); // Только положительные
+                costMatrix[i, j] = (int)(similarity[i, j] * -10000.0f);
+        //costMatrix[i, j] = (int)(-MathF.Max(0f, similarity[i, j]) * 100.0f); // Только положительные
 
         int[] matching = HungarianAlgorithm.FindAssignments(costMatrix); // Предполагаемая реализация Hungarian
 
