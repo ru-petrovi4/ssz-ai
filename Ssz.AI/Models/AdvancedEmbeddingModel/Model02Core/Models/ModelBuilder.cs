@@ -32,7 +32,9 @@ public static class ModelBuilder
     /// <param name="parameters">Параметры конфигурации</param>
     /// <param name="withDiscriminator">Флаг создания дискриминатора для adversarial обучения</param>
     /// <returns>Компоненты модели</returns>
-    public static ModelComponents BuildModel(Training.Parameters parameters, bool withDiscriminator = true)
+    public static ModelComponents BuildModel(
+        Training.Parameters parameters, 
+        bool withDiscriminator = true)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogInformation("Начало построения модели MUSE...");
