@@ -5,7 +5,7 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
 using Ssz.AI.Models;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 
 /// <summary>
 /// Утилиты для высокопроизводительных математических операций.

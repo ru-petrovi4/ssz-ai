@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.Extensions.Logging;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Dictionary;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Dictionary;
 using Ssz.Utils.Logging;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 
 /// <summary>
 /// Загрузчик эмбеддингов из текстовых файлов.

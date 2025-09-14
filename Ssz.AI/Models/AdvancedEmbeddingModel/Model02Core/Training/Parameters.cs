@@ -3,7 +3,7 @@ using Ssz.Utils.Logging;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Training;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
 
 /// <summary>
 /// Класс параметров конфигурации для обучения MUSE.

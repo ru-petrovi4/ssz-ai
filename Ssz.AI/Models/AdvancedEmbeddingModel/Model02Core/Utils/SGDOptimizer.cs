@@ -1,8 +1,8 @@
-﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Models;
+﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 using System;
 using System.Collections.Generic;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 
 /// <summary>
 /// Простая реализация SGD оптимизатора для обучения нейронных сетей.

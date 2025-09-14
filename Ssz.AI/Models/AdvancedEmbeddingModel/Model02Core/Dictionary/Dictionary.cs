@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Dictionary;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Dictionary;
 
 /// <summary>
 /// Класс словаря для хранения соответствия между словами и их индексами.

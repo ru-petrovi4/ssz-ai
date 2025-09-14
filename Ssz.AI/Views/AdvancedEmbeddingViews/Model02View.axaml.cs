@@ -27,12 +27,12 @@ public partial class Model02View : UserControl
         if (Design.IsDesignMode)
             return;
 
-        Model = new Model02_();
+        Model = new Model02();
         Task.Run(() =>
         {
             Model.Initialize();
         });
     }
 
-    public Model02_ Model = null!;
+    public Model02 Model = null!;
 }

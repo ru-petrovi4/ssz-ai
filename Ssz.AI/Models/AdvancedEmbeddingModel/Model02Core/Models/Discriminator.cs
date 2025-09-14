@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Models;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 
 /// <summary>
 /// Дискриминатор для adversarial обучения в MUSE.

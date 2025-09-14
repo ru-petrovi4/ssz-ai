@@ -1,10 +1,10 @@
 ﻿using System.Numerics.Tensors;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Single;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Models;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Dictionary;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Evaluation;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Dictionary;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using Ssz.Utils.Logging;
@@ -12,7 +12,7 @@ using System;
 using System.Linq;
 using System.IO;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Training;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
 
 /// <summary>
 /// Основной класс тренера для несупервизированного обучения MUSE.

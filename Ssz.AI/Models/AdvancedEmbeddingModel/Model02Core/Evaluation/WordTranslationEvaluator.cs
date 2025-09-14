@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
 using Microsoft.Extensions.Logging;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 using Ssz.Utils.Logging;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Evaluation;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 
 /// <summary>
 /// Оценщик качества перевода слов для MUSE.

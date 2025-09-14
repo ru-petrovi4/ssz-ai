@@ -18,10 +18,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Ssz.AI.Helpers;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Evaluation;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Models;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Training;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
@@ -32,11 +32,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 /// <summary>
 ///     Нахождение маппинга 
 /// </summary>
-public partial class Model02_
+public partial class Model02
 {
     #region construction and destruction
 
-    public Model02_()
+    public Model02()
     {
         _loggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
     }            

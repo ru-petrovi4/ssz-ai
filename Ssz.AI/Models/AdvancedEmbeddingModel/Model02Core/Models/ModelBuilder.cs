@@ -1,10 +1,10 @@
-﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Utils;
+﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 using Ssz.AI.Models;
 using System;
 using Ssz.Utils.Logging;
 using Microsoft.Extensions.Logging;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02.Models;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 
 /// <summary>
 /// Строитель моделей для системы MUSE.
