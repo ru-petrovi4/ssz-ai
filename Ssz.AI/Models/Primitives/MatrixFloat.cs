@@ -37,9 +37,9 @@ public class MatrixFloat : IOwnedDataSerializable
         Array.Fill(Data, value);
     }
 
-    public int Rows => Dimensions[0];
-    public int Cols => Dimensions[1];
-    public int TotalElements => Data.Length;
+    public int RowsCount => Dimensions[0];
+    public int ColumnsCount => Dimensions[1];
+    public int TotalElementsCount => Data.Length;
 
     public virtual float this[int i, int j]
     {
