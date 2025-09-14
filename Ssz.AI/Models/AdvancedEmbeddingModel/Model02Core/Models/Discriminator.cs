@@ -13,7 +13,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 public class Discriminator
 {
     // Веса и смещения для каждого слоя
-    private readonly List<MatrixFloat> _weights;
+    private readonly List<MatrixFloat_RowMajor> _weights;
     private readonly List<float[]> _biases;
     private readonly float _dropoutRate;
     private readonly float _inputDropoutRate;
@@ -40,7 +40,7 @@ public class Discriminator
         _inputDropoutRate = inputDropoutRate;
         _random = new Random();
 
-        _weights = new List<MatrixFloat>();
+        _weights = new List<MatrixFloat_RowMajor>();
         _biases = new List<float[]>();
 
         // Инициализация весов и смещений для каждого слоя
@@ -61,7 +61,7 @@ public class Discriminator
             // Xavier инициализация: стандартное отклонение = sqrt(2 / (input_size + output_size))
             float stddev = MathF.Sqrt(2.0f / (inputSize + outputSize));
 
-            var weight = new MatrixFloat(new[] { inputSize, outputSize });
+            var weight = new MatrixFloat_RowMajor(new[] { inputSize, outputSize });
             var bias = new float[outputSize];
 
             // Заполнение весов случайными значениями из нормального распределения
@@ -103,7 +103,7 @@ public class Discriminator
     /// <param name="input">Входные эмбеддинги размерностью [batch_size, embedding_dim]</param>
     /// <param name="isTraining">Флаг обучения для применения dropout</param>
     /// <returns>Вероятности принадлежности к целевому языку [batch_size]</returns>
-    public float[] Forward(MatrixFloat input, bool isTraining = false)
+    public float[] Forward(MatrixFloat_RowMajor input, bool isTraining = false)
     {
         if (input.Dimensions[1] != _embeddingDim)
             throw new ArgumentException($"Неверная размерность входа: ожидается {_embeddingDim}, получено {input.Dimensions[1]}");
@@ -124,7 +124,7 @@ public class Discriminator
             var biases = _biases[layer];
 
             int outputSize = weights.Dimensions[1];
-            var next = new MatrixFloat(new[] { batchSize, outputSize });
+            var next = new MatrixFloat_RowMajor(new[] { batchSize, outputSize });
 
             // Матричное умножение: next = current * weights + bias
             MatrixMultiply(current, weights, next);
@@ -168,7 +168,7 @@ public class Discriminator
     /// <param name="input">Входная матрица [batch_size, input_dim]</param>
     /// <param name="weights">Матрица весов [input_dim, output_dim]</param>
     /// <param name="result">Результирующая матрица [batch_size, output_dim]</param>
-    private static void MatrixMultiply(MatrixFloat input, MatrixFloat weights, MatrixFloat result)
+    private static void MatrixMultiply(MatrixFloat_RowMajor input, MatrixFloat_RowMajor weights, MatrixFloat_RowMajor result)
     {
         int batchSize = input.Dimensions[0];
         int inputDim = input.Dimensions[1];
@@ -196,7 +196,7 @@ public class Discriminator
     /// </summary>
     /// <param name="matrix">Матрица для добавления смещения</param>
     /// <param name="bias">Вектор смещений</param>
-    private static void AddBias(MatrixFloat matrix, float[] bias)
+    private static void AddBias(MatrixFloat_RowMajor matrix, float[] bias)
     {
         int batchSize = matrix.Dimensions[0];
         int outputSize = matrix.Dimensions[1];
@@ -214,7 +214,7 @@ public class Discriminator
     /// </summary>
     /// <param name="matrix">Матрица для применения активации</param>
     /// <param name="alpha">Коэффициент для отрицательных значений</param>
-    private static void ApplyLeakyReLU(MatrixFloat matrix, float alpha)
+    private static void ApplyLeakyReLU(MatrixFloat_RowMajor matrix, float alpha)
     {
         var data = matrix.Data.AsSpan();
 
@@ -231,7 +231,7 @@ public class Discriminator
     /// Использует быстрое приближение для exp через TensorPrimitives.
     /// </summary>
     /// <param name="matrix">Матрица для применения активации</param>
-    private static void ApplySigmoid(MatrixFloat matrix)
+    private static void ApplySigmoid(MatrixFloat_RowMajor matrix)
     {
         var data = matrix.Data.AsSpan();
 
@@ -257,7 +257,7 @@ public class Discriminator
     /// </summary>
     /// <param name="matrix">Матрица для применения dropout</param>
     /// <param name="dropoutRate">Вероятность обнуления элемента (0.0 - 1.0)</param>
-    private void ApplyDropout(MatrixFloat matrix, float dropoutRate)
+    private void ApplyDropout(MatrixFloat_RowMajor matrix, float dropoutRate)
     {
         if (dropoutRate <= 0.0f) return;
 
@@ -282,7 +282,7 @@ public class Discriminator
     /// </summary>
     /// <param name="layer">Номер слоя</param>
     /// <returns>Матрица весов слоя</returns>
-    public MatrixFloat GetWeights(int layer) => _weights[layer];
+    public MatrixFloat_RowMajor GetWeights(int layer) => _weights[layer];
 
     /// <summary>
     /// Получение смещений определенного слоя для оптимизации.

@@ -25,7 +25,7 @@ public static class DictionaryBuilder
     /// <param name="parameters">Параметры обучения</param>
     /// <returns>Список пар (источник_id, цель_id)</returns>
     public static List<(int sourceId, int targetId)> BuildDictionary(
-        MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings, Training.Parameters parameters)
+        MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings, Training.Parameters parameters)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogDebug($"Построение словаря методом {parameters.DictionaryMethod}...");
@@ -44,7 +44,7 @@ public static class DictionaryBuilder
     /// Простой и быстрый метод, но менее точный чем CSLS.
     /// </summary>
     private static List<(int, int)> BuildNearestNeighborDictionary(
-        MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings, Training.Parameters parameters)
+        MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings, Training.Parameters parameters)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogDebug("Использование метода ближайших соседей...");
@@ -83,7 +83,7 @@ public static class DictionaryBuilder
     /// Более точный метод, учитывающий локальную плотность распределения эмбеддингов.
     /// </summary>
     private static List<(int, int)> BuildCSLSDictionary(
-        MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings, Training.Parameters parameters, int k)
+        MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings, Training.Parameters parameters, int k)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogDebug($"Использование CSLS метода с k={k}...");
@@ -152,7 +152,7 @@ public static class DictionaryBuilder
     /// <param name="k">Количество ближайших соседей</param>
     /// <param name="numQueries">Количество запросов для обработки</param>
     /// <returns>Массив средних сходств для каждого запроса</returns>
-    private static float[] ComputeKNNMeans(MatrixFloat queryEmbeddings, MatrixFloat candidateEmbeddings,
+    private static float[] ComputeKNNMeans(MatrixFloat_RowMajor queryEmbeddings, MatrixFloat_RowMajor candidateEmbeddings,
                                          int k, int numQueries)
     {
         int embeddingDim = queryEmbeddings.Dimensions[1];
@@ -231,7 +231,7 @@ public static class DictionaryBuilder
     /// <returns>Статистика качества словаря</returns>
     public static DictionaryQualityStats EvaluateDictionaryQuality(
         List<(int sourceId, int targetId)> dictionary,
-        MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings)
+        MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings)
     {
         if (dictionary.Count == 0)
             return new DictionaryQualityStats { Size = 0 };

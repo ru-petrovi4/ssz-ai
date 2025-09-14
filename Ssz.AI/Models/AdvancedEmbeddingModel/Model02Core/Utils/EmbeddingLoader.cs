@@ -24,7 +24,7 @@ public static class EmbeddingLoader
     /// <param name="embeddingDim">Ожидаемая размерность эмбеддингов</param>
     /// <param name="language">Язык для создания словаря</param>
     /// <returns>Кортеж (словарь, матрица эмбеддингов)</returns>
-    public static (Dictionary.Dictionary dictionary, MatrixFloat embeddings) LoadEmbeddings(
+    public static (Dictionary.Dictionary dictionary, MatrixFloat_RowMajor embeddings) LoadEmbeddings(
         string filePath, int maxVocab, int embeddingDim, string language)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
@@ -97,7 +97,7 @@ public static class EmbeddingLoader
     /// Формат: первая строка содержит размер словаря и размерность,
     /// затем каждая строка содержит слово и его вектор.
     /// </summary>
-    private static (Dictionary.Dictionary dictionary, MatrixFloat embeddings) LoadWord2VecFormat(
+    private static (Dictionary.Dictionary dictionary, MatrixFloat_RowMajor embeddings) LoadWord2VecFormat(
         string filePath, int maxVocab, int embeddingDim, string language)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
@@ -127,7 +127,7 @@ public static class EmbeddingLoader
 
         // Инициализация структур данных
         var words = new List<string>(vocabSize);
-        var embeddings = new MatrixFloat(new[] { vocabSize, embeddingDim });
+        var embeddings = new MatrixFloat_RowMajor(new[] { vocabSize, embeddingDim });
 
         // Чтение эмбеддингов
         int loadedWords = 0;
@@ -171,7 +171,7 @@ public static class EmbeddingLoader
         // Обрезка матрицы если загружено меньше слов
         if (loadedWords < vocabSize)
         {
-            var trimmedEmbeddings = new MatrixFloat(new[] { loadedWords, embeddingDim });
+            var trimmedEmbeddings = new MatrixFloat_RowMajor(new[] { loadedWords, embeddingDim });
             Array.Copy(embeddings.Data, trimmedEmbeddings.Data, loadedWords * embeddingDim);
             embeddings = trimmedEmbeddings;
         }
@@ -187,7 +187,7 @@ public static class EmbeddingLoader
     /// Загрузка эмбеддингов в формате GloVe.
     /// Формат: каждая строка содержит слово и его вектор.
     /// </summary>
-    private static (Dictionary.Dictionary dictionary, MatrixFloat embeddings) LoadGloVeFormat(
+    private static (Dictionary.Dictionary dictionary, MatrixFloat_RowMajor embeddings) LoadGloVeFormat(
         string filePath, int maxVocab, int embeddingDim, string language)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
@@ -225,7 +225,7 @@ public static class EmbeddingLoader
 
         // Второй проход: загрузка данных
         var words = new List<string>(vocabSize);
-        var embeddings = new MatrixFloat(new[] { vocabSize, embeddingDim });
+        var embeddings = new MatrixFloat_RowMajor(new[] { vocabSize, embeddingDim });
 
         using var reader2 = new StreamReader(filePath, Encoding.UTF8);
         int loadedWords = 0;
@@ -275,7 +275,7 @@ public static class EmbeddingLoader
     /// Загрузка эмбеддингов в формате FastText.
     /// Аналогично Word2Vec, но с дополнительной обработкой метаданных.
     /// </summary>
-    private static (Dictionary.Dictionary dictionary, MatrixFloat embeddings) LoadFastTextFormat(
+    private static (Dictionary.Dictionary dictionary, MatrixFloat_RowMajor embeddings) LoadFastTextFormat(
         string filePath, int maxVocab, int embeddingDim, string language)
     {
         // FastText обычно совместим с форматом Word2Vec
@@ -289,7 +289,7 @@ public static class EmbeddingLoader
     /// <param name="dictionary">Словарь с соответствием индексов и слов</param>
     /// <param name="filePath">Путь к выходному файлу</param>
     /// <param name="format">Формат экспорта (txt/bin)</param>
-    public static void ExportEmbeddings(MatrixFloat embeddings, Dictionary.Dictionary dictionary,
+    public static void ExportEmbeddings(MatrixFloat_RowMajor embeddings, Dictionary.Dictionary dictionary,
                                       string filePath, string format = "txt")
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
@@ -319,7 +319,7 @@ public static class EmbeddingLoader
     /// <summary>
     /// Экспорт в текстовом формате (совместимом с word2vec).
     /// </summary>
-    private static void ExportTextFormat(MatrixFloat embeddings, Dictionary.Dictionary dictionary, string filePath)
+    private static void ExportTextFormat(MatrixFloat_RowMajor embeddings, Dictionary.Dictionary dictionary, string filePath)
     {
         using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
 
@@ -347,7 +347,7 @@ public static class EmbeddingLoader
     /// <summary>
     /// Экспорт в бинарном формате для экономии места.
     /// </summary>
-    private static void ExportBinaryFormat(MatrixFloat embeddings, Dictionary.Dictionary dictionary, string filePath)
+    private static void ExportBinaryFormat(MatrixFloat_RowMajor embeddings, Dictionary.Dictionary dictionary, string filePath)
     {
         using var stream = new FileStream(filePath, FileMode.Create);
         using var writer = new BinaryWriter(stream);
@@ -380,7 +380,7 @@ public static class EmbeddingLoader
     /// <param name="embeddings">Матрица эмбеддингов</param>
     /// <param name="dictionary">Словарь</param>
     /// <returns>True если эмбеддинги корректны</returns>
-    public static bool ValidateEmbeddings(MatrixFloat embeddings, Dictionary.Dictionary dictionary)
+    public static bool ValidateEmbeddings(MatrixFloat_RowMajor embeddings, Dictionary.Dictionary dictionary)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogInformation("Валидация загруженных эмбеддингов...");

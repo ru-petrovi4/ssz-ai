@@ -32,6 +32,15 @@ public class MatrixFloat : IOwnedDataSerializable
 
     public float[] Data { get; set; } = null!;
 
+    public void Fill(float value)
+    {
+        Array.Fill(Data, value);
+    }
+
+    public int Rows => Dimensions[0];
+    public int Cols => Dimensions[1];
+    public int TotalElements => Data.Length;
+
     public virtual float this[int i, int j]
     {
         get => Data[i + j * Dimensions[0]];
@@ -153,7 +162,14 @@ public class MatrixFloat_RowMajor : MatrixFloat
     {
         var columnsCount = Dimensions[1];
         return (dataIndex % columnsCount, dataIndex / columnsCount);
-    }    
+    }
+
+    public new MatrixFloat_RowMajor Clone()
+    {
+        var clone = new MatrixFloat_RowMajor((int[])Dimensions.Clone());
+        Array.Copy(Data, clone.Data, Data.Length);
+        return clone;
+    }
 
     public override string ToString()
     {

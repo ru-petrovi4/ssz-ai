@@ -7,7 +7,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 /// <summary>
 /// Простая реализация SGD оптимизатора для обучения нейронных сетей.
 /// Поддерживает momentum, weight decay и градиентное обновление весов.
-/// Оптимизирован для работы с MatrixFloat и высокой производительности.
+/// Оптимизирован для работы с MatrixFloat_RowMajor и высокой производительности.
 /// </summary>
 public class SGDOptimizer
 {
@@ -16,7 +16,7 @@ public class SGDOptimizer
     private readonly float _momentum;
 
     // Хранение momentum для каждого параметра
-    private readonly Dictionary<object, MatrixFloat> _momentumMatrices = new();
+    private readonly Dictionary<object, MatrixFloat_RowMajor> _momentumMatrices = new();
     private readonly Dictionary<object, float[]> _momentumVectors = new();
 
     /// <summary>
@@ -38,12 +38,12 @@ public class SGDOptimizer
     /// </summary>
     /// <param name="mappingMatrix">Отображающая матрица для обновления</param>
     /// <param name="gradients">Градиенты матрицы</param>
-    public void UpdateMappingMatrix(MatrixFloat mappingMatrix, MatrixFloat gradients)
+    public void UpdateMappingMatrix(MatrixFloat_RowMajor mappingMatrix, MatrixFloat_RowMajor gradients)
     {
         // Инициализация momentum матрицы при первом обращении
         if (!_momentumMatrices.ContainsKey(mappingMatrix))
         {
-            _momentumMatrices[mappingMatrix] = new MatrixFloat(mappingMatrix.Dimensions);
+            _momentumMatrices[mappingMatrix] = new MatrixFloat_RowMajor(mappingMatrix.Dimensions);
         }
 
         var momentum = _momentumMatrices[mappingMatrix];
@@ -67,7 +67,7 @@ public class SGDOptimizer
     /// </summary>
     /// <param name="discriminator">Дискриминатор для обновления</param>
     /// <param name="gradients">Список градиентов для каждого слоя</param>
-    public void UpdateWeights(Models.Discriminator discriminator, List<(MatrixFloat weightGradients, float[] biasGradients)> gradients)
+    public void UpdateWeights(Models.Discriminator discriminator, List<(MatrixFloat_RowMajor weightGradients, float[] biasGradients)> gradients)
     {
         for (int layer = 0; layer < discriminator.LayerCount; layer++)
         {
@@ -123,7 +123,7 @@ public class SGDOptimizer
     /// </summary>
     /// <param name="weights">Веса для регуляризации</param>
     /// <param name="gradients">Градиенты для модификации</param>
-    private void ApplyWeightDecay(MatrixFloat weights, MatrixFloat gradients)
+    private void ApplyWeightDecay(MatrixFloat_RowMajor weights, MatrixFloat_RowMajor gradients)
     {
         var weightData = weights.Data.AsSpan();
         var gradData = gradients.Data.AsSpan();
@@ -140,7 +140,7 @@ public class SGDOptimizer
     /// </summary>
     /// <param name="momentum">Momentum матрица</param>
     /// <param name="gradients">Текущие градиенты</param>
-    private void UpdateMomentum(MatrixFloat momentum, MatrixFloat gradients)
+    private void UpdateMomentum(MatrixFloat_RowMajor momentum, MatrixFloat_RowMajor gradients)
     {
         var momentumData = momentum.Data.AsSpan();
         var gradData = gradients.Data.AsSpan();
@@ -157,7 +157,7 @@ public class SGDOptimizer
     /// </summary>
     /// <param name="parameters">Параметры для обновления</param>
     /// <param name="momentum">Momentum значения</param>
-    private void ApplyGradientUpdate(MatrixFloat parameters, MatrixFloat momentum)
+    private void ApplyGradientUpdate(MatrixFloat_RowMajor parameters, MatrixFloat_RowMajor momentum)
     {
         var paramData = parameters.Data.AsSpan();
         var momentumData = momentum.Data.AsSpan();

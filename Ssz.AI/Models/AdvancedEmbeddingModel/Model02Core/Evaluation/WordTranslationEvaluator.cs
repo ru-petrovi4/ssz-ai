@@ -25,7 +25,7 @@ public class WordTranslationEvaluator
     /// <param name="targetDictionary">Словарь целевого языка</param>
     /// <param name="evaluationSize">Размер тестового набора</param>
     /// <returns>Точность перевода</returns>
-    public float EvaluateAccuracy(MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings,
+    public float EvaluateAccuracy(MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings,
                                 Dictionary.Dictionary sourceDictionary, Dictionary.Dictionary? targetDictionary,
                                 int evaluationSize = 1500)
     {
@@ -87,7 +87,7 @@ public class WordTranslationEvaluator
     /// <param name="kValues">Значения K для оценки P@K</param>
     /// <param name="evaluationSize">Размер тестового набора</param>
     /// <returns>Результаты оценки для каждого K</returns>
-    public Dictionary<int, float> EvaluatePrecisionAtK(MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings,
+    public Dictionary<int, float> EvaluatePrecisionAtK(MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings,
                                                       Dictionary.Dictionary sourceDictionary, Dictionary.Dictionary? targetDictionary,
                                                       int[] kValues, int evaluationSize = 1500)
     {
@@ -157,7 +157,7 @@ public class WordTranslationEvaluator
     /// Оценка точности на основе частотности слов (fallback метод).
     /// Используется когда тестовый словарь недоступен.
     /// </summary>
-    private float EvaluateFrequencyBasedAccuracy(MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings, int evaluationSize)
+    private float EvaluateFrequencyBasedAccuracy(MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings, int evaluationSize)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogDebug("Использование частотной оценки...");

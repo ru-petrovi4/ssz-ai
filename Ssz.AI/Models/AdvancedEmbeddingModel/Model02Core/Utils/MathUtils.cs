@@ -10,7 +10,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 /// <summary>
 /// Утилиты для высокопроизводительных математических операций.
 /// Использует System.Numerics.Tensors.TensorPrimitives и MathNet для SIMD-ускорения.
-/// Оптимизирован для работы с MatrixFloat и операций линейной алгебры.
+/// Оптимизирован для работы с MatrixFloat_RowMajor и операций линейной алгебры.
 /// </summary>
 public static class MathUtils
 {
@@ -20,7 +20,7 @@ public static class MathUtils
     /// Применяет векторизованные операции для максимальной производительности.
     /// </summary>
     /// <param name="matrix">Матрица для нормализации</param>
-    public static void NormalizeEmbeddings(MatrixFloat matrix)
+    public static void NormalizeEmbeddings(MatrixFloat_RowMajor matrix)
     {
         int numRows = matrix.Dimensions[0];
         int numCols = matrix.Dimensions[1];
@@ -50,7 +50,7 @@ public static class MathUtils
     /// <param name="matrixA">Левая матрица [M, K]</param>
     /// <param name="matrixB">Правая матрица [K, N]</param>
     /// <param name="result">Результирующая матрица [M, N]</param>
-    public static void MatrixMultiply(MatrixFloat matrixA, MatrixFloat matrixB, MatrixFloat result)
+    public static void MatrixMultiply(MatrixFloat_RowMajor matrixA, MatrixFloat_RowMajor matrixB, MatrixFloat_RowMajor result)
     {
         int M = matrixA.Dimensions[0];
         int K = matrixA.Dimensions[1];
@@ -96,7 +96,7 @@ public static class MathUtils
     /// Умножение блоков матриц с использованием SIMD операций.
     /// Внутренняя функция для оптимизированного матричного умножения.
     /// </summary>
-    private static void MultiplyBlock(MatrixFloat matrixA, MatrixFloat matrixB, MatrixFloat result,
+    private static void MultiplyBlock(MatrixFloat_RowMajor matrixA, MatrixFloat_RowMajor matrixB, MatrixFloat_RowMajor result,
                                     int iStart, int iEnd, int jStart, int jEnd, int kStart, int kEnd)
     {
         for (int i = iStart; i < iEnd; i++)
@@ -124,7 +124,7 @@ public static class MathUtils
     /// <param name="sourceMatrix">Исходная матрица A [d, n]</param>
     /// <param name="targetMatrix">Целевая матрица B [d, n]</param>
     /// <returns>Оптимальная ортогональная матрица W [d, d]</returns>
-    public static MatrixFloat ProcrustesAlignment(MatrixFloat sourceMatrix, MatrixFloat targetMatrix)
+    public static MatrixFloat_RowMajor ProcrustesAlignment(MatrixFloat_RowMajor sourceMatrix, MatrixFloat_RowMajor targetMatrix)
     {
         if (sourceMatrix.Dimensions[0] != targetMatrix.Dimensions[0] ||
             sourceMatrix.Dimensions[1] != targetMatrix.Dimensions[1])
@@ -156,7 +156,7 @@ public static class MathUtils
             W = U.Multiply(svd.VT);
         }
 
-        // Конвертация обратно в MatrixFloat
+        // Конвертация обратно в MatrixFloat_RowMajor
         return ConvertFromMathNet(W);
     }
 
@@ -165,7 +165,7 @@ public static class MathUtils
     /// Обеспечивает ортогональность столбцов для сохранения геометрических свойств.
     /// </summary>
     /// <param name="matrix">Матрица для ортогонализации (изменяется на месте)</param>
-    public static void OrthogonalizeMatrix(MatrixFloat matrix)
+    public static void OrthogonalizeMatrix(MatrixFloat_RowMajor matrix)
     {
         if (matrix.Dimensions[0] != matrix.Dimensions[1])
             throw new ArgumentException("Ортогонализация возможна только для квадратных матриц");
@@ -222,7 +222,7 @@ public static class MathUtils
     /// <param name="embeddings">Матрица эмбеддингов для поиска</param>
     /// <param name="k">Количество ближайших соседей</param>
     /// <returns>Индексы k ближайших соседей, отсортированные по расстоянию</returns>
-    public static int[] FindKNearestNeighbors(Memory<float> queryVector, MatrixFloat embeddings, int k)
+    public static int[] FindKNearestNeighbors(Memory<float> queryVector, MatrixFloat_RowMajor embeddings, int k)
     {
         int vocabSize = embeddings.Dimensions[0];
         int embeddingDim = embeddings.Dimensions[1];
@@ -254,11 +254,11 @@ public static class MathUtils
     }
 
     /// <summary>
-    /// Конвертация MatrixFloat в MathNet Matrix для использования специализированных алгоритмов.
+    /// Конвертация MatrixFloat_RowMajor в MathNet Matrix для использования специализированных алгоритмов.
     /// </summary>
-    /// <param name="matrix">Исходная MatrixFloat</param>
+    /// <param name="matrix">Исходная MatrixFloat_RowMajor</param>
     /// <returns>MathNet Matrix</returns>
-    private static Matrix<float> ConvertToMathNet(MatrixFloat matrix)
+    private static Matrix<float> ConvertToMathNet(MatrixFloat_RowMajor matrix)
     {
         int rows = matrix.Dimensions[0];
         int cols = matrix.Dimensions[1];
@@ -276,13 +276,13 @@ public static class MathUtils
     }
 
     /// <summary>
-    /// Конвертация MathNet Matrix обратно в MatrixFloat.
+    /// Конвертация MathNet Matrix обратно в MatrixFloat_RowMajor.
     /// </summary>
     /// <param name="matrix">MathNet Matrix</param>
-    /// <returns>MatrixFloat</returns>
-    private static MatrixFloat ConvertFromMathNet(Matrix<float> matrix)
+    /// <returns>MatrixFloat_RowMajor</returns>
+    private static MatrixFloat_RowMajor ConvertFromMathNet(Matrix<float> matrix)
     {
-        var result = new MatrixFloat(new[] { matrix.RowCount, matrix.ColumnCount });
+        var result = new MatrixFloat_RowMajor(new[] { matrix.RowCount, matrix.ColumnCount });
 
         for (int i = 0; i < matrix.RowCount; i++)
         {
@@ -300,7 +300,7 @@ public static class MathUtils
     /// </summary>
     /// <param name="source">Исходная матрица</param>
     /// <param name="destination">Целевая матрица</param>
-    public static void CopyMatrix(MatrixFloat source, MatrixFloat destination)
+    public static void CopyMatrix(MatrixFloat_RowMajor source, MatrixFloat_RowMajor destination)
     {
         if (source.Dimensions[0] != destination.Dimensions[0] ||
             source.Dimensions[1] != destination.Dimensions[1])

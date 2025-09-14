@@ -16,14 +16,14 @@ public class Parameters
     public int Seed { get; set; } = -1;
     public int Verbose { get; set; } = 2;
     public string ExperimentPath { get; set; } = "";
-    public string ExperimentName { get; set; } = "debug";
+    public string ExperimentName { get; set; } = "muse_default";
     public string ExperimentId { get; set; } = "";
     public bool UseCuda { get; set; } = false; // В C# пока без CUDA
     public string ExportFormat { get; set; } = "txt";
 
     // Параметры данных
-    public string SourceLanguage { get; set; } = "en";
-    public string TargetLanguage { get; set; } = "es";
+    public string SourceLanguage { get; set; } = "RU";
+    public string TargetLanguage { get; set; } = "EN";
     public string SourceEmbeddingPath { get; set; } = "";
     public string TargetEmbeddingPath { get; set; } = "";
     public int EmbeddingDimension { get; set; } = 300;
@@ -66,7 +66,7 @@ public class Parameters
     public float DictionaryThreshold { get; set; } = 0.0f;
 
     // Параметры валидации
-    public int ValidationMetricStep { get; set; } = 1000;
+    public int ValidationMetricStep { get; set; } = 500;
     public string ValidationMetric { get; set; } = "mean_cosine-csls_knn_10-S2T-10000";
 
     // Параметры экспорта
@@ -82,12 +82,12 @@ public class Parameters
     {
         var errors = new List<string>();
 
-        // Проверка обязательных путей
-        if (string.IsNullOrEmpty(SourceEmbeddingPath))
-            errors.Add("Не указан путь к исходным эмбеддингам");
+        //// Проверка обязательных путей
+        //if (string.IsNullOrEmpty(SourceEmbeddingPath))
+        //    errors.Add("Не указан путь к исходным эмбеддингам");
 
-        if (string.IsNullOrEmpty(TargetEmbeddingPath))
-            errors.Add("Не указан путь к целевым эмбеддингам");
+        //if (string.IsNullOrEmpty(TargetEmbeddingPath))
+        //    errors.Add("Не указан путь к целевым эмбеддингам");
 
         // Проверка размерностей
         if (EmbeddingDimension <= 0)
@@ -124,23 +124,5 @@ public class Parameters
         }
 
         return true;
-    }
-
-    /// <summary>
-    /// Создание параметров по умолчанию для быстрого тестирования.
-    /// </summary>
-    /// <returns>Объект с параметрами по умолчанию</returns>
-    public static Parameters CreateDefault()
-    {
-        return new Parameters
-        {
-            ExperimentName = "muse_default",
-            EmbeddingDimension = 300,
-            MaxVocabulary = 50000, // Уменьшено для тестирования
-            Epochs = 5,
-            MapOptimizerSteps = 1000,
-            DiscriminatorSteps = 5,
-            ValidationMetricStep = 500
-        };
     }
 }

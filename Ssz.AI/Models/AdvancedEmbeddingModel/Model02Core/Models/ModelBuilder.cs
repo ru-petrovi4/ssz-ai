@@ -18,9 +18,9 @@ public static class ModelBuilder
     /// </summary>
     public class ModelComponents
     {
-        public MatrixFloat SourceEmbeddings { get; set; } = null!;
-        public MatrixFloat TargetEmbeddings { get; set; } = null!;
-        public MatrixFloat MappingMatrix { get; set; } = null!;
+        public MatrixFloat_RowMajor SourceEmbeddings { get; set; } = null!;
+        public MatrixFloat_RowMajor TargetEmbeddings { get; set; } = null!;
+        public MatrixFloat_RowMajor MappingMatrix { get; set; } = null!;
         public Discriminator? Discriminator { get; set; }
         public Dictionary.Dictionary SourceDictionary { get; set; } = null!;
         public Dictionary.Dictionary? TargetDictionary { get; set; }
@@ -29,36 +29,44 @@ public static class ModelBuilder
     /// <summary>
     /// Построение всех компонентов модели MUSE.
     /// </summary>
-    /// <param name="parameters">Параметры конфигурации</param>
-    /// <param name="withDiscriminator">Флаг создания дискриминатора для adversarial обучения</param>
-    /// <returns>Компоненты модели</returns>
+    /// <param name="parameters"></param>
+    /// <param name="srcDict"></param>
+    /// <param name="srcEmb"></param>
+    /// <param name="tgtDict"></param>
+    /// <param name="tgtEmb"></param>
+    /// <param name="withDiscriminator"></param>
+    /// <returns></returns>
     public static ModelComponents BuildModel(
-        Training.Parameters parameters, 
+        Training.Parameters parameters,
+        Dictionary.Dictionary srcDict,
+        MatrixFloat_RowMajor srcEmb,
+        Dictionary.Dictionary tgtDict,
+        MatrixFloat_RowMajor tgtEmb,
         bool withDiscriminator = true)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
         logger.LogInformation("Начало построения модели MUSE...");
 
-        // Загрузка исходных эмбеддингов
-        logger.LogInformation($"Загрузка исходных эмбеддингов: {parameters.SourceLanguage}");
-        var (srcDict, srcEmb) = Utils.EmbeddingLoader.LoadEmbeddings(
-            parameters.SourceEmbeddingPath,
-            parameters.MaxVocabulary,
-            parameters.EmbeddingDimension,
-            parameters.SourceLanguage);
+        //// Загрузка исходных эмбеддингов
+        //logger.LogInformation($"Загрузка исходных эмбеддингов: {parameters.SourceLanguage}");
+        //var (srcDict, srcEmb) = Utils.EmbeddingLoader.LoadEmbeddings(
+        //    parameters.SourceEmbeddingPath,
+        //    parameters.MaxVocabulary,
+        //    parameters.EmbeddingDimension,
+        //    parameters.SourceLanguage);
 
-        // Загрузка целевых эмбеддингов
-        logger.LogInformation($"Загрузка целевых эмбеддингов: {parameters.TargetLanguage}");
-        var (tgtDict, tgtEmb) = Utils.EmbeddingLoader.LoadEmbeddings(
-            parameters.TargetEmbeddingPath,
-            parameters.MaxVocabulary,
-            parameters.EmbeddingDimension,
-            parameters.TargetLanguage);
+        //// Загрузка целевых эмбеддингов
+        //logger.LogInformation($"Загрузка целевых эмбеддингов: {parameters.TargetLanguage}");
+        //var (tgtDict, tgtEmb) = Utils.EmbeddingLoader.LoadEmbeddings(
+        //    parameters.TargetEmbeddingPath,
+        //    parameters.MaxVocabulary,
+        //    parameters.EmbeddingDimension,
+        //    parameters.TargetLanguage);
 
-        // Нормализация эмбеддингов для стабильности обучения
-        logger.LogInformation("Нормализация эмбеддингов...");
-        Utils.MathUtils.NormalizeEmbeddings(srcEmb);
-        Utils.MathUtils.NormalizeEmbeddings(tgtEmb);
+        //// Нормализация эмбеддингов для стабильности обучения
+        //logger.LogInformation("Нормализация эмбеддингов...");
+        //Utils.MathUtils.NormalizeEmbeddings(srcEmb);
+        //Utils.MathUtils.NormalizeEmbeddings(tgtEmb);
 
         // Инициализация отображающей матрицы
         logger.LogInformation("Инициализация отображающей матрицы...");
@@ -97,9 +105,9 @@ public static class ModelBuilder
     /// <param name="dimension">Размерность матрицы</param>
     /// <param name="identityInit">Флаг инициализации единичной матрицей</param>
     /// <returns>Инициализированная отображающая матрица</returns>
-    private static MatrixFloat InitializeMappingMatrix(int dimension, bool identityInit)
+    private static MatrixFloat_RowMajor InitializeMappingMatrix(int dimension, bool identityInit)
     {
-        var mapping = new MatrixFloat(new[] { dimension, dimension });
+        var mapping = new MatrixFloat_RowMajor(new[] { dimension, dimension });
 
         if (identityInit)
         {

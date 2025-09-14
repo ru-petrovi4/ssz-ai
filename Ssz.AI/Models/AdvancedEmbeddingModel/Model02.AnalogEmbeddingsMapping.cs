@@ -18,6 +18,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Dictionary;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
@@ -60,26 +61,28 @@ public partial class Model02
     public int Initialize()
     {
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
+        var ruDictionary = new Dictionary(LanguageInfo_RU.Words.Select(w => w.Name).ToList(), "RU");
         var d = WordsHelper.OldVectorLength_RU;
-        var ruEmb = new MatrixFloat(d, LanguageInfo_RU.Words.Count);
-        for (int j = 0; j < LanguageInfo_RU.Words.Count; j++)
+        var ruEmb = new MatrixFloat_RowMajor(LanguageInfo_RU.Words.Count, d);
+        for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
         {
-            var col = LanguageInfo_RU.Words[j];
-            for (int i = 0; i < d; i++)
+            var row = LanguageInfo_RU.Words[i];
+            for (int j = 0; j < d; j += 1)
             {
-                ruEmb[i, j] = col.OldVectorNormalized[i];
+                ruEmb[i, j] = row.OldVectorNormalized[j];
             }
         }
 
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+        var enDictionary = new Dictionary(LanguageInfo_EN.Words.Select(w => w.Name).ToList(), "EN");
         d = WordsHelper.OldVectorLength_EN;
-        var enEmb = new MatrixFloat(d, LanguageInfo_EN.Words.Count);
-        for (int j = 0; j < LanguageInfo_EN.Words.Count; j++)
+        var enEmb = new MatrixFloat_RowMajor(LanguageInfo_EN.Words.Count, d);
+        for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
         {
-            var col = LanguageInfo_EN.Words[j];
-            for (int i = 0; i < d; i++)
+            var row = LanguageInfo_EN.Words[i];
+            for (int j = 0; j < d; j += 1)
             {
-                enEmb[i, j] = col.OldVectorNormalized[i];
+                enEmb[i, j] = row.OldVectorNormalized[j];
             }
         }
 
@@ -91,7 +94,7 @@ public partial class Model02
         try
         {
             // Парсинг аргументов командной строки
-            Parameters parameters = Parameters.CreateDefault();            
+            Parameters parameters = new Parameters();            
 
             // Валидация параметров
             if (!parameters.Validate())
@@ -109,7 +112,13 @@ public partial class Model02
 
             // Построение модели
             logger.LogInformation("Построение модели MUSE...");
-            var modelComponents = ModelBuilder.BuildModel(parameters, withDiscriminator: true);
+            var modelComponents = ModelBuilder.BuildModel(
+                parameters,
+                ruDictionary,
+                ruEmb,
+                enDictionary,
+                enEmb,                
+                withDiscriminator: true);
 
             // Создание тренера
             var trainer = new Trainer(
@@ -182,9 +191,9 @@ public partial class Model02
     /// <summary>
     /// Применение отображающей матрицы к эмбеддингам.
     /// </summary>
-    private static MatrixFloat ApplyMapping(MatrixFloat embeddings, MatrixFloat mapping)
+    private static MatrixFloat_RowMajor ApplyMapping(MatrixFloat_RowMajor embeddings, MatrixFloat_RowMajor mapping)
     {
-        var result = new MatrixFloat(embeddings.Dimensions);
+        var result = new MatrixFloat_RowMajor(embeddings.Dimensions);
         MathUtils.MatrixMultiply(embeddings, mapping, result);
         return result;
     }
@@ -193,7 +202,7 @@ public partial class Model02
     /// Экспорт результатов обучения.
     /// </summary>
     private static async Task ExportResults(ModelBuilder.ModelComponents modelComponents,
-                                          Parameters parameters, MatrixFloat mappedSource,
+                                          Parameters parameters, MatrixFloat_RowMajor mappedSource,
                                           float accuracy)
     {
         var logger = LoggersSet.Default.UserFriendlyLogger;
@@ -281,7 +290,7 @@ public partial class Model02
     /// <summary>
     /// Конвертация матрицы в строковое представление.
     /// </summary>
-    private static string MatrixToString(MatrixFloat matrix)
+    private static string MatrixToString(MatrixFloat_RowMajor matrix)
     {
         var lines = new List<string>();
         int rows = matrix.Dimensions[0];

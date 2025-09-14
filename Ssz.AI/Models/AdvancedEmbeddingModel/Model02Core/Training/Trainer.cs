@@ -21,9 +21,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
 /// </summary>
 public class Trainer
 {
-    private readonly MatrixFloat _sourceEmbeddings;
-    private readonly MatrixFloat _targetEmbeddings;
-    private readonly MatrixFloat _mappingMatrix;
+    private readonly MatrixFloat_RowMajor _sourceEmbeddings;
+    private readonly MatrixFloat_RowMajor _targetEmbeddings;
+    private readonly MatrixFloat_RowMajor _mappingMatrix;
     private readonly Discriminator? _discriminator;
     private readonly Parameters _parameters;
     private readonly Dictionary.Dictionary _sourceDictionary;
@@ -49,8 +49,8 @@ public class Trainer
     /// <param name="sourceDictionary">Словарь исходного языка</param>
     /// <param name="targetDictionary">Словарь целевого языка</param>
     /// <param name="parameters">Параметры обучения</param>
-    public Trainer(MatrixFloat sourceEmbeddings, MatrixFloat targetEmbeddings,
-                   MatrixFloat mappingMatrix, Discriminator? discriminator,
+    public Trainer(MatrixFloat_RowMajor sourceEmbeddings, MatrixFloat_RowMajor targetEmbeddings,
+                   MatrixFloat_RowMajor mappingMatrix, Discriminator? discriminator,
                    Dictionary.Dictionary sourceDictionary, Dictionary.Dictionary? targetDictionary,
                    Parameters parameters)
     {
@@ -304,9 +304,9 @@ public class Trainer
     /// </summary>
     /// <param name="embeddings">Исходные эмбеддинги</param>
     /// <returns>Отображенные эмбеддинги</returns>
-    private MatrixFloat ApplyMapping(MatrixFloat embeddings)
+    private MatrixFloat_RowMajor ApplyMapping(MatrixFloat_RowMajor embeddings)
     {
-        var result = new MatrixFloat(embeddings.Dimensions);
+        var result = new MatrixFloat_RowMajor(embeddings.Dimensions);
         MathUtils.MatrixMultiply(embeddings, _mappingMatrix, result);
         return result;
     }
@@ -319,11 +319,11 @@ public class Trainer
     /// <param name="batchSize">Размер батча</param>
     /// <param name="random">Генератор случайных чисел</param>
     /// <returns>Батч эмбеддингов</returns>
-    private MatrixFloat CreateBatch(MatrixFloat embeddings, int batchSize, Random random)
+    private MatrixFloat_RowMajor CreateBatch(MatrixFloat_RowMajor embeddings, int batchSize, Random random)
     {
         int vocabSize = embeddings.Dimensions[0];
         int embeddingDim = embeddings.Dimensions[1];
-        var batch = new MatrixFloat(new[] { batchSize, embeddingDim });
+        var batch = new MatrixFloat_RowMajor(new[] { batchSize, embeddingDim });
 
         // Заполнение батча случайными эмбеддингами
         for (int i = 0; i < batchSize; i++)
@@ -345,7 +345,7 @@ public class Trainer
     /// <param name="batch1">Первый батч (обычно отображенные исходные эмбеддинги)</param>
     /// <param name="batch2">Второй батч (обычно целевые эмбеддинги)</param>
     /// <returns>Объединенный батч</returns>
-    private MatrixFloat CombineBatches(MatrixFloat batch1, MatrixFloat batch2)
+    private MatrixFloat_RowMajor CombineBatches(MatrixFloat_RowMajor batch1, MatrixFloat_RowMajor batch2)
     {
         if (batch1.Dimensions[1] != batch2.Dimensions[1])
             throw new ArgumentException("Батчи должны иметь одинаковую размерность эмбеддингов");
@@ -354,7 +354,7 @@ public class Trainer
         int batchSize2 = batch2.Dimensions[0];
         int embeddingDim = batch1.Dimensions[1];
 
-        var combinedBatch = new MatrixFloat(new[] { batchSize1 + batchSize2, embeddingDim });
+        var combinedBatch = new MatrixFloat_RowMajor(new[] { batchSize1 + batchSize2, embeddingDim });
 
         // Копирование первого батча
         Array.Copy(batch1.Data, 0, combinedBatch.Data, 0, batch1.Data.Length);
@@ -425,13 +425,13 @@ public class Trainer
     /// <param name="predictions">Предсказания дискриминатора</param>
     /// <param name="labels">Истинные метки</param>
     /// <returns>Градиенты для каждого слоя дискриминатора</returns>
-    private List<(MatrixFloat weightGradients, float[] biasGradients)> ComputeDiscriminatorGradients(
-        MatrixFloat inputs, float[] predictions, float[] labels)
+    private List<(MatrixFloat_RowMajor weightGradients, float[] biasGradients)> ComputeDiscriminatorGradients(
+        MatrixFloat_RowMajor inputs, float[] predictions, float[] labels)
     {
         if (_discriminator == null)
-            return new List<(MatrixFloat, float[])>();
+            return new List<(MatrixFloat_RowMajor, float[])>();
 
-        var gradients = new List<(MatrixFloat, float[])>();
+        var gradients = new List<(MatrixFloat_RowMajor, float[])>();
 
         // Упрощенная версия: вычисляем приблизительные градиенты
         // В полной реализации здесь был бы алгоритм обратного распространения
@@ -442,7 +442,7 @@ public class Trainer
             var biases = _discriminator.GetBiases(layer);
 
             // Создание градиентов той же размерности
-            var weightGradients = new MatrixFloat(weights.Dimensions);
+            var weightGradients = new MatrixFloat_RowMajor(weights.Dimensions);
             var biasGradients = new float[biases.Length];
 
             // Простое приближение градиентов на основе разности предсказаний и меток
@@ -480,9 +480,9 @@ public class Trainer
     /// <param name="predictions">Предсказания дискриминатора</param>
     /// <param name="targetLabels">Целевые метки для adversarial обучения</param>
     /// <returns>Градиенты отображающей матрицы</returns>
-    private MatrixFloat ComputeMappingGradients(MatrixFloat sourceBatch, float[] predictions, float[] targetLabels)
+    private MatrixFloat_RowMajor ComputeMappingGradients(MatrixFloat_RowMajor sourceBatch, float[] predictions, float[] targetLabels)
     {
-        var gradients = new MatrixFloat(_mappingMatrix.Dimensions);
+        var gradients = new MatrixFloat_RowMajor(_mappingMatrix.Dimensions);
 
         // Упрощенная версия: градиенты пропорциональны ошибке предсказания
         float avgError = 0.0f;
@@ -517,21 +517,21 @@ public class Trainer
     /// </summary>
     /// <param name="dictionary">Словарь пар (исходный_id, целевой_id)</param>
     /// <returns>Матрицы соответствующих эмбеддингов</returns>
-    private (MatrixFloat sourceMatrix, MatrixFloat targetMatrix) ExtractDictionaryEmbeddings(
+    private (MatrixFloat_RowMajor sourceMatrix, MatrixFloat_RowMajor targetMatrix) ExtractDictionaryEmbeddings(
         List<(int sourceId, int targetId)> dictionary)
     {
         if (dictionary.Count == 0)
         {
             // Возвращаем пустые матрицы если словарь пуст
-            var emptyMatrix = new MatrixFloat(new[] { 1, _sourceEmbeddings.Dimensions[1] });
+            var emptyMatrix = new MatrixFloat_RowMajor(new[] { 1, _sourceEmbeddings.Dimensions[1] });
             return (emptyMatrix, emptyMatrix);
         }
 
         int embeddingDim = _sourceEmbeddings.Dimensions[1];
         int dictionarySize = dictionary.Count;
 
-        var sourceMatrix = new MatrixFloat(new[] { embeddingDim, dictionarySize });
-        var targetMatrix = new MatrixFloat(new[] { embeddingDim, dictionarySize });
+        var sourceMatrix = new MatrixFloat_RowMajor(new[] { embeddingDim, dictionarySize });
+        var targetMatrix = new MatrixFloat_RowMajor(new[] { embeddingDim, dictionarySize });
 
         // Копирование соответствующих эмбеддингов
         for (int i = 0; i < dictionarySize; i++)
