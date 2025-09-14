@@ -438,7 +438,7 @@ namespace CrossLingualEmbeddings.Models
             var WtW = W.transpose(0, 1).mm(W);
             var identity = eye(W.size(0), device: W.device, dtype: W.dtype);
             
-            var orthogonalityError = (WtW - identity).norm().item<double>();
+            var orthogonalityError = (WtW - identity).norm().item<float>(); // VALFIX
             return orthogonalityError;
         }
 

@@ -30,7 +30,7 @@ public partial class Model02View : UserControl
         Model = new Model02();
         Task.Run(() =>
         {
-            Model.Initialize();
+            Model.ExecuteUnsupervisedTrainingAsync();
         });
     }
 

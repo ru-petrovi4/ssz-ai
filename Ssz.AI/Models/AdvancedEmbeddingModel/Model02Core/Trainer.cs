@@ -476,7 +476,7 @@ namespace CrossLingualEmbeddings.Training
                 _discriminator.ClipGradients(_parameters.DiscriminatorClipWeights);
             }
             
-            var lossValue = loss.item<double>();
+            var lossValue = loss.item<float>(); // VALFIX
             stats.DiscriminatorLosses.Add(lossValue);
             
             return lossValue;
@@ -524,7 +524,7 @@ namespace CrossLingualEmbeddings.Training
             // Ортогонализуем матрицу маппинга
             _mapping.OrthogonalizeWeights();
             
-            stats.MappingLosses.Add(loss.item<double>());
+            stats.MappingLosses.Add(loss.item<float>()); // VALFIX
             return 2 * _parameters.BatchSize;
         }
 
@@ -591,26 +591,26 @@ namespace CrossLingualEmbeddings.Training
             return Task.FromResult(false);
         }
 
-        ///// <summary>
-        ///// Загружает лучшую сохраненную модель
-        ///// </summary>
-        //public Task ReloadBestModelAsync()
-        //{
-        //    var modelPath = Path.Combine(_parameters.ExperimentPath, "best_mapping.pt");
-            
-        //    if (!File.Exists(modelPath))
-        //        throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");
-            
-        //    _logger?.LogInformation($"* Загрузка лучшей модели из {modelPath}...");
-            
-        //    using var _ = no_grad();
-        //    var loadedWeights = load(modelPath, _parameters.Device);
-        //    _mapping.Weight.copy_(loadedWeights);
-            
-        //    _logger?.LogInformation("Лучшая модель успешно загружена");
+        /// <summary>
+        /// Загружает лучшую сохраненную модель
+        /// </summary>
+        public Task ReloadBestModelAsync()
+        {
+            //var modelPath = Path.Combine(_parameters.ExperimentPath, "best_mapping.pt");
 
-        //    return Task.CompletedTask;
-        //}
+            //if (!File.Exists(modelPath))
+            //    throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");
+
+            //_logger?.LogInformation($"* Загрузка лучшей модели из {modelPath}...");
+
+            //using var _ = no_grad();
+            //var loadedWeights = load(modelPath, _parameters.Device);
+            //_mapping.Weight.copy_(loadedWeights);
+
+            //_logger?.LogInformation("Лучшая модель успешно загружена");
+
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// Обновляет learning rate для SGD оптимизаторов
