@@ -7,7 +7,7 @@ using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
 
-namespace CrossLingualEmbeddings.Models
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models
 {
     /// <summary>
     /// Параметры для создания дискриминатора

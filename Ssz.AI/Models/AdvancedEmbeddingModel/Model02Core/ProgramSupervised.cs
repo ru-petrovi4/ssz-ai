@@ -1,6 +1,6 @@
 
 
-//namespace CrossLingualEmbeddings
+//namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
 //{
 //    /// <summary>
 //    /// Главная программа для кросс-лингвального выравнивания эмбеддингов

@@ -4,15 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
-using CrossLingualEmbeddings.Models;
-using CrossLingualEmbeddings.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 using Microsoft.Extensions.Logging;
 using TorchSharp;
 using static TorchSharp.torch;
 using static TorchSharp.torch.optim;
 using TorchSharp.Modules;
 
-namespace CrossLingualEmbeddings.Training
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 {
     /// <summary>
     /// Параметры для тренера

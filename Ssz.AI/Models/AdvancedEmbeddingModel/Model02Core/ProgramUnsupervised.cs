@@ -4,14 +4,14 @@
 //using System.IO;
 //using System.Threading.Tasks;
 //using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
-//using CrossLingualEmbeddings.Models;
-//using CrossLingualEmbeddings.Training;
-//using CrossLingualEmbeddings.Utils;
+//using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
+//using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
+//using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils;
 //using Microsoft.Extensions.Logging;
 //using TorchSharp;
 //using static TorchSharp.torch;
 
-//namespace CrossLingualEmbeddings.Programs
+//namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Programs
 //{
 //    /// <summary>
 //    /// Основная программа для обучения без учителя (unsupervised training)

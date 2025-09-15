@@ -11,7 +11,7 @@ using Ssz.AI.Models;
 using TorchSharp;
 using static TorchSharp.torch;
 
-namespace CrossLingualEmbeddings.Utils
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
 {
     /// <summary>
     /// Утилитарные функции для работы с эмбеддингами и тензорами
