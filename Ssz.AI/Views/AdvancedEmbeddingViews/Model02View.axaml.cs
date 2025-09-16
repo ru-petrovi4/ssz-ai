@@ -28,9 +28,9 @@ public partial class Model02View : UserControl
             return;
 
         Model = new Model02();
-        Task.Run(() =>
+        Task.Run(async () =>
         {
-            Model.ExecuteUnsupervisedTrainingAsync();
+            await Model.ExecuteUnsupervisedTrainingAsync();
         });
     }
 

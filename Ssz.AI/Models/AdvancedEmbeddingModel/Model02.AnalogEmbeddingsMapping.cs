@@ -154,30 +154,28 @@ public partial class Model02
             //        .reshape(sourceEmbeddingMatrix.RowsCount, sourceEmbeddingMatrix.ColumnsCount));
             //    targetEmbeddings.weight.copy_(tensor(targetEmbeddingMatrix.Data)
             //        .reshape(targetEmbeddingMatrix.RowsCount, targetEmbeddingMatrix.ColumnsCount));
-            //}
+            //}            
 
             // Создаем модели
-            var mappingParams = new MappingParameters
-            {
-                EmbeddingDimension = parameters.EmbDim,
-                InitializeAsIdentity = parameters.MapIdInit,
-                OrthogonalizationBeta = parameters.MapBeta
-            };
+            var mapping = new EmbeddingMapping(parameters);
+            var discriminator = new Discriminator(parameters);
 
-            var discriminatorParams = new DiscriminatorParameters
+            // Перемещаем на устройство если указано
+            if (device is not null)
             {
-                EmbeddingDimension = parameters.EmbDim,
-                HiddenLayers = parameters.DisLayers,
-                HiddenDimension = parameters.DisHidDim,
-                Dropout = parameters.DisDropout,
-                InputDropout = parameters.DisInputDropout
-            };
+                mapping = mapping.to(device);
+                discriminator = discriminator.to(device);
+            }
 
-            var (mapping, discriminator) = ModelFactory.CreateModels(
-                parameters.EmbDim, discriminatorParams, mappingParams, device, logger);
+            // Инициализируем веса
+            mapping.InitializeWeights();
+            discriminator.InitializeWeights();
+
+            logger.LogInformation($"Созданы модели на устройстве {device?.type ?? DeviceType.CPU}:");
+            logger.LogInformation(mapping.GetModelInfo());
+            logger.LogInformation(discriminator.GetArchitectureInfo());
 
             logger.LogInformation("Модели успешно созданы и инициализированы");
-
 
             // Создание тренера
             using var trainer = CreateTrainer(sourceEmbeddings, targetEmbeddings, mapping, discriminator,
@@ -209,11 +207,11 @@ public partial class Model02
             logger.LogError(ex, "Критическая ошибка");
             return 1;
         }        
-    }    
+    }
 
     #endregion
 
-    #region private functions
+    #region private functions    
 
     /// <summary>
     /// Валидирует параметры обучения
@@ -475,7 +473,7 @@ public partial class Model02
     /// <summary>
     /// Параметры unsupervised обучения
     /// </summary>
-    public sealed record UnsupervisedParameters
+    public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMappingParameters
     {
         /// <summary>
         /// Seed для инициализации (-1 для случайного)
@@ -656,5 +654,10 @@ public partial class Model02
         /// Нормализация эмбеддингов перед обучением
         /// </summary>
         public string NormalizeEmbeddings { get; init; } = "";
+
+        /// <summary>
+        /// Использовать ли bias в линейном преобразовании
+        /// </summary>
+        public bool UseBias { get; init; } = false;
     }
 }
