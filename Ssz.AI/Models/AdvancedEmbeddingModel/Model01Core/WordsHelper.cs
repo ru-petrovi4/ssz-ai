@@ -8,7 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 
 public static class WordsHelper
 {
@@ -23,7 +23,7 @@ public static class WordsHelper
         foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\RU\model_20000.csv"))
         {
             var parts = CsvHelper.ParseCsvLine(",", line);
-            if (parts.Length < 300 || String.IsNullOrEmpty(parts[0]))
+            if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
                 continue;
             Word word = new Word
             {
@@ -40,7 +40,7 @@ public static class WordsHelper
                 var oldVectror = word.OldVector;
                 foreach (int i in Enumerable.Range(0, parts.Length - 2))
                 {
-                    oldVectror[i] = Single.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
+                    oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
                 }
                 var oldVectrorNormalized = word.OldVectorNormalized;
                 float norm = TensorPrimitives.Norm(oldVectror);
@@ -59,7 +59,7 @@ public static class WordsHelper
         foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\EN\glove.42B.300d_20000.txt"))
         {
             var parts = CsvHelper.ParseCsvLine(" ", line);
-            if (parts.Length < 300 || String.IsNullOrEmpty(parts[0]))
+            if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
                 continue;
             Word word = new Word
             {
@@ -76,7 +76,7 @@ public static class WordsHelper
                 var oldVectror = word.OldVector;
                 foreach (int i in Enumerable.Range(0, parts.Length - 2))
                 {
-                    oldVectror[i] = Single.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
+                    oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
                 }
                 var oldVectrorNormalized = word.OldVectorNormalized;
                 float norm = TensorPrimitives.Norm(oldVectror);

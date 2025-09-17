@@ -1,6 +1,6 @@
 ﻿using Ssz.Utils.Serialization;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 
 public class ProjectionOptimization_AlgorithmData : ISerializableModelObject
 {

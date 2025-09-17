@@ -28,9 +28,9 @@ public partial class Model01View : UserControl
             return;
 
         Model = new Model01();
-        Task.Run(async () =>
+        Task.Run(() =>
         {   
-            Model.FindEmbeddings_Mapping_V3();
+            Model.GenerateAndSaveLanguageDiscreteEmbeddings();
         });
     }
 

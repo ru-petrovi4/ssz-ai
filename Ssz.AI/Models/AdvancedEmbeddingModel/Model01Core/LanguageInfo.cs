@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 
 public class LanguageInfo
 {    

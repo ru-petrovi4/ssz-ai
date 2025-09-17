@@ -11,7 +11,7 @@ using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 
 public class DiscreteVectorsAndMatrices : ISerializableModelObject
 {

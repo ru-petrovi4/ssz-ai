@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 {
     /// <summary>
     ///     Primary Words Selection AlgorithmData

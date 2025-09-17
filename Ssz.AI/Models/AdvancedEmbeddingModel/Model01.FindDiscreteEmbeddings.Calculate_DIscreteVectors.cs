@@ -17,6 +17,7 @@ using MathNet.Numerics.LinearAlgebra.Single;
 using MathNet.Numerics.Providers.LinearAlgebra;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;

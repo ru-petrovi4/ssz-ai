@@ -2,6 +2,7 @@
 using MathNet.Numerics;
 using Microsoft.Extensions.Logging;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.Utils;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
