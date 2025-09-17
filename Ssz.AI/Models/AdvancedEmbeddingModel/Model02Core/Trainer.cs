@@ -17,47 +17,37 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
     /// <summary>
     /// Параметры для тренера
     /// </summary>
-    public sealed record TrainerParameters
+    public interface ITrainerParameters
     {
         /// <summary>
         /// Размер батча для обучения
         /// </summary>
-        public int BatchSize { get; init; } = 32;
+        int BatchSize { get; }
         
         /// <summary>
         /// Количество шагов дискриминатора за одну итерацию
         /// </summary>
-        public int DiscriminatorSteps { get; init; } = 5;
+        int DisSteps { get; }
         
         /// <summary>
         /// Коэффициент потерь дискриминатора
         /// </summary>
-        public double DiscriminatorLambda { get; init; } = 1.0;
+        double DisLambda { get; }
         
         /// <summary>
         /// Сглаживание для дискриминатора
         /// </summary>
-        public double DiscriminatorSmoothing { get; init; } = 0.1;
+        double DisSmooth { get; }
         
         /// <summary>
         /// Количество наиболее частых слов для дискриминации
         /// </summary>
-        public int MostFrequentWords { get; init; } = 75000;
+        int DisMostFrequent { get; }
         
         /// <summary>
         /// Обрезание градиентов дискриминатора
         /// </summary>
-        public double DiscriminatorClipWeights { get; init; } = 0.0;
-        
-        /// <summary>
-        /// Устройство для обучения
-        /// </summary>
-        public Device Device { get; init; } = CPU;
-        
-        /// <summary>
-        /// Путь для сохранения экспериментов
-        /// </summary>
-        public string ExperimentPath { get; init; } = "./experiments";
+        double DisClipWeights { get; }
     }
 
     /// <summary>
@@ -132,8 +122,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Параметры тренера
         /// </summary>
-        private readonly TrainerParameters _parameters;
-        
+        private readonly ITrainerParameters _trainerParameters;
+
+        /// <summary>
+        /// Устройство для обучения
+        /// </summary>
+        private readonly Device _device;
+
+        /// <summary>
+        /// Путь для сохранения экспериментов
+        /// </summary>
+        private readonly string _experimentPath;
+
         /// <summary>
         /// Логгер
         /// </summary>
@@ -187,7 +187,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <param name="discriminator">Дискриминатор (может быть null)</param>
         /// <param name="sourceDictionary">Словарь исходного языка</param>
         /// <param name="targetDictionary">Словарь целевого языка</param>
-        /// <param name="parameters">Параметры тренера</param>
+        /// <param name="trainerParameters">Параметры тренера</param>
         /// <param name="logger">Логгер</param>
         public CrossLingualTrainer(
             Embedding sourceEmbeddings,
@@ -196,7 +196,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             Discriminator? discriminator,
             Dictionary sourceDictionary,
             Dictionary targetDictionary,
-            TrainerParameters? parameters = null,
+            ITrainerParameters trainerParameters,
+            Device device,
+            string experimentPath,
             ILogger? logger = null)
         {
             _sourceEmbeddings = sourceEmbeddings ?? throw new ArgumentNullException(nameof(sourceEmbeddings));
@@ -205,24 +207,21 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _discriminator = discriminator;
             _sourceDictionary = sourceDictionary ?? throw new ArgumentNullException(nameof(sourceDictionary));
             _targetDictionary = targetDictionary ?? throw new ArgumentNullException(nameof(targetDictionary));
-            _parameters = parameters ?? new TrainerParameters();
+            _trainerParameters = trainerParameters;
+            _device = device;
+            _experimentPath = experimentPath;
             _logger = logger;
             
             // Перемещаем модели на указанное устройство
-            _sourceEmbeddings.to(_parameters.Device);
-            _targetEmbeddings.to(_parameters.Device);
-            _mapping.to(_parameters.Device);
-            _discriminator?.to(_parameters.Device);
+            _sourceEmbeddings.to(_device);
+            _targetEmbeddings.to(_device);
+            _mapping.to(_device);
+            _discriminator?.to(_device);
         }
 
         #endregion
 
         #region Public Properties
-
-        /// <summary>
-        /// Параметры тренера
-        /// </summary>
-        public TrainerParameters Parameters => _parameters;
         
         /// <summary>
         /// Лучшая метрика валидации
@@ -362,7 +361,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 dictionaryData[i * 2 + 1] = pairs[i].Item2;
             }
             
-            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _parameters.Device)
+            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _device)
                 .reshape(pairs.Count, 2);
         }
 
@@ -431,7 +430,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 dictionaryData[i * 2 + 1] = pairs[i].Item2;
             }
             
-            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _parameters.Device)
+            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _device)
                 .reshape(pairs.Count, 2);
         }
 
@@ -471,9 +470,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _discriminatorOptimizer.step();
             
             // Обрезаем градиенты если необходимо
-            if (_parameters.DiscriminatorClipWeights > 0)
+            if (_trainerParameters.DisClipWeights > 0)
             {
-                _discriminator.ClipGradients(_parameters.DiscriminatorClipWeights);
+                _discriminator.ClipGradients(_trainerParameters.DisClipWeights);
             }
             
             var lossValue = loss.item<float>(); // VALFIX
@@ -489,7 +488,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <returns>Количество обработанных слов</returns>
         public long MappingStep(TrainingStats stats)
         {
-            if (_parameters.DiscriminatorLambda == 0.0)
+            if (_trainerParameters.DisLambda == 0.0)
                 return 0;
             
             if (_discriminator == null || _mappingOptimizer == null)
@@ -507,7 +506,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             // Прямой проход
             var predictions = _discriminator.forward(x);
             var loss = nn.functional.binary_cross_entropy(predictions, invertedY);
-            loss = loss * _parameters.DiscriminatorLambda;
+            loss = loss * _trainerParameters.DisLambda;
             
             // Проверяем на NaN
             if (loss.isnan().item<bool>())
@@ -525,7 +524,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _mapping.OrthogonalizeWeights();
             
             stats.MappingLosses.Add(loss.item<float>()); // VALFIX
-            return 2 * _parameters.BatchSize;
+            return 2 * _trainerParameters.BatchSize;
         }
 
         /// <summary>
@@ -572,12 +571,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 _logger?.LogInformation($"* Новое лучшее значение для '{metricName}': {validationMetric:F5}");
                 
                 // Создаем директорию если не существует
-                if (!Directory.Exists(_parameters.ExperimentPath))
+                if (!Directory.Exists(_experimentPath))
                 {
-                    Directory.CreateDirectory(_parameters.ExperimentPath);
+                    Directory.CreateDirectory(_experimentPath);
                 }
                 
-                var modelPath = Path.Combine(_parameters.ExperimentPath, "best_mapping.pt");
+                var modelPath = Path.Combine(_experimentPath, "best_mapping.pt");
                 _logger?.LogInformation($"* Сохранение модели в {modelPath}...");
                 
                 // Сохраняем веса модели маппинга
@@ -604,7 +603,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             //_logger?.LogInformation($"* Загрузка лучшей модели из {modelPath}...");
 
             //using var _ = no_grad();
-            //var loadedWeights = load(modelPath, _parameters.Device);
+            //var loadedWeights = load(modelPath, _device);
             //_mapping.Weight.copy_(loadedWeights);
 
             //_logger?.LogInformation("Лучшая модель успешно загружена");
@@ -672,15 +671,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <returns>Кортеж из входных данных и меток</returns>
         private (Tensor x, Tensor y) GetDiscriminatorBatch(bool volatile_ = true)
         {
-            var batchSize = _parameters.BatchSize;
-            var maxFrequent = Math.Min(_parameters.MostFrequentWords, 
+            var batchSize = _trainerParameters.BatchSize;
+            var maxFrequent = Math.Min(_trainerParameters.DisMostFrequent, 
                 Math.Min(_sourceDictionary.Count, _targetDictionary.Count));
             
             // Генерируем случайные индексы для исходного и целевого языков
             var sourceIds = randint(0, maxFrequent == 0 ? _sourceDictionary.Count : maxFrequent,
-                new long[] { batchSize }, dtype: ScalarType.Int64, device: _parameters.Device);
+                new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
             var targetIds = randint(0, maxFrequent == 0 ? _targetDictionary.Count : maxFrequent,
-                new long[] { batchSize }, dtype: ScalarType.Int64, device: _parameters.Device);
+                new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
             
             // Получаем эмбеддинги
             var sourceEmb = _sourceEmbeddings.forward(sourceIds);
@@ -693,9 +692,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             var x = cat(new[] { mappedSourceEmb, targetEmb.detach() }, dim: 0);
             
             // Создаем метки: 1 - сглаживание для исходного языка, сглаживание для целевого
-            var y = zeros(2 * batchSize, dtype: ScalarType.Float32, device: _parameters.Device);
-            y[TensorIndex.Slice(null, batchSize)] = (float)(1 - _parameters.DiscriminatorSmoothing);
-            y[TensorIndex.Slice(batchSize, null)] = (float)_parameters.DiscriminatorSmoothing;
+            var y = zeros(2 * batchSize, dtype: ScalarType.Float32, device: _device);
+            y[TensorIndex.Slice(null, batchSize)] = (float)(1 - _trainerParameters.DisSmooth);
+            y[TensorIndex.Slice(batchSize, null)] = (float)_trainerParameters.DisSmooth;
             
             return (x, y);
         }

@@ -160,26 +160,30 @@ public partial class Model02
             var mapping = new EmbeddingMapping(parameters);
             var discriminator = new Discriminator(parameters);
 
-            // Перемещаем на устройство если указано
-            if (device is not null)
-            {
-                mapping = mapping.to(device);
-                discriminator = discriminator.to(device);
-            }
+            // Перемещаем на устройство
+            mapping = mapping.to(device);
+            discriminator = discriminator.to(device);
 
             // Инициализируем веса
             mapping.InitializeWeights();
             discriminator.InitializeWeights();
 
-            logger.LogInformation($"Созданы модели на устройстве {device?.type ?? DeviceType.CPU}:");
+            logger.LogInformation($"Созданы модели на устройстве {device.type}:");
             logger.LogInformation(mapping.GetModelInfo());
             logger.LogInformation(discriminator.GetArchitectureInfo());
 
             logger.LogInformation("Модели успешно созданы и инициализированы");
+            
+            using var trainer = new CrossLingualTrainer(
+                sourceEmbeddings, targetEmbeddings, mapping, discriminator,
+                sourceDictionary, targetDictionary, 
+                parameters, 
+                device,
+                GetExperimentPath(parameters),
+                logger);
 
-            // Создание тренера
-            using var trainer = CreateTrainer(sourceEmbeddings, targetEmbeddings, mapping, discriminator,
-                sourceDictionary, targetDictionary, parameters, logger);
+            // Настраиваем оптимизаторы
+            trainer.SetupOptimizers(parameters.MapOptimizer, parameters.DisOptimizer);           
 
             // Состязательное обучение
             if (parameters.Adversarial)
@@ -275,7 +279,7 @@ public partial class Model02
     /// <returns>Путь к директории эксперимента</returns>
     private static string GetExperimentPath(UnsupervisedParameters parameters)
     {
-        var basePath = string.IsNullOrEmpty(parameters.ExpPath) ? "./dumped" : parameters.ExpPath;
+        var basePath = string.IsNullOrEmpty(parameters.ExpBasePath) ? "./dumped" : parameters.ExpBasePath;
 
         if (!Directory.Exists(basePath))
             Directory.CreateDirectory(basePath);
@@ -307,38 +311,7 @@ public partial class Model02
 
         Directory.CreateDirectory(expPath);
         return expPath;
-    }
-
-    /// <summary>
-    /// Создает тренер
-    /// </summary>
-    private static CrossLingualTrainer CreateTrainer(
-        TorchSharp.Modules.Embedding sourceEmbeddings, TorchSharp.Modules.Embedding targetEmbeddings,
-        EmbeddingMapping mapping, Discriminator discriminator,
-        Dictionary sourceDictionary, Dictionary targetDictionary,
-        UnsupervisedParameters parameters, ILogger logger)
-    {
-        var trainerParams = new TrainerParameters
-        {
-            BatchSize = parameters.BatchSize,
-            DiscriminatorSteps = parameters.DisSteps,
-            DiscriminatorLambda = parameters.DisLambda,
-            DiscriminatorSmoothing = parameters.DisSmooth,
-            MostFrequentWords = parameters.DisMostFrequent,
-            DiscriminatorClipWeights = parameters.DisClipWeights,
-            Device = parameters.Cuda ? CUDA : CPU,
-            ExperimentPath = GetExperimentPath(parameters)
-        };
-
-        var trainer = new CrossLingualTrainer(
-            sourceEmbeddings, targetEmbeddings, mapping, discriminator,
-            sourceDictionary, targetDictionary, trainerParams, logger);
-
-        // Настраиваем оптимизаторы
-        trainer.SetupOptimizers(parameters.MapOptimizer, parameters.DisOptimizer);
-
-        return trainer;
-    }
+    }    
 
     /// <summary>
     /// Запускает состязательное обучение
@@ -473,7 +446,7 @@ public partial class Model02
     /// <summary>
     /// Параметры unsupervised обучения
     /// </summary>
-    public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMappingParameters
+    public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMappingParameters, ITrainerParameters
     {
         /// <summary>
         /// Seed для инициализации (-1 для случайного)
@@ -484,9 +457,9 @@ public partial class Model02
         /// </summary>
         public int Verbose { get; init; }
         /// <summary>
-        /// Путь для сохранения экспериментов
+        /// Базовый путь для сохранения экспериментов
         /// </summary>
-        public string ExpPath { get; init; } = @"Data\Ssz.AI.AdvancedEmbedding\MUSE";
+        public string ExpBasePath { get; init; } = @"Data\Ssz.AI.AdvancedEmbedding\MUSE";
         /// <summary>
         /// Название эксперимента
         /// </summary>
@@ -534,15 +507,15 @@ public partial class Model02
 
         // Discriminator parameters
         /// <summary>
-        /// Количество слоев дискриминатора
+        /// Количество скрытых слоев дискриминатора
         /// </summary>
-        public int DisLayers { get; init; } = 2;
+        public int DisHidLayers { get; init; } = 2;
         /// <summary>
         /// Размерность скрытых слоев дискриминатора
         /// </summary>
         public int DisHidDim { get; init; } = 2048;
         /// <summary>
-        /// Dropout дискриминатора
+        /// Dropout для скрытых слоев дискриминатора
         /// </summary>
         public double DisDropout { get; init; } = 0.0;
         /// <summary>
@@ -659,5 +632,12 @@ public partial class Model02
         /// Использовать ли bias в линейном преобразовании
         /// </summary>
         public bool UseBias { get; init; } = false;
+
+        public Device Device { get; } = CPU;
+
+        /// <summary>
+        /// Путь для сохранения экспериментов
+        /// </summary>
+        public string ExperimentPath { get; } = "./experiments";
     }
 }

@@ -22,7 +22,7 @@ public interface IDiscriminatorParameters
     /// <summary>
     /// Количество скрытых слоев дискриминатора
     /// </summary>
-    int DisLayers { get; }
+    int DisHidLayers { get; }
 
     /// <summary>
     /// Размерность скрытых слоев
@@ -56,7 +56,7 @@ public sealed class Discriminator : Module<Tensor, Tensor>
     /// <summary>
     /// Параметры дискриминатора
     /// </summary>
-    private readonly new IDiscriminatorParameters _parameters;
+    private readonly IDiscriminatorParameters _discriminatorParameters;
 
     #endregion
 
@@ -65,39 +65,39 @@ public sealed class Discriminator : Module<Tensor, Tensor>
     /// <summary>
     /// Инициализирует новый экземпляр дискриминатора
     /// </summary>
-    /// <param name="parameters">Параметры дискриминатора</param>
+    /// <param name="discriminatorParameters">Параметры дискриминатора</param>
     /// <param name="name">Имя модуля</param>
     /// <exception cref="ArgumentNullException">Если параметры равны null</exception>
-    public Discriminator(IDiscriminatorParameters parameters, string name = "discriminator") : base(name)
+    public Discriminator(IDiscriminatorParameters discriminatorParameters, string name = "discriminator") : base(name)
     {
-        _parameters = parameters ?? throw new ArgumentNullException(nameof(parameters));
+        _discriminatorParameters = discriminatorParameters ?? throw new ArgumentNullException(nameof(discriminatorParameters));
 
         // Строим архитектуру дискриминатора
         var layers = new List<Module<Tensor, Tensor>>();
 
         // Input dropout слой
-        if (_parameters.DisInputDropout > 0)
+        if (_discriminatorParameters.DisInputDropout > 0)
         {
-            layers.Add(Dropout(_parameters.DisInputDropout));
+            layers.Add(Dropout(_discriminatorParameters.DisInputDropout));
         }
 
         // Строим скрытые слои
-        for (int i = 0; i <= _parameters.DisLayers; i++)
+        for (int i = 0; i <= _discriminatorParameters.DisHidLayers; i++)
         {
-            int inputDim = i == 0 ? _parameters.EmbDim : _parameters.DisHidDim;
-            int outputDim = i == _parameters.DisLayers ? 1 : _parameters.DisHidDim;
+            int inputDim = i == 0 ? _discriminatorParameters.EmbDim : _discriminatorParameters.DisHidDim;
+            int outputDim = i == _discriminatorParameters.DisHidLayers ? 1 : _discriminatorParameters.DisHidDim;
 
             // Линейный слой
             layers.Add(Linear(inputDim, outputDim));
 
             // Активация и dropout для всех слоев кроме последнего
-            if (i < _parameters.DisLayers)
+            if (i < _discriminatorParameters.DisHidLayers)
             {
                 layers.Add(LeakyReLU(0.2)); // Используем LeakyReLU как в оригинале
 
-                if (_parameters.DisDropout > 0)
+                if (_discriminatorParameters.DisDropout > 0)
                 {
-                    layers.Add(Dropout(_parameters.DisDropout));
+                    layers.Add(Dropout(_discriminatorParameters.DisDropout));
                 }
             }
         }
@@ -128,9 +128,9 @@ public sealed class Discriminator : Module<Tensor, Tensor>
         if (input.dim() != 2)
             throw new ArgumentException($"Ожидается 2D тензор, получен {input.dim()}D", nameof(input));
 
-        if (input.size(1) != _parameters.EmbDim)
+        if (input.size(1) != _discriminatorParameters.EmbDim)
             throw new ArgumentException(
-                $"Ожидается размерность эмбеддингов {_parameters.EmbDim}, получена {input.size(1)}",
+                $"Ожидается размерность эмбеддингов {_discriminatorParameters.EmbDim}, получена {input.size(1)}",
                 nameof(input));
 
         // Пропускаем через последовательность слоев
@@ -197,11 +197,11 @@ public sealed class Discriminator : Module<Tensor, Tensor>
         }
 
         return $"Discriminator Architecture:\n" +
-               $"  Embedding Dimension: {_parameters.EmbDim}\n" +
-               $"  Hidden Layers: {_parameters.DisLayers}\n" +
-               $"  Hidden Dimension: {_parameters.DisHidDim}\n" +
-               $"  Dropout: {_parameters.DisDropout}\n" +
-               $"  Input Dropout: {_parameters.DisInputDropout}\n" +
+               $"  Embedding Dimension: {_discriminatorParameters.EmbDim}\n" +
+               $"  Hidden Layers: {_discriminatorParameters.DisHidLayers}\n" +
+               $"  Hidden Dimension: {_discriminatorParameters.DisHidDim}\n" +
+               $"  Dropout: {_discriminatorParameters.DisDropout}\n" +
+               $"  Input Dropout: {_discriminatorParameters.DisInputDropout}\n" +
                $"  Total Parameters: {totalParams:N0}\n" +
                $"  Trainable Parameters: {trainableParams:N0}";
     }
