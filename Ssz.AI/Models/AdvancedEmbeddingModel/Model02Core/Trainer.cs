@@ -11,6 +11,7 @@ using TorchSharp;
 using static TorchSharp.torch;
 using static TorchSharp.torch.optim;
 using TorchSharp.Modules;
+using Ssz.Utils;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 {
@@ -211,12 +212,6 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _device = device;
             _experimentPath = experimentPath;
             _logger = logger;
-            
-            // Перемещаем модели на указанное устройство
-            _sourceEmbeddings.to(_device);
-            _targetEmbeddings.to(_device);
-            _mapping.to(_device);
-            _discriminator?.to(_device);
         }
 
         #endregion
@@ -265,35 +260,24 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <returns>Настроенный оптимизатор</returns>
         private Optimizer CreateOptimizerFromConfig(string config, IEnumerable<Parameter> parameters)
         {
-            var parts = config.Split(',');
-            var optimizerType = parts[0].ToLowerInvariant();
-            
-            // Парсим дополнительные параметры
-            var options = new Dictionary<string, double>();
-            for (int i = 1; i < parts.Length; i++)
-            {
-                var keyValue = parts[i].Split('=');
-                if (keyValue.Length == 2 && double.TryParse(keyValue[1], out var value))
-                {
-                    options[keyValue[0]] = value;
-                }
-            }
+            var nameValues = NameValueCollectionHelper.Parse(config);
+            var optimizerType = (nameValues.TryGetValue(@"") ?? @"").ToLowerInvariant();            
             
             // Создаем оптимизатор в зависимости от типа
             return optimizerType switch
             {
                 "sgd" => SGD(parameters, 
-                    learningRate: options.GetValueOrDefault("lr", 0.01),
-                    momentum: options.GetValueOrDefault("momentum", 0.0),
-                    weight_decay: options.GetValueOrDefault("weight_decay", 0.0)),
+                    learningRate: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.01),
+                    momentum: ConfigurationHelper.GetValue<double>(nameValues, "momentum", 0.0),
+                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
                     
                 "adam" => Adam(parameters,
-                    lr: options.GetValueOrDefault("lr", 0.001),
-                    weight_decay: options.GetValueOrDefault("weight_decay", 0.0)),
+                    lr: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.001),
+                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
                     
                 "adagrad" => Adagrad(parameters,
-                    lr: options.GetValueOrDefault("lr", 0.01),
-                    weight_decay: options.GetValueOrDefault("weight_decay", 0.0)),
+                    lr: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.01),
+                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
                     
                 _ => throw new ArgumentException($"Неизвестный тип оптимизатора: {optimizerType}")
             };

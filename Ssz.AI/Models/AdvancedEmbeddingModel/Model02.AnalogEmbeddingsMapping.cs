@@ -563,11 +563,11 @@ public partial class Model02
         /// <summary>
         /// Оптимизатор маппинга
         /// </summary>
-        public string MapOptimizer { get; init; } = "sgd,lr=0.1";
+        public string MapOptimizer { get; init; } = "sgd&lr=0.1";
         /// <summary>
         /// Оптимизатор дискриминатора
         /// </summary>
-        public string DisOptimizer { get; init; } = "sgd,lr=0.1";
+        public string DisOptimizer { get; init; } = "sgd&lr=0.1";
         /// <summary>
         /// Уменьшение learning rate (только SGD)
         /// </summary>
