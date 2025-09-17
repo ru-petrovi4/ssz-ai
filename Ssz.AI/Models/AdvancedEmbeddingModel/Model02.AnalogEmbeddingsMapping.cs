@@ -332,7 +332,7 @@ public partial class Model02
             long processedWords = 0;
             stats.DiscriminatorLosses.Clear();
 
-            for (int iteration = 0; iteration < parameters.EpochSize; iteration += parameters.BatchSize)
+            for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)
             {
                 // Обучение дискриминатора
                 for (int disStep = 0; disStep < parameters.DisSteps; disStep++)
@@ -555,7 +555,7 @@ public partial class Model02
         /// <summary>
         /// Итераций на эпоху
         /// </summary>
-        public int EpochSize { get; init; } = 1000000;
+        public int NIterationsInEpoch { get; init; } = 1000000;
         /// <summary>
         /// Размер батча
         /// </summary>
