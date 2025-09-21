@@ -16,7 +16,9 @@ using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.Providers.LinearAlgebra;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
@@ -26,7 +28,87 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
 public partial class Model03
 {
-    
+    public const string FileName_HypothesisSupport = "AdvancedEmbedding_HypothesisSupport.bin";
+    public const string FileName_DistanceMatrixA = "AdvancedEmbedding_DistanceMatrixA.bin";
+    public const string FileName_NearestA = "AdvancedEmbedding_NearestA.bin";
+    public const string FileName_DistanceMatrixB = "AdvancedEmbedding_DistanceMatrixB.bin";
+    public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
+
+    #region construction and destruction
+
+    public Model03()
+    {
+        _loggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
+    }
+
+    #endregion
+
+    public void FindDiscreteEmbeddings_Mapping()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+
+        var setA = languageDiscreteEmbeddings_RU.GetDiscreteEmbeddingsMatrix();
+        var setB = languageDiscreteEmbeddings_EN.GetDiscreteEmbeddingsMatrix();
+
+        // Генерация примеров: по 8 единиц случайно
+        var random = new Random(42);                    
+
+        var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        bool calculateDistanceMatrices = false;
+        if (calculateDistanceMatrices)
+        {
+            matcher.BuildDistanceMatrix(setA, matcher.DistanceMatrixA);
+            Helpers.SerializationHelper.SaveToFile(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
+            matcher.NearestA = matcher.BuildNearest(matcher.DistanceMatrixA);
+            Helpers.SerializationHelper.SaveToFile(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
+
+            matcher.BuildDistanceMatrix(setB, matcher.DistanceMatrixB);
+            Helpers.SerializationHelper.SaveToFile(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
+            matcher.NearestB = matcher.BuildNearest(matcher.DistanceMatrixB);
+            Helpers.SerializationHelper.SaveToFile(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
+        }
+        else
+        {
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
+            matcher.NearestA = new OneToOneMatcher.Nearest();
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
+
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
+            matcher.NearestB = new OneToOneMatcher.Nearest();
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
+        }
+
+        matcher.SupportHypotheses(setA, setB);
+
+        Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+
+        var resultMapping = matcher.GetFinalMappingForcedExclusive();
+
+        // Выводим часть соответствий
+        _loggersSet.UserFriendlyLogger.LogInformation("Top 10 соответствий:");
+        foreach (var pair in resultMapping.Take(10))
+        {
+            _loggersSet.UserFriendlyLogger.LogInformation($"{pair.Key} -> {pair.Value}");
+        }
+    }
+
+    public sealed record Parameters
+    {
+        /// <summary>
+        /// Количество ближайших для подкрепления
+        /// </summary>
+        public int NearestCount { get; set; } = 16;
+    }
+
+    #region private fields
+
+    private readonly ILoggersSet _loggersSet;
+
+    #endregion
 }
 
 //public const string FileName_Mapping_V1 = "Mapping_V1.bin";

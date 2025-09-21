@@ -1,11 +1,12 @@
-﻿using Ssz.Utils.Serialization;
+﻿using Microsoft.Extensions.Logging;
+using Ssz.Utils.Serialization;
 using System.IO;
 
 namespace Ssz.AI.Helpers
 {
     public static class SerializationHelper
     {
-        public static void SaveToFile(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context)
+        public static void SaveToFile(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
         {
             fileName = @"Data\" + fileName;
             using (FileStream stream = File.Create(fileName))
@@ -13,9 +14,10 @@ namespace Ssz.AI.Helpers
             {
                 writer.WriteOwnedDataSerializable(ownedDataSerializable, context);
             }
+            logger?.LogInformation($"Saved: {fileName}");
         }
 
-        public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context)
+        public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
         {
             fileName = @"Data\" + fileName;
             if (File.Exists(fileName))
@@ -26,6 +28,7 @@ namespace Ssz.AI.Helpers
                     reader.ReadOwnedDataSerializable(ownedDataSerializable, context);
                 }
             }
+            logger?.LogInformation($"Loaded: {fileName}");
         }
     }
 }

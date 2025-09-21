@@ -25,23 +25,23 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     /// </summary>
     public float[] DiscreteVector_SecondaryBitsOnly = null!;
 
-    public void SerializeOwnedData(SerializationWriter serializationWriter, object? context)
+    public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
-        serializationWriter.Write(Name);
-        serializationWriter.WriteOptimized(Index);
-        serializationWriter.WriteArray(OldVector);
-        serializationWriter.WriteArray(DiscreteVector);
-        serializationWriter.WriteArray(DiscreteVector_PrimaryBitsOnly);
-        serializationWriter.WriteArray(DiscreteVector_SecondaryBitsOnly);
+        writer.Write(Name);
+        writer.WriteOptimized(Index);
+        writer.WriteArray(OldVector);
+        writer.WriteArray(DiscreteVector);
+        writer.WriteArray(DiscreteVector_PrimaryBitsOnly);
+        writer.WriteArray(DiscreteVector_SecondaryBitsOnly);
     }
 
-    public void DeserializeOwnedData(SerializationReader serializationReader, object? context)
+    public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        Name = serializationReader.ReadString();
-        Index = serializationReader.ReadOptimizedInt32();
-        OldVector = serializationReader.ReadArray<float>()!;
-        DiscreteVector = serializationReader.ReadArray<float>()!;
-        DiscreteVector_PrimaryBitsOnly = serializationReader.ReadArray<float>()!;
-        DiscreteVector_SecondaryBitsOnly = serializationReader.ReadArray<float>()!;
+        Name = reader.ReadString();
+        Index = reader.ReadOptimizedInt32();
+        OldVector = reader.ReadArray<float>()!;
+        DiscreteVector = reader.ReadArray<float>()!;
+        DiscreteVector_PrimaryBitsOnly = reader.ReadArray<float>()!;
+        DiscreteVector_SecondaryBitsOnly = reader.ReadArray<float>()!;
     }
 }

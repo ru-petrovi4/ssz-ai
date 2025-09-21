@@ -18,22 +18,21 @@ using Ssz.AI.Models.AdvancedEmbeddingModel;
 
 namespace Ssz.AI.Views.AdvancedEmbeddingViews;
 
-public partial class Model01View : UserControl
+public partial class Model03View : UserControl
 {
-    public Model01View()
+    public Model03View()
     {
         InitializeComponent();
 
         if (Design.IsDesignMode)
             return;
 
-        Model = new Model01();
+        Model = new Model03();
         Task.Run(() =>
         {
-            //Model.GenerateAndSaveLanguageDiscreteEmbeddings();
-            Model.GetEmbeddingsQualityInfo2();
+            Model.FindDiscreteEmbeddings_Mapping();
         });
     }
 
-    public Model01 Model = null!;
+    public Model03 Model = null!;
 }

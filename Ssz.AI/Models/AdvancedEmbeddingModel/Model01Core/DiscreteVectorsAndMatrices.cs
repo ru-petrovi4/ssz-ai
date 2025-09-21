@@ -313,79 +313,79 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
         //loggersSet.UserFriendlyLogger.LogInformation("CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
-    public void SerializeOwnedData(SerializationWriter serializationWriter, object? context)
+    public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
-        using (serializationWriter.EnterBlock(1))
+        using (writer.EnterBlock(1))
         {
-            serializationWriter.Write(DiscreteVectors.Length);
+            writer.Write(DiscreteVectors.Length);
             if (DiscreteVectors is not null)
                 foreach (var vectorNew in DiscreteVectors)
                 {
-                    serializationWriter.WriteArray(vectorNew);
+                    writer.WriteArray(vectorNew);
                 }
-            //serializationWriter.WriteArray(algorithmData.ProxWordsDiscreteMatrix);
+            //writer.WriteArray(algorithmData.ProxWordsDiscreteMatrix);
 
-            serializationWriter.Write(DiscreteVectors_PrimaryBitsOnly.Length);
+            writer.Write(DiscreteVectors_PrimaryBitsOnly.Length);
             if (DiscreteVectors_PrimaryBitsOnly is not null)
                 foreach (var vectorNew in DiscreteVectors_PrimaryBitsOnly)
                 {
-                    serializationWriter.WriteArray(vectorNew);
+                    writer.WriteArray(vectorNew);
                 }
-            //serializationWriter.WriteArray(algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly);
+            //writer.WriteArray(algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly);
 
-            serializationWriter.Write(DiscreteVectors_SecondaryBitsOnly.Length);
+            writer.Write(DiscreteVectors_SecondaryBitsOnly.Length);
             if (DiscreteVectors_SecondaryBitsOnly is not null)
                 foreach (var vectorNew in DiscreteVectors_SecondaryBitsOnly)
                 {
-                    serializationWriter.WriteArray(vectorNew);
+                    writer.WriteArray(vectorNew);
                 }
         }
     }
 
-    public void DeserializeOwnedData(SerializationReader serializationReader, object? context)
+    public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
         int wordsCount = 0;
-        using (Block block = serializationReader.EnterBlock())
+        using (Block block = reader.EnterBlock())
         {
             switch (block.Version)
             {
                 case 1:
-                    int discreteVectorsLength = serializationReader.ReadInt32();
+                    int discreteVectorsLength = reader.ReadInt32();
                     wordsCount = discreteVectorsLength;
                     if (discreteVectorsLength > 0)
                     {
                         var discreteVectors = new float[discreteVectorsLength][];
                         foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            discreteVectors[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors[i] = reader.ReadArray<float>()!;
                         }
                         DiscreteVectors = discreteVectors;
                     }
-                    //algorithmData.ProxWordsDiscreteMatrix = serializationReader.ReadArray<float>();
+                    //algorithmData.ProxWordsDiscreteMatrix = reader.ReadArray<float>();
 
-                    discreteVectorsLength = serializationReader.ReadInt32();
+                    discreteVectorsLength = reader.ReadInt32();
                     if (discreteVectorsLength > 0)
                     {
                         var discreteVectors_PrimaryOnly = new float[discreteVectorsLength][];
                         foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            discreteVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors_PrimaryOnly[i] = reader.ReadArray<float>()!;
                         }
                         DiscreteVectors_PrimaryBitsOnly = discreteVectors_PrimaryOnly;
                     }
-                    //algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
+                    //algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly = reader.ReadArray<float>();
 
-                    discreteVectorsLength = serializationReader.ReadInt32();
+                    discreteVectorsLength = reader.ReadInt32();
                     if (discreteVectorsLength > 0)
                     {
                         var discreteVectors_SecondaryOnly = new float[discreteVectorsLength][];
                         foreach (int i in Enumerable.Range(0, discreteVectorsLength))
                         {
-                            discreteVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
+                            discreteVectors_SecondaryOnly[i] = reader.ReadArray<float>()!;
                         }
                         DiscreteVectors_SecondaryBitsOnly = discreteVectors_SecondaryOnly;
                     }
-                    //algorithmData.ProxWordsDiscreteMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
+                    //algorithmData.ProxWordsDiscreteMatrix_SecondaryOnly = reader.ReadArray<float>();
                     break;
             }
         }

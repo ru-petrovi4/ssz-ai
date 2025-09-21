@@ -324,9 +324,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             string programDataDirectoryFullName = Directory.GetCurrentDirectory();
 
             using (MemoryStream memoryStream = new())
-            using (SerializationWriter serializationWriter = new(memoryStream))
+            using (SerializationWriter writer = new(memoryStream))
             {
-                Cortex.SerializeOwnedData(serializationWriter, null);
+                Cortex.SerializeOwnedData(writer, null);
                 byte[] bytes = memoryStream.ToArray();
                 File.WriteAllBytes(Path.Combine(programDataDirectoryFullName, "Cortex.bin"), bytes);
             }
@@ -338,10 +338,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             string programDataDirectoryFullName = Directory.GetCurrentDirectory();
             byte[] bytes = File.ReadAllBytes(Path.Combine(programDataDirectoryFullName, "Cortex.bin"));
-            using (SerializationReader serializationReader = new(bytes))
+            using (SerializationReader reader = new(bytes))
             {
                 Cortex = new Cortex();
-                Cortex.DeserializeOwnedData(serializationReader, null);
+                Cortex.DeserializeOwnedData(reader, null);
             }
 
             int ix, iy;

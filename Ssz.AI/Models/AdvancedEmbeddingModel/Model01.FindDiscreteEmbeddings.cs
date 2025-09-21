@@ -175,8 +175,8 @@ public partial class Model01
 
     public void GenerateAndSaveLanguageDiscreteEmbeddings()
     {
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet, loadOldVectors: false);
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet, loadOldVectors: false);
+        WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet, loadOldVectors: true);
+        WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet, loadOldVectors: true);
 
         LanguageInfo_RU.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU, name: "KMeans");
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_KMeans_RU, LanguageInfo_RU.Clusterization_AlgorithmData, null);
@@ -238,6 +238,47 @@ public partial class Model01
                 languageDiscreteEmbeddings_EN.PrimaryWords.Add(wordWithDiscreteEmbedding);
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+    }
+
+    /// <summary>
+    ///     Для этого для каждого слова брал 10 ближайших соседей в вещественных эмбеддингах и 10 ближайших в дискретных и вычислял пересечение множеств. И вычислял среднее значение отношения <количество общих слов>/10. 
+    /// </summary>
+    public void GetEmbeddingsQualityInfo1()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();        
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_RU, null);
+
+        var percentage = NeighborStructureComparer.Compare(
+            languageDiscreteEmbeddings_RU.Words.Select(w => w.Name).ToArray(),
+            languageDiscreteEmbeddings_RU.GetOldEmbeddingsMatrix(),
+            languageDiscreteEmbeddings_RU.GetDiscreteEmbeddingsMatrix());
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"RU: {percentage}");
+    }
+
+    /// <summary>
+    ///     Сравнение с человеческой оценкой
+    /// </summary>
+    public void GetEmbeddingsQualityInfo2()
+    {
+        //LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+
+        EmbeddingEvaluator.CompareOnSimilarityDataset(
+            Path.Combine("Data", "wordsim353crowd.csv"),
+            languageDiscreteEmbeddings_EN.Words.ToDictionary(w => w.Name, w => w.OldVector, StringComparer.InvariantCultureIgnoreCase),
+            languageDiscreteEmbeddings_EN.Words.ToDictionary(w => w.Name, w => w.DiscreteVector, StringComparer.InvariantCultureIgnoreCase),
+            languageDiscreteEmbeddings_EN.Words[0].OldVector.Length,
+            languageDiscreteEmbeddings_EN.Words[0].DiscreteVector.Length,
+            _loggersSet);
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"GetEmbeddingsQualityInfo2() Done.");
     }
 
     #endregion
@@ -330,43 +371,43 @@ public partial class Model01
 
 //    string programDataDirectoryFullName = Directory.GetCurrentDirectory();
 //    byte[] bytes = File.ReadAllBytes(Path.Combine(programDataDirectoryFullName, fileName));
-//    using (SerializationReader serializationReader = new(bytes))
+//    using (SerializationReader reader = new(bytes))
 //    {
-//        int discreteVectorsLength = serializationReader.ReadInt32();
+//        int discreteVectorsLength = reader.ReadInt32();
 //        if (discreteVectorsLength > 0)
 //        {
 //            var discreteVectors = new float[discreteVectorsLength][];
 //            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                discreteVectors[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors[i] = reader.ReadArray<float>()!;
 //            }
 //            discreteVectorsAndMatrices.DiscreteVectors = discreteVectors;
 //        }
-//        //algorithmData.ProxWordsDiscreteMatrix = serializationReader.ReadArray<float>();
+//        //algorithmData.ProxWordsDiscreteMatrix = reader.ReadArray<float>();
 
-//        discreteVectorsLength = serializationReader.ReadInt32();
+//        discreteVectorsLength = reader.ReadInt32();
 //        if (discreteVectorsLength > 0)
 //        {
 //            var discreteVectors_PrimaryOnly = new float[discreteVectorsLength][];
 //            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                discreteVectors_PrimaryOnly[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors_PrimaryOnly[i] = reader.ReadArray<float>()!;
 //            }
 //            discreteVectorsAndMatrices.DiscreteVectors_PrimaryOnly = discreteVectors_PrimaryOnly;
 //        }
-//        //algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly = serializationReader.ReadArray<float>();
+//        //algorithmData.ProxWordsDiscreteMatrix_PrimaryOnly = reader.ReadArray<float>();
 
-//        discreteVectorsLength = serializationReader.ReadInt32();
+//        discreteVectorsLength = reader.ReadInt32();
 //        if (discreteVectorsLength > 0)
 //        {
 //            var discreteVectors_SecondaryOnly = new float[discreteVectorsLength][];
 //            foreach (int i in Enumerable.Range(0, discreteVectorsLength))
 //            {
-//                discreteVectors_SecondaryOnly[i] = serializationReader.ReadArray<float>()!;
+//                discreteVectors_SecondaryOnly[i] = reader.ReadArray<float>()!;
 //            }
 //            discreteVectorsAndMatrices.DiscreteVectors_SecondaryOnly = discreteVectors_SecondaryOnly;
 //        }
-//        //algorithmData.ProxWordsDiscreteMatrix_SecondaryOnly = serializationReader.ReadArray<float>();
+//        //algorithmData.ProxWordsDiscreteMatrix_SecondaryOnly = reader.ReadArray<float>();
 //    }
 
 //    stopwatch.Stop();

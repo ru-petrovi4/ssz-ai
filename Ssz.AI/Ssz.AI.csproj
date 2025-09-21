@@ -48,6 +48,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\AdvancedEmbeddingViews\Model03View.axaml.cs">
+      <DependentUpon>Model03View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\AdvancedEmbeddingViews\Model02View.axaml.cs">
       <DependentUpon>Model02View.axaml</DependentUpon>
     </Compile>
