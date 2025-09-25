@@ -6,6 +6,7 @@ using TorchSharp.Modules;
 using static TorchSharp.torch;
 using static TorchSharp.torch.nn;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 
@@ -82,25 +83,37 @@ public sealed class Discriminator : Module<Tensor, Tensor>
         }
 
         // Строим скрытые слои
-        for (int i = 0; i <= _discriminatorParameters.DisHidLayers; i++)
-        {
-            int inputDim = i == 0 ? _discriminatorParameters.EmbDim : _discriminatorParameters.DisHidDim;
-            int outputDim = i == _discriminatorParameters.DisHidLayers ? 1 : _discriminatorParameters.DisHidDim;
-
+        int inputDim;
+        int outputDim;
+        for (int i = 0; i < _discriminatorParameters.DisHidLayers; i += 1)
+        {            
+            if (i == 0)
+            {
+                inputDim = _discriminatorParameters.EmbDim;
+                outputDim = _discriminatorParameters.DisHidDim;
+            }
+            else
+            {
+                inputDim = _discriminatorParameters.DisHidDim;
+                outputDim = _discriminatorParameters.DisHidDim;
+            }
+            
             // Линейный слой
             layers.Add(Linear(inputDim, outputDim));
 
             // Активация и dropout для всех слоев кроме последнего
-            if (i < _discriminatorParameters.DisHidLayers)
-            {
-                layers.Add(LeakyReLU(0.2)); // Используем LeakyReLU как в оригинале
+            layers.Add(LeakyReLU(0.2)); // Используем LeakyReLU как в оригинале
 
-                if (_discriminatorParameters.DisDropout > 0)
-                {
-                    layers.Add(Dropout(_discriminatorParameters.DisDropout));
-                }
+            if (_discriminatorParameters.DisDropout > 0)
+            {
+                layers.Add(Dropout(_discriminatorParameters.DisDropout));
             }
         }
+
+        inputDim = _discriminatorParameters.DisHidDim;
+        outputDim = 1;
+        // Линейный слой
+        layers.Add(Linear(inputDim, outputDim));
 
         // Финальная сигмоидная активация
         layers.Add(Sigmoid());
@@ -142,15 +155,9 @@ public sealed class Discriminator : Module<Tensor, Tensor>
 
     /// <summary>
     /// Инициализирует веса дискриминатора
-    /// </summary>
-    /// <param name="seed">Seed для генератора случайных чисел</param>
-    public void InitializeWeights(int? seed = null)
-    {
-        if (seed.HasValue)
-        {
-            manual_seed(seed.Value);
-        }
-
+    /// </summary>    
+    public void InitializeWeights()
+    {        
         // Применяем Xavier/Glorot инициализацию к линейным слоям
         foreach (var module in _layers.modules())
         {

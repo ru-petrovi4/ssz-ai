@@ -72,4 +72,20 @@ public static class LanguageDiscreteEmbeddingsExtensions
         }
         return matrixFloat;
     }
+
+    /// <summary>
+    ///     Returns Columns Major matrix.
+    /// </summary>
+    /// <param name="embeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
+    {
+        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
+        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+        {
+            var word = embeddings.Words[i];
+            word.DiscreteVector_PrimaryBitsOnly.AsSpan().CopyTo(matrixFloat.GetColumn(i));
+        }
+        return matrixFloat;
+    }
 }

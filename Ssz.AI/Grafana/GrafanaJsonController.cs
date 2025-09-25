@@ -345,7 +345,7 @@ namespace Ssz.AI.Grafana
             var queryResponse =
                 new QueryResponse
                 {
-                    Target = GradientHisogram_Metric,
+                    Target = Distribution_Metric,
                     //Datapoints = datapoints,
                     Type = QueryResponse.TypeEnum.Table,
                     Columns = new List<QueryResponseColumn>

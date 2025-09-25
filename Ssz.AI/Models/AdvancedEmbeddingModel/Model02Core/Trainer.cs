@@ -435,7 +435,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _discriminator.train();
             
             // Получаем батч данных для дискриминатора
-            var (x, y) = GetDiscriminatorBatch();
+            var (x, y) = GetDiscriminatorBatch(volatile_: true);
             
             // Прямой проход
             var predictions = _discriminator.forward(x);

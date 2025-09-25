@@ -49,7 +49,7 @@ public class OneToOneMatcher
     /// </summary>
     /// <param name="allExamples"></param>
     /// <param name="distanceMatrix"></param>
-    public void BuildDistanceMatrix(MatrixFloat allExamples, MatrixFloat distanceMatrix)
+    public void BuildDistanceMatrix_V1(MatrixFloat allExamples, MatrixFloat distanceMatrix)
     {   
         var count = allExamples.Dimensions[1];
 
@@ -76,6 +76,32 @@ public class OneToOneMatcher
     }
 
     /// <summary>
+    ///     Заполнить матрицы близости по множеству векторов (0/1 значения)
+    /// </summary>
+    /// <param name="allExamples"></param>
+    /// <param name="distanceMatrix"></param>
+    public void BuildDistanceMatrix_V2(MatrixFloat allExamples, MatrixFloat distanceMatrix)
+    {
+        var count = allExamples.Dimensions[1];
+
+        // Для каждой позиции i считаем схожесть с позицией j по всем примерам
+        for (int i = 0; i < VectorLength; i++)
+            for (int j = 0; j < VectorLength; j++)
+            {
+                float dot = 0;
+                for (int e = 0; e < count; e++)
+                {
+                    var v = allExamples.GetColumn(e);
+                    float vi = v[i];
+                    float vj = v[j];
+                    dot += vi * vj;                    
+                }
+                // Для бинарных векторов попарная корреляция
+                distanceMatrix[i, j] = dot;                
+            }
+    }
+
+    /// <summary>
     ///     Найти ближайшие позиции для всех (по строкам)
     /// </summary>
     /// <param name="distanceMatrix"></param>
@@ -90,11 +116,9 @@ public class OneToOneMatcher
             {
                 if (i != j)
                     list.Add((j, distanceMatrix[i, j]));
-            }
-            // Сортировка по снижению схожести
-            list.Sort((a, b) => b.val.CompareTo(a.val));
+            }            
             // Берём NearestCount ближайших
-            array[i] = new FastList<int>(list.Take(_parameters.NearestCount).Select(x => x.idx).ToArray());
+            array[i] = new FastList<int>(list.OrderByDescending(it => it.val).Take(_parameters.NearestCount).Select(x => x.idx).ToArray());
         }
         return new Nearest()
         {
@@ -107,15 +131,15 @@ public class OneToOneMatcher
     /// </summary>
     /// <param name="setA"></param>
     /// <param name="setB"></param>
-    public void SupportHypotheses(MatrixFloat setA, MatrixFloat setB)
-    {
-        int count = Math.Min(setA.Dimensions[1], setB.Dimensions[1]);
+    public void SupportHypotheses_V1(MatrixFloat setA, MatrixFloat setB, int? count = 0)
+    {   
         var nearestA = NearestA.Array;
         var nearestB = NearestB.Array;
-        for (int i = 0; i < count; i += 1)
+        int finalCount = count ?? setA.Dimensions[1];
+        for (int i = 0; i < finalCount; i += 1)
         {
             if (i % 100 == 0)
-                _userFriendlyLogger.LogInformation($"i = {i}");
+                _userFriendlyLogger.LogInformation($"A i = {i}");
 
             var vecA = setA.GetColumn(i);
             // Индексы позиций с единицей
@@ -129,7 +153,7 @@ public class OneToOneMatcher
                         //HypothesisSupport[idxA, idxB] += 1.0f;
 
                         // Подкрепляем также все пары в 16 ближайших
-                        foreach (var nearB in nearestB[idxB])
+                        foreach (var nearB in nearestB[idxB].Items)
                         {
                             for (int idxA2 = 0; idxA2 < VectorLength; idxA2 += 1)
                             {
@@ -140,35 +164,117 @@ public class OneToOneMatcher
                             }
                         }
                     }
-                }   
+                }
             }
+        }
 
-            var vecB = setB.GetColumn(i);
-            // Индексы позиций с единицей
+        //finalCount = count ?? setA.Dimensions[1];
+        //for (int i = 0; i < finalCount; i += 1)
+        //{
+        //    if (i % 100 == 0)
+        //        _userFriendlyLogger.LogInformation($"B i = {i}");
+
+        //    var vecB = setB.GetColumn(i);
+        //    // Индексы позиций с единицей
+        //    for (int idxB = 0; idxB < VectorLength; idxB += 1)
+        //    {
+        //        if (vecB[idxB] > 0.5f)
+        //        {
+        //            for (int idxA = 0; idxA < VectorLength; idxA += 1)
+        //            {
+        //                // Гипотеза: idxA → idxB
+        //                //HypothesisSupport[idxA, idxB] += 1.0f;
+
+        //                // Подкрепляем также все пары в 16 ближайших
+        //                foreach (var nearA in nearestA[idxA].Items)
+        //                {
+        //                    for (int idxB2 = 0; idxB2 < VectorLength; idxB2 += 1)
+        //                    {
+        //                        if (idxB2 != idxB && vecB[idxB2] > 0.5f)
+        //                        {
+        //                            HypothesisSupport[nearA, idxB2] += 1.0f;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
+    }
+
+    /// <summary>
+    /// Подкрепление гипотез на примерах
+    /// </summary>
+    /// <param name="setA"></param>
+    /// <param name="setB"></param>
+    public void SupportHypotheses_V2(MatrixFloat setA, MatrixFloat setB, int? count = 0)
+    {
+        var nearestA = NearestA.Array;
+        var nearestB = NearestB.Array;
+        int finalCount = count ?? setA.Dimensions[1];
+        for (int i = 0; i < finalCount; i += 1)
+        {
+            if (i % 100 == 0)
+                _userFriendlyLogger.LogInformation($"A i = {i}");
+
+            var vecA = setA.GetColumn(i);
+
             for (int idxB = 0; idxB < VectorLength; idxB += 1)
             {
-                if (vecB[idxB] > 0.5f)
+                for (int idxA2 = 0; idxA2 < VectorLength; idxA2 += 1)
                 {
-                    for (int idxA = 0; idxA < VectorLength; idxA += 1)
+                    if (vecA[idxA2] > 0.5f)
                     {
-                        // Гипотеза: idxA → idxB
-                        //HypothesisSupport[idxA, idxB] += 1.0f;
+                        HypothesisSupport[idxA2, idxB] += 1.0f;
+                    }
+                }
 
-                        // Подкрепляем также все пары в 16 ближайших
-                        foreach (var nearA in nearestA[idxA])
+                // Подкрепляем также все пары в 16 ближайших
+                foreach (var nearB in nearestB[idxB].Items)
+                {
+                    for (int idxA2 = 0; idxA2 < VectorLength; idxA2 += 1)
+                    {
+                        if (vecA[idxA2] > 0.5f)
                         {
-                            for (int idxB2 = 0; idxB2 < VectorLength; idxB2 += 1)
-                            {
-                                if (idxB2 != idxB && vecB[idxB2] > 0.5f)
-                                {
-                                    HypothesisSupport[nearA, idxB2] += 1.0f;
-                                }
-                            }
+                            HypothesisSupport[idxA2, nearB] += 1.0f;
                         }
                     }
                 }
             }
         }
+
+        //finalCount = count ?? setA.Dimensions[1];
+        //for (int i = 0; i < finalCount; i += 1)
+        //{
+        //    if (i % 100 == 0)
+        //        _userFriendlyLogger.LogInformation($"B i = {i}");
+
+        //    var vecB = setB.GetColumn(i);
+        //    // Индексы позиций с единицей
+        //    for (int idxB = 0; idxB < VectorLength; idxB += 1)
+        //    {
+        //        if (vecB[idxB] > 0.5f)
+        //        {
+        //            for (int idxA = 0; idxA < VectorLength; idxA += 1)
+        //            {
+        //                // Гипотеза: idxA → idxB
+        //                //HypothesisSupport[idxA, idxB] += 1.0f;
+
+        //                // Подкрепляем также все пары в 16 ближайших
+        //                foreach (var nearA in nearestA[idxA].Items)
+        //                {
+        //                    for (int idxB2 = 0; idxB2 < VectorLength; idxB2 += 1)
+        //                    {
+        //                        if (idxB2 != idxB && vecB[idxB2] > 0.5f)
+        //                        {
+        //                            HypothesisSupport[nearA, idxB2] += 1.0f;
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
+        //}
     }
 
     // Получить итоговое соответствие
@@ -199,8 +305,33 @@ public class OneToOneMatcher
         return result;
     }
 
+    public Dictionary<int, int> GetFinalMapping()
+    {
+        var result = new Dictionary<int, int>(VectorLength);        
+
+        for (int i = 0; i < VectorLength; i++)
+        {
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float max = float.MinValue;
+            int selected = -1;
+            for (int j = 0; j < VectorLength; j++)
+            {
+                if (HypothesisSupport[i, j] > max)
+                {
+                    max = HypothesisSupport[i, j];
+                    selected = j;
+                }
+            }
+            if (selected != -1)
+            {
+                result[i] = selected;                
+            }
+        }
+        return result;
+    }
+
     #region private fields
-    
+
     private IUserFriendlyLogger _userFriendlyLogger;
     private Model03.Parameters _parameters;
 

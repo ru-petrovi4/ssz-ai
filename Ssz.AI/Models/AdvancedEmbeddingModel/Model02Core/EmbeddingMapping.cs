@@ -69,10 +69,7 @@ public sealed class EmbeddingMapping : Module<Tensor, Tensor>
 
         // Создаем линейное преобразование
         _mappingLinear = Linear(_mappingParameters.EmbDim, _mappingParameters.EmbDim, _mappingParameters.UseBias);
-
-        // Инициализируем веса
-        InitializeWeights();
-
+        
         // Регистрируем компоненты
         RegisterComponents();
     }
@@ -167,13 +164,8 @@ public sealed class EmbeddingMapping : Module<Tensor, Tensor>
     /// Инициализирует веса модели
     /// </summary>
     /// <param name="seed">Seed для генератора случайных чисел</param>
-    public void InitializeWeights(int? seed = null)
+    public void InitializeWeights()
     {
-        if (seed.HasValue)
-        {
-            manual_seed(seed.Value);
-        }
-
         using var _ = no_grad();
 
         if (_mappingParameters.MapIdInit)
