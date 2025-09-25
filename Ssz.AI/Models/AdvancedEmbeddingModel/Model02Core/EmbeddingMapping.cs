@@ -27,7 +27,7 @@ public interface IMappingParameters
     /// <summary>
     /// Параметр для ортогонализации (beta)
     /// </summary>
-    double MapBeta { get; }
+    float MapBeta { get; }
 
     /// <summary>
     /// Использовать ли bias в линейном преобразовании
@@ -191,7 +191,7 @@ public sealed class EmbeddingMapping : Module<Tensor, Tensor>
     /// </summary>
     /// <param name="tolerance">Допустимая погрешность</param>
     /// <returns>Степень ортогональности (0 = идеально ортогональная)</returns>
-    public double CheckOrthogonality(double tolerance = 1e-6)
+    public float CheckOrthogonality(float tolerance = 1e-6f)
     {
         using var _ = no_grad();
 

@@ -438,11 +438,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Выполняет полную оценку модели
         /// </summary>
+        /// <param name="stats">Статистика</param>
         /// <param name="sourceLang">Исходный язык</param>
         /// <param name="targetLang">Целевой язык</param>
         /// <param name="evaluationMethods">Методы оценки</param>
         /// <returns>Словарь с результатами оценки</returns>
         public async Task<Dictionary<string, object>> RunFullEvaluationAsync(
+            TrainingStats stats,
             string sourceLang,
             string targetLang,
             string[]? evaluationMethods = null)

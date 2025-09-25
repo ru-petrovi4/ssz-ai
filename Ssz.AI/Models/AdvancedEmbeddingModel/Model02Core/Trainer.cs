@@ -33,12 +33,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Коэффициент потерь дискриминатора
         /// </summary>
-        double DisLambda { get; }
+        float DisLambda { get; }
         
         /// <summary>
         /// Сглаживание для дискриминатора
         /// </summary>
-        double DisSmooth { get; }
+        float DisSmooth { get; }
         
         /// <summary>
         /// Количество наиболее частых слов для дискриминации
@@ -48,38 +48,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Обрезание градиентов дискриминатора
         /// </summary>
-        double DisClipWeights { get; }
-    }
-
-    /// <summary>
-    /// Статистики обучения
-    /// </summary>
-    public sealed record TrainingStats
-    {
-        /// <summary>
-        /// Потери дискриминатора
-        /// </summary>
-        public List<double> DiscriminatorLosses { get; init; } = new();
-        
-        /// <summary>
-        /// Потери маппинга
-        /// </summary>
-        public List<double> MappingLosses { get; init; } = new();
-        
-        /// <summary>
-        /// Точность дискриминатора
-        /// </summary>
-        public double DiscriminatorAccuracy { get; set; }
-        
-        /// <summary>
-        /// Количество обработанных слов
-        /// </summary>
-        public long ProcessedWords { get; set; }
-        
-        /// <summary>
-        /// Время обучения
-        /// </summary>
-        public TimeSpan ElapsedTime { get; set; }
+        float DisClipWeights { get; }
     }
 
     /// <summary>
@@ -158,7 +127,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Лучшая метрика валидации
         /// </summary>
-        private double _bestValidationMetric = double.NegativeInfinity;
+        private float _bestValidationMetric = float.NegativeInfinity;
         
         /// <summary>
         /// Флаг уменьшения learning rate
@@ -221,7 +190,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Лучшая метрика валидации
         /// </summary>
-        public double BestValidationMetric => _bestValidationMetric;
+        public float BestValidationMetric => _bestValidationMetric;
+
+        /// <summary>
+        /// Оптимизатор для модели выравнивания
+        /// </summary>
+        public Optimizer? MappingOptimizer => _mappingOptimizer;
+
+        /// <summary>
+        /// Оптимизатор для дискриминатора
+        /// </summary>
+        public Optimizer? DiscriminatorOptimizer => _discriminatorOptimizer;
 
         #endregion
 
@@ -267,17 +246,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             return optimizerType switch
             {
                 "sgd" => SGD(parameters, 
-                    learningRate: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.01),
-                    momentum: ConfigurationHelper.GetValue<double>(nameValues, "momentum", 0.0),
-                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
+                    learningRate: ConfigurationHelper.GetValue<float>(nameValues, "lr", 0.01f),
+                    momentum: ConfigurationHelper.GetValue<float>(nameValues, "momentum", 0.0f),
+                    weight_decay: ConfigurationHelper.GetValue<float>(nameValues, "weight_decay", 0.0f)),
                     
                 "adam" => Adam(parameters,
-                    lr: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.001),
-                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
+                    lr: ConfigurationHelper.GetValue<float>(nameValues, "lr", 0.001f),
+                    weight_decay: ConfigurationHelper.GetValue<float>(nameValues, "weight_decay", 0.0f)),
                     
                 "adagrad" => Adagrad(parameters,
-                    lr: ConfigurationHelper.GetValue<double>(nameValues, "lr", 0.01),
-                    weight_decay: ConfigurationHelper.GetValue<double>(nameValues, "weight_decay", 0.0)),
+                    lr: ConfigurationHelper.GetValue<float>(nameValues, "lr", 0.01f),
+                    weight_decay: ConfigurationHelper.GetValue<float>(nameValues, "weight_decay", 0.0f)),
                     
                 _ => throw new ArgumentException($"Неизвестный тип оптимизатора: {optimizerType}")
             };
@@ -427,7 +406,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// </summary>
         /// <param name="stats">Статистики для записи потерь</param>
         /// <returns>Потери дискриминатора</returns>
-        public double DiscriminatorStep(TrainingStats stats)
+        public float DiscriminatorStep(TrainingStats stats)
         {
             if (_discriminator == null || _discriminatorOptimizer == null)
                 throw new InvalidOperationException("Дискриминатор или его оптимизатор не настроены");
@@ -459,7 +438,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 _discriminator.ClipGradients(_trainerParameters.DisClipWeights);
             }
             
-            var lossValue = loss.item<float>(); // VALFIX
+            var lossValue = loss.item<float>();
             stats.DiscriminatorLosses.Add(lossValue);
             
             return lossValue;
@@ -507,7 +486,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             // Ортогонализуем матрицу маппинга
             _mapping.OrthogonalizeWeights();
             
-            stats.MappingLosses.Add(loss.item<float>()); // VALFIX
+            stats.MappingLosses.Add(loss.item<float>());
             return 2 * _trainerParameters.BatchSize;
         }
 
@@ -547,7 +526,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <param name="validationMetric">Значение метрики валидации</param>
         /// <param name="metricName">Название метрики</param>
         /// <returns>True если модель была сохранена</returns>
-        public Task<bool> SaveBestModelAsync(double validationMetric, string metricName)
+        public Task<bool> SaveBestModelAsync(float validationMetric, string metricName)
         {
             if (validationMetric > _bestValidationMetric)
             {
@@ -598,13 +577,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Обновляет learning rate для SGD оптимизаторов
         /// </summary>
-        /// <param name="validationMetric">Текущая метрика валидации</param>
+        /// <param name="trainingStats">Текущая метрика валидации</param>
         /// <param name="metricName">Название метрики</param>
         /// <param name="lrDecay">Коэффициент уменьшения learning rate</param>
         /// <param name="lrShrink">Коэффициент сжатия learning rate при ухудшении метрики</param>
         /// <param name="minLr">Минимальный learning rate</param>
-        public void UpdateLearningRate(double validationMetric, string metricName, 
-            double lrDecay = 0.98, double lrShrink = 0.5, double minLr = 1e-6)
+        public void UpdateLearningRate(TrainingStats trainingStats, string metricName, 
+            float lrDecay = 0.98f, float lrShrink = 0.5f, float minLr = 1e-6f)
         {
             if (_mappingOptimizer is not SGD sgdOptimizer)
                 return;
@@ -621,10 +600,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                     _logger?.LogInformation($"Уменьшение learning rate: {currentLr:E8} -> {newLr:E8}");
                 }
             }
-            
-            
+
             // Проверяем ухудшение метрики и применяем shrink
-            if (lrShrink < 1.0 && validationMetric >= -1e7)
+            float validationMetric = trainingStats.ToLog.TryGetValue(metricName);
+            if (lrShrink < 1.0f && validationMetric >= -1e7f)
             {
                 if (validationMetric < _bestValidationMetric)
                 {
@@ -660,10 +639,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 Math.Min(_sourceDictionary.Count, _targetDictionary.Count));
             
             // Генерируем случайные индексы для исходного и целевого языков
-            var sourceIds = randint(0, maxFrequent == 0 ? _sourceDictionary.Count : maxFrequent,
-                new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
-            var targetIds = randint(0, maxFrequent == 0 ? _targetDictionary.Count : maxFrequent,
-                new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
+            var sourceIds = randint(low: 0, high: maxFrequent == 0 ? _sourceDictionary.Count : maxFrequent,
+                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
+            var targetIds = randint(low: 0, high: maxFrequent == 0 ? _targetDictionary.Count : maxFrequent,
+                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
             
             // Получаем эмбеддинги
             var sourceEmb = _sourceEmbeddings.forward(sourceIds);
@@ -677,8 +656,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             
             // Создаем метки: 1 - сглаживание для исходного языка, сглаживание для целевого
             var y = zeros(2 * batchSize, dtype: ScalarType.Float32, device: _device);
-            y[TensorIndex.Slice(null, batchSize)] = (float)(1 - _trainerParameters.DisSmooth);
-            y[TensorIndex.Slice(batchSize, null)] = (float)_trainerParameters.DisSmooth;
+            y[TensorIndex.Slice(start: null, stop: batchSize)] = 1.0f - _trainerParameters.DisSmooth;
+            y[TensorIndex.Slice(start: batchSize, stop: null)] = _trainerParameters.DisSmooth;
             
             return (x, y);
         }

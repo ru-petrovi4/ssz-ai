@@ -33,12 +33,12 @@ public interface IDiscriminatorParameters
     /// <summary>
     /// Dropout для скрытых слоев
     /// </summary>
-    double DisDropout { get; }
+    float DisDropout { get; }
 
     /// <summary>
     /// Input dropout
     /// </summary>
-    double DisInputDropout { get; }
+    float DisInputDropout { get; }
 }
 
 /// <summary>
@@ -176,7 +176,7 @@ public sealed class Discriminator : Module<Tensor, Tensor>
     /// Обрезает градиенты для стабильности обучения
     /// </summary>
     /// <param name="maxNorm">Максимальная норма градиентов</param>
-    public void ClipGradients(double maxNorm)
+    public void ClipGradients(float maxNorm)
     {
         if (maxNorm > 0)
         {

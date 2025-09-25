@@ -64,7 +64,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Параметр бета для ортогонализации
     /// </summary>
-    public double MapBeta { get; init; } = 0.001;
+    public float MapBeta { get; init; } = 0.001f;
 
     // Discriminator parameters
     /// <summary>
@@ -78,11 +78,11 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Dropout для скрытых слоев дискриминатора
     /// </summary>
-    public double DisDropout { get; init; } = 0.0;
+    public float DisDropout { get; init; } = 0.0f;
     /// <summary>
     /// Input dropout дискриминатора
     /// </summary>
-    public double DisInputDropout { get; init; } = 0.1;
+    public float DisInputDropout { get; init; } = 0.1f;
     /// <summary>
     /// Количество шагов дискриминатора
     /// </summary>
@@ -90,7 +90,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Коэффициент потерь дискриминатора
     /// </summary>
-    public double DisLambda { get; init; } = 1.0;
+    public float DisLambda { get; init; } = 1.0f;
     /// <summary>
     /// Количество наиболее частых слов для дискриминации
     /// </summary>
@@ -98,11 +98,11 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Сглаживание предсказаний дискриминатора
     /// </summary>
-    public double DisSmooth { get; init; } = 0.1;
+    public float DisSmooth { get; init; } = 0.1f;
     /// <summary>
     /// Обрезание весов дискриминатора"
     /// </summary>
-    public double DisClipWeights { get; init; } = 0.0;
+    public float DisClipWeights { get; init; } = 0.0f;
 
     // Training parameters
     /// <summary>
@@ -132,15 +132,15 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Уменьшение learning rate (только SGD)
     /// </summary>
-    public double LrDecay { get; init; } = 0.98;
+    public float LrDecay { get; init; } = 0.98f;
     /// <summary>
     /// Минимальный learning rate (только SGD)
     /// </summary>
-    public double MinLr { get; init; } = 1e-6;
+    public float MinLr { get; init; } = 1e-6f;
     /// <summary>
     /// Сжатие learning rate при ухудшении метрики
     /// </summary>
-    public double LrShrink { get; init; } = 0.5;
+    public float LrShrink { get; init; } = 0.5f;
 
     // Refinement parameters
     public int NRefinement { get; init; }
@@ -161,7 +161,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Порог уверенности для построения словаря
     /// </summary>
-    public double DicoThreshold { get; init; } = 0.0;
+    public float DicoThreshold { get; init; } = 0.0f;
     /// <summary>
     /// Максимальный ранг слов в словаре
     /// </summary>

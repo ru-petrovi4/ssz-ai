@@ -67,7 +67,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
     /// Утилитарный класс для создания и настройки логгеров
     /// Аналог функции create_logger из Python проекта
     /// </summary>
-    public static class LoggerFactory
+    public static class LoggerExtensions
     {
         #region Public Methods        
 

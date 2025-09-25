@@ -28,6 +28,7 @@ using Ssz.Utils.Serialization;
 using TorchSharp;
 using static TorchSharp.torch;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
@@ -317,7 +318,7 @@ public partial class Model02
     /// <summary>
     /// Запускает состязательное обучение
     /// </summary>
-    private static Task RunAdversarialTrainingAsync(CrossLingualTrainer trainer,
+    private static async Task RunAdversarialTrainingAsync(CrossLingualTrainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogSeparator("СОСТЯЗАТЕЛЬНОЕ ОБУЧЕНИЕ");
@@ -325,7 +326,7 @@ public partial class Model02
         var stats = new TrainingStats();
         var startTime = DateTime.UtcNow;
 
-        for (int epoch = 0; epoch < parameters.NEpochs; epoch++)
+        for (int epoch = 0; epoch < parameters.NEpochs; epoch += 1)
         {
             logger.LogInformation($"Начало эпохи состязательного обучения {epoch}...");
 
@@ -336,7 +337,7 @@ public partial class Model02
             for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)
             {
                 // Обучение дискриминатора
-                for (int disStep = 0; disStep < parameters.DisSteps; disStep++)
+                for (int disStep = 0; disStep < parameters.DisSteps; disStep += 1)
                 {
                     trainer.DiscriminatorStep(stats);
                 }
@@ -362,27 +363,28 @@ public partial class Model02
                 }
             }
 
-            // TODO: Добавить оценку и сохранение лучшей модели
-            // evaluator.all_eval(to_log);
+            //var evaluator = new CrossLingualEvaluator(trainer, logger);
+            //await evaluator.RunFullEvaluationAsync(stats);
             // trainer.save_best(to_log, VALIDATION_METRIC);
 
             logger.LogInformation($"Конец эпохи {epoch}");
 
             // Обновление learning rate
-            // trainer.UpdateLearningRate(validationMetric, ValidationMetric, 
-            //     parameters.LrDecay, parameters.LrShrink, parameters.MinLr);
+            trainer.UpdateLearningRate(stats, ValidationMetric,
+                 parameters.LrDecay, parameters.LrShrink, parameters.MinLr);
 
             // Проверка минимального learning rate
-            // if (currentLr < parameters.MinLr)
-            // {
-            //     logger.LogInformation("Learning rate < 1e-6. Прерывание обучения.");
-            //     break;
-            // }
+            float currentLr = (float)trainer.MappingOptimizer!.ParamGroups.First().LearningRate;
+            if (currentLr < parameters.MinLr)
+            {
+                logger.LogInformation("Learning rate < 1e-6. Прерывание обучения.");
+                break;
+            }
         }
 
         logger.LogInformation("Состязательное обучение завершено");
 
-        return Task.CompletedTask;
+        //return Task.CompletedTask;
     }
 
     /// <summary>
