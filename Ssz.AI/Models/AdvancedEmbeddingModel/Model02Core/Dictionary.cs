@@ -15,12 +15,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <summary>
         /// Отображение индекса на слово
         /// </summary>
-        private readonly SortedDictionary<int, string> _id2Word;
+        private readonly SortedDictionary<int, string> _idToWord;
         
         /// <summary>
         /// Отображение слова на индекс
         /// </summary>
-        private readonly Dictionary<string, int> _word2Id;
+        private readonly Dictionary<string, int> _wordToId;
         
         /// <summary>
         /// Язык данного словаря
@@ -41,8 +41,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <exception cref="ArgumentException">Если размеры словарей не совпадают</exception>
         public Dictionary(SortedDictionary<int, string> id2Word, Dictionary<string, int> word2Id, string language)
         {
-            _id2Word = id2Word ?? throw new ArgumentNullException(nameof(id2Word));
-            _word2Id = word2Id ?? throw new ArgumentNullException(nameof(word2Id));
+            _idToWord = id2Word ?? throw new ArgumentNullException(nameof(id2Word));
+            _wordToId = word2Id ?? throw new ArgumentNullException(nameof(word2Id));
             _language = language ?? throw new ArgumentNullException(nameof(language));
             
             // Проверяем валидность словарей
@@ -56,7 +56,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <summary>
         /// Количество слов в словаре
         /// </summary>
-        public int Count => _id2Word.Count;
+        public int Count => _idToWord.Count;
         
         /// <summary>
         /// Код языка словаря
@@ -66,12 +66,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <summary>
         /// Отображение слова на индекс (только для чтения)
         /// </summary>
-        public IReadOnlyDictionary<string, int> Word2Id => _word2Id;
+        public IReadOnlyDictionary<string, int> WordToId => _wordToId;
         
         /// <summary>
         /// Отображение индекса на слово (только для чтения)
         /// </summary>
-        public IReadOnlyDictionary<int, string> Id2Word => _id2Word;
+        public IReadOnlyDictionary<int, string> IdToWord => _idToWord;
 
         #endregion
 
@@ -87,7 +87,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         {
             get
             {
-                if (!_id2Word.TryGetValue(index, out string? word))
+                if (!_idToWord.TryGetValue(index, out string? word))
                 {
                     throw new KeyNotFoundException($"Индекс {index} не найден в словаре");
                 }
@@ -106,7 +106,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>true, если слово содержится в словаре</returns>
         public bool Contains(string word)
         {
-            return _word2Id.ContainsKey(word);
+            return _wordToId.ContainsKey(word);
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <exception cref="KeyNotFoundException">Если слово не найдено</exception>
         public int GetIndex(string word)
         {
-            if (!_word2Id.TryGetValue(word, out int index))
+            if (!_wordToId.TryGetValue(word, out int index))
             {
                 throw new KeyNotFoundException($"Слово '{word}' не найдено в словаре");
             }
@@ -132,7 +132,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>true, если слово найдено</returns>
         public bool TryGetIndex(string word, out int index)
         {
-            return _word2Id.TryGetValue(word, out index);
+            return _wordToId.TryGetValue(word, out index);
         }
 
         /// <summary>
@@ -147,19 +147,19 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
                 throw new ArgumentException("Максимальный размер словаря должен быть больше 0", nameof(maxVocab));
 
             // Если словарь уже меньше или равен максимальному размеру, ничего не делаем
-            if (_id2Word.Count <= maxVocab)
+            if (_idToWord.Count <= maxVocab)
                 return;
 
             // Создаем новые словари с ограниченным размером
-            var keysToRemove = _id2Word.Keys.Where(k => k >= maxVocab).ToList();
+            var keysToRemove = _idToWord.Keys.Where(k => k >= maxVocab).ToList();
             
             // Удаляем лишние записи из id2word
             foreach (var key in keysToRemove)
             {
-                if (_id2Word.TryGetValue(key, out string? word))
+                if (_idToWord.TryGetValue(key, out string? word))
                 {
-                    _id2Word.Remove(key);
-                    _word2Id.Remove(word);
+                    _idToWord.Remove(key);
+                    _wordToId.Remove(word);
                 }
             }
 
@@ -180,15 +180,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
             CheckValid();
             other.CheckValid();
 
-            if (_id2Word.Count != other._id2Word.Count)
+            if (_idToWord.Count != other._idToWord.Count)
                 return false;
 
             if (_language != other._language)
                 return false;
 
             // Проверяем все пары ключ-значение
-            return _id2Word.All(kvp => 
-                other._id2Word.TryGetValue(kvp.Key, out string? otherWord) && 
+            return _idToWord.All(kvp => 
+                other._idToWord.TryGetValue(kvp.Key, out string? otherWord) && 
                 kvp.Value == otherWord);
         }
 
@@ -198,8 +198,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>Новый экземпляр словаря с теми же данными</returns>
         public Dictionary Clone()
         {
-            var newId2Word = new SortedDictionary<int, string>(_id2Word);
-            var newWord2Id = new Dictionary<string, int>(_word2Id);
+            var newId2Word = new SortedDictionary<int, string>(_idToWord);
+            var newWord2Id = new Dictionary<string, int>(_wordToId);
             return new Dictionary(newId2Word, newWord2Id, _language);
         }
 
@@ -209,7 +209,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>Строковое представление</returns>
         public override string ToString()
         {
-            return $"Dictionary(language={_language}, count={_id2Word.Count})";
+            return $"Dictionary(language={_language}, count={_idToWord.Count})";
         }
 
         /// <summary>
@@ -218,7 +218,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>Перечисление слов</returns>
         public IEnumerable<string> GetWords()
         {
-            return _id2Word.Values;
+            return _idToWord.Values;
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>Перечисление индексов</returns>
         public IEnumerable<int> GetIndices()
         {
-            return _id2Word.Keys;
+            return _idToWord.Keys;
         }
 
         #endregion
@@ -241,18 +241,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         private void CheckValid()
         {
             // Проверяем, что размеры совпадают
-            if (_id2Word.Count != _word2Id.Count)
+            if (_idToWord.Count != _wordToId.Count)
             {
                 throw new InvalidOperationException(
-                    $"Размеры словарей не совпадают: id2word={_id2Word.Count}, word2id={_word2Id.Count}");
+                    $"Размеры словарей не совпадают: id2word={_idToWord.Count}, word2id={_wordToId.Count}");
             }
 
             // Проверяем соответствие между словарями (только для небольших словарей для производительности)
-            if (_id2Word.Count < 10000)
+            if (_idToWord.Count < 10000)
             {
-                foreach (var kvp in _id2Word)
+                foreach (var kvp in _idToWord)
                 {
-                    if (!_word2Id.TryGetValue(kvp.Value, out int mappedIndex) || mappedIndex != kvp.Key)
+                    if (!_wordToId.TryGetValue(kvp.Value, out int mappedIndex) || mappedIndex != kvp.Key)
                     {
                         throw new InvalidOperationException(
                             $"Несоответствие в словарях для индекса {kvp.Key} и слова '{kvp.Value}'");

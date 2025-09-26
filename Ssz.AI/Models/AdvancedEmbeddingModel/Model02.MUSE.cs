@@ -176,7 +176,7 @@ public partial class Model02
 
             logger.LogInformation("Модели успешно созданы и инициализированы");
             
-            using var trainer = new CrossLingualTrainer(
+            using var trainer = new Trainer(
                 sourceEmbeddings, targetEmbeddings, mapping, discriminator,
                 sourceDictionary, targetDictionary, 
                 parameters, 
@@ -321,7 +321,7 @@ public partial class Model02
     /// <summary>
     /// Запускает состязательное обучение
     /// </summary>
-    private static Task RunAdversarialTrainingAsync(CrossLingualTrainer trainer,
+    private static Task RunAdversarialTrainingAsync(Trainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogSeparator("СОСТЯЗАТЕЛЬНОЕ ОБУЧЕНИЕ");
@@ -393,7 +393,7 @@ public partial class Model02
     /// <summary>
     /// Запускает Procrustes refinement
     /// </summary>
-    private static async Task RunProcrustesRefinementAsync(CrossLingualTrainer trainer,
+    private static async Task RunProcrustesRefinementAsync(Trainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogSeparator("ИТЕРАТИВНОЕ PROCRUSTES REFINEMENT");
@@ -422,7 +422,7 @@ public partial class Model02
     /// <summary>
     /// Экспортирует финальные эмбеддинги
     /// </summary>
-    private static async Task ExportFinalEmbeddingsAsync(CrossLingualTrainer trainer,
+    private static async Task ExportFinalEmbeddingsAsync(Trainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogInformation("Экспорт финальных эмбеддингов...");

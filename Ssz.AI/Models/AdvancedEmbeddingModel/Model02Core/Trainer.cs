@@ -55,7 +55,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
     /// Основной класс для обучения кросс-лингвальных эмбеддингов
     /// Аналог Trainer класса из Python проекта с оптимизациями для .NET 9
     /// </summary>
-    public sealed class CrossLingualTrainer : IDisposable
+    public sealed class Trainer : IDisposable
     {
         #region Private Fields
 
@@ -159,7 +159,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <param name="targetDictionary">Словарь целевого языка</param>
         /// <param name="trainerParameters">Параметры тренера</param>
         /// <param name="logger">Логгер</param>
-        public CrossLingualTrainer(
+        public Trainer(
             Embedding sourceEmbeddings,
             Embedding targetEmbeddings,
             Mapping mapping,
@@ -186,7 +186,27 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         #endregion
 
         #region Public Properties
-        
+
+        /// <summary>
+        /// Эмбеддинги исходного языка
+        /// </summary>
+        public Embedding SourceEmbeddings => _sourceEmbeddings;
+
+        /// <summary>
+        /// Эмбеддинги целевого языка
+        /// </summary>
+        public Embedding TargetEmbeddings => _targetEmbeddings;
+
+        /// <summary>
+        /// Словарь исходного языка
+        /// </summary>
+        public Dictionary SourceDictionary => _sourceDictionary;
+
+        /// <summary>
+        /// Словарь целевого языка
+        /// </summary>
+        public Dictionary TargetDictionary => _targetDictionary;
+
         /// <summary>
         /// Лучшая метрика валидации
         /// </summary>
@@ -206,6 +226,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// Модель выравнивания
         /// </summary>
         public Mapping Mapping => _mapping;
+
+        /// <summary>
+        /// Дискриминатор (может быть null для supervised обучения)
+        /// </summary>
+        public Discriminator? Discriminator => _discriminator;
 
         #endregion
 
