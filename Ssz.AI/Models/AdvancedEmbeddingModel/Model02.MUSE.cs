@@ -42,13 +42,13 @@ public partial class Model02
     public Model02()
     {
         _loggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
-    }            
+    }
 
     #endregion
 
     #region public functions
 
-    public const int OldVectorLength = 300;
+    public const string FileName_MUSE_Mapping_RU_EN = "AdvancedEmbedding_MUSE_Mapping_RU_EN.bin";
 
     /// <summary>
     ///     RusVectores        
@@ -159,7 +159,7 @@ public partial class Model02
             //}            
 
             // Создаем модели
-            var mapping = new EmbeddingMapping(parameters);
+            var mapping = new Mapping(parameters);
             var discriminator = new Discriminator(parameters);
 
             // Перемещаем на устройство
@@ -191,19 +191,22 @@ public partial class Model02
             if (parameters.Adversarial)
             {
                 await RunAdversarialTrainingAsync(trainer, parameters, logger);
+
+                var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Mapping_RU_EN));
             }
 
-            // Procrustes refinement
-            if (parameters.NRefinement > 0)
-            {
-                await RunProcrustesRefinementAsync(trainer, parameters, logger);
-            }
+            //// Procrustes refinement
+            //if (parameters.NRefinement > 0)
+            //{
+            //    await RunProcrustesRefinementAsync(trainer, parameters, logger);
+            //}
 
-            // Экспорт финальных эмбеддингов
-            if (!string.IsNullOrEmpty(parameters.Export))
-            {
-                await ExportFinalEmbeddingsAsync(trainer, parameters, logger);
-            }
+            //// Экспорт финальных эмбеддингов
+            //if (!string.IsNullOrEmpty(parameters.Export))
+            //{
+            //    await ExportFinalEmbeddingsAsync(trainer, parameters, logger);
+            //}
 
             logger.LogInformation("Обучение успешно завершено!");
             return 0;
@@ -318,7 +321,7 @@ public partial class Model02
     /// <summary>
     /// Запускает состязательное обучение
     /// </summary>
-    private static async Task RunAdversarialTrainingAsync(CrossLingualTrainer trainer,
+    private static Task RunAdversarialTrainingAsync(CrossLingualTrainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogSeparator("СОСТЯЗАТЕЛЬНОЕ ОБУЧЕНИЕ");
@@ -384,7 +387,7 @@ public partial class Model02
 
         logger.LogInformation("Состязательное обучение завершено");
 
-        //return Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     /// <summary>

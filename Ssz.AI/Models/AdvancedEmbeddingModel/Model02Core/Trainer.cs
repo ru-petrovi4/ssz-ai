@@ -72,7 +72,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Модель выравнивания
         /// </summary>
-        private readonly EmbeddingMapping _mapping;
+        private readonly Mapping _mapping;
         
         /// <summary>
         /// Дискриминатор (может быть null для supervised обучения)
@@ -162,7 +162,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         public CrossLingualTrainer(
             Embedding sourceEmbeddings,
             Embedding targetEmbeddings,
-            EmbeddingMapping mapping,
+            Mapping mapping,
             Discriminator? discriminator,
             Dictionary sourceDictionary,
             Dictionary targetDictionary,
@@ -201,6 +201,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// Оптимизатор для дискриминатора
         /// </summary>
         public Optimizer? DiscriminatorOptimizer => _discriminatorOptimizer;
+
+        /// <summary>
+        /// Модель выравнивания
+        /// </summary>
+        public Mapping Mapping => _mapping;
 
         #endregion
 
@@ -544,7 +549,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 
                 // Сохраняем веса модели маппинга
                 using var _ = no_grad();
-                var weightsToSave = _mapping.Weight.cpu();
+                var weightsToSave = _mapping.MappingLinear.weight.cpu();
                 weightsToSave.save(modelPath);
                 
                 return Task.FromResult(true);

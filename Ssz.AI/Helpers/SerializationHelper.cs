@@ -8,7 +8,7 @@ namespace Ssz.AI.Helpers
     {
         public static void SaveToFile(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
         {
-            fileName = @"Data\" + fileName;
+            fileName = Path.Combine(@"Data", fileName);
             using (FileStream stream = File.Create(fileName))
             using (var writer = new SerializationWriter(stream, false))
             {
@@ -19,7 +19,7 @@ namespace Ssz.AI.Helpers
 
         public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
         {
-            fileName = @"Data\" + fileName;
+            fileName = Path.Combine(@"Data", fileName);
             if (File.Exists(fileName))
             {
                 using (var stream = new FileStream(fileName, FileMode.Open))

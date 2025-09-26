@@ -39,7 +39,7 @@ public interface IMappingParameters
 /// Модель линейного преобразования для выравнивания эмбеддингов
 /// Аналог mapping из models.py с поддержкой ортогонализации
 /// </summary>
-public sealed class EmbeddingMapping : Module<Tensor, Tensor>
+public sealed class Mapping : Module<Tensor, Tensor>
 {
     #region Private Fields
 
@@ -63,7 +63,7 @@ public sealed class EmbeddingMapping : Module<Tensor, Tensor>
     /// <param name="mappingParameters">Параметры модели</param>
     /// <param name="name">Имя модуля</param>
     /// <exception cref="ArgumentNullException">Если параметры равны null</exception>
-    public EmbeddingMapping(IMappingParameters mappingParameters, string name = "mapping") : base(name)
+    public Mapping(IMappingParameters mappingParameters, string name = "mapping") : base(name)
     {
         _mappingParameters = mappingParameters ?? throw new ArgumentNullException(nameof(mappingParameters));
 
@@ -79,9 +79,9 @@ public sealed class EmbeddingMapping : Module<Tensor, Tensor>
     #region Public Properties        
 
     /// <summary>
-    /// Веса преобразования
+    /// 
     /// </summary>
-    public Tensor Weight => _mappingLinear.weight!;
+    public Linear MappingLinear => _mappingLinear;
 
     #endregion
 
