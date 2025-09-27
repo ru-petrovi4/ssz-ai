@@ -553,11 +553,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Сохраняет лучшую модель если текущая метрика лучше предыдущей
         /// </summary>
-        /// <param name="validationMetric">Значение метрики валидации</param>
+        /// <param name="stats">Значение метрики валидации</param>
         /// <param name="metricName">Название метрики</param>
         /// <returns>True если модель была сохранена</returns>
-        public Task<bool> SaveBestModelAsync(float validationMetric, string metricName)
+        public Task<bool> SaveBestModelAsync(TrainingStats stats, string metricName)
         {
+            float validationMetric = stats.ToLog.TryGetValue(metricName);
             if (validationMetric > _bestValidationMetric)
             {
                 _bestValidationMetric = validationMetric;

@@ -641,7 +641,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода eval_dis из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public Task EvaluateDiscriminatorAsync(Dictionary<string, object> results)
+        public Task EvaluateDiscriminatorAsync(TrainingStats stats)
         {
             if (_trainer.Discriminator == null)
             {
@@ -697,9 +697,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             _logger?.LogInformation($"Дискриминатор исходные / целевые предсказания: {sourceMeanPred:F5} / {targetMeanPred:F5}");
             _logger?.LogInformation($"Дискриминатор исходная / целевая / общая точность: {sourceAccuracy:F5} / {targetAccuracy:F5} / {discriminatorAccuracy:F5}");
 
-            results["dis_accu"] = discriminatorAccuracy;
-            results["dis_src_pred"] = sourceMeanPred;
-            results["dis_tgt_pred"] = targetMeanPred;
+            stats.ToLog["dis_accu"] = (float)discriminatorAccuracy;
+            stats.ToLog["dis_src_pred"] = sourceMeanPred;
+            stats.ToLog["dis_tgt_pred"] = targetMeanPred;
 
             return Task.CompletedTask;
         }
@@ -714,15 +714,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         /// <param name="dictionaryPath">Путь к тестовому словарю</param>
-        public async Task RunAllEvaluationsAsync(Dictionary<string, object> results, string dictionaryPath = "default")
+        public async Task RunAllEvaluationsAsync(TrainingStats stats, string dictionaryPath = "default")
         {
             _logger?.LogInformation("Запуск полного набора оценок...");
 
-            await EvaluateMonolingualWordSimilarityAsync(results);
-            await EvaluateCrossLingualWordSimilarityAsync(results);
-            await EvaluateWordTranslationAsync(results, dictionaryPath);
-            await EvaluateSentenceTranslationAsync(results);
-            await EvaluateMeanCosineAsync(results);
+            await EvaluateMonolingualWordSimilarityAsync(stats);
+            await EvaluateCrossLingualWordSimilarityAsync(stats);
+            await EvaluateWordTranslationAsync(stats, dictionaryPath);
+            await EvaluateSentenceTranslationAsync(stats);
+            await EvaluateMeanCosineAsync(stats);
         }
 
         #endregion

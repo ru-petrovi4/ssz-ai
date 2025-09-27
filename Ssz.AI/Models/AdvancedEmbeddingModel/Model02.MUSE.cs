@@ -50,6 +50,8 @@ public partial class Model02
 
     public const string FileName_MUSE_Mapping_RU_EN = "AdvancedEmbedding_MUSE_Mapping_RU_EN.bin";
 
+    public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-S2T-10000";
+
     /// <summary>
     ///     RusVectores        
     /// </summary>
@@ -192,8 +194,8 @@ public partial class Model02
             {
                 await RunAdversarialTrainingAsync(trainer, parameters, logger);
 
-                var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
-                weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Mapping_RU_EN));
+                //var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                //weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Mapping_RU_EN));
             }
 
             //// Procrustes refinement
@@ -321,7 +323,7 @@ public partial class Model02
     /// <summary>
     /// Запускает состязательное обучение
     /// </summary>
-    private static Task RunAdversarialTrainingAsync(Trainer trainer,
+    private static async Task RunAdversarialTrainingAsync(Trainer trainer,
         UnsupervisedParameters parameters, ILogger logger)
     {
         logger.LogSeparator("СОСТЯЗАТЕЛЬНОЕ ОБУЧЕНИЕ");
@@ -329,9 +331,11 @@ public partial class Model02
         var stats = new TrainingStats();
         var startTime = DateTime.UtcNow;
 
-        for (int epoch = 0; epoch < parameters.NEpochs; epoch += 1)
+        var evaluator = new Evaluator(trainer, logger);
+
+        for (int n_epoch = 0; n_epoch < parameters.NEpochs; n_epoch += 1)
         {
-            logger.LogInformation($"Начало эпохи состязательного обучения {epoch}...");
+            logger.LogInformation($"Начало эпохи состязательного обучения {n_epoch}...");
 
             var epochStartTime = DateTime.UtcNow;
             long processedWords = 0;
@@ -366,11 +370,14 @@ public partial class Model02
                 }
             }
 
-            //var evaluator = new CrossLingualEvaluator(trainer, logger);
-            //await evaluator.RunFullEvaluationAsync(stats);
-            // trainer.save_best(to_log, VALIDATION_METRIC);
+            stats.ToLog.Clear();
+            stats.ToLog["n_epoch"] = n_epoch;
+            
+            await evaluator.RunAllEvaluationsAsync(stats);
+            await evaluator.EvaluateDiscriminatorAsync(stats);
+            await trainer.SaveBestModelAsync(stats, VALIDATION_METRIC);
 
-            logger.LogInformation($"Конец эпохи {epoch}");
+            logger.LogInformation($"Конец эпохи {n_epoch}");
 
             // Обновление learning rate
             trainer.UpdateLearningRate(stats, ValidationMetric,
@@ -387,7 +394,7 @@ public partial class Model02
 
         logger.LogInformation("Состязательное обучение завершено");
 
-        return Task.CompletedTask;
+        //return Task.CompletedTask;
     }
 
     /// <summary>

@@ -176,7 +176,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Получает кандидатов методом ближайших соседей
         /// </summary>
-        private static async Task<Tensor> GetNearestNeighborCandidatesAsync(
+        private static Task<Tensor> GetNearestNeighborCandidatesAsync(
             Tensor sourceEmbeddings, 
             Tensor targetEmbeddings, 
             int nSourceWords,
@@ -209,13 +209,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var finalScores = cat(allScores.ToArray(), dim: 0);
             var finalTargets = cat(allTargets.ToArray(), dim: 0);
             
-            return CreateCandidatePairs(finalScores, finalTargets, nSourceWords);
+            return Task.FromResult(CreateCandidatePairs(finalScores, finalTargets, nSourceWords));
         }
 
         /// <summary>
         /// Получает кандидатов методом инвертированного softmax
         /// </summary>
-        private static async Task<Tensor> GetInvertedSoftmaxCandidatesAsync(
+        private static Task<Tensor> GetInvertedSoftmaxCandidatesAsync(
             Tensor sourceEmbeddings,
             Tensor targetEmbeddings,
             string method,
@@ -258,7 +258,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var (topScores, topIndices) = finalScores.topk(2, dim: 1, largest: true, sorted: true);
             var topTargets = finalTargets.gather(1, topIndices);
             
-            return CreateCandidatePairs(topScores, topTargets, sourceEmbeddings.size(0));
+            return Task.FromResult(CreateCandidatePairs(topScores, topTargets, sourceEmbeddings.size(0)));
         }
 
         /// <summary>
@@ -315,7 +315,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет средние расстояния до k ближайших соседей для CSLS
         /// </summary>
-        private static async Task<Tensor> ComputeAverageDistancesAsync(
+        private static Task<Tensor> ComputeAverageDistancesAsync(
             Tensor queryEmbeddings,
             Tensor keyEmbeddings, 
             int k,
@@ -347,7 +347,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 }
             }
             
-            return avgDistances;
+            return Task.FromResult(avgDistances);
         }
 
         #endregion
@@ -419,7 +419,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Применяет фильтры к словарю (размер, ранг, порог уверенности)
         /// </summary>
-        private static async Task<Tensor> ApplyFiltersAsync(Tensor dictionary, DictionaryBuilderParameters parameters, ILogger? logger)
+        private static Task<Tensor> ApplyFiltersAsync(Tensor dictionary, DictionaryBuilderParameters parameters, ILogger? logger)
         {
             var currentDict = dictionary;
             
@@ -445,7 +445,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // требует дополнительной информации о скорах, которая не сохраняется в текущей реализации
             // Эти фильтры можно добавить, если передавать скоры отдельно
             
-            return currentDict;
+            return Task.FromResult(currentDict);
         }
 
         #endregion
