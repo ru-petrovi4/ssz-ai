@@ -102,7 +102,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода monolingual_wordsim из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public async Task EvaluateMonolingualWordSimilarityAsync(Dictionary<string, object> results)
+        public async Task EvaluateMonolingualWordSimilarityAsync(TrainingStats stats)
         {
             _logger?.LogInformation("Оценка монолингвального семантического сходства...");
 
@@ -114,7 +114,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 sourceLanguage, _trainer.SourceDictionary, sourceEmbeddings);
 
             // Оцениваем целевой язык если доступен
-            Dictionary<string, double>? targetScores = null;
+            Dictionary<string, float>? targetScores = null;
             if (!string.IsNullOrEmpty(_trainer.TargetDictionary?.Language))
             {
                 var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
@@ -128,10 +128,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var avgScore = sourceScores.Values.Average();
                 _logger?.LogInformation($"Средний балл семантического сходства (исходный язык): {avgScore:F5}");
 
-                results["src_ws_monolingual_scores"] = avgScore;
+                stats.ToLog["src_ws_monolingual_scores"] = avgScore;
                 foreach (var kvp in sourceScores)
                 {
-                    results[$"src_{kvp.Key}"] = kvp.Value;
+                    stats.ToLog[$"src_{kvp.Key}"] = kvp.Value;
                 }
             }
 
@@ -141,10 +141,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var avgScore = targetScores.Values.Average();
                 _logger?.LogInformation($"Средний балл семантического сходства (целевой язык): {avgScore:F5}");
 
-                results["tgt_ws_monolingual_scores"] = avgScore;
+                stats.ToLog["tgt_ws_monolingual_scores"] = avgScore;
                 foreach (var kvp in targetScores)
                 {
-                    results[$"tgt_{kvp.Key}"] = kvp.Value;
+                    stats.ToLog[$"tgt_{kvp.Key}"] = kvp.Value;
                 }
             }
 
@@ -153,14 +153,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             {
                 var overallScore = (sourceScores.Values.Average() + targetScores.Values.Average()) / 2;
                 _logger?.LogInformation($"Общий средний балл семантического сходства: {overallScore:F5}");
-                results["ws_monolingual_scores"] = overallScore;
+                stats.ToLog["ws_monolingual_scores"] = overallScore;
             }
         }
 
         /// <summary>
         /// Получает баллы семантического сходства для языка
         /// </summary>
-        private async Task<Dictionary<string, double>?> GetWordSimilarityScoresAsync(
+        private async Task<Dictionary<string, float>?> GetWordSimilarityScoresAsync(
             string language, Dictionary dictionary, Tensor embeddings)
         {
             var datasetDir = Path.Combine(MonolingualEvalPath, language);
@@ -170,7 +170,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 return null;
             }
 
-            var scores = new Dictionary<string, double>();
+            var scores = new Dictionary<string, float>();
             var separator = new string('=', 30 + 1 + 10 + 1 + 13 + 1 + 12);
             var pattern = "{0,-30} {1,10} {2,13} {3,12}";
 
@@ -209,7 +209,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода monolingual_wordanalogy из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public async Task EvaluateMonolingualWordAnalogyAsync(Dictionary<string, object> results)
+        public async Task EvaluateMonolingualWordAnalogyAsync(TrainingStats stats)
         {
             _logger?.LogInformation("Оценка монолингвальных аналогий слов...");
 
@@ -220,7 +220,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 sourceLanguage, _trainer.SourceDictionary, sourceEmbeddings);
 
             // Оцениваем целевой язык если доступен
-            Dictionary<string, double>? targetAnalogies = null;
+            Dictionary<string, float>? targetAnalogies = null;
             if (!string.IsNullOrEmpty(_trainer.TargetDictionary?.Language))
             {
                 var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
@@ -234,10 +234,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var avgScore = sourceAnalogies.Values.Average();
                 _logger?.LogInformation($"Средний балл аналогий (исходный язык): {avgScore:F5}");
 
-                results["src_analogy_monolingual_scores"] = avgScore;
+                stats.ToLog["src_analogy_monolingual_scores"] = avgScore;
                 foreach (var kvp in sourceAnalogies)
                 {
-                    results[$"src_{kvp.Key}"] = kvp.Value;
+                    stats.ToLog[$"src_{kvp.Key}"] = kvp.Value;
                 }
             }
 
@@ -247,10 +247,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var avgScore = targetAnalogies.Values.Average();
                 _logger?.LogInformation($"Средний балл аналогий (целевой язык): {avgScore:F5}");
 
-                results["tgt_analogy_monolingual_scores"] = avgScore;
+                stats.ToLog["tgt_analogy_monolingual_scores"] = avgScore;
                 foreach (var kvp in targetAnalogies)
                 {
-                    results[$"tgt_{kvp.Key}"] = kvp.Value;
+                    stats.ToLog[$"tgt_{kvp.Key}"] = kvp.Value;
                 }
             }
         }
@@ -258,7 +258,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет баллы аналогий для языка (только английский поддерживается)
         /// </summary>
-        private async Task<Dictionary<string, double>?> GetWordAnalogyScoresAsync(
+        private async Task<Dictionary<string, float>?> GetWordAnalogyScoresAsync(
             string language, Dictionary dictionary, Tensor embeddings)
         {
             var datasetDir = Path.Combine(MonolingualEvalPath, language);
@@ -349,7 +349,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода crosslingual_wordsim из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public async Task EvaluateCrossLingualWordSimilarityAsync(Dictionary<string, object> results)
+        public async Task EvaluateCrossLingualWordSimilarityAsync(TrainingStats stats)
         {
             _logger?.LogInformation("Оценка кросс-лингвального семантического сходства...");
 
@@ -369,17 +369,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var avgScore = crossLingualScores.Values.Average();
             _logger?.LogInformation($"Средний балл кросс-лингвального семантического сходства: {avgScore:F5}");
 
-            results["ws_crosslingual_scores"] = avgScore;
+            stats.ToLog["ws_crosslingual_scores"] = avgScore;
             foreach (var kvp in crossLingualScores)
             {
-                results[$"src_tgt_{kvp.Key}"] = kvp.Value;
+                stats.ToLog[$"src_tgt_{kvp.Key}"] = kvp.Value;
             }
         }
 
         /// <summary>
         /// Получает баллы кросс-лингвального семантического сходства
         /// </summary>
-        private async Task<Dictionary<string, double>?> GetCrossLingualWordSimilarityScoresAsync(
+        private async Task<Dictionary<string, float>?> GetCrossLingualWordSimilarityScoresAsync(
             string lang1, Dictionary dict1, Tensor emb1,
             string lang2, Dictionary dict2, Tensor emb2)
         {
@@ -400,7 +400,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var (correlation, found, notFound) = await ComputeSpearmanRhoCrossLingualAsync(
                 dict1, emb1, dict2, emb2, actualFile, true);
 
-            var scores = new Dictionary<string, double>();
+            var scores = new Dictionary<string, float>();
             var separator = new string('=', 30 + 1 + 10 + 1 + 13 + 1 + 12);
             var pattern = "{0,-30} {1,10} {2,13} {3,12}";
 
@@ -426,7 +426,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         /// <param name="dictionaryPath">Путь к тестовому словарю</param>
-        public async Task EvaluateWordTranslationAsync(Dictionary<string, object> results, string dictionaryPath = "default")
+        public async Task EvaluateWordTranslationAsync(TrainingStats stats, string dictionaryPath = "default")
         {
             _logger?.LogInformation("Оценка точности перевода слов...");
 
@@ -436,7 +436,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var methods = new[] { "nn", "csls_knn_10" };
             foreach (var method in methods)
             {
-                var translationResults = await GetWordTranslationAccuracyAsync(
+                var translationResults = await GetWordTranslationAccuracyAsync(                    
                     _trainer.SourceDictionary.Language, _trainer.SourceDictionary, sourceEmbeddings,
                     _trainer.TargetDictionary.Language, _trainer.TargetDictionary, targetEmbeddings,
                     method, dictionaryPath);
@@ -444,7 +444,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 foreach (var result in translationResults)
                 {
                     var key = $"{result.Key}-{method}";
-                    results[key] = result.Value;
+                    stats.ToLog[key] = result.Value;
                 }
             }
         }
@@ -452,7 +452,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет точность перевода слов для заданного метода
         /// </summary>
-        private async Task<Dictionary<string, double>> GetWordTranslationAccuracyAsync(
+        private async Task<Dictionary<string, float>> GetWordTranslationAccuracyAsync(            
             string sourceLang, Dictionary sourceDict, Tensor sourceEmb,
             string targetLang, Dictionary targetDict, Tensor targetEmb,
             string method, string dictionaryPath)
@@ -461,7 +461,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var testDictionary = await LoadEvaluationDictionaryAsync(sourceLang, targetLang, dictionaryPath, sourceDict, targetDict);
             if (testDictionary.size(0) == 0)
             {
-                return new Dictionary<string, double>();
+                return new Dictionary<string, float>();
             }
 
             // Нормализуем эмбеддинги
@@ -506,7 +506,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода sent_translation из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public async Task EvaluateSentenceTranslationAsync(Dictionary<string, object> results)
+        public async Task EvaluateSentenceTranslationAsync(TrainingStats stats)
         {
             _logger?.LogInformation("Оценка точности перевода предложений...");
 
@@ -547,7 +547,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 foreach (var result in tgtToSrcResults)
                 {
-                    results[$"tgt_to_src_{result.Key}-{method}"] = result.Value;
+                    stats.ToLog[$"tgt_to_src_{result.Key}-{method}"] = result.Value;
                 }
 
                 // Перевод Source -> Target
@@ -558,7 +558,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 foreach (var result in srcToTgtResults)
                 {
-                    results[$"src_to_tgt_{result.Key}-{method}"] = result.Value;
+                    stats.ToLog[$"src_to_tgt_{result.Key}-{method}"] = result.Value;
                 }
             }
         }
@@ -572,7 +572,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Реализация метода dist_mean_cosine из оригинального evaluator.py
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
-        public async Task EvaluateMeanCosineAsync(Dictionary<string, object> results)
+        public async Task EvaluateMeanCosineAsync(TrainingStats stats)
         {
             _logger?.LogInformation("Оценка критерия выбора модели Mean Cosine...");
 
@@ -606,10 +606,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var dictionary = await DictionaryBuilder.BuildDictionaryAsync(
                     sourceEmbeddings, targetEmbeddings, parameters, logger: _logger);
 
-                double meanCosine;
+                float meanCosine;
                 if (dictionary is null || dictionary.size(0) == 0)
                 {
-                    meanCosine = -1e9;
+                    meanCosine = -1e9f;
                 }
                 else
                 {
@@ -622,11 +622,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                     var targetVectors = targetEmbeddings.index_select(0, targetIndices);
 
                     var cosines = (sourceVectors * targetVectors).sum(dim: 1);
-                    meanCosine = cosines.mean().item<double>();
+                    meanCosine = cosines.mean().item<float>();
                 }
 
                 var key = $"mean_cosine-{method}-{dicoBuild}-{dicoMaxSize}";
-                results[key] = meanCosine;
+                stats.ToLog[key] = meanCosine;
 
                 _logger?.LogInformation($"Mean cosine ({method} метод, {dicoBuild} построение, {dicoMaxSize} макс размер): {meanCosine:F5}");
             }
@@ -688,8 +688,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var sourceMeanPred = sourcePredictions.Average();
             var targetMeanPred = targetPredictions.Average();
 
-            var sourceAccuracy = sourcePredictions.Count(x => x >= 0.5) / (double)sourcePredictions.Count;
-            var targetAccuracy = targetPredictions.Count(x => x < 0.5) / (double)targetPredictions.Count;
+            var sourceAccuracy = sourcePredictions.Count(x => x >= 0.5) / (float)sourcePredictions.Count;
+            var targetAccuracy = targetPredictions.Count(x => x < 0.5) / (float)targetPredictions.Count;
 
             var discriminatorAccuracy = (sourceAccuracy * sourcePredictions.Count + targetAccuracy * targetPredictions.Count) /
                                       (sourcePredictions.Count + targetPredictions.Count);
@@ -741,7 +741,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет корреляцию Спирмена для семантического сходства
         /// </summary>
-        private async Task<(double correlation, int found, int notFound)> ComputeSpearmanRhoAsync(
+        private async Task<(float correlation, int found, int notFound)> ComputeSpearmanRhoAsync(
             Dictionary dictionary, Tensor embeddings, string filePath, bool lower = true,
             Dictionary? dictionary2 = null, Tensor? embeddings2 = null)
         {
@@ -779,17 +779,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
             if (predictions.Count < 2)
             {
-                return (0.0, predictions.Count, notFound);
+                return (0.0f, predictions.Count, notFound);
             }
 
-            var correlation = Correlation.Spearman(predictions, goldScores);
+            var correlation = (float)Correlation.Spearman(predictions, goldScores);
             return (correlation, predictions.Count, notFound);
         }
 
         /// <summary>
         /// Вычисляет кросс-лингвальную корреляцию Спирмена
         /// </summary>
-        private async Task<(double correlation, int found, int notFound)> ComputeSpearmanRhoCrossLingualAsync(
+        private async Task<(float correlation, int found, int notFound)> ComputeSpearmanRhoCrossLingualAsync(
             Dictionary dict1, Tensor emb1, Dictionary dict2, Tensor emb2, string filePath, bool lower)
         {
             // Определяем правильный порядок словарей и эмбеддингов
@@ -807,10 +807,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Парсит файл с парами слов и их оценками сходства
         /// </summary>
-        private async Task<List<(string word1, string word2, double score)>> GetWordPairsFromFileAsync(
+        private async Task<List<(string word1, string word2, float score)>> GetWordPairsFromFileAsync(
             string filePath, bool lower)
         {
-            var pairs = new List<(string, string, double)>();
+            var pairs = new List<(string, string, float)>();
 
             await foreach (var line in File.ReadLinesAsync(filePath))
             {
@@ -831,7 +831,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                         continue;
                 }
 
-                if (double.TryParse(parts[2], out var score))
+                if (float.TryParse(parts[2], out var score))
                 {
                     pairs.Add((parts[0], parts[1], score));
                 }
@@ -867,14 +867,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет косинусное сходство между двумя векторами
         /// </summary>
-        private double ComputeCosineSimilarity(ReadOnlySpan<float> vector1, ReadOnlySpan<float> vector2)
+        private float ComputeCosineSimilarity(ReadOnlySpan<float> vector1, ReadOnlySpan<float> vector2)
         {
             if (vector1.Length != vector2.Length)
                 throw new ArgumentException("Векторы должны быть одинаковой длины");
 
-            double dotProduct = 0.0;
-            double norm1 = 0.0;
-            double norm2 = 0.0;
+            float dotProduct = 0.0f;
+            float norm1 = 0.0f;
+            float norm2 = 0.0f;
 
             for (int i = 0; i < vector1.Length; i++)
             {
@@ -883,8 +883,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 norm2 += vector2[i] * vector2[i];
             }
 
-            var magnitude = Math.Sqrt(norm1) * Math.Sqrt(norm2);
-            return magnitude > 0 ? dotProduct / magnitude : 0.0;
+            var magnitude = MathF.Sqrt(norm1) * MathF.Sqrt(norm2);
+            return magnitude > 0.0f ? dotProduct / magnitude : 0.0f;
         }
 
         /// <summary>
@@ -900,7 +900,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Нормализуем каждый вектор
             for (int i = 0; i < rows; i++)
             {
-                double sumSquares = 0.0;
+                float sumSquares = 0.0f;
                 var startIdx = i * cols;
 
                 for (int j = 0; j < cols; j++)
@@ -942,13 +942,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
 
             // Нормализуем запросный вектор
-            double norm = 0.0;
+            float norm = 0.0f;
             for (int i = 0; i < embDim; i++)
             {
                 norm += query[i] * query[i];
             }
 
-            norm = Math.Sqrt(norm);
+            norm = MathF.Sqrt(norm);
             if (norm > 0)
             {
                 for (int i = 0; i < embDim; i++)
@@ -963,13 +963,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет точности аналогий по категориям
         /// </summary>
-        private async Task<Dictionary<string, double>> ComputeAnalogyAccuracies(
+        private async Task<Dictionary<string, float>> ComputeAnalogyAccuracies(
             Dictionary<string, List<float[]>> queries,
             Dictionary<string, List<int[]>> wordIds,
             Dictionary<string, Dictionary<string, int>> scores,
             Tensor normalizedEmbeddings)
         {
-            var accuracies = new Dictionary<string, double>();
+            var accuracies = new Dictionary<string, float>();
             var embData = normalizedEmbeddings.data<float>().ToArray();
             var vocabSize = (int)normalizedEmbeddings.size(0);
             var embDim = (int)normalizedEmbeddings.size(1);
@@ -989,7 +989,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                     // Находим наиболее похожее слово
                     int bestWordId = -1;
-                    double bestSimilarity = double.MinValue;
+                    float bestSimilarity = float.MinValue;
 
                     for (int wordId = 0; wordId < vocabSize; wordId++)
                     {
@@ -1015,7 +1015,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 }
 
                 scores[category]["n_correct"] = correctCount;
-                accuracies[category] = (double)correctCount / Math.Max(scores[category]["n_found"], 1);
+                accuracies[category] = (float)correctCount / Math.Max(scores[category]["n_found"], 1);
             }
 
             await Task.CompletedTask; // Для асинхронности
@@ -1025,7 +1025,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Логирует результаты аналогий
         /// </summary>
-        private void LogAnalogyResults(Dictionary<string, double> accuracies, 
+        private void LogAnalogyResults(Dictionary<string, float> accuracies, 
             Dictionary<string, Dictionary<string, int>> scores)
         {
             var separator = new string('=', 30 + 1 + 10 + 1 + 13 + 1 + 12);
@@ -1174,9 +1174,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет Precision@K для перевода слов
         /// </summary>
-        private Dictionary<string, double> ComputePrecisionAtK(Tensor scores, Tensor testDictionary, int[] kValues)
+        private Dictionary<string, float> ComputePrecisionAtK(Tensor scores, Tensor testDictionary, int[] kValues)
         {
-            var results = new Dictionary<string, double>();
+            var results = new Dictionary<string, float>();
             var (_, topMatches) = scores.topk(10, dim: 1, largest: true, sorted: true);
 
             foreach (var k in kValues)
@@ -1209,7 +1209,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                     }
                 }
 
-                var precisionAtK = 100.0 * matching.Values.Average();
+                var precisionAtK = 100.0f * (float)matching.Values.Average();
                 results[$"precision_at_{k}"] = precisionAtK;
             }
 
@@ -1338,14 +1338,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Вычисляет IDF веса для предложений
         /// </summary>
-        private Dictionary<string, Dictionary<string, double>> ComputeIdfWeights(
+        private Dictionary<string, Dictionary<string, float>> ComputeIdfWeights(
             Dictionary<string, Dictionary<string, string[][]>> europarlData, 
             string lang1, string lang2, int nIdf)
         {
-            var idf = new Dictionary<string, Dictionary<string, double>>
+            var idf = new Dictionary<string, Dictionary<string, float>>
             {
-                [lang1] = new Dictionary<string, double>(),
-                [lang2] = new Dictionary<string, double>()
+                [lang1] = new Dictionary<string, float>(),
+                [lang2] = new Dictionary<string, float>()
             };
 
             int k = 0;
@@ -1377,7 +1377,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var wordsToUpdate = idf[lang].Keys.ToList();
                 foreach (var word in wordsToUpdate)
                 {
-                    idf[lang][word] = Math.Max(1, Math.Log10((double)nDoc / idf[lang][word]));
+                    idf[lang][word] = MathF.Max(1, MathF.Log10((float)nDoc / idf[lang][word]));
                 }
 
                 k++;
@@ -1389,12 +1389,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Получает точность перевода предложений
         /// </summary>
-        private async Task<Dictionary<string, double>> GetSentenceTranslationAccuracyAsync(
+        private async Task<Dictionary<string, float>> GetSentenceTranslationAccuracyAsync(
             Dictionary<string, Dictionary<string, string[][]>> data,
             string queryLang, Dictionary queryDict, Tensor queryEmb,
             string keyLang, Dictionary keyDict, Tensor keyEmb,
             int nKeys, int nQueries, string method,
-            Dictionary<string, Dictionary<string, double>> idf)
+            Dictionary<string, Dictionary<string, float>> idf)
         {
             // Создаем словари векторов слов
             var queryEmbData = queryEmb.cpu().data<float>().ToArray();
@@ -1443,7 +1443,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             };
 
             // Вычисляем Precision@K
-            var results = new Dictionary<string, double>();
+            var results = new Dictionary<string, float>();
             var (_, topMatches) = scores.topk(10, dim: 1, largest: true, sorted: true);
 
             foreach (var k in new[] { 1, 5, 10 })
@@ -1452,7 +1452,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var targetIndices = tensor(queryIndices.Select(i => (long)i).ToArray());
 
                 var matches = topKMatches.eq(targetIndices.unsqueeze(1).expand_as(topKMatches)).sum(dim: 1);
-                var precisionAtK = 100.0 * matches.to_type(ScalarType.Float32).mean().item<float>();
+                var precisionAtK = 100.0f * matches.to_type(ScalarType.Float32).mean().item<float>();
 
                 _logger?.LogInformation($"{nQueries} запросов ({queryLang.ToUpper()}) - {method} - Precision at k = {k}: {precisionAtK:F3}");
                 results[$"sent-precision_at_{k}"] = precisionAtK;
@@ -1465,7 +1465,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Создает bag-of-words представления с IDF весами
         /// </summary>
         private float[][] BagOfWordsIdf(string[][] sentences, Dictionary<string, float[]> wordVectors, 
-            Dictionary<string, double> idfWeights)
+            Dictionary<string, float> idfWeights)
         {
             var sentenceVectors = new List<float[]>();
 
