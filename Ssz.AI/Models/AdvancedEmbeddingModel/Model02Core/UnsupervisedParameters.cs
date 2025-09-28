@@ -157,7 +157,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// "Режим построения словаря
     /// </summary>
-    public string DicoBuild { get; init; } = "S2T";
+    public string DicoBuild { get; init; } = "SourceToTarget";
     /// <summary>
     /// Порог уверенности для построения словаря
     /// </summary>

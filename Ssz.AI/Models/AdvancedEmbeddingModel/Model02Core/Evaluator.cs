@@ -100,6 +100,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Оценка монолингвального семантического сходства слов
         /// Реализация метода monolingual_wordsim из оригинального evaluator.py
+        /// Использует файлы данных.
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         public async Task EvaluateMonolingualWordSimilarityAsync(TrainingStats stats)
@@ -107,11 +108,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             _logger?.LogInformation("Оценка монолингвального семантического сходства...");
 
             // Получаем выровненные эмбеддинги исходного языка
-            var sourceEmbeddings = GetMappedSourceEmbeddings();
-            var sourceLanguage = _trainer.SourceDictionary.Language;
+            var sourceEmbeddings = GetMappedSourceEmbeddings();            
 
             var sourceScores = await GetWordSimilarityScoresAsync(
-                sourceLanguage, _trainer.SourceDictionary, sourceEmbeddings);
+                _trainer.SourceDictionary.Language, 
+                _trainer.SourceDictionary, 
+                sourceEmbeddings);
 
             // Оцениваем целевой язык если доступен
             Dictionary<string, float>? targetScores = null;
@@ -119,7 +121,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             {
                 var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
                 targetScores = await GetWordSimilarityScoresAsync(
-                    _trainer.TargetDictionary.Language, _trainer.TargetDictionary, targetEmbeddings);
+                    _trainer.TargetDictionary.Language, 
+                    _trainer.TargetDictionary, 
+                    targetEmbeddings);
             }
 
             // Логируем и записываем результаты для исходного языка
@@ -347,6 +351,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Оценка кросс-лингвального семантического сходства слов
         /// Реализация метода crosslingual_wordsim из оригинального evaluator.py
+        /// Использует файлы данных.
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         public async Task EvaluateCrossLingualWordSimilarityAsync(TrainingStats stats)
@@ -423,6 +428,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Оценка точности перевода слов
         /// Реализация метода word_translation из оригинального evaluator.py
+        /// Использует файлы данных.
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         /// <param name="dictionaryPath">Путь к тестовому словарю</param>
@@ -504,6 +510,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Оценка точности перевода предложений на корпусе Europarl
         /// Реализация метода sent_translation из оригинального evaluator.py
+        /// Использует файлы данных.
         /// </summary>
         /// <param name="results">Словарь для записи результатов</param>
         public async Task EvaluateSentenceTranslationAsync(TrainingStats stats)
@@ -588,7 +595,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var methods = new[] { "nn", "csls_knn_10" };
             foreach (var method in methods)
             {
-                const string dicoBuild = "S2T";
+                const string dicoBuild = "SourceToTarget";
                 const int dicoMaxSize = 10000;
 
                 // Создаем временные параметры для построения словаря
@@ -604,7 +611,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 // Строим словарь
                 var dictionary = await DictionaryBuilder.BuildDictionaryAsync(
-                    sourceEmbeddings, targetEmbeddings, parameters, logger: _logger);
+                    sourceEmbeddings, 
+                    targetEmbeddings, 
+                    parameters, 
+                    logger: _logger);
 
                 float meanCosine;
                 if (dictionary is null || dictionary.size(0) == 0)
@@ -658,7 +668,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var targetPredictions = new List<float>();
 
             // Оценка предсказаний для исходных эмбеддингов
-            var sourceVocabSize = _trainer.SourceEmbeddings.GetShape()[0]; // VALFIX
+            var sourceVocabSize = _trainer.SourceEmbeddings.weight!.shape[0];
             for (int i = 0; i < sourceVocabSize; i += BatchSize)
             {
                 var endIdx = Math.Min(sourceVocabSize, i + BatchSize);
@@ -672,7 +682,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
 
             // Оценка предсказаний для целевых эмбеддингов
-            var targetVocabSize = _trainer.TargetEmbeddings.GetShape()[0]; // VALFIX
+            var targetVocabSize = _trainer.TargetEmbeddings.weight!.shape[0];
             for (int i = 0; i < targetVocabSize; i += BatchSize)
             {
                 var endIdx = Math.Min(targetVocabSize, i + BatchSize);
@@ -718,10 +728,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         {
             _logger?.LogInformation("Запуск полного набора оценок...");
 
-            await EvaluateMonolingualWordSimilarityAsync(stats);
-            await EvaluateCrossLingualWordSimilarityAsync(stats);
-            await EvaluateWordTranslationAsync(stats, dictionaryPath);
-            await EvaluateSentenceTranslationAsync(stats);
+            //await EvaluateMonolingualWordSimilarityAsync(stats);
+            //await EvaluateCrossLingualWordSimilarityAsync(stats);
+            //await EvaluateWordTranslationAsync(stats, dictionaryPath);
+            //await EvaluateSentenceTranslationAsync(stats);
             await EvaluateMeanCosineAsync(stats);
         }
 

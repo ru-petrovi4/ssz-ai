@@ -24,7 +24,7 @@
 //        /// <summary>
 //        /// Метрика валидации для unsupervised обучения
 //        /// </summary>
-//        private const string ValidationMetric = "mean_cosine-csls_knn_10-S2T-10000";
+//        private const string ValidationMetric = "mean_cosine-csls_knn_10-SourceToTarget-10000";
         
 //        #endregion
 
@@ -99,7 +99,7 @@
 //                // Параметры построения словаря
 //                new Option<string>("--dico-eval", () => "default", "Путь к словарю для оценки"),
 //                new Option<string>("--dico-method", () => "csls_knn_10", "Метод построения словаря"),
-//                new Option<string>("--dico-build", () => "S2T", "Режим построения словаря"),
+//                new Option<string>("--dico-build", () => "SourceToTarget", "Режим построения словаря"),
 //                new Option<double>("--dico-threshold", () => 0.0, "Порог уверенности для построения словаря"),
 //                new Option<int>("--dico-max-rank", () => 15000, "Максимальный ранг слов в словаре"),
 //                new Option<int>("--dico-min-size", () => 0, "Минимальный размер создаваемого словаря"),
@@ -230,7 +230,7 @@
 //            // Dictionary parameters
 //            public string DicoEval { get; init; } = "default";
 //            public string DicoMethod { get; init; } = "csls_knn_10";
-//            public string DicoBuild { get; init; } = "S2T";
+//            public string DicoBuild { get; init; } = "SourceToTarget";
 //            public double DicoThreshold { get; init; }
 //            public int DicoMaxRank { get; init; }
 //            public int DicoMinSize { get; init; }
@@ -293,7 +293,7 @@
                 
 //                DicoEval = result.GetValueForOption<string>("--dico-eval") ?? "default",
 //                DicoMethod = result.GetValueForOption<string>("--dico-method") ?? "csls_knn_10",
-//                DicoBuild = result.GetValueForOption<string>("--dico-build") ?? "S2T",
+//                DicoBuild = result.GetValueForOption<string>("--dico-build") ?? "SourceToTarget",
 //                DicoThreshold = result.GetValueForOption<double>("--dico-threshold"),
 //                DicoMaxRank = result.GetValueForOption<int>("--dico-max-rank"),
 //                DicoMinSize = result.GetValueForOption<int>("--dico-min-size"),

@@ -125,7 +125,7 @@
 //                // Параметры Procrustes refinement
 //                new Option<int>("--n-refinement", () => 5, "Количество итераций Procrustes refinement"),
 //                new Option<string>("--dico-method", () => "csls_knn_10", "Метод построения словаря (nn/csls_knn_10)"),
-//                new Option<string>("--dico-build", () => "S2T", "Стратегия построения словаря (S2T/T2S/S2T|T2S/S2T&T2S)"),
+//                new Option<string>("--dico-build", () => "SourceToTarget", "Стратегия построения словаря (SourceToTarget/TargetToSource/SourceToTarget|TargetToSource/SourceToTarget&TargetToSource)"),
 //                new Option<int>("--dico-max-rank", () => 15000, "Максимальный ранг слов в словаре"),
 //                new Option<int>("--dico-max-size", () => 0, "Максимальный размер словаря (0 для неограниченного)"),
 //                new Option<double>("--dico-threshold", () => 0.0, "Порог уверенности для словаря"),
@@ -180,7 +180,7 @@
 //                new Option<string>("--dico-train", () => "default", "Путь к обучающему словарю или 'default'/'identical_char'"),
 //                new Option<int>("--n-refinement", () => 5, "Количество итераций refinement"),
 //                new Option<string>("--dico-method", () => "csls_knn_10", "Метод построения словаря"),
-//                new Option<string>("--dico-build", () => "S2T&T2S", "Стратегия построения словаря"),
+//                new Option<string>("--dico-build", () => "SourceToTarget&TargetToSource", "Стратегия построения словаря"),
 //                new Option<int>("--dico-max-rank", () => 10000, "Максимальный ранг слов в словаре")
 //            };
 

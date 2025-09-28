@@ -22,9 +22,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         public string Method { get; init; } = "csls_knn_10";
         
         /// <summary>
-        /// Режим построения (S2T, T2S, S2T|T2S, S2T&T2S)
+        /// Режим построения (SourceToTarget, TargetToSource, SourceToTarget|TargetToSource, SourceToTarget&TargetToSource)
         /// </summary>
-        public string BuildMode { get; init; } = "S2T";
+        public string BuildMode { get; init; } = "SourceToTarget";
         
         /// <summary>
         /// Пороговое значение уверенности
@@ -111,47 +111,47 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <param name="sourceEmbeddings">Исходные эмбеддинги</param>
         /// <param name="targetEmbeddings">Целевые эмбеддинги</param>
         /// <param name="parameters">Параметры</param>
-        /// <param name="s2tCandidates">Кандидаты Source->Target (опционально)</param>
-        /// <param name="t2sCandidates">Кандидаты Target->Source (опционально)</param>
+        /// <param name="sourceToTargetCandidates">Кандидаты Source->Target (опционально)</param>
+        /// <param name="targetToSourceCandidates">Кандидаты Target->Source (опционально)</param>
         /// <param name="logger">Логгер</param>
         /// <returns>Словарь пар [n_pairs, 2] или null если словарь пустой</returns>
         public static async Task<Tensor?> BuildDictionaryAsync(
             Tensor sourceEmbeddings,
             Tensor targetEmbeddings,
             DictionaryBuilderParameters parameters,
-            Tensor? s2tCandidates = null,
-            Tensor? t2sCandidates = null,
+            Tensor? sourceToTargetCandidates = null,
+            Tensor? targetToSourceCandidates = null,
             ILogger? logger = null)
         {
             logger?.LogInformation("Построение обучающего словаря...");
             
-            var buildS2T = parameters.BuildMode.Contains("S2T");
-            var buildT2S = parameters.BuildMode.Contains("T2S");
+            var buildSourceToTarget = parameters.BuildMode.Contains("SourceToTarget");
+            var buildTargetToSource = parameters.BuildMode.Contains("TargetToSource");
             
-            if (!buildS2T && !buildT2S)
-                throw new ArgumentException("Должен быть указан хотя бы один режим построения (S2T или T2S)");
+            if (!buildSourceToTarget && !buildTargetToSource)
+                throw new ArgumentException("Должен быть указан хотя бы один режим построения (SourceToTarget или TargetToSource)");
             
-            // Получаем кандидатов S2T
-            if (buildS2T && s2tCandidates is null)
+            // Получаем кандидатов SourceToTarget
+            if (buildSourceToTarget && sourceToTargetCandidates is null)
             {
-                s2tCandidates = await GetCandidatesAsync(sourceEmbeddings, targetEmbeddings, parameters, logger);
+                sourceToTargetCandidates = await GetCandidatesAsync(sourceEmbeddings, targetEmbeddings, parameters, logger);
             }
             
-            // Получаем кандидатов T2S
-            if (buildT2S && t2sCandidates is null)
+            // Получаем кандидатов TargetToSource
+            if (buildTargetToSource && targetToSourceCandidates is null)
             {
-                t2sCandidates = await GetCandidatesAsync(targetEmbeddings, sourceEmbeddings, parameters, logger);
-                // Меняем местами колонки для T2S
-                t2sCandidates = cat(new[] { t2sCandidates.select(1, 1).unsqueeze(1), t2sCandidates.select(1, 0).unsqueeze(1) }, dim: 1);
+                targetToSourceCandidates = await GetCandidatesAsync(targetEmbeddings, sourceEmbeddings, parameters, logger);
+                // Меняем местами колонки для TargetToSource
+                targetToSourceCandidates = cat(new[] { targetToSourceCandidates.select(1, 1).unsqueeze(1), targetToSourceCandidates.select(1, 0).unsqueeze(1) }, dim: 1);
             }
             
             // Строим финальный словарь в зависимости от режима
             Tensor? finalDictionary = parameters.BuildMode switch
             {
-                "S2T" => s2tCandidates,
-                "T2S" => t2sCandidates,
-                "S2T|T2S" => CombineDictionaries(s2tCandidates!, t2sCandidates!, union: true, logger),
-                "S2T&T2S" => CombineDictionaries(s2tCandidates!, t2sCandidates!, union: false, logger),
+                "SourceToTarget" => sourceToTargetCandidates,
+                "TargetToSource" => targetToSourceCandidates,
+                "SourceToTarget|TargetToSource" => CombineDictionaries(sourceToTargetCandidates!, targetToSourceCandidates!, union: true, logger),
+                "SourceToTarget&TargetToSource" => CombineDictionaries(sourceToTargetCandidates!, targetToSourceCandidates!, union: false, logger),
                 _ => throw new ArgumentException($"Неизвестный режим построения: {parameters.BuildMode}")
             };
             
@@ -379,25 +379,25 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Объединяет два словаря (пересечение или объединение)
         /// </summary>
-        private static Tensor? CombineDictionaries(Tensor s2tCandidates, Tensor t2sCandidates, bool union, ILogger? logger)
+        private static Tensor? CombineDictionaries(Tensor sourceToTargetCandidates, Tensor targetToSourceCandidates, bool union, ILogger? logger)
         {
             // Конвертируем в HashSet для эффективного поиска
-            var s2tPairs = new HashSet<(long, long)>();
-            var s2tData = s2tCandidates.data<long>().ToArray();
-            for (int i = 0; i < s2tData.Length; i += 2)
+            var sourceToTargetPairs = new HashSet<(long, long)>();
+            var sourceToTargetData = sourceToTargetCandidates.data<long>().ToArray();
+            for (int i = 0; i < sourceToTargetData.Length; i += 2)
             {
-                s2tPairs.Add((s2tData[i], s2tData[i + 1]));
+                sourceToTargetPairs.Add((sourceToTargetData[i], sourceToTargetData[i + 1]));
             }
             
-            var t2sPairs = new HashSet<(long, long)>();
-            var t2sData = t2sCandidates.data<long>().ToArray();
-            for (int i = 0; i < t2sData.Length; i += 2)
+            var targetToSourcePairs = new HashSet<(long, long)>();
+            var targetToSourceData = targetToSourceCandidates.data<long>().ToArray();
+            for (int i = 0; i < targetToSourceData.Length; i += 2)
             {
-                t2sPairs.Add((t2sData[i], t2sData[i + 1]));
+                targetToSourcePairs.Add((targetToSourceData[i], targetToSourceData[i + 1]));
             }
             
             // Выполняем операцию объединения или пересечения
-            var finalPairs = union ? s2tPairs.Union(t2sPairs).ToList() : s2tPairs.Intersect(t2sPairs).ToList();
+            var finalPairs = union ? sourceToTargetPairs.Union(targetToSourcePairs).ToList() : sourceToTargetPairs.Intersect(targetToSourcePairs).ToList();
             
             if (finalPairs.Count == 0)
             {

@@ -48,9 +48,9 @@ public partial class Model02
 
     #region public functions
 
-    public const string FileName_MUSE_Mapping_RU_EN = "AdvancedEmbedding_MUSE_Mapping_RU_EN.bin";
+    public const string FileName_MUSE_Adversarial_RU_EN = "AdvancedEmbedding_MUSE_Adversarial_RU_EN.bin";
 
-    public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-S2T-10000";
+    public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
     /// <summary>
     ///     RusVectores        
@@ -64,11 +64,12 @@ public partial class Model02
 
     public async Task<int> ExecuteUnsupervisedTrainingAsync()
     {
+        int wordsCount = 18000;
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-        var ruDictionary = GetDictionary(LanguageInfo_RU.Words.Select(w => w.Name).ToList(), "RU");
+        var ruDictionary = GetDictionary(LanguageInfo_RU.Words.Take(wordsCount).Select(w => w.Name).ToList(), "ru");
         var d = WordsHelper.OldVectorLength_RU;
-        var ruEmb = new MatrixFloat_RowMajor(LanguageInfo_RU.Words.Count, d);
-        for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
+        var ruEmb = new MatrixFloat_RowMajor(wordsCount, d);
+        for (int i = 0; i < wordsCount; i += 1)
         {
             var row = LanguageInfo_RU.Words[i];
             for (int j = 0; j < d; j += 1)
@@ -78,10 +79,10 @@ public partial class Model02
         }
 
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
-        var enDictionary = GetDictionary(LanguageInfo_EN.Words.Select(w => w.Name).ToList(), "EN");
+        var enDictionary = GetDictionary(LanguageInfo_EN.Words.Take(wordsCount).Select(w => w.Name).ToList(), "en");
         d = WordsHelper.OldVectorLength_EN;
-        var enEmb = new MatrixFloat_RowMajor(LanguageInfo_EN.Words.Count, d);
-        for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
+        var enEmb = new MatrixFloat_RowMajor(wordsCount, d);
+        for (int i = 0; i < wordsCount; i += 1)
         {
             var row = LanguageInfo_EN.Words[i];
             for (int j = 0; j < d; j += 1)
@@ -194,8 +195,8 @@ public partial class Model02
             {
                 await RunAdversarialTrainingAsync(trainer, parameters, logger);
 
-                //var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
-                //weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Mapping_RU_EN));
+                var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
             }
 
             //// Procrustes refinement
@@ -340,8 +341,8 @@ public partial class Model02
             var epochStartTime = DateTime.UtcNow;
             long processedWords = 0;
             stats.DiscriminatorLosses.Clear();
-
-            for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)
+            
+            for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)            
             {
                 // Обучение дискриминатора
                 for (int disStep = 0; disStep < parameters.DisSteps; disStep += 1)
@@ -452,7 +453,7 @@ public partial class Model02
     /// <summary>
     /// Метрика валидации для unsupervised обучения
     /// </summary>
-    private const string ValidationMetric = "mean_cosine-csls_knn_10-S2T-10000";
+    private const string ValidationMetric = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
     #endregion    
 }
