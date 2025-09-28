@@ -85,26 +85,25 @@ public static class EvaluationUtils
     /// Реализация функции get_word_id из wordsim.py
     /// </summary>
     /// <param name="word">Слово для поиска</param>
-    /// <param name="dictionary">Словарь</param>
-    /// <param name="lower">Использовать ли нижний регистр</param>
+    /// <param name="dictionary">Словарь</param>    
     /// <returns>ID слова или null если не найдено</returns>
-    public static int? GetWordId(string word, Dictionary dictionary, bool lower)
+    public static int? GetWordId(string word, Dictionary dictionary)
     {
-        if (dictionary.WordToId.TryGetValue(word, out var id))
+        if (dictionary.WordToId.TryGetValue(word.ToLowerInvariant(), out var id))
             return id;
 
-        if (!lower)
-        {
-            // Попробуем с заглавной буквы
-            var capitalized = word.Length > 0 ? char.ToUpperInvariant(word[0]) + word.Substring(1) : word;
-            if (dictionary.WordToId.TryGetValue(capitalized, out id))
-                return id;
+        //if (!lower)
+        //{
+        //    // Попробуем с заглавной буквы
+        //    var capitalized = word.Length > 0 ? char.ToUpperInvariant(word[0]) + word.Substring(1) : word;
+        //    if (dictionary.WordToId.TryGetValue(capitalized, out id))
+        //        return id;
 
-            // Попробуем Title Case
-            var titleCase = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(word.ToLowerInvariant());
-            if (dictionary.WordToId.TryGetValue(titleCase, out id))
-                return id;
-        }
+        //    // Попробуем Title Case
+        //    var titleCase = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(word.ToLowerInvariant());
+        //    if (dictionary.WordToId.TryGetValue(titleCase, out id))
+        //        return id;
+        //}
 
         return null;
     }
@@ -190,13 +189,12 @@ public static class EvaluationUtils
     /// <param name="wordPairs">Пары слов с золотыми оценками</param>
     /// <param name="dictionary1">Первый словарь</param>
     /// <param name="embeddings1">Первые эмбеддинги</param>
-    /// <param name="lower">Использовать ли нижний регистр</param>
     /// <param name="dictionary2">Второй словарь (опционально для кросс-лингвального)</param>
     /// <param name="embeddings2">Второй набор эмбеддингов (опционально)</param>
     /// <returns>Корреляция, количество найденных и не найденных пар</returns>
     public static (double correlation, int found, int notFound) ComputeSpearmanCorrelation(
         IEnumerable<(string word1, string word2, double goldScore)> wordPairs,
-        Dictionary dictionary1, Tensor embeddings1, bool lower,
+        Dictionary dictionary1, Tensor embeddings1,
         Dictionary? dictionary2 = null, Tensor? embeddings2 = null)
     {
         dictionary2 ??= dictionary1;
@@ -212,8 +210,8 @@ public static class EvaluationUtils
 
         foreach (var (word1, word2, goldScore) in wordPairs)
         {
-            var id1 = GetWordId(word1, dictionary1, lower);
-            var id2 = GetWordId(word2, dictionary2, lower);
+            var id1 = GetWordId(word1, dictionary1);
+            var id2 = GetWordId(word2, dictionary2);
 
             if (id1 == null || id2 == null)
             {
@@ -365,8 +363,8 @@ public static class EvaluationUtils
             var word1 = parts[0];
             var word2 = parts[1];
 
-            var sourceId = GetWordId(word1, dictionary1, true);
-            var targetId = GetWordId(word2, dictionary2, true);
+            var sourceId = GetWordId(word1, dictionary1);
+            var targetId = GetWordId(word2, dictionary2);
 
             if (sourceId.HasValue && targetId.HasValue)
             {

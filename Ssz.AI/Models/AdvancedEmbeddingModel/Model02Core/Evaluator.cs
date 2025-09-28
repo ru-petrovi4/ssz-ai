@@ -189,7 +189,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 {
                     var fileName = Path.GetFileNameWithoutExtension(filePath);
                     var (correlation, found, notFound) = await ComputeSpearmanRhoAsync(
-                        dictionary, embeddings, filePath, lower: true);
+                        dictionary, embeddings, filePath);
 
                     _logger?.LogInformation(string.Format(pattern, fileName, found, notFound, $"{correlation:F4}"));
                     scores[fileName] = correlation;
@@ -316,10 +316,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var currentCategory = scores.Keys.LastOrDefault();
                 if (currentCategory == null) continue;
 
-                var word1Id = GetWordId(parts[0], dictionary, true);
-                var word2Id = GetWordId(parts[1], dictionary, true);
-                var word3Id = GetWordId(parts[2], dictionary, true);
-                var word4Id = GetWordId(parts[3], dictionary, true);
+                var word1Id = EvaluationUtils.GetWordId(parts[0], dictionary);
+                var word2Id = EvaluationUtils.GetWordId(parts[1], dictionary);
+                var word3Id = EvaluationUtils.GetWordId(parts[2], dictionary);
+                var word4Id = EvaluationUtils.GetWordId(parts[3], dictionary);
 
                 if (word1Id == null || word2Id == null || word3Id == null || word4Id == null)
                 {
@@ -403,7 +403,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
 
             var (correlation, found, notFound) = await ComputeSpearmanRhoCrossLingualAsync(
-                dict1, emb1, dict2, emb2, actualFile, true);
+                dict1, emb1, dict2, emb2, actualFile);
 
             var scores = new Dictionary<string, float>();
             var separator = new string('=', 30 + 1 + 10 + 1 + 13 + 1 + 12);
@@ -436,14 +436,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         {
             _logger?.LogInformation("Оценка точности перевода слов...");
 
-            var sourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
+            var mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
             var targetEmbeddings = _trainer.TargetEmbeddings.weight!;
 
             var methods = new[] { "nn", "csls_knn_10" };
             foreach (var method in methods)
             {
                 var translationResults = await GetWordTranslationAccuracyAsync(                    
-                    _trainer.SourceDictionary.Language, _trainer.SourceDictionary, sourceEmbeddings,
+                    _trainer.SourceDictionary.Language, _trainer.SourceDictionary, mappedSourceEmbeddings,
                     _trainer.TargetDictionary.Language, _trainer.TargetDictionary, targetEmbeddings,
                     method, dictionaryPath);
 
@@ -459,7 +459,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет точность перевода слов для заданного метода
         /// </summary>
         private async Task<Dictionary<string, float>> GetWordTranslationAccuracyAsync(            
-            string sourceLang, Dictionary sourceDict, Tensor sourceEmb,
+            string sourceLang, Dictionary sourceDict, Tensor mappedSourceEmb,
             string targetLang, Dictionary targetDict, Tensor targetEmb,
             string method, string dictionaryPath)
         {
@@ -469,23 +469,25 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             {
                 return new Dictionary<string, float>();
             }
+            testDictionary = testDictionary.to(_trainer.Device);
 
             // Нормализуем эмбеддинги
-            sourceEmb = functional.normalize(sourceEmb, p: 2, dim: 1);
+            mappedSourceEmb = functional.normalize(mappedSourceEmb, p: 2, dim: 1);
             targetEmb = functional.normalize(targetEmb, p: 2, dim: 1);
 
             Tensor scores;
             if (method == "nn")
             {
                 // Простое скалярное произведение
-                var query = sourceEmb.index_select(0, testDictionary.select(1, 0));
-                scores = query.mm(targetEmb.transpose(0, 1));
+                var testDictionary_SourceIds = testDictionary.select(dim: 1, index: 0);
+                var queryMappedSourceEmb = mappedSourceEmb.index_select(dim: 0, testDictionary_SourceIds);
+                scores = queryMappedSourceEmb.mm(targetEmb.transpose(dim0: 0, dim1: 1));
             }
             else if (method.StartsWith("csls_knn_"))
             {
                 // CSLS метод
                 var k = int.Parse(method.Substring("csls_knn_".Length));
-                scores = await ComputeCSLSScoresForTranslationAsync(sourceEmb, targetEmb, testDictionary, k);
+                scores = await ComputeCSLSScoresForTranslationAsync(mappedSourceEmb, targetEmb, testDictionary, k);
             }
             else
             {
@@ -752,13 +754,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет корреляцию Спирмена для семантического сходства
         /// </summary>
         private async Task<(float correlation, int found, int notFound)> ComputeSpearmanRhoAsync(
-            Dictionary dictionary, Tensor embeddings, string filePath, bool lower = true,
+            Dictionary dictionary, Tensor embeddings, string filePath,
             Dictionary? dictionary2 = null, Tensor? embeddings2 = null)
         {
             dictionary2 ??= dictionary;
             embeddings2 ??= embeddings;
 
-            var wordPairs = await GetWordPairsFromFileAsync(filePath, lower);
+            var wordPairs = await GetWordPairsFromFileAsync(filePath);
             var predictions = new List<double>();
             var goldScores = new List<double>();
             int notFound = 0;
@@ -769,8 +771,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
             foreach (var (word1, word2, goldScore) in wordPairs)
             {
-                var id1 = GetWordId(word1, dictionary, lower);
-                var id2 = GetWordId(word2, dictionary2, lower);
+                var id1 = EvaluationUtils.GetWordId(word1, dictionary);
+                var id2 = EvaluationUtils.GetWordId(word2, dictionary2);
 
                 if (id1 == null || id2 == null)
                 {
@@ -800,7 +802,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет кросс-лингвальную корреляцию Спирмена
         /// </summary>
         private async Task<(float correlation, int found, int notFound)> ComputeSpearmanRhoCrossLingualAsync(
-            Dictionary dict1, Tensor emb1, Dictionary dict2, Tensor emb2, string filePath, bool lower)
+            Dictionary dict1, Tensor emb1, Dictionary dict2, Tensor emb2, string filePath)
         {
             // Определяем правильный порядок словарей и эмбеддингов
             var fileName = Path.GetFileName(filePath);
@@ -811,14 +813,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 (emb1, emb2) = (emb2, emb1);
             }
 
-            return await ComputeSpearmanRhoAsync(dict1, emb1, filePath, lower, dict2, emb2);
+            return await ComputeSpearmanRhoAsync(dict1, emb1, filePath, dict2, emb2);
         }
 
         /// <summary>
         /// Парсит файл с парами слов и их оценками сходства
         /// </summary>
         private async Task<List<(string word1, string word2, float score)>> GetWordPairsFromFileAsync(
-            string filePath, bool lower)
+            string filePath)
         {
             var pairs = new List<(string, string, float)>();
 
@@ -827,7 +829,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var trimmedLine = line.Trim();
                 if (string.IsNullOrEmpty(trimmedLine)) continue;
 
-                var processedLine = lower ? trimmedLine.ToLowerInvariant() : trimmedLine;
+                var processedLine = trimmedLine;
                 var parts = processedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
                 if (parts.Length < 3) continue;
@@ -848,31 +850,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
 
             return pairs;
-        }
-
-        /// <summary>
-        /// Получает ID слова в словаре с учетом регистра
-        /// </summary>
-        private int? GetWordId(string word, Dictionary dictionary, bool lower)
-        {
-            if (dictionary.WordToId.TryGetValue(word, out var id))
-                return id;
-
-            if (!lower)
-            {
-                // Попробуем с заглавной буквы
-                var capitalized = char.ToUpperInvariant(word[0]) + word.Substring(1);
-                if (dictionary.WordToId.TryGetValue(capitalized, out id))
-                    return id;
-
-                // Попробуем Title Case
-                var titleCase = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(word);
-                if (dictionary.WordToId.TryGetValue(titleCase, out id))
-                    return id;
-            }
-
-            return null;
-        }
+        }        
 
         /// <summary>
         /// Вычисляет косинусное сходство между двумя векторами
@@ -1086,33 +1064,68 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             int notFound1 = 0;
             int notFound2 = 0;
 
-            await foreach (var line in File.ReadLinesAsync(actualPath))
+            if (String.Equals(Path.GetExtension(actualPath), @".csv", StringComparison.InvariantCultureIgnoreCase))
             {
-                var trimmedLine = line.Trim().ToLowerInvariant();
-                if (string.IsNullOrEmpty(trimmedLine)) continue;
-
-                var parts = trimmedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length < 2)
+                await foreach (var line in File.ReadLinesAsync(actualPath))
                 {
-                    _logger?.LogWarning($"Не удалось распарсить строку: {line}");
-                    continue;
+                    var trimmedLine = line.Trim().ToLowerInvariant();
+                    if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                    var parts = trimmedLine.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 2)
+                    {
+                        _logger?.LogWarning($"Не удалось распарсить строку: {line}");
+                        continue;
+                    }
+
+                    var sourceWord = parts[0].Trim();
+                    var targetWord = parts[1].Trim();
+
+                    var sourceId = EvaluationUtils.GetWordId(sourceWord, sourceDict);
+                    var targetId = EvaluationUtils.GetWordId(targetWord, targetDict);
+
+                    if (sourceId.HasValue && targetId.HasValue)
+                    {
+                        pairs.Add((sourceId.Value, targetId.Value));
+                    }
+                    else
+                    {
+                        notFound++;
+                        if (!sourceId.HasValue) notFound1++;
+                        if (!targetId.HasValue) notFound2++;
+                    }
                 }
-
-                var sourceWord = parts[0];
-                var targetWord = parts[1];
-
-                var sourceId = GetWordId(sourceWord, sourceDict, true);
-                var targetId = GetWordId(targetWord, targetDict, true);
-
-                if (sourceId.HasValue && targetId.HasValue)
+            }
+            else
+            {
+                await foreach (var line in File.ReadLinesAsync(actualPath))
                 {
-                    pairs.Add((sourceId.Value, targetId.Value));
-                }
-                else
-                {
-                    notFound++;
-                    if (!sourceId.HasValue) notFound1++;
-                    if (!targetId.HasValue) notFound2++;
+                    var trimmedLine = line.Trim().ToLowerInvariant();
+                    if (string.IsNullOrEmpty(trimmedLine)) continue;
+
+                    var parts = trimmedLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length < 2)
+                    {
+                        _logger?.LogWarning($"Не удалось распарсить строку: {line}");
+                        continue;
+                    }
+
+                    var sourceWord = parts[0];
+                    var targetWord = parts[1];
+
+                    var sourceId = EvaluationUtils.GetWordId(sourceWord, sourceDict);
+                    var targetId = EvaluationUtils.GetWordId(targetWord, targetDict);
+
+                    if (sourceId.HasValue && targetId.HasValue)
+                    {
+                        pairs.Add((sourceId.Value, targetId.Value));
+                    }
+                    else
+                    {
+                        notFound++;
+                        if (!sourceId.HasValue) notFound1++;
+                        if (!targetId.HasValue) notFound2++;
+                    }
                 }
             }
 
@@ -1137,22 +1150,23 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет CSLS скоры для перевода слов
         /// </summary>
         private async Task<Tensor> ComputeCSLSScoresForTranslationAsync(
-            Tensor sourceEmb, Tensor targetEmb, Tensor testDictionary, int k)
+            Tensor mappedSourceEmb, Tensor targetEmb, Tensor testDictionary, int k)
         {
             // Вычисляем средние расстояния до k ближайших соседей
-            var avgDist1 = await ComputeAverageDistancesAsync(targetEmb, sourceEmb, k);
-            var avgDist2 = await ComputeAverageDistancesAsync(sourceEmb, targetEmb, k);
+            var avgDist1 = await ComputeAverageDistancesAsync(queries: targetEmb, keys: mappedSourceEmb, k);
+            var avgDist2 = await ComputeAverageDistancesAsync(queries: mappedSourceEmb, keys: targetEmb, k);
 
             // Получаем запросные эмбеддинги
-            var queryEmbeddings = sourceEmb.index_select(0, testDictionary.select(1, 0));
+            var testDictionary_SourceIds = testDictionary.select(dim: 1, index: 0);
+            var queryMappedSourceEmb = mappedSourceEmb.index_select(dim: 0, testDictionary_SourceIds);
 
             // Базовые скоры
-            var scores = queryEmbeddings.mm(targetEmb.transpose(0, 1));
+            var scores = queryMappedSourceEmb.mm(targetEmb.transpose(dim0: 0, dim1: 1));
 
             // Применяем CSLS
             scores = scores.mul(2);
-            scores = scores.sub(avgDist1.index_select(0, testDictionary.select(1, 0)).unsqueeze(1));
-            scores = scores.sub(avgDist2.unsqueeze(0));
+            scores = scores.sub(avgDist1.index_select(dim: 0, testDictionary_SourceIds).unsqueeze(dim: 1));
+            scores = scores.sub(avgDist2.unsqueeze(dim: 0));
 
             return scores;
         }
@@ -1163,7 +1177,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         private async Task<Tensor> ComputeAverageDistancesAsync(Tensor queries, Tensor keys, int k)
         {
             var queryCount = queries.size(0);
-            var avgDistances = zeros(queryCount, dtype: ScalarType.Float32, device: queries.device);
+            var avgDistances = zeros(size: queryCount, dtype: ScalarType.Float32, device: queries.device);
 
             for (int i = 0; i < queryCount; i += BatchSize)
             {
@@ -1172,7 +1186,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 var similarities = keys.mm(batchQueries.transpose(0, 1)).transpose(0, 1);
                 var actualK = Math.Min(k, (int)keys.size(0));
-                var (topSimilarities, _) = similarities.topk(actualK, dim: 1, largest: true);
+                var (topSimilarities, _) = similarities.topk(k: actualK, dim: 1, largest: true);
 
                 avgDistances[TensorIndex.Slice(i, endIdx)] = topSimilarities.mean(dimensions: [1]);
             }
@@ -1187,21 +1201,21 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         private Dictionary<string, float> ComputePrecisionAtK(Tensor scores, Tensor testDictionary, int[] kValues)
         {
             var results = new Dictionary<string, float>();
-            var (_, topMatches) = scores.topk(10, dim: 1, largest: true, sorted: true);
+            var (_, topMatches) = scores.topk(k: 10, dim: 1, largest: true, sorted: true);
 
             foreach (var k in kValues)
             {
                 var topKMatches = topMatches[TensorIndex.Ellipsis, TensorIndex.Slice(null, k)];
-                var targetIndices = testDictionary.select(1, 1);
+                var testDictionary_TargetIds = testDictionary.select(dim: 1, index: 1);
 
-                var matching = new Dictionary<int, int>();
+                var sourceId_MatchingCount_Dictionary = new Dictionary<int, int>();
                 var topKData = topKMatches.data<long>().ToArray();
-                var targetData = targetIndices.data<long>().ToArray();
+                var testDictionary_TargetIds_Array = testDictionary_TargetIds.data<long>().ToArray();
 
-                for (int i = 0; i < targetData.Length; i++)
+                for (int i = 0; i < testDictionary_TargetIds_Array.Length; i++)
                 {
                     var sourceId = (int)testDictionary[i, 0].item<long>();
-                    var targetId = (int)targetData[i];
+                    var targetId = (int)testDictionary_TargetIds_Array[i];
 
                     var isMatch = false;
                     for (int j = 0; j < k; j++)
@@ -1215,11 +1229,20 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                     if (isMatch)
                     {
-                        matching[sourceId] = Math.Min(matching.GetValueOrDefault(sourceId, 0) + 1, 1);
+                        sourceId_MatchingCount_Dictionary[sourceId] = 1;
+                    }
+                    else
+                    {
+                        sourceId_MatchingCount_Dictionary[sourceId] = 0;
                     }
                 }
 
-                var precisionAtK = 100.0f * (float)matching.Values.Average();
+                float precisionAtK;
+                if (sourceId_MatchingCount_Dictionary.Count > 0)
+                    precisionAtK = 100.0f * (float)sourceId_MatchingCount_Dictionary.Values.Average();
+                else
+                    precisionAtK = 0.0f;
+
                 results[$"precision_at_{k}"] = precisionAtK;
             }
 

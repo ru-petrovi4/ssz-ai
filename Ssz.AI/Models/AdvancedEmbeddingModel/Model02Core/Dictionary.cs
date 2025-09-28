@@ -16,9 +16,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// Отображение индекса на слово
         /// </summary>
         private readonly SortedDictionary<int, string> _idToWord;
-        
+
         /// <summary>
         /// Отображение слова на индекс
+        /// Все ключи Lower-Case
         /// </summary>
         private readonly Dictionary<string, int> _wordToId;
         
@@ -65,11 +66,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         
         /// <summary>
         /// Отображение слова на индекс (только для чтения)
+        /// Все ключи Lower-Case
         /// </summary>
         public IReadOnlyDictionary<string, int> WordToId => _wordToId;
-        
+
         /// <summary>
-        /// Отображение индекса на слово (только для чтения)
+        /// Отображение индекса на слово (только для чтения)        
         /// </summary>
         public IReadOnlyDictionary<int, string> IdToWord => _idToWord;
 
@@ -106,7 +108,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>true, если слово содержится в словаре</returns>
         public bool Contains(string word)
         {
-            return _wordToId.ContainsKey(word);
+            return _wordToId.ContainsKey(word.ToLowerInvariant());
         }
 
         /// <summary>
@@ -117,7 +119,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <exception cref="KeyNotFoundException">Если слово не найдено</exception>
         public int GetIndex(string word)
         {
-            if (!_wordToId.TryGetValue(word, out int index))
+            if (!_wordToId.TryGetValue(word.ToLowerInvariant(), out int index))
             {
                 throw new KeyNotFoundException($"Слово '{word}' не найдено в словаре");
             }
@@ -132,7 +134,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <returns>true, если слово найдено</returns>
         public bool TryGetIndex(string word, out int index)
         {
-            return _wordToId.TryGetValue(word, out index);
+            return _wordToId.TryGetValue(word.ToLowerInvariant(), out index);
         }
 
         /// <summary>
@@ -159,7 +161,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
                 if (_idToWord.TryGetValue(key, out string? word))
                 {
                     _idToWord.Remove(key);
-                    _wordToId.Remove(word);
+                    _wordToId.Remove(word.ToLowerInvariant());
                 }
             }
 
@@ -252,7 +254,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
             {
                 foreach (var kvp in _idToWord)
                 {
-                    if (!_wordToId.TryGetValue(kvp.Value, out int mappedIndex) || mappedIndex != kvp.Key)
+                    if (!_wordToId.TryGetValue(kvp.Value.ToLowerInvariant(), out int mappedIndex) || mappedIndex != kvp.Key)
                     {
                         throw new InvalidOperationException(
                             $"Несоответствие в словарях для индекса {kvp.Key} и слова '{kvp.Value}'");

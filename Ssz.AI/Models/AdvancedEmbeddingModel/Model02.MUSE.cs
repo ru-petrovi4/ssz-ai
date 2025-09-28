@@ -29,6 +29,7 @@ using TorchSharp;
 using static TorchSharp.torch;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
+using Avalonia.Controls.Documents;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
@@ -49,6 +50,8 @@ public partial class Model02
     #region public functions
 
     public const string FileName_MUSE_Adversarial_RU_EN = "AdvancedEmbedding_MUSE_Adversarial_RU_EN.bin";
+
+    public const string FileName_MUSE_Procrustes_RU_EN = "AdvancedEmbedding_MUSE_Procrustes_RU_EN.bin";
 
     public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
@@ -189,21 +192,42 @@ public partial class Model02
                 logger);
 
             // Настраиваем оптимизаторы
-            trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);           
+            trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            // Состязательное обучение
-            if (parameters.Adversarial)
+            bool runTrainingAndNRefinement = false;
+            if (runTrainingAndNRefinement)
             {
-                await RunAdversarialTrainingAsync(trainer, parameters, logger);
+                // Состязательное обучение
+                if (parameters.Adversarial)
+                {
+                    await RunAdversarialTrainingAsync(trainer, parameters, logger);
 
-                var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
-                weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
+                    var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                    weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
+                }
+
+                // Procrustes refinement
+                if (parameters.NRefinement > 0)
+                {
+                    await RunProcrustesRefinementAsync(trainer, parameters, logger);
+
+                    var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                    weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
+                }
             }
 
-            // Procrustes refinement
-            if (parameters.NRefinement > 0)
+            bool evaluateWordTranslation = true;
+            if (evaluateWordTranslation)
             {
-                await RunProcrustesRefinementAsync(trainer, parameters, logger);
+                using (var _ = no_grad())
+                {
+                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
+                    trainer.Mapping.MappingLinear.weight!.copy_(loadedWeights);
+                }
+
+                TrainingStats stats = new();
+                var evaluator = new Evaluator(trainer, logger);
+                await evaluator.EvaluateWordTranslationAsync(stats, Path.Combine("Data", "PrimaryWords_RU_EN.csv"));
             }
 
             //// Экспорт финальных эмбеддингов
@@ -276,7 +300,7 @@ public partial class Model02
     {
         return new Dictionary(
             new SortedDictionary<int, string>(wordsList.Select((w, i) => (w, i)).ToDictionary(it => it.i, it => it.w)),
-            wordsList.Select((w, i) => (w, i)).ToDictionary(it => it.w, it => it.i),
+            wordsList.Select((w, i) => (w, i)).ToDictionary(it => it.w.ToLowerInvariant(), it => it.i),
             language
             );
     }

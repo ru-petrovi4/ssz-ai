@@ -93,12 +93,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Параметры тренера
         /// </summary>
-        private readonly ITrainerParameters _trainerParameters;
-
-        /// <summary>
-        /// Устройство для обучения
-        /// </summary>
-        private readonly Device _device;
+        private readonly ITrainerParameters _trainerParameters;        
 
         /// <summary>
         /// Путь для сохранения экспериментов
@@ -180,7 +175,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _sourceDictionary = sourceDictionary ?? throw new ArgumentNullException(nameof(sourceDictionary));
             _targetDictionary = targetDictionary ?? throw new ArgumentNullException(nameof(targetDictionary));
             _trainerParameters = trainerParameters;
-            _device = device;
+            Device = device;
             _experimentPath = experimentPath;
             _logger = logger;
         }
@@ -190,6 +185,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         #region Public Properties
 
         public const string FileName_Best_Mapping = "best_mapping.pt";
+
+        /// <summary>
+        /// Устройство для обучения
+        /// </summary>
+        public Device Device { get; }
 
         /// <summary>
         /// Эмбеддинги исходного языка
@@ -358,7 +358,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 dictionaryData[i * 2 + 1] = pairs[i].Item2;
             }
             
-            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _device)
+            return tensor(dictionaryData, dtype: ScalarType.Int64, device: Device)
                 .reshape(pairs.Count, 2);
         }
 
@@ -427,7 +427,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 dictionaryData[i * 2 + 1] = pairs[i].Item2;
             }
             
-            return tensor(dictionaryData, dtype: ScalarType.Int64, device: _device)
+            return tensor(dictionaryData, dtype: ScalarType.Int64, device: Device)
                 .reshape(pairs.Count, 2);
         }
 
@@ -691,9 +691,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             
             // Генерируем случайные индексы для исходного и целевого языков
             var sourceIds = randint(low: 0, high: maxFrequent == 0 ? _sourceDictionary.Count : maxFrequent,
-                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
+                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: Device);
             var targetIds = randint(low: 0, high: maxFrequent == 0 ? _targetDictionary.Count : maxFrequent,
-                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: _device);
+                size: new long[] { batchSize }, dtype: ScalarType.Int64, device: Device);
             
             // Получаем эмбеддинги
             var sourceEmb = _sourceEmbeddings.forward(sourceIds);
@@ -706,7 +706,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             var x = cat(new[] { mappedSourceEmb, targetEmb.detach() }, dim: 0);
             
             // Создаем метки: 1 - сглаживание для исходного языка, сглаживание для целевого
-            var y = zeros(2 * batchSize, dtype: ScalarType.Float32, device: _device);
+            var y = zeros(2 * batchSize, dtype: ScalarType.Float32, device: Device);
             y[TensorIndex.Slice(start: null, stop: batchSize)] = 1.0f - _trainerParameters.DisSmooth;
             y[TensorIndex.Slice(start: batchSize, stop: null)] = _trainerParameters.DisSmooth;
             
