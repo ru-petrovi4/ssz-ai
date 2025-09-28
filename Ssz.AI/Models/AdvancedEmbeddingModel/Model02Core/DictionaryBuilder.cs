@@ -14,42 +14,42 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
     /// <summary>
     /// Параметры для построения словарей
     /// </summary>
-    public sealed record DictionaryBuilderParameters
+    public interface IDictionaryBuilderParameters
     {
         /// <summary>
         /// Метод построения словаря (nn, csls_knn_10, invsm_beta_30)
         /// </summary>
-        public string Method { get; init; } = "csls_knn_10";
+        string DicoMethod { get; }
         
         /// <summary>
         /// Режим построения (SourceToTarget, TargetToSource, SourceToTarget|TargetToSource, SourceToTarget&TargetToSource)
         /// </summary>
-        public string BuildMode { get; init; } = "SourceToTarget";
-        
+        string DicoBuild { get; }
+
         /// <summary>
         /// Пороговое значение уверенности
         /// </summary>
-        public double Threshold { get; init; } = 0.0;
+        float DicoThreshold { get; }
         
         /// <summary>
         /// Максимальный ранг слов в словаре
         /// </summary>
-        public int MaxRank { get; init; } = 15000;
+        int DicoMaxRank { get; }
         
         /// <summary>
         /// Минимальный размер словаря
         /// </summary>
-        public int MinSize { get; init; } = 0;
+        int DicoMinSize { get; }
         
         /// <summary>
         /// Максимальный размер словаря
         /// </summary>
-        public int MaxSize { get; init; } = 0;
+        int DicoMaxSize { get; }
         
         /// <summary>
         /// Использовать GPU для вычислений
         /// </summary>
-        public bool UseCuda { get; init; } = true;
+        bool UseCuda { get; }
     }
 
     /// <summary>
@@ -79,29 +79,29 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <returns>Пары кандидатов [n_pairs, 2] (source_idx, target_idx)</returns>
         public static async Task<Tensor> GetCandidatesAsync(
             Tensor sourceEmbeddings, 
-            Tensor targetEmbeddings, 
-            DictionaryBuilderParameters parameters,
+            Tensor targetEmbeddings,
+            IDictionaryBuilderParameters parameters,
             ILogger? logger = null)
         {
-            logger?.LogInformation($"Получение кандидатов методом {parameters.Method}...");
+            logger?.LogInformation($"Получение кандидатов методом {parameters.DicoMethod}...");
             
             var sourceVocabSize = sourceEmbeddings.size(0);
             var targetVocabSize = targetEmbeddings.size(0);
             var embeddingDim = sourceEmbeddings.size(1);
             
             // Ограничиваем количество исходных слов если задан max_rank
-            var nSourceWords = parameters.MaxRank > 0 && !parameters.Method.StartsWith("invsm_beta_") 
-                ? Math.Min(parameters.MaxRank, (int)sourceVocabSize) 
+            var nSourceWords = parameters.DicoMaxRank > 0 && !parameters.DicoMethod.StartsWith("invsm_beta_") 
+                ? Math.Min(parameters.DicoMaxRank, (int)sourceVocabSize) 
                 : (int)sourceVocabSize;
             
-            return parameters.Method switch
+            return parameters.DicoMethod switch
             {
                 "nn" => await GetNearestNeighborCandidatesAsync(sourceEmbeddings, targetEmbeddings, nSourceWords, logger),
                 var method when method.StartsWith("invsm_beta_") => await GetInvertedSoftmaxCandidatesAsync(
                     sourceEmbeddings, targetEmbeddings, method, parameters, logger),
                 var method when method.StartsWith("csls_knn_") => await GetCSLSCandidatesAsync(
                     sourceEmbeddings, targetEmbeddings, method, nSourceWords, parameters, logger),
-                _ => throw new ArgumentException($"Неизвестный метод построения словаря: {parameters.Method}")
+                _ => throw new ArgumentException($"Неизвестный метод построения словаря: {parameters.DicoMethod}")
             };
         }
 
@@ -118,15 +118,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         public static async Task<Tensor?> BuildDictionaryAsync(
             Tensor sourceEmbeddings,
             Tensor targetEmbeddings,
-            DictionaryBuilderParameters parameters,
+            IDictionaryBuilderParameters parameters,
             Tensor? sourceToTargetCandidates = null,
             Tensor? targetToSourceCandidates = null,
             ILogger? logger = null)
         {
             logger?.LogInformation("Построение обучающего словаря...");
             
-            var buildSourceToTarget = parameters.BuildMode.Contains("SourceToTarget");
-            var buildTargetToSource = parameters.BuildMode.Contains("TargetToSource");
+            var buildSourceToTarget = parameters.DicoBuild.Contains("SourceToTarget");
+            var buildTargetToSource = parameters.DicoBuild.Contains("TargetToSource");
             
             if (!buildSourceToTarget && !buildTargetToSource)
                 throw new ArgumentException("Должен быть указан хотя бы один режим построения (SourceToTarget или TargetToSource)");
@@ -146,13 +146,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
             
             // Строим финальный словарь в зависимости от режима
-            Tensor? finalDictionary = parameters.BuildMode switch
+            Tensor? finalDictionary = parameters.DicoBuild switch
             {
                 "SourceToTarget" => sourceToTargetCandidates,
                 "TargetToSource" => targetToSourceCandidates,
                 "SourceToTarget|TargetToSource" => CombineDictionaries(sourceToTargetCandidates!, targetToSourceCandidates!, union: true, logger),
                 "SourceToTarget&TargetToSource" => CombineDictionaries(sourceToTargetCandidates!, targetToSourceCandidates!, union: false, logger),
-                _ => throw new ArgumentException($"Неизвестный режим построения: {parameters.BuildMode}")
+                _ => throw new ArgumentException($"Неизвестный режим построения: {parameters.DicoBuild}")
             };
             
             if (finalDictionary is null || finalDictionary.size(0) == 0)
@@ -219,7 +219,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             Tensor sourceEmbeddings,
             Tensor targetEmbeddings,
             string method,
-            DictionaryBuilderParameters parameters,
+            IDictionaryBuilderParameters parameters,
             ILogger? logger)
         {
             var betaStr = method.Substring("invsm_beta_".Length);
@@ -269,7 +269,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             Tensor targetEmbeddings,
             string method,
             int nSourceWords,
-            DictionaryBuilderParameters parameters,
+            IDictionaryBuilderParameters parameters,
             ILogger? logger)
         {
             var knnStr = method.Substring("csls_knn_".Length);
@@ -419,14 +419,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Применяет фильтры к словарю (размер, ранг, порог уверенности)
         /// </summary>
-        private static Task<Tensor> ApplyFiltersAsync(Tensor dictionary, DictionaryBuilderParameters parameters, ILogger? logger)
+        private static Task<Tensor> ApplyFiltersAsync(Tensor dictionary, IDictionaryBuilderParameters parameters, ILogger? logger)
         {
             var currentDict = dictionary;
             
             // Фильтр по максимальному рангу
-            if (parameters.MaxRank > 0)
+            if (parameters.DicoMaxRank > 0)
             {
-                var maxRankMask = currentDict.max(dim: 1).values <= parameters.MaxRank;
+                var maxRankMask = currentDict.max(dim: 1).values <= parameters.DicoMaxRank;
                 if (maxRankMask.sum().item<long>() < currentDict.size(0))
                 {
                     currentDict = currentDict[maxRankMask];
@@ -435,9 +435,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
             
             // Фильтр по максимальному размеру
-            if (parameters.MaxSize > 0 && currentDict.size(0) > parameters.MaxSize)
+            if (parameters.DicoMaxSize > 0 && currentDict.size(0) > parameters.DicoMaxSize)
             {
-                currentDict = currentDict[TensorIndex.Slice(null, parameters.MaxSize)];
+                currentDict = currentDict[TensorIndex.Slice(null, parameters.DicoMaxSize)];
                 logger?.LogDebug($"После фильтра по max_size: {currentDict.size(0)} пар");
             }
             

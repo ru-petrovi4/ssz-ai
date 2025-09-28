@@ -1,4 +1,5 @@
-﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
+﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Models;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training;
 using static TorchSharp.torch;
 
@@ -7,7 +8,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
 /// <summary>
 /// Параметры unsupervised обучения
 /// </summary>
-public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMappingParameters, ITrainerParameters
+public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMappingParameters, ITrainerParameters, IDictionaryBuilderParameters
 {
     /// <summary>
     /// Seed для инициализации (-1 для случайного)
@@ -32,7 +33,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Использовать GPU
     /// </summary>
-    public bool Cuda { get; init; } = true;
+    public bool UseCuda { get; init; } = true;
     /// <summary>
     /// Формат экспорта эмбеддингов (txt / pth)
     /// </summary>
@@ -143,7 +144,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     public float LrShrink { get; init; } = 0.5f;
 
     // Refinement parameters
-    public int NRefinement { get; init; }
+    public int NRefinement { get; init; } = 1;
 
     // Dictionary parameters
     /// <summary>
@@ -151,11 +152,11 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// </summary>
     public string DicoEval { get; init; } = "default";
     /// <summary>
-    /// Метод построения словаря
+    /// Метод построения словаря (nn, csls_knn_10, invsm_beta_30)
     /// </summary>
     public string DicoMethod { get; init; } = "csls_knn_10";
     /// <summary>
-    /// "Режим построения словаря
+    /// Режим построения (SourceToTarget, TargetToSource, SourceToTarget|TargetToSource, SourceToTarget&TargetToSource)
     /// </summary>
     public string DicoBuild { get; init; } = "SourceToTarget";
     /// <summary>

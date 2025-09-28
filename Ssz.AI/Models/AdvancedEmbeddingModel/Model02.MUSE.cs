@@ -115,7 +115,7 @@ public partial class Model02
             }
 
             // Устройство для размещения тензоров
-            var device = parameters.Cuda ? CUDA : CPU;
+            var device = parameters.UseCuda ? CUDA : CPU;
 
             //// Загружаем исходные эмбеддинги            
             //var (sourceDictionary, sourceEmbeddingMatrix) = await EmbeddingUtils.LoadTextEmbeddingsAsync(
@@ -184,7 +184,8 @@ public partial class Model02
                 sourceDictionary, targetDictionary, 
                 parameters, 
                 device,
-                GetExperimentPath(parameters),
+                @"Data",
+                //GetExperimentPath(parameters),
                 logger);
 
             // Настраиваем оптимизаторы
@@ -199,11 +200,11 @@ public partial class Model02
                 weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
             }
 
-            //// Procrustes refinement
-            //if (parameters.NRefinement > 0)
-            //{
-            //    await RunProcrustesRefinementAsync(trainer, parameters, logger);
-            //}
+            // Procrustes refinement
+            if (parameters.NRefinement > 0)
+            {
+                await RunProcrustesRefinementAsync(trainer, parameters, logger);
+            }
 
             //// Экспорт финальных эмбеддингов
             //if (!string.IsNullOrEmpty(parameters.Export))
@@ -233,7 +234,7 @@ public partial class Model02
     private static void ValidateParameters(UnsupervisedParameters parameters)
     {
         // Проверяем CUDA доступность
-        if (parameters.Cuda && !cuda.is_available())
+        if (parameters.UseCuda && !cuda.is_available())
             throw new ArgumentException("CUDA не доступна, но была запрошена");
 
         // Проверяем параметры dropout
@@ -342,7 +343,7 @@ public partial class Model02
             long processedWords = 0;
             stats.DiscriminatorLosses.Clear();
             
-            for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)            
+            for (int iteration = 0; iteration < parameters.NIterationsInEpoch; iteration += parameters.BatchSize)                        
             {
                 // Обучение дискриминатора
                 for (int disStep = 0; disStep < parameters.DisSteps; disStep += 1)
@@ -376,7 +377,7 @@ public partial class Model02
             
             await evaluator.RunAllEvaluationsAsync(stats);
             await evaluator.EvaluateDiscriminatorAsync(stats);
-            await trainer.SaveBestModelAsync(stats, VALIDATION_METRIC);
+            await trainer.SaveBestMappingWeightsAsync(stats, VALIDATION_METRIC);
 
             logger.LogInformation($"Конец эпохи {n_epoch}");
 
@@ -407,21 +408,21 @@ public partial class Model02
         logger.LogSeparator("ИТЕРАТИВНОЕ PROCRUSTES REFINEMENT");
 
         // Загружаем лучшую модель
-        await trainer.ReloadBestModelAsync();
+        await trainer.ReloadBestMappingWeightsAsync();
+        var evaluator = new Evaluator(trainer, logger);
+        var stats = new TrainingStats();
 
         for (int iteration = 0; iteration < parameters.NRefinement; iteration++)
         {
             logger.LogInformation($"Начало итерации refinement {iteration}...");
 
-            // TODO: Построение словаря из выровненных эмбеддингов
-            // trainer.BuildDictionary();
+            await trainer.BuildDictionaryAsync(parameters);
 
             // Применение решения Прокруста
             trainer.ApplyProcrustesAlignment();
 
-            // TODO: Оценка эмбеддингов
-            // evaluator.all_eval(to_log);
-            // trainer.save_best(to_log, VALIDATION_METRIC);
+            await evaluator.RunAllEvaluationsAsync(stats);            
+            await trainer.SaveBestMappingWeightsAsync(stats, VALIDATION_METRIC);            
 
             logger.LogInformation($"Конец итерации refinement {iteration}");
         }
@@ -436,7 +437,7 @@ public partial class Model02
         logger.LogInformation("Экспорт финальных эмбеддингов...");
 
         // Загружаем лучшую модель
-        await trainer.ReloadBestModelAsync();
+        await trainer.ReloadBestMappingWeightsAsync();
 
         // TODO: Реализовать экспорт эмбеддингов
         // trainer.Export();

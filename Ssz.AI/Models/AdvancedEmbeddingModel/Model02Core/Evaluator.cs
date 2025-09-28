@@ -599,14 +599,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 const int dicoMaxSize = 10000;
 
                 // Создаем временные параметры для построения словаря
-                var parameters = new DictionaryBuilderParameters
+                var parameters = new UnsupervisedParameters
                 {
-                    Method = method,
-                    BuildMode = dicoBuild,
-                    Threshold = 0,
-                    MaxRank = 10000,
-                    MinSize = 0,
-                    MaxSize = dicoMaxSize
+                    DicoMethod = method,
+                    DicoBuild = dicoBuild,
+                    DicoThreshold = 0,
+                    DicoMaxRank = 10000,
+                    DicoMinSize = 0,
+                    DicoMaxSize = dicoMaxSize
                 };
 
                 // Строим словарь

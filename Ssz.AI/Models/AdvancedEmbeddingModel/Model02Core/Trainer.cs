@@ -12,6 +12,7 @@ using static TorchSharp.torch;
 using static TorchSharp.torch.optim;
 using TorchSharp.Modules;
 using Ssz.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 {
@@ -121,6 +122,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         
         /// <summary>
         /// Обучающий словарь (пары индексов)
+        /// (self.dico)
         /// </summary>
         private Tensor? _trainingDictionary;
         
@@ -186,6 +188,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         #endregion
 
         #region Public Properties
+
+        public const string FileName_Best_Mapping = "best_mapping.pt";
 
         /// <summary>
         /// Эмбеддинги исходного языка
@@ -520,6 +524,22 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             return 2 * _trainerParameters.BatchSize;
         }
 
+        public async Task BuildDictionaryAsync(IDictionaryBuilderParameters parameters)
+        {
+            torch.Tensor sourceEmbeddings = Mapping.forward(SourceEmbeddings.weight!);
+            torch.Tensor targetEmbeddings = TargetEmbeddings.weight!;
+
+            sourceEmbeddings = sourceEmbeddings / sourceEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(sourceEmbeddings);
+            targetEmbeddings = targetEmbeddings / targetEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(targetEmbeddings);
+            
+            // Строим словарь
+            _trainingDictionary = await DictionaryBuilder.BuildDictionaryAsync(
+                sourceEmbeddings,
+                targetEmbeddings,
+                parameters,
+                logger: _logger);
+        }
+
         /// <summary>
         /// Применяет решение Прокруста для выравнивания эмбеддингов
         /// </summary>
@@ -556,7 +576,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <param name="stats">Значение метрики валидации</param>
         /// <param name="metricName">Название метрики</param>
         /// <returns>True если модель была сохранена</returns>
-        public Task<bool> SaveBestModelAsync(TrainingStats stats, string metricName)
+        public Task<bool> SaveBestMappingWeightsAsync(TrainingStats stats, string metricName)
         {
             float validationMetric = stats.ToLog.TryGetValue(metricName);
             if (validationMetric > _bestValidationMetric)
@@ -570,7 +590,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                     Directory.CreateDirectory(_experimentPath);
                 }
                 
-                var modelPath = Path.Combine(_experimentPath, "best_mapping.pt");
+                var modelPath = Path.Combine(_experimentPath, FileName_Best_Mapping);
                 _logger?.LogInformation($"* Сохранение модели в {modelPath}...");
                 
                 // Сохраняем веса модели маппинга
@@ -587,20 +607,20 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Загружает лучшую сохраненную модель
         /// </summary>
-        public Task ReloadBestModelAsync()
+        public Task ReloadBestMappingWeightsAsync()
         {
-            //var modelPath = Path.Combine(_parameters.ExperimentPath, "best_mapping.pt");
+            var modelPath = Path.Combine(_experimentPath, FileName_Best_Mapping);
 
-            //if (!File.Exists(modelPath))
-            //    throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");
+            if (!File.Exists(modelPath))
+                throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");
 
-            //_logger?.LogInformation($"* Загрузка лучшей модели из {modelPath}...");
+            _logger?.LogInformation($"* Загрузка лучшей модели из {modelPath}...");
 
-            //using var _ = no_grad();
-            //var loadedWeights = load(modelPath, _device);
-            //_mapping.Weight.copy_(loadedWeights);
+            using var _ = no_grad();
+            var loadedWeights = load(modelPath);
+            _mapping.MappingLinear.weight!.copy_(loadedWeights);
 
-            //_logger?.LogInformation("Лучшая модель успешно загружена");
+            _logger?.LogInformation("Лучшая модель успешно загружена");
 
             return Task.CompletedTask;
         }
@@ -724,7 +744,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 
                 _disposed = true;
             }
-        }
+        }        
 
         #endregion
     }
