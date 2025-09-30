@@ -67,8 +67,8 @@ public partial class Model02
 
     public async Task<int> ExecuteUnsupervisedTrainingAsync()
     {
-        int wordsCount = 18000;
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
+        int wordsCount = 50000;
+        WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: wordsCount, _loggersSet);
         var ruDictionary = GetDictionary(LanguageInfo_RU.Words.Take(wordsCount).Select(w => w.Name).ToList(), "ru");
         var d = WordsHelper.OldVectorLength_RU;
         var ruEmb = new MatrixFloat_RowMajor(wordsCount, d);
@@ -81,7 +81,7 @@ public partial class Model02
             }
         }
 
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+        WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: wordsCount, _loggersSet);
         var enDictionary = GetDictionary(LanguageInfo_EN.Words.Take(wordsCount).Select(w => w.Name).ToList(), "en");
         d = WordsHelper.OldVectorLength_EN;
         var enEmb = new MatrixFloat_RowMajor(wordsCount, d);

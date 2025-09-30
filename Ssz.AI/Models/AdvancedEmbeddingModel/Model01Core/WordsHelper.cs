@@ -3,6 +3,7 @@ using Ssz.Utils;
 using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -16,75 +17,163 @@ public static class WordsHelper
 
     public const int OldVectorLength_EN = 300;
 
-    public static void InitializeWords_RU(LanguageInfo languageInfo_RU, ILoggersSet loggersSet, bool loadOldVectors = true)
+    /// <summary>
+    ///     FastText
+    /// </summary>
+    /// <param name="languageInfo_RU"></param>
+    /// <param name="wordsMaxCount"></param>
+    /// <param name="loggersSet"></param>
+    /// <param name="loadOldVectors"></param>
+    public static void InitializeWords_RU(LanguageInfo languageInfo_RU, int wordsMaxCount, ILoggersSet loggersSet, bool loadOldVectors = true)
     {
-        languageInfo_RU.Words = new(20000); // Initial reserved capacity                        
+        languageInfo_RU.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
-        foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\RU\model_20000.csv"))
+        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\RU\cc.ru.300.vec";
+        if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
         {
-            var parts = CsvHelper.ParseCsvLine(",", line);
-            if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
-                continue;
-            Word word = new Word
-            {
-                Index = languageInfo_RU.Words.Count,
-                Name = parts[0]!,
-            };
-            if (parts.Length - 2 != OldVectorLength_RU)
-            {
-                loggersSet.UserFriendlyLogger.LogError("Incorrect vector length in input = " + (parts.Length - 2));
-                return;
-            }
-            if (loadOldVectors)
-            {
-                var oldVectror = word.OldVector;
-                foreach (int i in Enumerable.Range(0, parts.Length - 2))
-                {
-                    oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
-                }
-                var oldVectrorNormalized = word.OldVectorNormalized;
-                float norm = TensorPrimitives.Norm(oldVectror);
-                TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
-            }
-            word.Freq = new Any(parts[^1]).ValueAsDouble(false);
-
-            languageInfo_RU.Words.Add(word);
+            InitializeWords_FastText(fileFullName, OldVectorLength_RU, languageInfo_RU, wordsMaxCount, loggersSet, loadOldVectors);
         }
+        else
+        {
+            foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\RU\model_20000.csv"))
+            {
+                var parts = CsvHelper.ParseCsvLine(",", line);
+                if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
+                    continue;
+                Word word = new Word
+                {
+                    Index = languageInfo_RU.Words.Count,
+                    Name = parts[0]!,
+                };
+                if (parts.Length - 2 != OldVectorLength_RU)
+                {
+                    loggersSet.UserFriendlyLogger.LogError("Incorrect vector length in input = " + (parts.Length - 2));
+                    return;
+                }
+                if (loadOldVectors)
+                {
+                    var oldVectror = word.OldVector;
+                    foreach (int i in Enumerable.Range(0, parts.Length - 2))
+                    {
+                        oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
+                    }
+                    var oldVectrorNormalized = word.OldVectorNormalized;
+                    float norm = TensorPrimitives.Norm(oldVectror);
+                    TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
+                }
+                word.Freq = new Any(parts[^1]).ValueAsDouble(false);
+
+                languageInfo_RU.Words.Add(word);
+
+                if (languageInfo_RU.Words.Count >= wordsMaxCount)
+                    break;
+            }
+        }            
     }
 
-    public static void InitializeWords_EN(LanguageInfo languageInfo_EN, ILoggersSet loggersSet, bool loadOldVectors = true)
+    /// <summary>
+    ///     FastText
+    /// </summary>
+    /// <param name="languageInfo_EN"></param>
+    /// <param name="wordsMaxCount"></param>
+    /// <param name="loggersSet"></param>
+    /// <param name="loadOldVectors"></param>
+    public static void InitializeWords_EN(LanguageInfo languageInfo_EN, int wordsMaxCount, ILoggersSet loggersSet, bool loadOldVectors = true)
     {
-        languageInfo_EN.Words = new(20100); // Initial reserved capacity                        
+        languageInfo_EN.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
-        foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\EN\glove.42B.300d_20000.txt"))
+        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\EN\cc.en.300.vec";
+        if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
+        {
+            InitializeWords_FastText(fileFullName, OldVectorLength_EN, languageInfo_EN, wordsMaxCount, loggersSet, loadOldVectors);
+        }
+        else
+        {
+            foreach (var line in File.ReadAllLines(fileFullName))
+            {
+                var parts = CsvHelper.ParseCsvLine(" ", line);
+                if (parts.Length < OldVectorLength_EN + 1 || string.IsNullOrEmpty(parts[0]))
+                    continue;
+                Word word = new Word
+                {
+                    Index = languageInfo_EN.Words.Count,
+                    Name = parts[0]!,
+                };
+                if (parts.Length - 1 != OldVectorLength_EN)
+                {
+                    loggersSet.UserFriendlyLogger.LogError("Incorrect vector length in input = " + (parts.Length - 2));
+                    return;
+                }
+                if (loadOldVectors)
+                {
+                    var oldVectror = word.OldVector;
+                    foreach (int i in Enumerable.Range(0, parts.Length - 2))
+                    {
+                        oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
+                    }
+                    var oldVectrorNormalized = word.OldVectorNormalized;
+                    float norm = TensorPrimitives.Norm(oldVectror);
+                    TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
+                }
+                word.Freq = new Any(parts[^1]).ValueAsDouble(false);
+
+                languageInfo_EN.Words.Add(word);
+
+                if (languageInfo_EN.Words.Count >= wordsMaxCount)
+                    break;
+            }
+        } 
+    }
+
+    public static void InitializeWords_FastText(
+        string fileFullName, 
+        int oldVectorLength,
+        LanguageInfo languageInfo, 
+        int wordsMaxCount, 
+        ILoggersSet loggersSet, 
+        bool loadOldVectors = true)
+    {
+        languageInfo.Words = new(wordsMaxCount); // Initial reserved capacity                        
+
+        foreach (var line in File.ReadAllLines(fileFullName))
         {
             var parts = CsvHelper.ParseCsvLine(" ", line);
-            if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
-                continue;
-            Word word = new Word
-            {
-                Index = languageInfo_EN.Words.Count,
-                Name = parts[0]!,
-            };
-            if (parts.Length - 1 != OldVectorLength_EN)
+            if (parts.Length < oldVectorLength + 1 || string.IsNullOrEmpty(parts[0]))
+                continue;            
+            if (parts.Length - 1 != oldVectorLength)
             {
                 loggersSet.UserFriendlyLogger.LogError("Incorrect vector length in input = " + (parts.Length - 2));
                 return;
             }
+            Word word = new Word
+            {
+                Index = languageInfo.Words.Count,
+                Name = parts[0]!,
+            };
+            if (String.IsNullOrEmpty(word.Name) || !word.Name.All(Char.IsLetter))
+                continue;
+
             if (loadOldVectors)
             {
                 var oldVectror = word.OldVector;
                 foreach (int i in Enumerable.Range(0, parts.Length - 2))
                 {
                     oldVectror[i] = float.Parse(parts[i + 1] ?? @"", CultureInfo.InvariantCulture);
-                }
-                var oldVectrorNormalized = word.OldVectorNormalized;
+                }                
                 float norm = TensorPrimitives.Norm(oldVectror);
-                TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
+                if (norm < 1e-8f)
+                {
+                    oldVectror[0] = 0.01f; // Устанавливаем небольшое значение для избежания нулевого вектора
+                    norm = TensorPrimitives.Norm(oldVectror);
+                }                
+                TensorPrimitives.Divide(oldVectror, norm, word.OldVectorNormalized);
+                word.Freq = norm;
             }            
-            word.Freq = new Any(parts[^1]).ValueAsDouble(false);
 
-            languageInfo_EN.Words.Add(word);
+            languageInfo.Words.Add(word);
+
+            if (languageInfo.Words.Count >= wordsMaxCount)
+                break;
         }
     }
 

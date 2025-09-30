@@ -80,8 +80,8 @@ public partial class Model01
 
     public void FindDiscreteEmbeddings()
     {
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet);
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet);
+        WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: 18000, _loggersSet);
+        WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: 18000, _loggersSet);
 
         bool calculate = true;
         if (calculate)
@@ -175,8 +175,8 @@ public partial class Model01
 
     public void GenerateAndSaveLanguageDiscreteEmbeddings()
     {
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, _loggersSet, loadOldVectors: true);
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, _loggersSet, loadOldVectors: true);
+        WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: 18000, _loggersSet, loadOldVectors: true);
+        WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: 18000, _loggersSet, loadOldVectors: true);
 
         LanguageInfo_RU.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU, name: "KMeans");
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_KMeans_RU, LanguageInfo_RU.Clusterization_AlgorithmData, null);
