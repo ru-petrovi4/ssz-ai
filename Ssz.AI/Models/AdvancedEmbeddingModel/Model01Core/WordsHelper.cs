@@ -135,6 +135,7 @@ public static class WordsHelper
     {
         languageInfo.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
+        HashSet<string> uniqueWords = new HashSet<string>();
         foreach (var line in File.ReadAllLines(fileFullName))
         {
             var parts = CsvHelper.ParseCsvLine(" ", line);
@@ -151,6 +152,8 @@ public static class WordsHelper
                 Name = parts[0]!,
             };
             if (String.IsNullOrEmpty(word.Name) || !word.Name.All(Char.IsLetter))
+                continue;
+            if (!uniqueWords.Add(word.Name.ToLowerInvariant()))
                 continue;
 
             if (loadOldVectors)

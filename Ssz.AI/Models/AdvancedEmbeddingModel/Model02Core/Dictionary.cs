@@ -35,15 +35,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core
         /// <summary>
         /// Инициализирует новый экземпляр словаря
         /// </summary>
-        /// <param name="id2Word">Отображение индекса на слово</param>
-        /// <param name="word2Id">Отображение слова на индекс</param>
+        /// <param name="idToWord">Отображение индекса на слово</param>
+        /// <param name="wordToId">Отображение слова на индекс</param>
         /// <param name="language">Код языка (например, 'en', 'es')</param>
         /// <exception cref="ArgumentNullException">Если любой из параметров равен null</exception>
         /// <exception cref="ArgumentException">Если размеры словарей не совпадают</exception>
-        public Dictionary(SortedDictionary<int, string> id2Word, Dictionary<string, int> word2Id, string language)
+        public Dictionary(SortedDictionary<int, string> idToWord, Dictionary<string, int> wordToId, string language)
         {
-            _idToWord = id2Word ?? throw new ArgumentNullException(nameof(id2Word));
-            _wordToId = word2Id ?? throw new ArgumentNullException(nameof(word2Id));
+            _idToWord = idToWord ?? throw new ArgumentNullException(nameof(idToWord));
+            _wordToId = wordToId ?? throw new ArgumentNullException(nameof(wordToId));
             _language = language ?? throw new ArgumentNullException(nameof(language));
             
             // Проверяем валидность словарей
