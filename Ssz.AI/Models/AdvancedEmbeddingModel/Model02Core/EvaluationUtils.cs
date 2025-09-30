@@ -89,9 +89,11 @@ public static class EvaluationUtils
     /// <returns>ID слова или null если не найдено</returns>
     public static int? GetWordId(string word, Dictionary dictionary)
     {
-        if (dictionary.WordToId.TryGetValue(word.ToLowerInvariant(), out var id))
+        string wordLowerCase = word.ToLowerInvariant();
+        if (dictionary.WordToId.TryGetValue(wordLowerCase, out var id))
             return id;
 
+        var v = dictionary.WordToId.FirstOrDefault(kvp => kvp.Key.StartsWith(wordLowerCase + "_"));
         //if (!lower)
         //{
         //    // Попробуем с заглавной буквы
@@ -105,7 +107,7 @@ public static class EvaluationUtils
         //        return id;
         //}
 
-        return null;
+        return !String.IsNullOrEmpty(v.Key) ? v.Value : null;
     }
 
     #endregion
@@ -289,6 +291,32 @@ public static class EvaluationUtils
     }
 
     #endregion
+
+    /// <summary>
+    /// Вычисляет средние расстояния до k ближайших соседей
+    /// </summary>
+    public static async Task<Tensor> ComputeAverageDistancesAsync(Tensor emb, Tensor query, int knn)
+    {
+        var queryCount = query.size(0);
+        var avgDistances = zeros(size: queryCount, dtype: ScalarType.Float32, device: query.device);
+
+        emb = emb.transpose(0, 1).contiguous();
+
+        int bs = 1024;
+        for (int i = 0; i < queryCount; i += bs)
+        {
+            var endIdx = Math.Min(queryCount, i + bs);
+            var batchQuery = query[TensorIndex.Slice(i, endIdx)];
+
+            var distances = batchQuery.mm(emb);
+            var (best_distances, _) = distances.topk(k: knn, dim: 1, largest: true, sorted: true);
+
+            avgDistances[TensorIndex.Slice(i, endIdx)] = best_distances.mean(dimensions: [1]);
+        }
+
+        await Task.CompletedTask;
+        return avgDistances;
+    }
 
     #region Dictionary Loading
 

@@ -113,7 +113,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Количество эпох
     /// </summary>
-    public int NEpochs { get; init; } = 5;
+    public int NEpochs { get; init; } = 15;
     /// <summary>
     /// Итераций на эпоху
     /// </summary>

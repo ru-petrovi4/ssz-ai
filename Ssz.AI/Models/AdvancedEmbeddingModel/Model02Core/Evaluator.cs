@@ -16,6 +16,7 @@ using MathNet.Numerics.Statistics;
 using Tensor = TorchSharp.torch.Tensor;
 using static TorchSharp.torch.nn;
 using Tensorflow;
+using Ssz.Utils;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 {
@@ -27,6 +28,21 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
     /// </summary>
     public sealed class Evaluator : IDisposable
     {
+        #region construction and destruction
+
+        /// <summary>
+        /// Инициализирует новый экземпляр MUSE Evaluator
+        /// </summary>
+        /// <param name="trainer">Тренер с моделями и данными</param>
+        /// <param name="logger">Логгер</param>
+        public Evaluator(Trainer trainer, ILogger? logger = null)
+        {
+            _trainer = trainer ?? throw new ArgumentNullException(nameof(trainer));
+            _logger = logger;
+        }
+
+        #endregion
+
         #region Constants
 
         /// <summary>
@@ -78,22 +94,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// </summary>
         private bool _disposed = false;
 
-        #endregion
-
-        #region Constructor
-
-        /// <summary>
-        /// Инициализирует новый экземпляр MUSE Evaluator
-        /// </summary>
-        /// <param name="trainer">Тренер с моделями и данными</param>
-        /// <param name="logger">Логгер</param>
-        public Evaluator(Trainer trainer, ILogger? logger = null)
-        {
-            _trainer = trainer ?? throw new ArgumentNullException(nameof(trainer));
-            _logger = logger;
-        }
-
-        #endregion
+        #endregion        
 
         #region Public Methods - Monolingual Word Similarity
 
@@ -436,6 +437,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         {
             _logger?.LogInformation("Оценка точности перевода слов...");
 
+            // Загружаем тестовый словарь
+            var testDictionary = await LoadEvaluationDictionaryAsync(
+                    _trainer.SourceDictionary.Language, 
+                    _trainer.TargetDictionary.Language, 
+                    dictionaryPath, 
+                    _trainer.SourceDictionary, 
+                    _trainer.TargetDictionary);            
+            testDictionary = testDictionary.to(_trainer.Device);
+
             var mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
             var targetEmbeddings = _trainer.TargetEmbeddings.weight!;
 
@@ -443,9 +453,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             foreach (var method in methods)
             {
                 var translationResults = await GetWordTranslationAccuracyAsync(                    
-                    _trainer.SourceDictionary.Language, _trainer.SourceDictionary, mappedSourceEmbeddings,
-                    _trainer.TargetDictionary.Language, _trainer.TargetDictionary, targetEmbeddings,
-                    method, dictionaryPath);
+                        mappedSourceEmbeddings,
+                        targetEmbeddings,
+                        method, 
+                        testDictionary);
 
                 foreach (var result in translationResults)
                 {
@@ -459,22 +470,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет точность перевода слов для заданного метода
         /// </summary>
         private async Task<Dictionary<string, float>> GetWordTranslationAccuracyAsync(            
-            string sourceLang, Dictionary sourceDict, Tensor mappedSourceEmb,
-            string targetLang, Dictionary targetDict, Tensor targetEmb,
-            string method, string dictionaryPath)
-        {
-            // Загружаем тестовый словарь
-            var testDictionary = await LoadEvaluationDictionaryAsync(sourceLang, targetLang, dictionaryPath, sourceDict, targetDict);
-            if (testDictionary.size(0) == 0)
-            {
-                return new Dictionary<string, float>();
-            }
-            testDictionary = testDictionary.to(_trainer.Device);
-
+            Tensor mappedSourceEmb,
+            Tensor targetEmb,
+            string method, 
+            torch.Tensor testDictionary)
+        { 
             // Нормализуем эмбеддинги
             mappedSourceEmb = functional.normalize(mappedSourceEmb, p: 2, dim: 1);
             targetEmb = functional.normalize(targetEmb, p: 2, dim: 1);
 
+            bool saveDictionary = false;
             Tensor scores;
             if (method == "nn")
             {
@@ -482,12 +487,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 var testDictionary_SourceIds = testDictionary.select(dim: 1, index: 0);
                 var queryMappedSourceEmb = mappedSourceEmb.index_select(dim: 0, testDictionary_SourceIds);
                 scores = queryMappedSourceEmb.mm(targetEmb.transpose(dim0: 0, dim1: 1));
+
+                saveDictionary = true;
             }
             else if (method.StartsWith("csls_knn_"))
             {
                 // CSLS метод
                 var k = int.Parse(method.Substring("csls_knn_".Length));
-                scores = await ComputeCSLSScoresForTranslationAsync(mappedSourceEmb, targetEmb, testDictionary, k);
+                var testDictionary_SourceIds = testDictionary.select(dim: 1, index: 0);
+                scores = await ComputeCSLSScoresForTranslationAsync(mappedSourceEmb, targetEmb, testDictionary_SourceIds, k);
             }
             else
             {
@@ -495,7 +503,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }
 
             // Вычисляем Precision@K
-            var results = ComputePrecisionAtK(scores, testDictionary, new[] { 1, 5, 10 });
+            var results = ComputePrecisionAtK(scores, testDictionary, new[] { 1, 5, 10, 20, 40, 80 }, saveDictionary);
 
             foreach (var result in results)
             {
@@ -588,10 +596,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Получаем нормализованные эмбеддинги
             using var _ = no_grad();
 
-            torch.Tensor sourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
+            torch.Tensor mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
             torch.Tensor targetEmbeddings = _trainer.TargetEmbeddings.weight!;
 
-            sourceEmbeddings = functional.normalize(sourceEmbeddings, p: 2, dim: 1);
+            mappedSourceEmbeddings = functional.normalize(mappedSourceEmbeddings, p: 2, dim: 1);
             targetEmbeddings = functional.normalize(targetEmbeddings, p: 2, dim: 1);
 
             var methods = new[] { "nn", "csls_knn_10" };
@@ -613,7 +621,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 // Строим словарь
                 var dictionary = await DictionaryBuilder.BuildDictionaryAsync(
-                    sourceEmbeddings, 
+                    mappedSourceEmbeddings, 
                     targetEmbeddings, 
                     parameters, 
                     logger: _logger);
@@ -630,7 +638,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                     var sourceIndices = dictionary.select(1, 0).narrow(0, 0, actualSize);
                     var targetIndices = dictionary.select(1, 1).narrow(0, 0, actualSize);
 
-                    var sourceVectors = sourceEmbeddings.index_select(0, sourceIndices);
+                    var sourceVectors = mappedSourceEmbeddings.index_select(0, sourceIndices);
                     var targetVectors = targetEmbeddings.index_select(0, targetIndices);
 
                     var cosines = (sourceVectors * targetVectors).sum(dim: 1);
@@ -1150,77 +1158,54 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Вычисляет CSLS скоры для перевода слов
         /// </summary>
         private async Task<Tensor> ComputeCSLSScoresForTranslationAsync(
-            Tensor mappedSourceEmb, Tensor targetEmb, Tensor testDictionary, int k)
+            Tensor mappedSourceEmb, Tensor targetEmb, Tensor testDictionary_SourceIds, int k)
         {
             // Вычисляем средние расстояния до k ближайших соседей
-            var avgDist1 = await ComputeAverageDistancesAsync(queries: targetEmb, keys: mappedSourceEmb, k);
-            var avgDist2 = await ComputeAverageDistancesAsync(queries: mappedSourceEmb, keys: targetEmb, k);
+            var mappedSourceEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: targetEmb, query: mappedSourceEmb, k);
+            var targetEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: mappedSourceEmb, query: targetEmb, k);
 
-            // Получаем запросные эмбеддинги
-            var testDictionary_SourceIds = testDictionary.select(dim: 1, index: 0);
+            // Получаем запросные эмбеддинги            
             var queryMappedSourceEmb = mappedSourceEmb.index_select(dim: 0, testDictionary_SourceIds);
 
             // Базовые скоры
-            var scores = queryMappedSourceEmb.mm(targetEmb.transpose(dim0: 0, dim1: 1));
+            var queryScores = queryMappedSourceEmb.mm(targetEmb.transpose(dim0: 0, dim1: 1));
 
             // Применяем CSLS
-            scores = scores.mul(2);
-            scores = scores.sub(avgDist1.index_select(dim: 0, testDictionary_SourceIds).unsqueeze(dim: 1));
-            scores = scores.sub(avgDist2.unsqueeze(dim: 0));
+            queryScores = queryScores.mul(2);
+            queryScores = queryScores.sub(mappedSourceEmb_AvgDist.index_select(dim: 0, testDictionary_SourceIds).unsqueeze(dim: 1));
+            queryScores = queryScores.sub(targetEmb_AvgDist.unsqueeze(dim: 0));
 
-            return scores;
-        }
-
-        /// <summary>
-        /// Вычисляет средние расстояния до k ближайших соседей
-        /// </summary>
-        private async Task<Tensor> ComputeAverageDistancesAsync(Tensor queries, Tensor keys, int k)
-        {
-            var queryCount = queries.size(0);
-            var avgDistances = zeros(size: queryCount, dtype: ScalarType.Float32, device: queries.device);
-
-            for (int i = 0; i < queryCount; i += BatchSize)
-            {
-                var endIdx = Math.Min(queryCount, i + BatchSize);
-                var batchQueries = queries[TensorIndex.Slice(i, endIdx)];
-
-                var similarities = keys.mm(batchQueries.transpose(0, 1)).transpose(0, 1);
-                var actualK = Math.Min(k, (int)keys.size(0));
-                var (topSimilarities, _) = similarities.topk(k: actualK, dim: 1, largest: true);
-
-                avgDistances[TensorIndex.Slice(i, endIdx)] = topSimilarities.mean(dimensions: [1]);
-            }
-
-            await Task.CompletedTask;
-            return avgDistances;
-        }
+            return queryScores;
+        }        
 
         /// <summary>
         /// Вычисляет Precision@K для перевода слов
         /// </summary>
-        private Dictionary<string, float> ComputePrecisionAtK(Tensor scores, Tensor testDictionary, int[] kValues)
+        private Dictionary<string, float> ComputePrecisionAtK(Tensor scores, Tensor testDictionary, int[] kValues, bool saveDictionary)
         {
             var results = new Dictionary<string, float>();
-            var (_, topMatches) = scores.topk(k: 10, dim: 1, largest: true, sorted: true);
+            var (_, topMatches) = scores.topk(k: kValues.Max(), dim: 1, largest: true, sorted: true);
+            
+            var testDictionary_SourceIds_Array = testDictionary.select(dim: 1, index: 0).data<long>().ToArray();
+            var testDictionary_TargetIds_Array = testDictionary.select(dim: 1, index: 1).data<long>().ToArray();
 
             foreach (var k in kValues)
             {
-                var topKMatches = topMatches[TensorIndex.Ellipsis, TensorIndex.Slice(null, k)];
-                var testDictionary_TargetIds = testDictionary.select(dim: 1, index: 1);
+                var topKMatches = topMatches[TensorIndex.Ellipsis, TensorIndex.Slice(null, k)];                
 
-                var sourceId_MatchingCount_Dictionary = new Dictionary<int, int>();
-                var topKData = topKMatches.data<long>().ToArray();
-                var testDictionary_TargetIds_Array = testDictionary_TargetIds.data<long>().ToArray();
+                var i_Matching_Dictionary = new Dictionary<int, int>();
+                var topKData = topKMatches.data<long>().ToArray();                
 
                 for (int i = 0; i < testDictionary_TargetIds_Array.Length; i++)
                 {
-                    var sourceId = (int)testDictionary[i, 0].item<long>();
+                    //var sourceId = (int)testDictionary_SourceIds_Array[i];
                     var targetId = (int)testDictionary_TargetIds_Array[i];
 
                     var isMatch = false;
                     for (int j = 0; j < k; j++)
                     {
-                        if (topKData[i * k + j] == targetId)
+                        int index = i * k + j;
+                        if (index < topKData.Length && topKData[index] == targetId)
                         {
                             isMatch = true;
                             break;
@@ -1229,17 +1214,34 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                     if (isMatch)
                     {
-                        sourceId_MatchingCount_Dictionary[sourceId] = 1;
+                        i_Matching_Dictionary[i] = 1;
                     }
                     else
                     {
-                        sourceId_MatchingCount_Dictionary[sourceId] = 0;
+                        i_Matching_Dictionary[i] = 0;
                     }
                 }
 
+                // TEMPCODE
+                if (saveDictionary && k > 5)
+                {
+                    List<string?[]> data = new();
+                    foreach (var kvp in i_Matching_Dictionary)
+                    {   
+                        if (kvp.Value == 1)
+                        {
+                            data.Add([
+                                _trainer.SourceDictionary.IdToWord[(int)testDictionary_SourceIds_Array[kvp.Key]],
+                                _trainer.TargetDictionary.IdToWord[(int)testDictionary_TargetIds_Array[kvp.Key]],
+                            ]);
+                        }                        
+                    }
+                    CsvHelper.SaveCsvFile(Path.Combine("Data", "PrimaryWords_RU_EN_Linear.csv"), data);
+                }
+
                 float precisionAtK;
-                if (sourceId_MatchingCount_Dictionary.Count > 0)
-                    precisionAtK = 100.0f * (float)sourceId_MatchingCount_Dictionary.Values.Average();
+                if (i_Matching_Dictionary.Count > 0)
+                    precisionAtK = (float)i_Matching_Dictionary.Values.Sum() / (float)i_Matching_Dictionary.Count;
                 else
                     precisionAtK = 0.0f;
 
@@ -1575,13 +1577,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         {
             var k = int.Parse(method.Substring("csls_knn_".Length));
 
-            var avgDistKeys = await ComputeAverageDistancesAsync(queries, keys, k);
-            var avgDistQueries = await ComputeAverageDistancesAsync(keys, queries, k);
+            var avgDistKeys = await EvaluationUtils.ComputeAverageDistancesAsync(queries, keys, k);
+            var avgDistQueries = await EvaluationUtils.ComputeAverageDistancesAsync(keys, queries, k);
 
             var scores = keys.mm(queries.transpose(0, 1)).transpose(0, 1);
             scores = scores.mul(2);
-            scores = scores.sub(avgDistQueries.unsqueeze(1));
-            scores = scores.sub(avgDistKeys.unsqueeze(0));
+            scores = scores.sub(avgDistQueries.unsqueeze(1)); // TODO verify
+            scores = scores.sub(avgDistKeys.unsqueeze(0)); // TODO verify
 
             return scores;
         }

@@ -265,7 +265,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Получает кандидатов методом CSLS (Cross-domain Similarity Local Scaling)
         /// </summary>
         private static async Task<Tensor> GetCSLSCandidatesAsync(
-            Tensor sourceEmbeddings,
+            Tensor mappedSourceEmbeddings,
             Tensor targetEmbeddings,
             string method,
             int nSourceWords,
@@ -280,25 +280,25 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             
             // Вычисляем средние расстояния до k ближайших соседей
             logger?.LogDebug("Вычисление средних расстояний для CSLS...");
-            var avgDist1 = await ComputeAverageDistancesAsync(targetEmbeddings, sourceEmbeddings, k, logger);
-            var avgDist2 = await ComputeAverageDistancesAsync(sourceEmbeddings, targetEmbeddings, k, logger);
+            var mappedSourceEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: targetEmbeddings, query: mappedSourceEmbeddings, k);
+            var targetEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: mappedSourceEmbeddings, query: targetEmbeddings, k);
             
             var allScores = new List<Tensor>();
             var allTargets = new List<Tensor>();
-            
-            // Для каждого исходного слова вычисляем CSLS скоры
+
+            // Для каждого исходного слова вычисляем CSLS скоры            
             for (int i = 0; i < nSourceWords; i += BatchSize)
             {
                 var endIdx = Math.Min(nSourceWords, i + BatchSize);
-                var batchSourceEmb = sourceEmbeddings[TensorIndex.Slice(i, endIdx)];
+                var batchSourceEmb = mappedSourceEmbeddings[TensorIndex.Slice(i, endIdx)];
                 
                 // Базовые скоры сходства
                 var scores = targetEmbeddings.mm(batchSourceEmb.transpose(0, 1)).transpose(0, 1);
                 
                 // Применяем CSLS: 2 * similarity - avg_dist1 - avg_dist2
                 scores = scores.mul(2);
-                scores = scores.sub(avgDist1[TensorIndex.Slice(i, endIdx)].unsqueeze(1));
-                scores = scores.sub(avgDist2.unsqueeze(0));
+                scores = scores.sub(mappedSourceEmb_AvgDist[TensorIndex.Slice(i, endIdx)].unsqueeze(dim: 1));
+                scores = scores.sub(targetEmb_AvgDist.unsqueeze(dim: 0));
                 
                 var (bestScores, bestTargets) = scores.topk(2, dim: 1, largest: true, sorted: true);
                 
@@ -310,45 +310,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var finalTargets = cat(allTargets.ToArray(), dim: 0);
             
             return CreateCandidatePairs(finalScores, finalTargets, nSourceWords);
-        }
-
-        /// <summary>
-        /// Вычисляет средние расстояния до k ближайших соседей для CSLS
-        /// </summary>
-        private static Task<Tensor> ComputeAverageDistancesAsync(
-            Tensor queryEmbeddings,
-            Tensor keyEmbeddings, 
-            int k,
-            ILogger? logger)
-        {
-            var queryCount = queryEmbeddings.size(0);
-            var keyCount = keyEmbeddings.size(0);
-            var avgDistances = zeros(queryCount, dtype: ScalarType.Float32, device: queryEmbeddings.device);
-            
-            // Обрабатываем батчами
-            for (int i = 0; i < queryCount; i += BatchSize)
-            {
-                var endIdx = Math.Min(queryCount, i + BatchSize);
-                var batchQueries = queryEmbeddings[TensorIndex.Slice(i, endIdx)];
-                
-                // Вычисляем косинусные сходства
-                var similarities = keyEmbeddings.mm(batchQueries.transpose(0, 1)).transpose(0, 1);
-                
-                // Находим k лучших сходств для каждого запроса
-                var topK = Math.Min(k, (int)keyCount);
-                var (topSimilarities, _) = similarities.topk(topK, dim: 1, largest: true, sorted: true);
-                
-                // Вычисляем среднее
-                avgDistances[TensorIndex.Slice(i, endIdx)] = topSimilarities.mean(dimensions: [ 1 ]); // VALFIX
-                
-                if (i % (BatchSize * 5) == 0)
-                {
-                    logger?.LogDebug($"CSLS: обработано {i}/{queryCount} запросов");
-                }
-            }
-            
-            return Task.FromResult(avgDistances);
-        }
+        }        
 
         #endregion
 
@@ -451,3 +413,43 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         #endregion
     }
 }
+
+
+
+///// <summary>
+///// Вычисляет средние расстояния до k ближайших соседей для CSLS
+///// </summary>
+//private static Task<Tensor> ComputeAverageDistancesAsync(
+//    Tensor queryEmbeddings,
+//    Tensor keyEmbeddings,
+//    int k,
+//    ILogger? logger)
+//{
+//    var queryCount = queryEmbeddings.size(0);
+//    var keyCount = keyEmbeddings.size(0);
+//    var avgDistances = zeros(queryCount, dtype: ScalarType.Float32, device: queryEmbeddings.device);
+
+//    // Обрабатываем батчами
+//    for (int i = 0; i < queryCount; i += BatchSize)
+//    {
+//        var endIdx = Math.Min(queryCount, i + BatchSize);
+//        var batchQueries = queryEmbeddings[TensorIndex.Slice(i, endIdx)];
+
+//        // Вычисляем косинусные сходства
+//        var similarities = keyEmbeddings.mm(batchQueries.transpose(0, 1)).transpose(0, 1);
+
+//        // Находим k лучших сходств для каждого запроса
+//        var topK = Math.Min(k, (int)keyCount);
+//        var (topSimilarities, _) = similarities.topk(topK, dim: 1, largest: true, sorted: true);
+
+//        // Вычисляем среднее
+//        avgDistances[TensorIndex.Slice(i, endIdx)] = topSimilarities.mean(dimensions: [1]); // VALFIX
+
+//        if (i % (BatchSize * 5) == 0)
+//        {
+//            logger?.LogDebug($"CSLS: обработано {i}/{queryCount} запросов");
+//        }
+//    }
+
+//    return Task.FromResult(avgDistances);
+//}

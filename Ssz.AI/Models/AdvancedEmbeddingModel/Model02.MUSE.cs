@@ -194,8 +194,8 @@ public partial class Model02
             // Настраиваем оптимизаторы
             trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            bool runTrainingAndNRefinement = false;
-            if (runTrainingAndNRefinement)
+            bool runTraining = false;
+            if (runTraining)
             {
                 // Состязательное обучение
                 if (parameters.Adversarial)
@@ -205,10 +205,14 @@ public partial class Model02
                     var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
                     weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
                 }
+            }
 
+            bool runNRefinement = false;
+            if (runNRefinement)
+            {                
                 // Procrustes refinement
                 if (parameters.NRefinement > 0)
-                {
+                {   
                     await RunProcrustesRefinementAsync(trainer, parameters, logger);
 
                     var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
@@ -221,13 +225,13 @@ public partial class Model02
             {
                 using (var _ = no_grad())
                 {
-                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
+                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
                     trainer.Mapping.MappingLinear.weight!.copy_(loadedWeights);
                 }
 
                 TrainingStats stats = new();
                 var evaluator = new Evaluator(trainer, logger);
-                await evaluator.EvaluateWordTranslationAsync(stats, Path.Combine("Data", "PrimaryWords_RU_EN.csv"));
+                await evaluator.EvaluateWordTranslationAsync(stats, Path.Combine("Data", "Words_RU_EN.csv"));
             }
 
             //// Экспорт финальных эмбеддингов
@@ -406,7 +410,7 @@ public partial class Model02
             logger.LogInformation($"Конец эпохи {n_epoch}");
 
             // Обновление learning rate
-            trainer.UpdateLearningRate(stats, ValidationMetric,
+            trainer.UpdateLearningRate(stats, "mean_cosine-csls_knn_10-SourceToTarget-10000",
                  parameters.LrDecay, parameters.LrShrink, parameters.MinLr);
 
             // Проверка минимального learning rate
@@ -473,12 +477,7 @@ public partial class Model02
 
     #region private fields
 
-    private readonly ILoggersSet _loggersSet;
-
-    /// <summary>
-    /// Метрика валидации для unsupervised обучения
-    /// </summary>
-    private const string ValidationMetric = "mean_cosine-csls_knn_10-SourceToTarget-10000";
+    private readonly ILoggersSet _loggersSet;    
 
     #endregion    
 }

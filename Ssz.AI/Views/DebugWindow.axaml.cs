@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.Logging;
 using Ssz.Utils;
 using System;
@@ -58,9 +59,15 @@ public partial class DebugWindow : Window
     {
         Dispatcher.UIThread.Invoke(() =>
         {
-            MainTextEditor.Text += line + "\n";
+            var scrollViewer = MainTextEditor.FindDescendantOfType<ScrollViewer>()!;
+            bool atBottom = false;
+            if (scrollViewer.Offset.Y > scrollViewer.ScrollBarMaximum.Y * 0.95)
+                atBottom = true;
 
-            MainTextEditor.ScrollToEnd();
+            MainTextEditor.Text += line + "\n";  
+
+            if (atBottom)
+                MainTextEditor.ScrollToEnd();
         });        
     }
 
