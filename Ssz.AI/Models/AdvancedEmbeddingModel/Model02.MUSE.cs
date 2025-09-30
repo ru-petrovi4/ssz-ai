@@ -194,7 +194,7 @@ public partial class Model02
             // Настраиваем оптимизаторы
             trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            bool runTraining = false;
+            bool runTraining = true;
             if (runTraining)
             {
                 // Состязательное обучение
@@ -220,7 +220,7 @@ public partial class Model02
                 }
             }
 
-            bool evaluateWordTranslation = true;
+            bool evaluateWordTranslation = false;
             if (evaluateWordTranslation)
             {
                 using (var _ = no_grad())

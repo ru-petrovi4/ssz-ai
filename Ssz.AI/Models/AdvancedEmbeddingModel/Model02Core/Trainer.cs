@@ -526,15 +526,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 
         public async Task BuildDictionaryAsync(IDictionaryBuilderParameters parameters)
         {
-            torch.Tensor sourceEmbeddings = Mapping.forward(SourceEmbeddings.weight!);
+            torch.Tensor mappedSourceEmbeddings = Mapping.forward(SourceEmbeddings.weight!);
             torch.Tensor targetEmbeddings = TargetEmbeddings.weight!;
 
-            sourceEmbeddings = sourceEmbeddings / sourceEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(sourceEmbeddings);
+            mappedSourceEmbeddings = mappedSourceEmbeddings / mappedSourceEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(mappedSourceEmbeddings);
             targetEmbeddings = targetEmbeddings / targetEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(targetEmbeddings);
             
             // Строим словарь
             _trainingDictionary = await DictionaryBuilder.BuildDictionaryAsync(
-                sourceEmbeddings,
+                mappedSourceEmbeddings,
                 targetEmbeddings,
                 parameters,
                 logger: _logger);

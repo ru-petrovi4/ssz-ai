@@ -108,7 +108,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Строит словарь из выровненных эмбеддингов
         /// </summary>
-        /// <param name="sourceEmbeddings">Исходные эмбеддинги</param>
+        /// <param name="mappedSourceEmbeddings">Исходные эмбеддинги</param>
         /// <param name="targetEmbeddings">Целевые эмбеддинги</param>
         /// <param name="parameters">Параметры</param>
         /// <param name="sourceToTargetCandidates">Кандидаты Source->Target (опционально)</param>
@@ -116,7 +116,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <param name="logger">Логгер</param>
         /// <returns>Словарь пар [n_pairs, 2] или null если словарь пустой</returns>
         public static async Task<Tensor?> BuildDictionaryAsync(
-            Tensor sourceEmbeddings,
+            Tensor mappedSourceEmbeddings,
             Tensor targetEmbeddings,
             IDictionaryBuilderParameters parameters,
             Tensor? sourceToTargetCandidates = null,
@@ -134,13 +134,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Получаем кандидатов SourceToTarget
             if (buildSourceToTarget && sourceToTargetCandidates is null)
             {
-                sourceToTargetCandidates = await GetCandidatesAsync(sourceEmbeddings, targetEmbeddings, parameters, logger);
+                sourceToTargetCandidates = await GetCandidatesAsync(mappedSourceEmbeddings, targetEmbeddings, parameters, logger);
             }
             
             // Получаем кандидатов TargetToSource
             if (buildTargetToSource && targetToSourceCandidates is null)
             {
-                targetToSourceCandidates = await GetCandidatesAsync(targetEmbeddings, sourceEmbeddings, parameters, logger);
+                targetToSourceCandidates = await GetCandidatesAsync(targetEmbeddings, mappedSourceEmbeddings, parameters, logger);
                 // Меняем местами колонки для TargetToSource
                 targetToSourceCandidates = cat(new[] { targetToSourceCandidates.select(1, 1).unsqueeze(1), targetToSourceCandidates.select(1, 0).unsqueeze(1) }, dim: 1);
             }
@@ -283,8 +283,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var mappedSourceEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: targetEmbeddings, query: mappedSourceEmbeddings, k);
             var targetEmb_AvgDist = await EvaluationUtils.ComputeAverageDistancesAsync(emb: mappedSourceEmbeddings, query: targetEmbeddings, k);
             
-            var allScores = new List<Tensor>();
-            var allTargets = new List<Tensor>();
+            var allScores = new List<Tensor>(nSourceWords);
+            var allTargets = new List<Tensor>(nSourceWords);
 
             // Для каждого исходного слова вычисляем CSLS скоры            
             for (int i = 0; i < nSourceWords; i += BatchSize)
@@ -300,7 +300,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 scores = scores.sub(mappedSourceEmb_AvgDist[TensorIndex.Slice(i, endIdx)].unsqueeze(dim: 1));
                 scores = scores.sub(targetEmb_AvgDist.unsqueeze(dim: 0));
                 
-                var (bestScores, bestTargets) = scores.topk(2, dim: 1, largest: true, sorted: true);
+                var (bestScores, bestTargets) = scores.topk(k: 2, dim: 1, largest: true, sorted: true);
                 
                 allScores.Add(bestScores.cpu());
                 allTargets.Add(bestTargets.cpu());
@@ -322,8 +322,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         private static Tensor CreateCandidatePairs(Tensor scores, Tensor targets, long nSourceWords)
         {
             // Создаем пары (source_idx, target_idx) с лучшими скорами
-            var sourceIndices = arange(0, nSourceWords, dtype: ScalarType.Int64, device: targets.device);
-            var bestTargets = targets.select(1, 0); // Берем лучшие целевые индексы
+            var sourceIndices = arange(start: 0, stop: nSourceWords, dtype: ScalarType.Int64, device: targets.device);
+            var bestTargets = targets.select(dim: 1, index: 0); // Берем лучшие целевые индексы
             
             var pairs = cat(new[]
             {
@@ -333,7 +333,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             
             // Сортируем по уверенности (разность между лучшим и вторым скором)
             var confidence = scores.select(1, 0) - scores.select(1, 1);
-            var (_, sortedIndices) = confidence.sort(0, descending: true);
+            var (_, sortedIndices) = confidence.sort(dim: 0, descending: true);
             
             return pairs[sortedIndices];
         }
