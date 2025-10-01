@@ -30,8 +30,9 @@ public partial class Model01View : UserControl
         Model = new Model01();
         Task.Run(() =>
         {
-            //Model.GenerateAndSaveLanguageDiscreteEmbeddings();
-            Model.GetEmbeddingsQualityInfo2();
+            //Model.FindDiscreteEmbeddings();
+            Model.GenerateAndSave_LanguageDiscreteEmbeddings_Object();
+            //Model.GetEmbeddingsQualityInfo2();
         });
     }
 

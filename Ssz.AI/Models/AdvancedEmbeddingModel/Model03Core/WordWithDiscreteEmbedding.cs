@@ -11,7 +11,15 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     /// </summary>
     public int Index;
 
+    /// <summary>
+    ///     Original vector.
+    /// </summary>
     public float[] OldVector = null!;
+
+    /// <summary>
+    ///     Original normalized vector (module 1).
+    /// </summary>
+    public float[] OldVectorNormalized = null!;
 
     public float[] DiscreteVector = null!;
 
@@ -30,6 +38,7 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
         writer.Write(Name);
         writer.WriteOptimized(Index);
         writer.WriteArray(OldVector);
+        writer.WriteArray(OldVectorNormalized);
         writer.WriteArray(DiscreteVector);
         writer.WriteArray(DiscreteVector_PrimaryBitsOnly);
         writer.WriteArray(DiscreteVector_SecondaryBitsOnly);
@@ -40,6 +49,7 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
         Name = reader.ReadString();
         Index = reader.ReadOptimizedInt32();
         OldVector = reader.ReadArray<float>()!;
+        OldVectorNormalized = reader.ReadArray<float>()!;
         DiscreteVector = reader.ReadArray<float>()!;
         DiscreteVector_PrimaryBitsOnly = reader.ReadArray<float>()!;
         DiscreteVector_SecondaryBitsOnly = reader.ReadArray<float>()!;

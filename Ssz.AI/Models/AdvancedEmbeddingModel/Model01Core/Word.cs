@@ -25,7 +25,7 @@ public class Word
     public Point Point = null!;
 
     /// <summary>
-    ///     Original normalized vector (module 1).
+    ///     Original vector.
     /// </summary>
     public readonly float[] OldVector;
 

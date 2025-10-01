@@ -93,7 +93,8 @@ public static class EvaluationUtils
         if (dictionary.WordToId.TryGetValue(wordLowerCase, out var id))
             return id;
 
-        var v = dictionary.WordToId.FirstOrDefault(kvp => kvp.Key.StartsWith(wordLowerCase + "_"));
+        //var v = dictionary.WordToId.FirstOrDefault(kvp => kvp.Key.StartsWith(wordLowerCase + "_"));
+
         //if (!lower)
         //{
         //    // Попробуем с заглавной буквы
@@ -107,7 +108,8 @@ public static class EvaluationUtils
         //        return id;
         //}
 
-        return !String.IsNullOrEmpty(v.Key) ? v.Value : null;
+        //return !String.IsNullOrEmpty(v.Key) ? v.Value : null;
+        return null;
     }
 
     #endregion

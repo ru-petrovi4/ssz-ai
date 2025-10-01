@@ -332,7 +332,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             }, dim: 1);
             
             // Сортируем по уверенности (разность между лучшим и вторым скором)
-            var confidence = scores.select(1, 0) - scores.select(1, 1);
+            var confidence = scores.select(dim: 1, index: 0) - scores.select(dim: 1, index: 1);
             var (_, sortedIndices) = confidence.sort(dim: 0, descending: true);
             
             return pairs[sortedIndices];

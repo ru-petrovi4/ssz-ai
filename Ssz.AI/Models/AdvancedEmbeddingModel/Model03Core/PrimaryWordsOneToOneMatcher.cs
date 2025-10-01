@@ -9,9 +9,9 @@ using System.Numerics.Tensors; // Для TensorPrimitives
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
-public class OneToOneMatcher
+public class PrimaryWordsOneToOneMatcher
 {
-    public OneToOneMatcher(IUserFriendlyLogger userFriendlyLogger, Model03.Parameters parameters)
+    public PrimaryWordsOneToOneMatcher(IUserFriendlyLogger userFriendlyLogger, Model03.Parameters parameters)
     {
         _userFriendlyLogger = userFriendlyLogger;
         _parameters = parameters;

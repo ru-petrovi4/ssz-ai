@@ -67,7 +67,7 @@ public partial class Model02
 
     public async Task<int> ExecuteUnsupervisedTrainingAsync()
     {
-        int wordsCount = 50000;
+        int wordsCount = 40000;
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: wordsCount, _loggersSet);
         var ruDictionary = GetDictionary(LanguageInfo_RU.Words.Take(wordsCount).Select(w => w.Name).ToList(), "ru");
         var d = WordsHelper.OldVectorLength_RU;
@@ -194,7 +194,7 @@ public partial class Model02
             // Настраиваем оптимизаторы
             trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            bool runTraining = true;
+            bool runTraining = false;
             if (runTraining)
             {
                 // Состязательное обучение
@@ -220,12 +220,12 @@ public partial class Model02
                 }
             }
 
-            bool evaluateWordTranslation = false;
+            bool evaluateWordTranslation = true;
             if (evaluateWordTranslation)
             {
                 using (var _ = no_grad())
                 {
-                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
+                    var loadedWeights = load(Path.Combine(@"Data", "best_mapping.pt "));
                     trainer.Mapping.MappingLinear.weight!.copy_(loadedWeights);
                 }
 

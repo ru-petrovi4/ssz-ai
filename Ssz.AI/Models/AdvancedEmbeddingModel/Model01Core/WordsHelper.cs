@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
+using System.Text.RegularExpressions;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 
@@ -31,7 +32,15 @@ public static class WordsHelper
         string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\RU\cc.ru.300.vec";
         if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
         {
-            InitializeWords_FastText(fileFullName, OldVectorLength_RU, languageInfo_RU, wordsMaxCount, loggersSet, loadOldVectors);
+            Regex regex = new("^[а-яА-ЯёЁ]+$");
+            InitializeWords_FastText(
+                regex.IsMatch,
+                fileFullName,
+                OldVectorLength_RU, 
+                languageInfo_RU, 
+                wordsMaxCount, 
+                loggersSet, 
+                loadOldVectors);
         }
         else
         {
@@ -85,7 +94,15 @@ public static class WordsHelper
         string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\EN\cc.en.300.vec";
         if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
         {
-            InitializeWords_FastText(fileFullName, OldVectorLength_EN, languageInfo_EN, wordsMaxCount, loggersSet, loadOldVectors);
+            Regex regex = new("^[a-zA-Z]+$");
+            InitializeWords_FastText(
+                regex.IsMatch,
+                fileFullName, 
+                OldVectorLength_EN, 
+                languageInfo_EN, 
+                wordsMaxCount, 
+                loggersSet, 
+                loadOldVectors);
         }
         else
         {
@@ -126,6 +143,7 @@ public static class WordsHelper
     }
 
     public static void InitializeWords_FastText(
+        Func<string, bool> isMatch,
         string fileFullName, 
         int oldVectorLength,
         LanguageInfo languageInfo, 
@@ -136,7 +154,7 @@ public static class WordsHelper
         languageInfo.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
         HashSet<string> uniqueWords = new HashSet<string>();
-        foreach (var line in File.ReadAllLines(fileFullName))
+        foreach (var line in File.ReadLines(fileFullName))
         {
             var parts = CsvHelper.ParseCsvLine(" ", line);
             if (parts.Length < oldVectorLength + 1 || string.IsNullOrEmpty(parts[0]))
@@ -151,7 +169,7 @@ public static class WordsHelper
                 Index = languageInfo.Words.Count,
                 Name = parts[0]!,
             };
-            if (String.IsNullOrEmpty(word.Name) || !word.Name.All(Char.IsLetter))
+            if (String.IsNullOrEmpty(word.Name) || !isMatch(word.Name))
                 continue;
             if (!uniqueWords.Add(word.Name.ToLowerInvariant()))
                 continue;

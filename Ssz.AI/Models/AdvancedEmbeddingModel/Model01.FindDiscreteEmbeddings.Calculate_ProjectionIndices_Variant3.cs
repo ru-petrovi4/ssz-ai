@@ -68,9 +68,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             discreteVectorsAndMatrices.Prepare(clusterization_AlgorithmData, words, languageInfo.ProxWordsOldMatrix);
             discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsProjectionIndices, loggersSet);
 
-            Buffers buffers = new(discreteVectorsAndMatrices);                                              
+            Buffers buffers = new(discreteVectorsAndMatrices);
 
-            for (int i = 0; i < 1; i += 1)
+            // TEMPCODE
+            for (int i = 0; i < 0; i += 1)
             {
                 var words_RandomOrder = new List<Word>(words.Count);
                 foreach (var word in words)

@@ -36,6 +36,8 @@ public partial class Model03
     public const string FileName_DistanceMatrixB = "AdvancedEmbedding_DistanceMatrixB.bin";
     public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
 
+    public const string FileName_OldVectors_PrimaryWordsOneToOneMatcher = "OldVectors_PrimaryWordsOneToOneMatcher.bin";
+
     #region construction and destruction
 
     public Model03()
@@ -44,6 +46,21 @@ public partial class Model03
     }
 
     #endregion
+
+    public void Find_OldVectors_PrimaryWordsOneToOne()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+
+
+        OldVectors_PrimaryWordsOneToOneMatcher oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
+        oldVectors_PrimaryWordsOneToOneMatcher.CalculatePrimaryWordsMapping(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+
+        Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
+    }
 
     public void FindDiscreteEmbeddings_Mapping()
     {
@@ -56,7 +73,7 @@ public partial class Model03
         var setA = languageDiscreteEmbeddings_RU.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();
         var setB = languageDiscreteEmbeddings_EN.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();          
 
-        var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
         bool calculateDistanceMatrices = false;
         if (calculateDistanceMatrices)
         {
@@ -73,11 +90,11 @@ public partial class Model03
         else
         {
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestA = new OneToOneMatcher.Nearest();
+            matcher.NearestA = new PrimaryWordsOneToOneMatcher.Nearest();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
 
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestB = new OneToOneMatcher.Nearest();
+            matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
         }
 
@@ -97,7 +114,7 @@ public partial class Model03
 
     public void TestQuality_DiscreteEmbeddings_Mapping()
     {
-        var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
 
         var resultBits = matcher.GetFinalMapping().Values.ToHashSet();
@@ -141,10 +158,10 @@ public partial class Model03
 
     public void VisualizeData_V2()
     {
-        var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());        
-        matcher.NearestA = new OneToOneMatcher.Nearest();
+        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());        
+        matcher.NearestA = new PrimaryWordsOneToOneMatcher.Nearest();
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
-        matcher.NearestB = new OneToOneMatcher.Nearest();
+        matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
 
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
