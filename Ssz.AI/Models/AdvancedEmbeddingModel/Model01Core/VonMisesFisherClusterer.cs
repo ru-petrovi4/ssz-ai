@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 /// </summary>
 public class VonMisesFisherClusterer
 {
+    private readonly IUserFriendlyLogger _userFriendlyLogger;
+
     // Поля класса для хранения параметров модели
     private readonly int _numClusters;         // Количество кластеров K
     private readonly int _maxIterations;       // Максимальное количество итераций EM
@@ -29,12 +33,16 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// Конструктор кластеризатора vMF
     /// </summary>
+    /// <param name="userFriendlyLogger"></param>
     /// <param name="numClusters">Количество кластеров K</param>
     /// <param name="maxIterations">Максимальное количество итераций EM алгоритма</param>
     /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>
     /// <param name="useHardAssignment">Использовать жёсткое назначение (true) или мягкое (false)</param>
-    public VonMisesFisherClusterer(int numClusters, int maxIterations = 100, double tolerance = 1e-6, bool useHardAssignment = false)
+    public VonMisesFisherClusterer(
+        IUserFriendlyLogger userFriendlyLogger,
+        int numClusters, int maxIterations = 100, double tolerance = 1e-6, bool useHardAssignment = false)
     {
+        _userFriendlyLogger = userFriendlyLogger;
         _numClusters = numClusters;
         _maxIterations = maxIterations;
         _tolerance = tolerance;
@@ -74,7 +82,7 @@ public class VonMisesFisherClusterer
             // Проверяем сходимость
             if (Math.Abs(logLikelihood - prevLogLikelihood) < _tolerance)
             {
-                Console.WriteLine($"Сходимость достигнута на итерации {iteration + 1}");
+                _userFriendlyLogger.LogInformation($"Сходимость достигнута на итерации {iteration + 1}");
                 break;
             }
                 
@@ -83,11 +91,11 @@ public class VonMisesFisherClusterer
             // Выводим прогресс каждые 10 итераций
             if ((iteration + 1) % 10 == 0)
             {
-                Console.WriteLine($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
+                _userFriendlyLogger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
             }
         }
             
-        Console.WriteLine($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
+        _userFriendlyLogger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
     }
 
     /// <summary>
@@ -163,10 +171,10 @@ public class VonMisesFisherClusterer
         // Начинаем с умеренных значений концентрации
         Concentrations = torch.ones(_numClusters, dtype: torch.float32) * 1.0f;
             
-        Console.WriteLine("Параметры инициализированы:");
-        Console.WriteLine($"Количество кластеров: {_numClusters}");
-        Console.WriteLine($"Размерность данных: {dimension}");
-        Console.WriteLine($"Количество образцов: {numSamples}");
+        _userFriendlyLogger.LogInformation("Параметры инициализированы:");
+        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
+        _userFriendlyLogger.LogInformation($"Размерность данных: {dimension}");
+        _userFriendlyLogger.LogInformation($"Количество образцов: {numSamples}");
     }
 
     /// <summary>
@@ -412,115 +420,23 @@ public class VonMisesFisherClusterer
     /// </summary>
     public void PrintModelSummary()
     {
-        Console.WriteLine("=== Результаты vMF Кластеризации ===");
-        Console.WriteLine($"Количество кластеров: {_numClusters}");
-        Console.WriteLine($"Алгоритм назначения: {(_useHardAssignment ? "Hard (жёсткое)" : "Soft (мягкое)")}");
+        _userFriendlyLogger.LogInformation("=== Результаты vMF Кластеризации ===");
+        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
+        _userFriendlyLogger.LogInformation($"Алгоритм назначения: {(_useHardAssignment ? "Hard (жёсткое)" : "Soft (мягкое)")}");
             
-        Console.WriteLine("\nПараметры кластеров:");
+        _userFriendlyLogger.LogInformation("\nПараметры кластеров:");
         for (int k = 0; k < _numClusters; k++)
         {
-            Console.WriteLine($"\nКластер {k}:");
-            Console.WriteLine($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<double>():F4}");
-            Console.WriteLine($"  Концентрация κ_{k}: {Concentrations[k].item<double>():F4}");
-            Console.WriteLine($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
+            _userFriendlyLogger.LogInformation($"\nКластер {k}:");
+            _userFriendlyLogger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<double>():F4}");
+            _userFriendlyLogger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<double>():F4}");
+            _userFriendlyLogger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
         }
             
         if (LogLikelihoodHistory.Any())
         {
-            Console.WriteLine($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
-            Console.WriteLine($"Количество итераций: {LogLikelihoodHistory.Count}");
+            _userFriendlyLogger.LogInformation($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
+            _userFriendlyLogger.LogInformation($"Количество итераций: {LogLikelihoodHistory.Count}");
         }
-    }
-}
-
-/// <summary>
-/// Демонстрационная программа использования vMF кластеризации
-/// </summary>
-public class Program
-{
-    public static void Main()
-    {
-        Console.WriteLine("=== Демонстрация von Mises-Fisher Кластеризации ===");
-            
-        // Устанавливаем случайное семя для воспроизводимости
-        torch.manual_seed(42);
-            
-        // Генерируем тестовые данные (нормированные эмбеддинги слов)
-        var testData = GenerateTestData();
-            
-        Console.WriteLine($"Сгенерированы тестовые данные: {testData.shape[0]} точек, размерность {testData.shape[1]}");
-            
-        // Создаём и обучаем кластеризатор
-        var clusterer = new VonMisesFisherClusterer(
-            numClusters: 3, 
-            maxIterations: 50, 
-            tolerance: 1e-6, 
-            useHardAssignment: false
-        );
-            
-        Console.WriteLine("\nНачинаем обучение...");
-        clusterer.Fit(testData);
-            
-        // Выводим результаты
-        clusterer.PrintModelSummary();
-            
-        // Демонстрируем предсказание
-        Console.WriteLine("\n=== Тестирование предсказаний ===");
-        var predictions = clusterer.Predict(testData.slice(0, 0, 10, 1)); // Первые 10 точек
-        var probabilities = clusterer.PredictProba(testData.slice(0, 0, 10, 1));
-            
-        Console.WriteLine("Предсказания для первых 10 точек:");
-        for (int i = 0; i < 10; i++)
-        {
-            var pred = predictions[i].item<long>();
-            var prob = probabilities[i, pred].item<double>();
-            Console.WriteLine($"Точка {i}: Кластер {pred} (вероятность: {prob:F3})");
-        }
-    }
-
-    /// <summary>
-    /// Генерирует тестовые данные для демонстрации
-    /// Создаёт 3 кластера нормированных векторов на единичной сфере
-    /// </summary>
-    /// <returns>Тензор с тестовыми данными [N x D]</returns>
-    private static Tensor GenerateTestData()
-    {
-        const int numSamplesPerCluster = 30;
-        const int numClusters = 3;
-        const int dimension = 10;
-            
-        var allData = new List<Tensor>();
-            
-        // Создаём истинные центры кластеров
-        var trueCenters = new[]
-        {
-            torch.tensor(new float[] { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0 }), // Центр 1
-            torch.tensor(new float[] { 0, 1, 0, 0, 0, 0, 0, 0, 0, 0 }), // Центр 2  
-            torch.tensor(new float[] { 0, 0, 1, 0, 0, 0, 0, 0, 0, 0 })  // Центр 3
-        };
-            
-        // Генерируем данные для каждого кластера
-        for (int cluster = 0; cluster < numClusters; cluster++)
-        {
-            var center = trueCenters[cluster];
-            var concentration = new[] { 10.0, 15.0, 5.0 }[cluster]; // Разные концентрации
-                
-            for (int sample = 0; sample < numSamplesPerCluster; sample++)
-            {
-                // Генерируем точку около центра с заданной концентрацией
-                var noise = torch.randn(dimension) * (1.0 / Math.Sqrt(concentration));
-                var point = center + noise;
-                    
-                // Нормализуем на единичную сферу
-                point = point / torch.norm(point);
-                allData.Add(point);
-            }
-        }
-            
-        // Объединяем все данные и перемешиваем
-        var combinedData = torch.stack(allData.ToArray());
-        var shuffleIndices = torch.randperm(combinedData.shape[0]);
-            
-        return combinedData[shuffleIndices];
     }
 }

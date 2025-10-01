@@ -23,29 +23,37 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 
         public readonly string Name = null!;
 
-        public Word[] PrimaryWords = null!;
-
-        public bool[] IsPrimaryWord = null!;
-
         /// <summary>
         ///    For each Word. ClusterIndices.Length == Words.Length
         /// </summary>
         public int[] ClusterIndices = null!;
 
-        public void GenerateOwnedData(int primaryWordsCount)
+        public float[][] ClusterCenters = null!;
+
+        public Word[] PrimaryWords = null!;        
+
+        public bool[] IsPrimaryWord = null!;        
+
+        public void GenerateOwnedData(int clustersCount)
         {
-            PrimaryWords = new Word[primaryWordsCount];
-            IsPrimaryWord = new bool[LanguageInfo.Words.Count];
             ClusterIndices = new int[LanguageInfo.Words.Count];
+            ClusterCenters = new float[clustersCount][];
+            PrimaryWords = new Word[clustersCount];
+            IsPrimaryWord = new bool[LanguageInfo.Words.Count];            
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
             using (writer.EnterBlock(1))
             {
-                var primaryWordIndices = PrimaryWords!.Select(w => w.Index).ToList();
-                writer.WriteList(primaryWordIndices);
                 writer.WriteArray(ClusterIndices);
+                writer.Write(ClusterCenters.Length);
+                foreach (int clusterIndex in Enumerable.Range(0, ClusterCenters.Length))
+                {
+                    writer.WriteArray(ClusterCenters[clusterIndex]);
+                }
+                var primaryWordIndices = PrimaryWords!.Select(w => w.Index).ToList();
+                writer.WriteList(primaryWordIndices);                
             }
         }
 
@@ -56,14 +64,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                 switch (block.Version)
                 {
                     case 1:
+                        ClusterIndices = reader.ReadArray<int>()!;
+                        ClusterCenters = new float[reader.ReadInt32()][];
+                        foreach (int clusterIndex in Enumerable.Range(0, ClusterCenters.Length))
+                        {
+                            ClusterCenters[clusterIndex] = reader.ReadArray<float>()!;
+                        }
+
                         var primaryWordIndices = reader.ReadList<int>()!;
-
                         //if (list.Count != PrimaryWordsCount)
-                        //    throw new InvalidOperationException();
-
+                        //    throw new InvalidOperationException();                        
                         PrimaryWords = primaryWordIndices.Select(i => LanguageInfo.Words[i]).ToArray();
-                        IsPrimaryWord = new bool[LanguageInfo.Words.Count];
-                        ClusterIndices = reader.ReadArray<int>()!;                        
+                        IsPrimaryWord = new bool[LanguageInfo.Words.Count];                                              
                         foreach (int primaryWordIndex in primaryWordIndices)
                         {
                             IsPrimaryWord[primaryWordIndex] = true;
