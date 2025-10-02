@@ -16,6 +16,7 @@ using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using TorchSharp;
+using static TorchSharp.torch;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
@@ -31,15 +32,23 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             var totalStopwatch = Stopwatch.StartNew();
 
-            loggersSet.UserFriendlyLogger.LogInformation("=== Демонстрация von Mises-Fisher Кластеризации ===");
+            int rows = words.Count;
+            int cols = words[0].OldVectorNormalized.Length;
+
+            // Объединить все данные в один float[] (в строковом порядке)
+            float[] flat = new float[rows * cols];
+            for (int i = 0; i < rows; ++i)
+            {
+                Array.Copy(words[i].OldVectorNormalized, 0, flat, i * cols, cols);
+            }            
+            var oldVectorsTensor = torch.tensor(flat, new long[] { rows, cols }, ScalarType.Float32);
+
+            loggersSet.UserFriendlyLogger.LogInformation("=== von Mises-Fisher Кластеризация ===");
 
             // Устанавливаем случайное семя для воспроизводимости
             torch.manual_seed(42);
 
-            // Генерируем тестовые данные (нормированные эмбеддинги слов)
-            var testData = GenerateTestData();
-
-            loggersSet.UserFriendlyLogger.LogInformation($"Сгенерированы тестовые данные: {testData.shape[0]} точек, размерность {testData.shape[1]}");
+            loggersSet.UserFriendlyLogger.LogInformation($"Сгенерированы тестовые данные: {oldVectorsTensor.shape[0]} точек, размерность {oldVectorsTensor.shape[1]}");
 
             // Создаём и обучаем кластеризатор
             var clusterer = new VonMisesFisherClusterer(
@@ -51,15 +60,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             );
 
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
-            clusterer.Fit(testData);
+            clusterer.Fit(oldVectorsTensor);
 
             // Выводим результаты
             clusterer.PrintModelSummary();
 
             // Демонстрируем предсказание
             loggersSet.UserFriendlyLogger.LogInformation("\n=== Тестирование предсказаний ===");
-            var predictions = clusterer.Predict(testData.slice(0, 0, 10, 1)); // Первые 10 точек
-            var probabilities = clusterer.PredictProba(testData.slice(0, 0, 10, 1));
+            var predictions = clusterer.Predict(oldVectorsTensor.slice(0, 0, 10, 1)); // Первые 10 точек
+            var probabilities = clusterer.PredictProba(oldVectorsTensor.slice(0, 0, 10, 1));
 
             loggersSet.UserFriendlyLogger.LogInformation("Предсказания для первых 10 точек:");
             for (int i = 0; i < 10; i++)
