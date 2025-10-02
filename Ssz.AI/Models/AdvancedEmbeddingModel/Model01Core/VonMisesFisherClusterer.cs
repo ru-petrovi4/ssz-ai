@@ -223,6 +223,8 @@ public class VonMisesFisherClusterer
     /// <param name="dimension">Размерность данных</param>
     private void InitializeParameters(Tensor oldVectorsTensor, long numSamples, long dimension)
     {
+        var device = torch.CUDA;
+
         // Инициализация коэффициентов смешивания (равномерное распределение)
         MixingCoefficients = torch.ones(_numClusters, dtype: torch.float32) / _numClusters;
             
@@ -238,9 +240,9 @@ public class VonMisesFisherClusterer
         {
             // Для каждой точки данных находим расстояние до ближайшего уже выбранного центра
 
-            var similarity = torch.mm(oldVectorsTensor, MeanDirections[..k,..].transpose(dim0: 0, dim1: 1));
+            var similarity = torch.mm(oldVectorsTensor, MeanDirections[..k, ..].transpose(dim0: 0, dim1: 1));
             var (probabilities, indices) = torch.topk(similarity, k: 1, dim: 1, largest: true);
-            probabilities.neg_().add_(1.0f).pow_(2.0);
+            probabilities.neg_().add_(1.0f).pow_(2);
 
             // UNOPTIMIZED
             //var distances = torch.zeros(numSamples);
@@ -262,11 +264,11 @@ public class VonMisesFisherClusterer
 
             //// Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
             //var probabilities = torch.pow(distances, 2);
+            //var s = torch.sum(probabilities);
+            //probabilities = probabilities / s;        
 
-            probabilities = probabilities / torch.sum(probabilities);
-                
             // Используем multinomial sampling для выбора индекса
-            var selectedIndex = torch.multinomial(input: probabilities, num_samples: 1).item<long>();
+            var selectedIndex = torch.multinomial(input: probabilities.transpose(dim0: 0, dim1: 1), num_samples: 1).item<long>();
             MeanDirections[k] = oldVectorsTensor[selectedIndex];
 
             if ((k + 1) % 10 == 0)
