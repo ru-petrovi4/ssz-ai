@@ -40,8 +40,6 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var wordsProjectionIndices = projectionOptimization_AlgorithmData_Variant3.WordsProjectionIndices;
 
             bool[] isBitOccupied = new bool[Constants.DiscreteVectorLength];
-
-            //Random initial hash
             foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
             {
                 if (clusterization_AlgorithmData.IsPrimaryWord[wordIndex])
@@ -61,6 +59,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 {
                     wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
                 }
+            }
+
+            //Random initial hash
+            foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
+            {
+                wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
             }                                      
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();

@@ -162,8 +162,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 primaryWords_KMeans[clusterIndex] = words[nearestWordIndex];
             });
 
-            Array.Clear(clusterization_AlgorithmData_KMeans.IsPrimaryWord);
-            clusterization_AlgorithmData_KMeans.PrimaryWords = primaryWords_KMeans;
+            Array.Clear(clusterization_AlgorithmData_KMeans.IsPrimaryWord);            
             foreach (var primaryWord in primaryWords_KMeans)
             {
                 clusterization_AlgorithmData_KMeans.IsPrimaryWord[primaryWord.Index] = true;

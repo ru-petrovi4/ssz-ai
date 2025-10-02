@@ -62,6 +62,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
             clusterer.Fit(oldVectorsTensor);
 
+            clusterer.GetResult(oldVectorsTensor, clusterization_AlgorithmData);
+
             // Выводим результаты
             clusterer.PrintModelSummary();
 
@@ -74,7 +76,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             for (int i = 0; i < 10; i++)
             {
                 var pred = predictions[i].item<long>();
-                var prob = probabilities[i, pred].item<double>();
+                var prob = probabilities[i, pred].item<float>();
                 loggersSet.UserFriendlyLogger.LogInformation($"Точка {i}: Кластер {pred} (вероятность: {prob:F3})");
             }
 

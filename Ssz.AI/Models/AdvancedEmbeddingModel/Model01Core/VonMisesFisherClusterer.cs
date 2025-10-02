@@ -3,6 +3,7 @@ using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TorchSharp;
 using static TorchSharp.torch;
 
@@ -91,7 +92,7 @@ public class VonMisesFisherClusterer
         var (numSamples, dimension) = (oldVectorsTensor.shape[0], oldVectorsTensor.shape[1]);
             
         // Инициализируем параметры модели
-        InitializeParameters(oldVectorsTensor, numSamples, dimension);
+        InitializeParameters(oldVectorsTensor, Math.Min(1000, numSamples), dimension);
             
         double prevLogLikelihood = double.NegativeInfinity;
             
@@ -118,13 +119,80 @@ public class VonMisesFisherClusterer
             prevLogLikelihood = logLikelihood;
                 
             // Выводим прогресс каждые 10 итераций
-            if ((iteration + 1) % 10 == 0)
+            //if ((iteration + 1) % 10 == 0)
             {
                 _userFriendlyLogger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
             }
         }
             
         _userFriendlyLogger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
+    }
+
+    public void GetResult(Tensor oldVectorsTensor, Clusterization_AlgorithmData clusterization_AlgorithmData)
+    {
+        var numSamples = oldVectorsTensor.shape[0];        
+
+        // Вычисляем логарифмические вероятности для численной стабильности
+        using var logProbabilities = torch.zeros(size: new long[] { numSamples, _numClusters });
+
+        for (int k = 0; k < _numClusters; k++)
+        {
+            // Вычисляем cosine similarity между данными и k-м центром
+            var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k]);
+
+            // Вычисляем логарифм нормализующей константы c_d(κ)
+            var logNormalizingConstant = ComputeLogNormalizingConstant(
+                Concentrations[k].item<float>(),
+                oldVectorsTensor.shape[1]
+            );
+
+            // Логарифм vMF плотности: log c_d(κ) + κ * μ^T * x
+            logProbabilities[.., k] = logNormalizingConstant +
+                Concentrations[k] * cosineSimilarities +
+                torch.log(MixingCoefficients[k]);
+
+            MeanDirections.select(dim: 0, index: k).data<float>().CopyTo(clusterization_AlgorithmData.ClusterInfos[k].CentroidOldVectorNormalized);
+        }
+
+        // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
+        var assignments = torch.argmax(logProbabilities, dim: 1);
+        for (long i = 0; i < numSamples; i++)
+        {
+            var assignedCluster = assignments[i].item<long>();
+            clusterization_AlgorithmData.ClusterIndices[i] = (int)assignedCluster;
+        }
+
+        var clusterInfos = clusterization_AlgorithmData.ClusterInfos;
+        Word[] primaryWords = clusterization_AlgorithmData.PrimaryWords;
+        var words = clusterization_AlgorithmData.LanguageInfo.Words;
+
+        Parallel.For(0, clusterInfos.Length, clusterIndex =>
+        {
+            var centroidOldVectorNormalized = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
+
+            int nearestWordIndex = -1;
+            float nearestDotProduct = 0.0f;
+            for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+            {
+                Word word = words[wordIndex];
+                var oldVectror = word.OldVectorNormalized;
+
+                float dotProduct = System.Numerics.Tensors.TensorPrimitives.Dot(oldVectror, centroidOldVectorNormalized);
+                if (dotProduct > nearestDotProduct)
+                {
+                    nearestDotProduct = dotProduct;
+                    nearestWordIndex = wordIndex;
+                }
+            }
+
+            primaryWords[clusterIndex] = words[nearestWordIndex];
+        });
+
+        Array.Clear(clusterization_AlgorithmData.IsPrimaryWord);        
+        foreach (var primaryWord in primaryWords)
+        {
+            clusterization_AlgorithmData.IsPrimaryWord[primaryWord.Index] = true;
+        }
     }
 
     /// <summary>
@@ -135,8 +203,8 @@ public class VonMisesFisherClusterer
     {
         // Вычисляем нормы всех векторов
         var norms = torch.norm(data, dimension: 1);
-        var minNorm = torch.min(norms).item<double>();
-        var maxNorm = torch.max(norms).item<double>();
+        var minNorm = torch.min(norms).item<float>();
+        var maxNorm = torch.max(norms).item<float>();
             
         // Проверяем, что все нормы приблизительно равны 1.0
         if (Math.Abs(minNorm - 1.0) > 1e-6 || Math.Abs(maxNorm - 1.0) > 1e-6)
@@ -168,32 +236,43 @@ public class VonMisesFisherClusterer
         // Выбираем остальные центры с вероятностью пропорциональной расстоянию до ближайшего центра
         for (int k = 1; k < _numClusters; k += 1)
         {
-            var distances = torch.zeros(numSamples);
-                
             // Для каждой точки данных находим расстояние до ближайшего уже выбранного центра
-            for (long i = 0; i < numSamples; i += 1)
-            {
-                var minDistance = double.MaxValue;
-                    
-                // Вычисляем минимальное расстояние до уже выбранных центров
-                for (int j = 0; j < k; j += 1)
-                {
-                    // Используем угловое расстояние: 1 - cosine_similarity
-                    var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[j]).item<double>();
-                    var angularDistance = 1.0 - cosineSimilarity;
-                    minDistance = Math.Min(minDistance, angularDistance);
-                }
-                    
-                distances[i] = minDistance;
-            }
-                
-            // Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
-            var probabilities = torch.pow(distances, 2);
+
+            var similarity = torch.mm(oldVectorsTensor, MeanDirections[..k,..].transpose(dim0: 0, dim1: 1));
+            var (probabilities, indices) = torch.topk(similarity, k: 1, dim: 1, largest: true);
+            probabilities.neg_().add_(1.0f).pow_(2.0);
+
+            // UNOPTIMIZED
+            //var distances = torch.zeros(numSamples);
+            //for (long i = 0; i < numSamples; i += 1)
+            //{
+            //    var minDistance = double.MaxValue;
+
+            //    // Вычисляем минимальное расстояние до уже выбранных центров
+            //    for (int j = 0; j < k; j += 1)
+            //    {
+            //        // Используем угловое расстояние: 1 - cosine_similarity
+            //        var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[j]).item<float>();
+            //        var angularDistance = 1.0 - cosineSimilarity;
+            //        minDistance = Math.Min(minDistance, angularDistance);
+            //    }
+
+            //    distances[i] = minDistance;
+            //}
+
+            //// Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
+            //var probabilities = torch.pow(distances, 2);
+
             probabilities = probabilities / torch.sum(probabilities);
                 
             // Используем multinomial sampling для выбора индекса
             var selectedIndex = torch.multinomial(input: probabilities, num_samples: 1).item<long>();
             MeanDirections[k] = oldVectorsTensor[selectedIndex];
+
+            if ((k + 1) % 10 == 0)
+            {
+                _userFriendlyLogger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
+            }
         }
             
         // Инициализация параметров концентрации
@@ -226,7 +305,7 @@ public class VonMisesFisherClusterer
                 
             // Вычисляем логарифм нормализующей константы c_d(κ)
             var logNormalizingConstant = ComputeLogNormalizingConstant(
-                Concentrations[k].item<double>(), 
+                Concentrations[k].item<float>(), 
                 oldVectorsTensor.shape[1]
             );
                 
@@ -282,7 +361,7 @@ public class VonMisesFisherClusterer
             MeanDirections[k] = weightedSum / resultantLength;
                 
             // Вычисляем средний resultant length для оценки κ_k
-            var meanResultantLength = (resultantLength / effectiveSampleSize).item<double>();
+            var meanResultantLength = (resultantLength / effectiveSampleSize).item<float>();
                 
             // Обновляем параметр концентрации κ_k используя аппроксимацию из статьи
             var newConcentration = ApproximateConcentration(meanResultantLength, oldVectorsTensor.shape[1]);
@@ -374,31 +453,31 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// Вычисляет полную логарифмическую вероятность данных для текущих параметров модели
     /// </summary>
-    /// <param name="data">Входные данные</param>
+    /// <param name="oldVectorsTensor">Входные данные</param>
     /// <returns>Логарифмическая вероятность</returns>
-    private double ComputeLogLikelihood(Tensor data)
+    private double ComputeLogLikelihood(Tensor oldVectorsTensor)
     {
-        var numSamples = data.shape[0];
+        var numSamples = oldVectorsTensor.shape[0];
         var totalLogLikelihood = 0.0;
             
         for (long i = 0; i < numSamples; i++)
         {
             var sampleLogLikelihood = double.NegativeInfinity;
                 
-            for (int k = 0; k < _numClusters; k++)
+            for (int k = 0; k < _numClusters; k += 1)
             {
                 // Вычисляем cosine similarity
-                var cosineSimilarity = torch.dot(data[i], MeanDirections[k]).item<double>();
+                var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[k]).item<float>();
                     
                 // Вычисляем логарифм компоненты смеси
                 var logNormalizingConstant = ComputeLogNormalizingConstant(
-                    Concentrations[k].item<double>(), 
-                    data.shape[1]
+                    Concentrations[k].item<float>(), 
+                    oldVectorsTensor.shape[1]
                 );
                     
-                var logComponent = Math.Log(MixingCoefficients[k].item<double>()) + 
+                var logComponent = Math.Log(MixingCoefficients[k].item<float>()) + 
                                     logNormalizingConstant + 
-                                    Concentrations[k].item<double>() * cosineSimilarity;
+                                    Concentrations[k].item<float>() * cosineSimilarity;
                     
                 // Используем log-sum-exp trick для численной стабильности
                 if (sampleLogLikelihood == double.NegativeInfinity)
@@ -457,8 +536,8 @@ public class VonMisesFisherClusterer
         for (int k = 0; k < _numClusters; k++)
         {
             _userFriendlyLogger.LogInformation($"\nКластер {k}:");
-            _userFriendlyLogger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<double>():F4}");
-            _userFriendlyLogger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<double>():F4}");
+            _userFriendlyLogger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<float>():F4}");
+            _userFriendlyLogger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<float>():F4}");
             _userFriendlyLogger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
         }
             

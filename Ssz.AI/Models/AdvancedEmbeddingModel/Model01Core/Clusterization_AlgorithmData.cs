@@ -28,7 +28,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
         /// </summary>
         public int[] ClusterIndices = null!;
 
-        public float[][] ClusterCenters = null!;
+        public ClusterInfo[] ClusterInfos = null!;
 
         public Word[] PrimaryWords = null!;        
 
@@ -37,7 +37,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
         public void GenerateOwnedData(int clustersCount)
         {
             ClusterIndices = new int[LanguageInfo.Words.Count];
-            ClusterCenters = new float[clustersCount][];
+            int d = LanguageInfo.Words[0].OldVectorNormalized.Length;
+            ClusterInfos = Enumerable.Range(0, clustersCount).Select(_ => new ClusterInfo
+            { 
+                CentroidOldVectorNormalized = new float[d] 
+            }).ToArray();
             PrimaryWords = new Word[clustersCount];
             IsPrimaryWord = new bool[LanguageInfo.Words.Count];            
         }
@@ -47,11 +51,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
             using (writer.EnterBlock(1))
             {
                 writer.WriteArray(ClusterIndices);
-                writer.Write(ClusterCenters.Length);
-                foreach (int clusterIndex in Enumerable.Range(0, ClusterCenters.Length))
-                {
-                    writer.WriteArray(ClusterCenters[clusterIndex]);
-                }
+                writer.WriteArrayOfOwnedDataSerializable(ClusterInfos, null);
                 var primaryWordIndices = PrimaryWords!.Select(w => w.Index).ToList();
                 writer.WriteList(primaryWordIndices);                
             }
@@ -65,12 +65,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                 {
                     case 1:
                         ClusterIndices = reader.ReadArray<int>()!;
-                        ClusterCenters = new float[reader.ReadInt32()][];
-                        foreach (int clusterIndex in Enumerable.Range(0, ClusterCenters.Length))
-                        {
-                            ClusterCenters[clusterIndex] = reader.ReadArray<float>()!;
-                        }
-
+                        ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);
                         var primaryWordIndices = reader.ReadList<int>()!;
                         //if (list.Count != PrimaryWordsCount)
                         //    throw new InvalidOperationException();                        

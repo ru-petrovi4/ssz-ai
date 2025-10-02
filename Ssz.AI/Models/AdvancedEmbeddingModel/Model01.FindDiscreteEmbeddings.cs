@@ -104,7 +104,7 @@ public partial class Model01
 
         //Calculate_Clusterization_AlgorithmData_Random(_loggersSet);
 
-        calculate = false;
+        calculate = true;
         if (calculate)
         {
             Calculate_Clusterization_AlgorithmData_VonMisesFisherClusterer(LanguageInfo_RU, _loggersSet);
@@ -121,7 +121,7 @@ public partial class Model01
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_EN, LanguageInfo_EN.Clusterization_AlgorithmData, null);
         }
 
-        calculate = true;
+        calculate = false;
         if (calculate)
         {
             Calculate_ProjectionIndices_Variant3(LanguageInfo_RU, _loggersSet);
@@ -141,7 +141,7 @@ public partial class Model01
         //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_AlgorithmData_Random, _loggersSet);
         //ProxWordsDiscreteMatrix_Calculate(Clusterization_AlgorithmData_Random, _loggersSet);            
 
-        calculate = true;
+        calculate = false;
         if (calculate)
         {
             LanguageInfo_RU.DiscreteVectorsAndMatrices = Calculate_DiscreteVectorsOnly(LanguageInfo_RU, _loggersSet);
