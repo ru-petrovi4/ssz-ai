@@ -15,6 +15,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 /// </summary>
 public class VonMisesFisherClusterer
 {
+    private readonly Device _device;
     private readonly IUserFriendlyLogger _userFriendlyLogger;
 
     // Поля класса для хранения параметров модели
@@ -60,18 +61,21 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// Конструктор кластеризатора vMF
     /// </summary>
+    /// <param name="device"></param>
     /// <param name="userFriendlyLogger"></param>
     /// <param name="numClusters">Количество кластеров K</param>
     /// <param name="maxIterations">Максимальное количество итераций EM алгоритма</param>
     /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>
     /// <param name="useHardAssignment">Использовать жёсткое назначение (true) или мягкое (false)</param>
     public VonMisesFisherClusterer(
+        Device device,
         IUserFriendlyLogger userFriendlyLogger,
         int numClusters, 
         int maxIterations, 
         double tolerance, 
         bool useHardAssignment)
     {
+        _device = device;
         _userFriendlyLogger = userFriendlyLogger;
         _numClusters = numClusters;
         _maxIterations = maxIterations;
@@ -92,7 +96,7 @@ public class VonMisesFisherClusterer
         var (numSamples, dimension) = (oldVectorsTensor.shape[0], oldVectorsTensor.shape[1]);
             
         // Инициализируем параметры модели
-        InitializeParameters(oldVectorsTensor, Math.Min(1000, numSamples), dimension);
+        InitializeParameters(oldVectorsTensor, Math.Min(10000, numSamples), dimension);
             
         double prevLogLikelihood = double.NegativeInfinity;
             
@@ -223,64 +227,71 @@ public class VonMisesFisherClusterer
     /// <param name="dimension">Размерность данных</param>
     private void InitializeParameters(Tensor oldVectorsTensor, long numSamples, long dimension)
     {
-        var device = torch.CUDA;
-
-        // Инициализация коэффициентов смешивания (равномерное распределение)
-        MixingCoefficients = torch.ones(_numClusters, dtype: torch.float32) / _numClusters;
-            
-        // Инициализация направлений средних с помощью kmeans++ подобного метода
-        MeanDirections = torch.zeros(new long[] { _numClusters, dimension }, dtype: torch.float32);
-            
-        // Выбираем первый центр случайно
-        var randomIndex = torch.randint(low: 0, high: numSamples, size: new long[] { 1 }).item<long>();
-        MeanDirections[0] = oldVectorsTensor[randomIndex];
-            
-        // Выбираем остальные центры с вероятностью пропорциональной расстоянию до ближайшего центра
-        for (int k = 1; k < _numClusters; k += 1)
+        using (var disposeScope = torch.NewDisposeScope())
         {
-            // Для каждой точки данных находим расстояние до ближайшего уже выбранного центра
+            var device = cuda.is_available() ? CUDA : CPU;
 
-            var similarity = torch.mm(oldVectorsTensor, MeanDirections[..k, ..].transpose(dim0: 0, dim1: 1));
-            var (probabilities, indices) = torch.topk(similarity, k: 1, dim: 1, largest: true);
-            probabilities.neg_().add_(1.0f).pow_(2);
+            var oldVectorsTensor_device = oldVectorsTensor.to(device);
 
-            // UNOPTIMIZED
-            //var distances = torch.zeros(numSamples);
-            //for (long i = 0; i < numSamples; i += 1)
-            //{
-            //    var minDistance = double.MaxValue;
+            // Инициализация направлений средних с помощью kmeans++ подобного метода
+            var meanDirections_device = torch.zeros(new long[] { _numClusters, dimension }, dtype: torch.float32, device: device);
 
-            //    // Вычисляем минимальное расстояние до уже выбранных центров
-            //    for (int j = 0; j < k; j += 1)
-            //    {
-            //        // Используем угловое расстояние: 1 - cosine_similarity
-            //        var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[j]).item<float>();
-            //        var angularDistance = 1.0 - cosineSimilarity;
-            //        minDistance = Math.Min(minDistance, angularDistance);
-            //    }
+            // Выбираем первый центр случайно
+            var randomIndex = torch.randint(low: 0, high: numSamples, size: new long[] { 1 }).item<long>();
+            meanDirections_device[0] = oldVectorsTensor_device[randomIndex];
 
-            //    distances[i] = minDistance;
-            //}
-
-            //// Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
-            //var probabilities = torch.pow(distances, 2);
-            //var s = torch.sum(probabilities);
-            //probabilities = probabilities / s;        
-
-            // Используем multinomial sampling для выбора индекса
-            var selectedIndex = torch.multinomial(input: probabilities.transpose(dim0: 0, dim1: 1), num_samples: 1).item<long>();
-            MeanDirections[k] = oldVectorsTensor[selectedIndex];
-
-            if ((k + 1) % 10 == 0)
+            // Выбираем остальные центры с вероятностью пропорциональной расстоянию до ближайшего центра
+            for (int k = 1; k < _numClusters; k += 1)
             {
-                _userFriendlyLogger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
+                // Для каждой точки данных находим расстояние до ближайшего уже выбранного центра
+
+                var similarity = torch.mm(oldVectorsTensor_device, meanDirections_device[..k, ..].t());
+                var (probabilities, indices) = torch.topk(similarity, k: 1, dim: 1, largest: true);
+                probabilities.neg_().add_(1.0f).pow_(2);
+
+                // UNOPTIMIZED
+                //var distances = torch.zeros(numSamples);
+                //for (long i = 0; i < numSamples; i += 1)
+                //{
+                //    var minDistance = double.MaxValue;
+
+                //    // Вычисляем минимальное расстояние до уже выбранных центров
+                //    for (int j = 0; j < k; j += 1)
+                //    {
+                //        // Используем угловое расстояние: 1 - cosine_similarity
+                //        var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[j]).item<float>();
+                //        var angularDistance = 1.0 - cosineSimilarity;
+                //        minDistance = Math.Min(minDistance, angularDistance);
+                //    }
+
+                //    distances[i] = minDistance;
+                //}
+
+                //// Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
+                //var probabilities = torch.pow(distances, 2);
+                //var s = torch.sum(probabilities);
+                //probabilities = probabilities / s;        
+
+                // Используем multinomial sampling для выбора индекса
+                var selectedIndex = torch.multinomial(input: probabilities.t(), num_samples: 1).item<long>();
+                meanDirections_device[k] = oldVectorsTensor_device[selectedIndex];
+
+                if ((k + 1) % 10 == 0)
+                {
+                    _userFriendlyLogger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
+                }
             }
-        }
-            
+
+            MeanDirections = meanDirections_device.to(CPU).DetachFromDisposeScope();
+        }            
+
         // Инициализация параметров концентрации
         // Начинаем с умеренных значений концентрации
         Concentrations = torch.ones(size: _numClusters, dtype: torch.float32) * 1.0f;
-            
+
+        // Инициализация коэффициентов смешивания (равномерное распределение)
+        MixingCoefficients = torch.ones(_numClusters, dtype: torch.float32) / _numClusters;
+
         _userFriendlyLogger.LogInformation("Параметры инициализированы:");
         _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
         _userFriendlyLogger.LogInformation($"Размерность данных: {dimension}");
@@ -348,7 +359,7 @@ public class VonMisesFisherClusterer
         for (int k = 0; k < _numClusters; k += 1)
         {
             // Обновляем коэффициент смешивания α_k
-            var effectiveSampleSize = torch.sum(posteriors.select(dim: 1, index: k));
+            var effectiveSampleSize = torch.sum(posteriors[.., k]);
             MixingCoefficients[k] = effectiveSampleSize / numSamples;
                 
             // Вычисляем взвешенную сумму точек для кластера k
@@ -372,6 +383,11 @@ public class VonMisesFisherClusterer
             
         // Нормализуем коэффициенты смешивания для обеспечения того, что их сумма равна 1
         MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
+        float threshold = 1e-10f;
+        // Создаём булеву маску: где tensor < порог
+        var mask = MixingCoefficients.lt(threshold); // mask — логический тензор Nx1
+        // Применяем маску и присваиваем новое значение тем элементам, где mask == true
+        MixingCoefficients[mask] = threshold;
     }
 
     /// <summary>

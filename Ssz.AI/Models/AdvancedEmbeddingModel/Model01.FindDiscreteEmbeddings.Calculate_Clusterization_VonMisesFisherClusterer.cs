@@ -24,6 +24,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         public void Calculate_Clusterization_AlgorithmData_VonMisesFisherClusterer(LanguageInfo languageInfo, ILoggersSet loggersSet)
         {
+            var device = cuda.is_available() ? CUDA : CPU;
+
             var words = languageInfo.Words;
 
             var clusterization_AlgorithmData = new Clusterization_AlgorithmData(languageInfo, name: "VonMisesFisherClusterer");
@@ -52,11 +54,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             // Создаём и обучаем кластеризатор
             var clusterer = new VonMisesFisherClusterer(
+                device,
                 loggersSet.UserFriendlyLogger,
                 numClusters: 300,
                 maxIterations: 50,
                 tolerance: 1e-6,
-                useHardAssignment: false
+                useHardAssignment: true
             );
 
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
