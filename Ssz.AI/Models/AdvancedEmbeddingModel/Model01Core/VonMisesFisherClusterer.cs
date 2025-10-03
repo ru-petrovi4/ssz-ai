@@ -32,7 +32,7 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// Порог сходимости по логарифмической вероятности
     /// </summary>
-    private readonly double _tolerance;
+    private readonly float _tolerance;
 
     /// <summary>
     /// Использовать жёсткое (hard) или мягкое (soft) назначение
@@ -43,20 +43,23 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// μ_k - направления средних для каждого кластера [K x D]
     /// </summary>
+    /// <remarks>device: CPU</remarks>
     public Tensor MeanDirections { get; private set; } = null!;
 
     /// <summary>
     /// κ_k - параметры концентрации для каждого кластера [K]
     /// </summary>
+    /// <remarks>device: CPU</remarks>
     public Tensor Concentrations { get; private set; } = null!;
 
     /// <summary>
     /// α_k - коэффициенты смешивания [K]
     /// </summary>
+    /// <remarks>device: CPU</remarks>
     public Tensor MixingCoefficients { get; private set; } = null!;
 
     // Логи процесса обучения
-    public List<double> LogLikelihoodHistory { get; private set; }
+    public List<float> LogLikelihoodHistory { get; private set; }
 
     /// <summary>
     /// Конструктор кластеризатора vMF
@@ -72,7 +75,7 @@ public class VonMisesFisherClusterer
         IUserFriendlyLogger userFriendlyLogger,
         int numClusters, 
         int maxIterations, 
-        double tolerance, 
+        float tolerance, 
         bool useHardAssignment)
     {
         _device = device;
@@ -81,13 +84,13 @@ public class VonMisesFisherClusterer
         _maxIterations = maxIterations;
         _tolerance = tolerance;
         _useHardAssignment = useHardAssignment;
-        LogLikelihoodHistory = new List<double>();
+        LogLikelihoodHistory = new List<float>();
     }
 
     /// <summary>
     /// Основной метод обучения кластеризатора на нормированных данных
     /// </summary>
-    /// <param name="oldVectorsTensor">Нормированные данные [N x D], где N - количество точек, D - размерность</param>
+    /// <param name="oldVectorsTensor">Нормированные данные [N x D], где N - количество точек, D - размерность. Device: CPU</param>
     public void Fit(Tensor oldVectorsTensor)
     {
         // Проверяем, что данные корректно нормированы
@@ -98,7 +101,7 @@ public class VonMisesFisherClusterer
         // Инициализируем параметры модели
         InitializeParameters(oldVectorsTensor, Math.Min(10000, numSamples), dimension);
             
-        double prevLogLikelihood = double.NegativeInfinity;
+        float prevLogLikelihood = float.NegativeInfinity;
             
         // Основной цикл EM алгоритма
         for (int iteration = 0; iteration < _maxIterations; iteration += 1)
@@ -132,6 +135,11 @@ public class VonMisesFisherClusterer
         _userFriendlyLogger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
     }
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="oldVectorsTensor">Device: CPU</param>
+    /// <param name="clusterization_AlgorithmData"></param>
     public void GetResult(Tensor oldVectorsTensor, Clusterization_AlgorithmData clusterization_AlgorithmData)
     {
         var numSamples = oldVectorsTensor.shape[0];        
@@ -253,7 +261,7 @@ public class VonMisesFisherClusterer
                 //var distances = torch.zeros(numSamples);
                 //for (long i = 0; i < numSamples; i += 1)
                 //{
-                //    var minDistance = double.MaxValue;
+                //    var minDistance = float.MaxValue;
 
                 //    // Вычисляем минимальное расстояние до уже выбранных центров
                 //    for (int j = 0; j < k; j += 1)
@@ -398,21 +406,21 @@ public class VonMisesFisherClusterer
     /// <param name="meanResultantLength">Средний resultant length r̄</param>
     /// <param name="dimension">Размерность данных d</param>
     /// <returns>Приближённое значение κ</returns>
-    private double ApproximateConcentration(double meanResultantLength, long dimension)
+    private float ApproximateConcentration(float meanResultantLength, long dimension)
     {
         // Ограничиваем r̄ чтобы избежать деления на ноль
-        var r = Math.Max(0.0, Math.Min(0.999999, meanResultantLength));
-        var d = (double)dimension;
+        var r = MathF.Max(0.0f, MathF.Min(0.999999f, meanResultantLength));
+        var d = (float)dimension;
             
         // Применяем аппроксимацию из статьи Banerjee et al.
         // κ ≈ r̄d - r̄³ / (1 - r̄²)
-        var numerator = r * d - Math.Pow(r, 3);
-        var denominator = 1.0 - Math.Pow(r, 2);
+        var numerator = r * d - MathF.Pow(r, 3);
+        var denominator = 1.0f - MathF.Pow(r, 2);
             
         var kappa = numerator / denominator;
             
         // Ограничиваем κ положительными разумными значениями
-        return Math.Max(0.01, Math.Min(1000.0, kappa));
+        return Math.Max(0.01f, MathF.Min(1000.0f, kappa));
     }
 
     /// <summary>
@@ -422,9 +430,9 @@ public class VonMisesFisherClusterer
     /// <param name="kappa">Параметр концентрации κ</param>
     /// <param name="dimension">Размерность d</param>
     /// <returns>Логарифм нормализующей константы</returns>
-    private double ComputeLogNormalizingConstant(double kappa, long dimension)
+    private float ComputeLogNormalizingConstant(float kappa, long dimension)
     {
-        var d = (double)dimension;
+        var d = (float)dimension;
             
         // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
         // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
@@ -435,9 +443,9 @@ public class VonMisesFisherClusterer
             // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
             var nu = d / 2.0 - 1.0;
                 
-            var logBessel = kappa - 0.5 * Math.Log(2.0 * Math.PI * kappa);
-            var logNormalizer = (d / 2.0 - 1.0) * Math.Log(kappa) - 
-                                (d / 2.0) * Math.Log(2.0 * Math.PI) - logBessel;
+            var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
+            var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) - 
+                                (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
                 
             return logNormalizer;
         }
@@ -446,9 +454,9 @@ public class VonMisesFisherClusterer
             // Для малых размерностей используем более точные вычисления
             // Это упрощённая версия, в production коде следует использовать
             // специализированные библиотеки для функций Бесселя
-            var logGamma = LogGamma(d / 2.0);
-            var logNormalizer = Math.Log(kappa / 2.0) * (d / 2.0 - 1.0) - 
-                                logGamma - (d / 2.0) * Math.Log(Math.PI);
+            var logGamma = LogGamma(d / 2.0f);
+            var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) - 
+                                logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
                 
             return logNormalizer;
         }
@@ -460,12 +468,12 @@ public class VonMisesFisherClusterer
     /// </summary>
     /// <param name="x">Аргумент</param>
     /// <returns>Приближённое значение log Γ(x)</returns>
-    private double LogGamma(double x)
+    private float LogGamma(float x)
     {
         // Используем аппроксимацию Стирлинга: log Γ(x) ≈ (x-0.5)*log(x) - x + 0.5*log(2π)
-        if (x < 1.0) return LogGamma(x + 1.0) - Math.Log(x);
+        if (x < 1.0f) return LogGamma(x + 1.0f) - MathF.Log(x);
             
-        return (x - 0.5) * Math.Log(x) - x + 0.5 * Math.Log(2.0 * Math.PI);
+        return (x - 0.5f) * MathF.Log(x) - x + 0.5f * MathF.Log(2.0f * MathF.PI);
     }
 
     /// <summary>
@@ -473,14 +481,14 @@ public class VonMisesFisherClusterer
     /// </summary>
     /// <param name="oldVectorsTensor">Входные данные</param>
     /// <returns>Логарифмическая вероятность</returns>
-    private double ComputeLogLikelihood(Tensor oldVectorsTensor)
+    private float ComputeLogLikelihood(Tensor oldVectorsTensor)
     {
         var numSamples = oldVectorsTensor.shape[0];
-        var totalLogLikelihood = 0.0;
+        var totalLogLikelihood = 0.0f;
             
         for (long i = 0; i < numSamples; i++)
         {
-            var sampleLogLikelihood = double.NegativeInfinity;
+            var sampleLogLikelihood = float.NegativeInfinity;
                 
             for (int k = 0; k < _numClusters; k += 1)
             {
@@ -493,20 +501,20 @@ public class VonMisesFisherClusterer
                     oldVectorsTensor.shape[1]
                 );
                     
-                var logComponent = Math.Log(MixingCoefficients[k].item<float>()) + 
+                var logComponent = MathF.Log(MixingCoefficients[k].item<float>()) + 
                                     logNormalizingConstant + 
                                     Concentrations[k].item<float>() * cosineSimilarity;
                     
                 // Используем log-sum-exp trick для численной стабильности
-                if (sampleLogLikelihood == double.NegativeInfinity)
+                if (sampleLogLikelihood == float.NegativeInfinity)
                 {
                     sampleLogLikelihood = logComponent;
                 }
                 else
                 {
                     var maxLog = Math.Max(sampleLogLikelihood, logComponent);
-                    sampleLogLikelihood = maxLog + Math.Log(
-                        Math.Exp(sampleLogLikelihood - maxLog) + Math.Exp(logComponent - maxLog)
+                    sampleLogLikelihood = maxLog + MathF.Log(
+                        MathF.Exp(sampleLogLikelihood - maxLog) + MathF.Exp(logComponent - maxLog)
                     );
                 }
             }
