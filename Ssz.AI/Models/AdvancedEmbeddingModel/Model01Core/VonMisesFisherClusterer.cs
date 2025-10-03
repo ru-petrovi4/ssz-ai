@@ -113,7 +113,7 @@ public class VonMisesFisherClusterer
             UpdateParameters(oldVectorsTensor, posteriors);
                 
             // Вычисляем логарифмическую вероятность для проверки сходимости
-            var logLikelihood = ComputeLogLikelihood(oldVectorsTensor);
+            var logLikelihood = ComputeLogLikelihood(oldVectorsTensor[..1000, ..]);
             LogLikelihoodHistory.Add(logLikelihood);
                 
             // Проверяем сходимость
@@ -237,12 +237,10 @@ public class VonMisesFisherClusterer
     {
         using (var disposeScope = torch.NewDisposeScope())
         {
-            var device = cuda.is_available() ? CUDA : CPU;
-
-            var oldVectorsTensor_device = oldVectorsTensor.to(device);
+            var oldVectorsTensor_device = oldVectorsTensor.to(_device);
 
             // Инициализация направлений средних с помощью kmeans++ подобного метода
-            var meanDirections_device = torch.zeros(new long[] { _numClusters, dimension }, dtype: torch.float32, device: device);
+            var meanDirections_device = torch.zeros(new long[] { _numClusters, dimension }, dtype: torch.float32, device: _device);
 
             // Выбираем первый центр случайно
             var randomIndex = torch.randint(low: 0, high: numSamples, size: new long[] { 1 }).item<long>();
@@ -322,7 +320,7 @@ public class VonMisesFisherClusterer
         for (int k = 0; k < _numClusters; k++)
         {
             // Вычисляем cosine similarity между данными и k-м центром
-            var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k]);
+            var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
                 
             // Вычисляем логарифм нормализующей константы c_d(κ)
             var logNormalizingConstant = ComputeLogNormalizingConstant(
@@ -343,7 +341,7 @@ public class VonMisesFisherClusterer
             for (long i = 0; i < numSamples; i++)
             {
                 var assignedCluster = assignments[i].item<long>();
-                posteriors[i, assignedCluster] = 1.0;
+                posteriors[i, assignedCluster] = 1.0f;
             }
         }
         else
@@ -358,8 +356,8 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// M-шаг EM алгоритма: обновляет параметры модели на основе posterior probabilities
     /// </summary>
-    /// <param name="oldVectorsTensor">Входные данные [N x D]</param>
-    /// <param name="posteriors">Posterior probabilities [N x K]</param>
+    /// <param name="oldVectorsTensor">Входные данные [N x D]. Device: CPU</param>
+    /// <param name="posteriors">Posterior probabilities [N x K]. Device: CPU</param>
     private void UpdateParameters(Tensor oldVectorsTensor, Tensor posteriors)
     {
         var numSamples = oldVectorsTensor.shape[0];
@@ -386,7 +384,7 @@ public class VonMisesFisherClusterer
                 
             // Обновляем параметр концентрации κ_k используя аппроксимацию из статьи
             var newConcentration = ApproximateConcentration(meanResultantLength, oldVectorsTensor.shape[1]);
-            Concentrations[k] = (float)newConcentration;
+            Concentrations[k] = newConcentration;
         }
             
         // Нормализуем коэффициенты смешивания для обеспечения того, что их сумма равна 1
@@ -441,7 +439,7 @@ public class VonMisesFisherClusterer
         {
             // Используем асимптотическую аппроксимацию для больших κ или d
             // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
-            var nu = d / 2.0 - 1.0;
+            //var nu = d / 2.0f - 1.0f;
                 
             var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
             var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) - 
@@ -485,42 +483,49 @@ public class VonMisesFisherClusterer
     {
         var numSamples = oldVectorsTensor.shape[0];
         var totalLogLikelihood = 0.0f;
-            
-        for (long i = 0; i < numSamples; i++)
+
+        //using (var disposeScope = torch.NewDisposeScope())
         {
-            var sampleLogLikelihood = float.NegativeInfinity;
-                
-            for (int k = 0; k < _numClusters; k += 1)
+            var oldVectorsTensor_device = oldVectorsTensor; //.to(_device);
+            // [K x D]
+            var meanDirectionsr_device = MeanDirections; //.to(_device);
+
+            // Вычисляем cosine similarity
+            var cosineSimilarity = torch.mm(oldVectorsTensor_device, meanDirectionsr_device.t());
+
+            for (long i = 0; i < numSamples; i++)
             {
-                // Вычисляем cosine similarity
-                var cosineSimilarity = torch.dot(oldVectorsTensor[i], MeanDirections[k]).item<float>();
-                    
-                // Вычисляем логарифм компоненты смеси
-                var logNormalizingConstant = ComputeLogNormalizingConstant(
-                    Concentrations[k].item<float>(), 
-                    oldVectorsTensor.shape[1]
-                );
-                    
-                var logComponent = MathF.Log(MixingCoefficients[k].item<float>()) + 
-                                    logNormalizingConstant + 
-                                    Concentrations[k].item<float>() * cosineSimilarity;
-                    
-                // Используем log-sum-exp trick для численной стабильности
-                if (sampleLogLikelihood == float.NegativeInfinity)
+                var sampleLogLikelihood = float.NegativeInfinity;
+
+                for (int k = 0; k < _numClusters; k += 1)
                 {
-                    sampleLogLikelihood = logComponent;
-                }
-                else
-                {
-                    var maxLog = Math.Max(sampleLogLikelihood, logComponent);
-                    sampleLogLikelihood = maxLog + MathF.Log(
-                        MathF.Exp(sampleLogLikelihood - maxLog) + MathF.Exp(logComponent - maxLog)
+                    // Вычисляем логарифм компоненты смеси
+                    var logNormalizingConstant = ComputeLogNormalizingConstant(
+                        Concentrations[k].item<float>(),
+                        oldVectorsTensor.shape[1]
                     );
+
+                    var logComponent = MathF.Log(MixingCoefficients[k].item<float>()) +
+                                        logNormalizingConstant +
+                                        Concentrations[k].item<float>() * cosineSimilarity[i, k].item<float>();
+
+                    // Используем log-sum-exp trick для численной стабильности
+                    if (sampleLogLikelihood == float.NegativeInfinity)
+                    {
+                        sampleLogLikelihood = logComponent;
+                    }
+                    else
+                    {
+                        var maxLog = Math.Max(sampleLogLikelihood, logComponent);
+                        sampleLogLikelihood = maxLog + MathF.Log(
+                            MathF.Exp(sampleLogLikelihood - maxLog) + MathF.Exp(logComponent - maxLog)
+                        );
+                    }
                 }
+
+                totalLogLikelihood += sampleLogLikelihood;
             }
-                
-            totalLogLikelihood += sampleLogLikelihood;
-        }
+        }            
             
         return totalLogLikelihood;
     }
@@ -528,25 +533,25 @@ public class VonMisesFisherClusterer
     /// <summary>
     /// Предсказывает кластерные назначения для новых данных
     /// </summary>
-    /// <param name="data">Новые нормированные данные [N x D]</param>
+    /// <param name="oldVectorsTensor">Новые нормированные данные [N x D]. Device: CPU</param>
     /// <returns>Назначения кластеров [N] (индексы от 0 до K-1)</returns>
-    public Tensor Predict(Tensor data)
+    public Tensor Predict(Tensor oldVectorsTensor)
     {
-        ValidateNormalizedData(data);
+        ValidateNormalizedData(oldVectorsTensor);
             
-        var posteriors = ComputePosteriors(data);
+        var posteriors = ComputePosteriors(oldVectorsTensor);
         return torch.argmax(posteriors, dim: 1);
     }
 
     /// <summary>
     /// Возвращает мягкие назначения (вероятности принадлежности) для данных
     /// </summary>
-    /// <param name="data">Нормированные данные [N x D]</param>
+    /// <param name="oldVectorsTensor">Нормированные данные [N x D]. Device: CPU</param>
     /// <returns>Матрица вероятностей [N x K]</returns>
-    public Tensor PredictProba(Tensor data)
+    public Tensor PredictProba(Tensor oldVectorsTensor)
     {
-        ValidateNormalizedData(data);
-        return ComputePosteriors(data);
+        ValidateNormalizedData(oldVectorsTensor);
+        return ComputePosteriors(oldVectorsTensor);
     }
 
     /// <summary>
