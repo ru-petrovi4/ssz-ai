@@ -71,8 +71,8 @@ public partial class Model01
     public const string FileName_LanguageInfo_ProxWordsOldMatrix_EN = "AdvancedEmbedding_LanguageInfo_ProxWordsOldMatrix_EN.bin";
     public const string FileName_Clusterization_AlgorithmData_RU = "AdvancedEmbedding_Clusterization_AlgorithmData_RU.bin";
     public const string FileName_Clusterization_AlgorithmData_EN = "AdvancedEmbedding_Clusterization_AlgorithmData_EN.bin";
-    public const string FileName_ProjectionOptimization_AlgorithmData_Variant3_RU = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_Variant3_RU.bin";
-    public const string FileName_ProjectionOptimization_AlgorithmData_Variant3_EN = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_Variant3_EN.bin";
+    public const string FileName_ProjectionOptimization_AlgorithmData_RU = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_RU.bin";
+    public const string FileName_ProjectionOptimization_AlgorithmData_EN = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_EN.bin";
     public const string FileName_DiscreteVectors_RU = "AdvancedEmbedding_DiscreteVectors_RU.bin";
     public const string FileName_DiscreteVectors_EN = "AdvancedEmbedding_DiscreteVectors_EN.bin";
     public const string FileName_LanguageDiscreteEmbeddings_RU = "AdvancedEmbedding_LanguageDiscreteEmbeddings_RU.bin";
@@ -121,19 +121,21 @@ public partial class Model01
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_EN, LanguageInfo_EN.Clusterization_AlgorithmData, null);
         }
 
-        calculate = false;
+        calculate = true;
         if (calculate)
         {
-            Calculate_ProjectionIndices_Variant3(LanguageInfo_RU, _loggersSet);
-            Helpers.SerializationHelper.SaveToFile(FileName_ProjectionOptimization_AlgorithmData_Variant3_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, _loggersSet.UserFriendlyLogger);
+            var r = new Random(42);
 
-            Calculate_ProjectionIndices_Variant3(LanguageInfo_EN, _loggersSet);
-            Helpers.SerializationHelper.SaveToFile(FileName_ProjectionOptimization_AlgorithmData_Variant3_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, _loggersSet.UserFriendlyLogger);
+            Calculate_ProjectionIndices_V4(LanguageInfo_RU, r, _loggersSet);
+            Helpers.SerializationHelper.SaveToFile(FileName_ProjectionOptimization_AlgorithmData_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, _loggersSet.UserFriendlyLogger);
+
+            Calculate_ProjectionIndices_V4(LanguageInfo_EN, r, _loggersSet);
+            Helpers.SerializationHelper.SaveToFile(FileName_ProjectionOptimization_AlgorithmData_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, _loggersSet.UserFriendlyLogger);
         }
         else
         {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_Variant3_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, null);
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_Variant3_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, null);
         }
 
         //CalculateDiscreteVectors(Clusterization_AlgorithmData_Random, ProjectionOptimization_AlgorithmData_Random, _loggersSet);
@@ -141,7 +143,7 @@ public partial class Model01
         //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_AlgorithmData_Random, _loggersSet);
         //ProxWordsDiscreteMatrix_Calculate(Clusterization_AlgorithmData_Random, _loggersSet);            
 
-        calculate = false;
+        calculate = true;
         if (calculate)
         {
             LanguageInfo_RU.DiscreteVectorsAndMatrices = Calculate_DiscreteVectorsOnly(LanguageInfo_RU, _loggersSet);
@@ -184,15 +186,15 @@ public partial class Model01
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: WordsCount, _loggersSet, loadOldVectors: true);
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: WordsCount, _loggersSet, loadOldVectors: true);
 
-        LanguageInfo_RU.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU, name: "KMeans");
+        LanguageInfo_RU.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU, name: "VonMisesFisherClusterer");
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_RU, LanguageInfo_RU.Clusterization_AlgorithmData, null);
-        LanguageInfo_EN.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_EN, name: "KMeans");
+        LanguageInfo_EN.Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_EN, name: "VonMisesFisherClusterer");
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_EN, LanguageInfo_EN.Clusterization_AlgorithmData, null);
 
-        LanguageInfo_RU.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant3");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_Variant3_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, null);
-        LanguageInfo_EN.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant3");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_Variant3_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, null);
+        LanguageInfo_RU.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant4");
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_RU, LanguageInfo_RU.ProjectionOptimization_AlgorithmData, null);
+        LanguageInfo_EN.ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant4");
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_EN, LanguageInfo_EN.ProjectionOptimization_AlgorithmData, null);
 
         LanguageInfo_RU.DiscreteVectorsAndMatrices = new DiscreteVectorsAndMatrices();
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DiscreteVectors_RU, LanguageInfo_RU.DiscreteVectorsAndMatrices, null);
@@ -202,7 +204,10 @@ public partial class Model01
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new()
         {
             Words = new(),
-            PrimaryWords = new()
+            ClusterInfos = LanguageInfo_RU.Clusterization_AlgorithmData.ClusterInfos.ToList(),
+            MeanDirections = LanguageInfo_RU.Clusterization_AlgorithmData.MeanDirections,
+            Concentrations = LanguageInfo_RU.Clusterization_AlgorithmData.Concentrations,
+            MixingCoefficients = LanguageInfo_RU.Clusterization_AlgorithmData.MixingCoefficients,
         };
         for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
         {
@@ -211,22 +216,24 @@ public partial class Model01
             {
                 Name = word.Name,
                 Index = i,
+                ClusterIndex = LanguageInfo_RU.Clusterization_AlgorithmData.ClusterIndices[i],
                 OldVector = word.OldVector,
                 OldVectorNormalized = word.OldVectorNormalized,
                 DiscreteVector = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors[i],
                 DiscreteVector_PrimaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_PrimaryBitsOnly[i],
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
-            languageDiscreteEmbeddings_RU.Words.Add(wordWithDiscreteEmbedding);
-            if (LanguageInfo_RU.Clusterization_AlgorithmData.IsPrimaryWord[i])
-                languageDiscreteEmbeddings_RU.PrimaryWords.Add(wordWithDiscreteEmbedding);
+            languageDiscreteEmbeddings_RU.Words.Add(wordWithDiscreteEmbedding);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new()
         {
             Words = new(),
-            PrimaryWords = new()
+            ClusterInfos = LanguageInfo_EN.Clusterization_AlgorithmData.ClusterInfos.ToList(),
+            MeanDirections = LanguageInfo_EN.Clusterization_AlgorithmData.MeanDirections,
+            Concentrations = LanguageInfo_EN.Clusterization_AlgorithmData.Concentrations,
+            MixingCoefficients = LanguageInfo_EN.Clusterization_AlgorithmData.MixingCoefficients,
         };
         for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
         {
@@ -235,15 +242,14 @@ public partial class Model01
             {
                 Name = word.Name,
                 Index = i,
+                ClusterIndex = LanguageInfo_EN.Clusterization_AlgorithmData.ClusterIndices[i],
                 OldVector = word.OldVector,
                 OldVectorNormalized = word.OldVectorNormalized,
                 DiscreteVector = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors[i],
                 DiscreteVector_PrimaryBitsOnly = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors_PrimaryBitsOnly[i],
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
-            languageDiscreteEmbeddings_EN.Words.Add(wordWithDiscreteEmbedding);
-            if (LanguageInfo_EN.Clusterization_AlgorithmData.IsPrimaryWord[i])
-                languageDiscreteEmbeddings_EN.PrimaryWords.Add(wordWithDiscreteEmbedding);
+            languageDiscreteEmbeddings_EN.Words.Add(wordWithDiscreteEmbedding);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);
     }

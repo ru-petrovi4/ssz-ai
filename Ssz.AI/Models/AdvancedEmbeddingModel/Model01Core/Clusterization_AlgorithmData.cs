@@ -1,6 +1,8 @@
-﻿using Ssz.Utils.Serialization;
+﻿using Ssz.AI.Helpers;
+using Ssz.Utils.Serialization;
 using System.Collections.Generic;
 using System.Linq;
+using static TorchSharp.torch;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 {
@@ -32,7 +34,26 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 
         public Word[] PrimaryWords = null!;        
 
-        public bool[] IsPrimaryWord = null!;        
+        public bool[] IsPrimaryWord = null!;
+
+        // Параметры модели - изучаются в процессе обучения
+        /// <summary>
+        /// μ_k - направления средних для каждого кластера [K x D]
+        /// </summary>
+        /// <remarks>device: CPU</remarks>
+        public Tensor MeanDirections { get; set; } = null!;
+
+        /// <summary>
+        /// κ_k - параметры концентрации для каждого кластера [K]
+        /// </summary>
+        /// <remarks>device: CPU</remarks>
+        public Tensor Concentrations { get; set; } = null!;
+
+        /// <summary>
+        /// α_k - коэффициенты смешивания [K]
+        /// </summary>
+        /// <remarks>device: CPU</remarks>
+        public Tensor MixingCoefficients { get; set; } = null!;
 
         public void GenerateOwnedData(int clustersCount)
         {
@@ -53,7 +74,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                 writer.WriteArray(ClusterIndices);
                 writer.WriteArrayOfOwnedDataSerializable(ClusterInfos, null);
                 var primaryWordIndices = PrimaryWords!.Select(w => w.Index).ToList();
-                writer.WriteList(primaryWordIndices);                
+                writer.WriteList(primaryWordIndices);
+
+                TorchSharpHelper.WriteTensor(MeanDirections, writer);
+                TorchSharpHelper.WriteTensor(Concentrations, writer);
+                TorchSharpHelper.WriteTensor(MixingCoefficients, writer);
             }
         }
 
@@ -75,6 +100,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                         {
                             IsPrimaryWord[primaryWordIndex] = true;
                         }
+
+                        MeanDirections = TorchSharpHelper.ReadTensor(reader);
+                        Concentrations = TorchSharpHelper.ReadTensor(reader);
+                        MixingCoefficients = TorchSharpHelper.ReadTensor(reader);
 #if DEBUG
                         //var sum = IsPrimaryWord.Sum(b => b ? 1 : 0);
 #endif

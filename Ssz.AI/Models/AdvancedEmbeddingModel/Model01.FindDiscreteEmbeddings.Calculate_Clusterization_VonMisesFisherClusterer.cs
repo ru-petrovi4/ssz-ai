@@ -57,7 +57,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 device,
                 loggersSet.UserFriendlyLogger,
                 numClusters: 300,
-                maxIterations: 50,
+                maxIterations: 100,
                 tolerance: 1e-6f,
                 useHardAssignment: true
             );
@@ -65,7 +65,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
             clusterer.Fit(oldVectorsTensor);
 
-            clusterer.GetResult(oldVectorsTensor, clusterization_AlgorithmData);
+            clusterer.GetResult(oldVectorsTensor, clusterization_AlgorithmData);            
 
             // Выводим результаты
             clusterer.PrintModelSummary();

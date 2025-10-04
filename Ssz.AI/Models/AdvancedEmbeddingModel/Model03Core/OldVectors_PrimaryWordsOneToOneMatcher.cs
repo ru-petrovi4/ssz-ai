@@ -22,31 +22,31 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         _parameters = parameters;
     }
 
-    public int[] PrimaryWordsMapping = null!;
+    public int[] ClustersMapping = null!;
 
-    public void CalculatePrimaryWordsMapping(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    public void CalculateClustersMapping(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
     {
-        PrimaryWordsMapping = new int[source.PrimaryWords.Count];
+        ClustersMapping = new int[source.ClusterInfos.Count];
 
         using Linear mappingLinear = Linear(
-            inputSize: source.PrimaryWords[0].OldVector.Length,
-            outputSize: source.PrimaryWords[0].OldVector.Length,
+            inputSize: source.Words[0].OldVector.Length,
+            outputSize: source.Words[0].OldVector.Length,
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", "best_mapping.pt"));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
         //mappingLinear.to();
 
-        for (int sourcePrimaryWordIndex = 0; sourcePrimaryWordIndex < source.PrimaryWords.Count; sourcePrimaryWordIndex += 1)
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
         {
-            var sourcePrimaryWord = source.PrimaryWords[sourcePrimaryWordIndex];
+            var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
 
             //var norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVectorNormalized); // TEST
             //norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVector); // TEST
 
-            var oldVectorTensor = torch.tensor(sourcePrimaryWord.OldVectorNormalized);
+            var oldVectorTensor = torch.tensor(sourceClusterInfo.CentroidOldVectorNormalized).reshape([1, sourceClusterInfo.CentroidOldVectorNormalized.Length]);
             var mappedOldVectorTensor = mappingLinear.forward(oldVectorTensor);
             float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
             float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);            
@@ -55,38 +55,38 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             // Ищем позицию B с максимальным весом среди неиспользованных
             float max = float.MinValue;
             int selected = -1;
-            for (int targetPrimaryWordIndex = 0; targetPrimaryWordIndex < target.PrimaryWords.Count; targetPrimaryWordIndex += 1)
+            for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
             {
-                var targetPrimaryWord = target.PrimaryWords[targetPrimaryWordIndex];
+                var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float cosineSimilarity = TensorPrimitives.CosineSimilarity(mappedOldVectorNormalized, targetPrimaryWord.OldVectorNormalized);
+                float cosineSimilarity = TensorPrimitives.CosineSimilarity(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
                 if (cosineSimilarity > max)
                 {
                     max = cosineSimilarity;
-                    selected = targetPrimaryWordIndex;
+                    selected = targetClusterIndex;
                 }
             }
             if (selected != -1)
             {
-                PrimaryWordsMapping[sourcePrimaryWordIndex] = selected;                
+                ClustersMapping[sourceClusterIndex] = selected;                
             }
             else
             {
             }
         }
 
-        var hs = PrimaryWordsMapping.ToHashSet();
+        var hs = ClustersMapping.ToHashSet();
         _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {        
-        writer.WriteArray(PrimaryWordsMapping);
+        writer.WriteArray(ClustersMapping);
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {   
-        PrimaryWordsMapping = reader.ReadArray<int>()!;
+        ClustersMapping = reader.ReadArray<int>()!;
     }
 
     #region private fields

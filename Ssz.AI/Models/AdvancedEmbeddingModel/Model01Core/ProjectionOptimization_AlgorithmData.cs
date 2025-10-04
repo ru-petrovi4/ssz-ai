@@ -15,18 +15,18 @@ public class ProjectionOptimization_AlgorithmData : ISerializableModelObject
 
     public string Name = null!;
 
-    public int[] WordsProjectionIndices = null!;
+    public int[] WordsHashProjectionIndices = null!;
 
     public void GenerateOwnedData(int wordsCount)
     {
-        WordsProjectionIndices = new int[wordsCount];
+        WordsHashProjectionIndices = new int[wordsCount];
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
         {
-            writer.WriteArray(WordsProjectionIndices);
+            writer.WriteArray(WordsHashProjectionIndices);
         }
     }
 
@@ -37,7 +37,7 @@ public class ProjectionOptimization_AlgorithmData : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:
-                    WordsProjectionIndices = reader.ReadArray<int>()!;
+                    WordsHashProjectionIndices = reader.ReadArray<int>()!;
                     break;
             }
         }

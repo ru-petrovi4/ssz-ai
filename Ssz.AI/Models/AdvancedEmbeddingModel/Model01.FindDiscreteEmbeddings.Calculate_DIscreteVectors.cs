@@ -28,67 +28,67 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     {
         public void Calculate_DiscreteVector_ToDisplay(List<Word> words, Word word, int wordNum)
         {
-            Clusterization_AlgorithmData? CurrentClusterization_AlgorithmData_ToDisplay = null;
+            //Clusterization_AlgorithmData? CurrentClusterization_AlgorithmData_ToDisplay = null;
 
-            if (CurrentClusterization_AlgorithmData_ToDisplay?.PrimaryWords is not null &&
-                CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxPrimaryWords is not null &&
-                CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxWords is not null &&
-                CurrentProjectionOptimization_AlgorithmData_ToDisplay is not null)
-            {                
-                Word[] topProxPrimaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxPrimaryWords[word.Index].Select(it => it.Item2).ToArray();
-                Word[] topProxSecondaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxWords[word.Index].Select(it => it.Item2).ToArray();
+            //if (CurrentClusterization_AlgorithmData_ToDisplay?.PrimaryWords is not null &&
+            //    CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxClusterInfos is not null &&
+            //    CurrentDiscreteVectorsAndMatrices_ToDisplay?.Temp_Top8ProxWords is not null &&
+            //    CurrentProjectionOptimization_AlgorithmData_ToDisplay is not null)
+            //{                
+            //    Word[] topProxPrimaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxClusterInfos[word.Index].Select(it => it.Item2).ToArray();
+            //    Word[] topProxSecondaryWords = CurrentDiscreteVectorsAndMatrices_ToDisplay.Temp_Top8ProxWords[word.Index].Select(it => it.Item2).ToArray();
                 
-                switch (wordNum)
-                {
-                    case 1:
-                        for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
-                        {
-                            words[wordIndex].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.None;
-                        }
-                        for (int index = 0; index < CurrentClusterization_AlgorithmData_ToDisplay.PrimaryWords.Length; index += 1)
-                        {
-                            CurrentClusterization_AlgorithmData_ToDisplay.PrimaryWords[index].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryPoint;
-                        }
-                        for (int index = 0; index < topProxSecondaryWords.Length; index += 1)
-                        {
-                            topProxSecondaryWords[index].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.SecondaryPoint_Selected1;
-                        }
-                        for (int index = 0; index < topProxPrimaryWords.Length; index += 1)
-                        {
-                            var point = topProxPrimaryWords[index].Point;
-                            if (point.GroupId_ToDisplay == (int)PointGroupId_ToDisplay.SecondaryPoint_Selected1)
-                                point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryAndSecondaryPoint_Selected1;
-                            else
-                                point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryPoint_Selected1;
-                        }
-                        word.Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.MainPoint1;
-                        break;
-                    //case 2:
-                    //    for (int index = 0; index < topProxPrimaryWords.Length; index += 1)
-                    //    {
-                    //        topProxPrimaryWords[index].Point.GroupId = (int)PointGroupId.PrimaryPoint_Selected2;
-                    //    }
-                    //    for (int index = 0; index < topProxSecondaryWords.Length; index += 1)
-                    //    {
-                    //        topProxSecondaryWords[index].Point.GroupId = (int)PointGroupId.SecondaryPoint_Selected2;
-                    //    }
-                    //    break;
-                }                
+            //    switch (wordNum)
+            //    {
+            //        case 1:
+            //            for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+            //            {
+            //                words[wordIndex].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.None;
+            //            }
+            //            for (int index = 0; index < CurrentClusterization_AlgorithmData_ToDisplay.PrimaryWords.Length; index += 1)
+            //            {
+            //                CurrentClusterization_AlgorithmData_ToDisplay.PrimaryWords[index].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryPoint;
+            //            }
+            //            for (int index = 0; index < topProxSecondaryWords.Length; index += 1)
+            //            {
+            //                topProxSecondaryWords[index].Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.SecondaryPoint_Selected1;
+            //            }
+            //            for (int index = 0; index < topProxPrimaryWords.Length; index += 1)
+            //            {
+            //                var point = topProxPrimaryWords[index].Point;
+            //                if (point.GroupId_ToDisplay == (int)PointGroupId_ToDisplay.SecondaryPoint_Selected1)
+            //                    point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryAndSecondaryPoint_Selected1;
+            //                else
+            //                    point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryPoint_Selected1;
+            //            }
+            //            word.Point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.MainPoint1;
+            //            break;
+            //        //case 2:
+            //        //    for (int index = 0; index < topProxPrimaryWords.Length; index += 1)
+            //        //    {
+            //        //        topProxPrimaryWords[index].Point.GroupId = (int)PointGroupId.PrimaryPoint_Selected2;
+            //        //    }
+            //        //    for (int index = 0; index < topProxSecondaryWords.Length; index += 1)
+            //        //    {
+            //        //        topProxSecondaryWords[index].Point.GroupId = (int)PointGroupId.SecondaryPoint_Selected2;
+            //        //    }
+            //        //    break;
+            //    }                
 
-                var discreteVector =  new float[Constants.DiscreteVectorLength];
-                for (int i = 0; i < topProxPrimaryWords.Length; i += 1)
-                {
-                    discreteVector[CurrentProjectionOptimization_AlgorithmData_ToDisplay.WordsProjectionIndices[topProxPrimaryWords[i].Index]] = 3.0f;
-                }
-                for (int i = 0; i < topProxSecondaryWords.Length; i += 1)
-                {
-                    discreteVector[CurrentProjectionOptimization_AlgorithmData_ToDisplay.WordsProjectionIndices[topProxSecondaryWords[i].Index]] += 1.0f;
-                }
+            //    var discreteVector =  new float[Constants.DiscreteVectorLength];
+            //    for (int i = 0; i < topProxPrimaryWords.Length; i += 1)
+            //    {
+            //        discreteVector[CurrentProjectionOptimization_AlgorithmData_ToDisplay.WordsHashProjectionIndices[topProxPrimaryWords[i].Index]] = 3.0f;
+            //    }
+            //    for (int i = 0; i < topProxSecondaryWords.Length; i += 1)
+            //    {
+            //        discreteVector[CurrentProjectionOptimization_AlgorithmData_ToDisplay.WordsHashProjectionIndices[topProxSecondaryWords[i].Index]] += 1.0f;
+            //    }
 
-                word.DiscreteVector_ToDisplay = discreteVector;                             
+            //    word.DiscreteVector_ToDisplay = discreteVector;                             
 
-                CreateCortexCopy();
-            }
+            //    CreateCortexCopy();
+            //}
         }
 
         //public DiscreteVectorsAndMatrices Calculate_DiscreteVectors_NoClusters(Clusterization_AlgorithmData clusterization_AlgorithmData,
@@ -159,7 +159,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             DiscreteVectorsAndMatrices result = new();
             result.GenerateOwnedData(languageInfo.Words.Count);
             result.Prepare(languageInfo.Clusterization_AlgorithmData, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
-            result.Calculate_DiscreteVectorsAndMatrices(languageInfo.Words, languageInfo.ProjectionOptimization_AlgorithmData.WordsProjectionIndices, loggersSet);
+            result.Calculate_DiscreteVectorsAndMatrices(languageInfo.Words, languageInfo.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
 
             stopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_AlgorithmData.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
@@ -174,7 +174,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             DiscreteVectorsAndMatrices result = new();
             result.GenerateOwnedData(languageInfo.Words.Count);
             result.Prepare(languageInfo.Clusterization_AlgorithmData, languageInfo.Words, languageInfo.ProxWordsOldMatrix);
-            result.CalculateDiscreteVectorsOnly(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_AlgorithmData.WordsProjectionIndices, loggersSet);
+            result.CalculateDiscreteVectorsOnly(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
 
             stopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);

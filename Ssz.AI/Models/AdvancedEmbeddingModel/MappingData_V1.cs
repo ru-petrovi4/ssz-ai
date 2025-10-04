@@ -98,7 +98,7 @@ public class MappingData_V1 : ISerializableModelObject
         var h = LanguageInfo_RU.Clusterization_AlgorithmData.PrimaryWords.Select(w => w.Index).ToHashSet();
         foreach (var primaryWord in LanguageInfo_RU.Clusterization_AlgorithmData.PrimaryWords)
         {
-            int prjectionIndex = LanguageInfo_RU.ProjectionOptimization_AlgorithmData.WordsProjectionIndices[primaryWord.Index];
+            int prjectionIndex = LanguageInfo_RU.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices[primaryWord.Index];
             Temp_BitWords_RU[prjectionIndex] = primaryWord;
         }
         for (int i = 0; i < Mapping_RU_EN.Length; i += 1)
@@ -135,7 +135,7 @@ public class MappingData_V1 : ISerializableModelObject
         Temp_BitWords_EN = new Word[Mapping_RU_EN.Length];
         foreach (var primaryWord in LanguageInfo_EN.Clusterization_AlgorithmData.PrimaryWords)
         {
-            int prjectionIndex = LanguageInfo_EN.ProjectionOptimization_AlgorithmData.WordsProjectionIndices[primaryWord.Index];
+            int prjectionIndex = LanguageInfo_EN.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices[primaryWord.Index];
             Temp_BitWords_EN[prjectionIndex] = primaryWord;
         }
         for (int i = 0; i < Mapping_RU_EN.Length; i += 1)

@@ -61,17 +61,12 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     public (float, Word)[][] Temp_Top8ProxWords = null!;
 
     /// <summary>
-    ///     Top 8 primary word refs (ordered by proximity, nearest first) for each word.
-    ///     (Proximity, Word)
+    ///     Top 8 ClusterInfo refs (ordered by proximity, nearest first) for each word.
+    ///     (Proximity, ClusterInfo)
     /// </summary>
-    public (float, Word)[][] Temp_Top8ProxPrimaryWords = null!;
+    public (float, ClusterInfo)[][] Temp_Top8ProxClusterInfos = null!;
 
-    public Word[][] Temp_DependentWords = null!;        
-
-    /// <summary>
-    ///     [Clusters, Words]
-    /// </summary>
-    public Word[][] Temp_ClusterWords = null!;
+    public Word[][] Temp_DependentWords = null!;  
 
     /// <summary>
     ///     [Range of cosine similarity [0.50-0.55), [0.55-0.60), [0.95-1.00); [ProxWordsOldMatrix.Data Index]]
@@ -111,49 +106,39 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat proxWordsOldMatrix)
     {
         int wordsCount = words.Count;
-        Word[] primaryWords = clusterization_AlgorithmData.PrimaryWords!;
+        ClusterInfo[] clusterInfos = clusterization_AlgorithmData.ClusterInfos;
 
         Temp_Top8ProxWords = new (float, Word)[wordsCount][];
-        Temp_Top8ProxPrimaryWords = new (float, Word)[wordsCount][];
-        Temp_ClusterWords = new Word[primaryWords.Length][];  
+        Temp_Top8ProxClusterInfos = new (float, ClusterInfo)[wordsCount][];        
         
-        List<Word>[] dependentWords = new List<Word>[wordsCount];
-        foreach (int wordIndex in Enumerable.Range(0, dependentWords.Length))
-        {
-            dependentWords[wordIndex] = new List<Word>();
-        }
+        List<Word>[] dependentWords = Enumerable.Range(0, wordsCount).Select(_ => new List<Word>()).ToArray();        
 
-        foreach (int clusterIndex in Enumerable.Range(0, Temp_ClusterWords.Length))
+        foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
         {
-            Word[] clusterWords = clusterization_AlgorithmData.ClusterIndices!
+            Word[] clusterWords = clusterization_AlgorithmData.ClusterIndices
                 .Select((ci, wordIndex) => (words[wordIndex], ci))
                 .Where(it => it.Item2 == clusterIndex)
                 .Select(it => it.Item1)
-                .ToArray();
-            Temp_ClusterWords[clusterIndex] = clusterWords;
+                .ToArray();            
 
-            foreach (Word word in clusterWords)
+            foreach (Word clusterWord in clusterWords)
             {
-                int indexBias = word.Index * wordsCount;
+                int indexBias = clusterWord.Index * wordsCount;
                 var temp_Top8ProxWords = clusterWords.Select(w => (proxWordsOldMatrix.Data[indexBias + w.Index], w))
                     .OrderByDescending(it => it.Item1)
                     .Take(8)
                     .ToArray();
-                Temp_Top8ProxWords[word.Index] = temp_Top8ProxWords;
+                Temp_Top8ProxWords[clusterWord.Index] = temp_Top8ProxWords;
                 foreach (var it in temp_Top8ProxWords)
                 {
-                    dependentWords[it.Item2.Index].Add(word);
+                    dependentWords[it.Item2.Index].Add(clusterWord);
                 }
 
-                var temp_Top8ProxPrimaryWords = primaryWords.Select(w => (proxWordsOldMatrix.Data[indexBias + w.Index], w))
+                var temp_Top8ProxClusterInfos = clusterInfos.Select(ci => (TensorPrimitives.Dot(clusterWord.OldVectorNormalized, ci.CentroidOldVectorNormalized), ci))
                     .OrderByDescending(it => it.Item1)
                     .Take(8)
                     .ToArray();
-                Temp_Top8ProxPrimaryWords[word.Index] = temp_Top8ProxPrimaryWords;
-                foreach (var it in temp_Top8ProxPrimaryWords)
-                {
-                    dependentWords[it.Item2.Index].Add(word);
-                }
+                Temp_Top8ProxClusterInfos[clusterWord.Index] = temp_Top8ProxClusterInfos;                
             }                
         }
         
@@ -188,16 +173,16 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     ///     Calculates all vectors and matrices.
     /// </summary>
     /// <param name="words"></param>
-    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="wordsHashProjectionIndices"></param>
     /// <param name="loggersSet"></param>
     public void Calculate_DiscreteVectorsAndMatrices(List<Word> words,
-        int[] wordsProjectionIndices, 
+        int[] wordsHashProjectionIndices, 
         ILoggersSet loggersSet)
     {
         var wordsSubArray = words.ToArray();
 
         CalculateDiscreteVectorsOnly(wordsSubArray,
-            wordsProjectionIndices,
+            wordsHashProjectionIndices,
             loggersSet);
 
         var stopwatch = Stopwatch.StartNew();
@@ -228,17 +213,17 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     /// </summary>
     /// <param name="wordsSubArray"></param>
     /// <param name="words"></param>
-    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="wordsHashProjectionIndices"></param>
     /// <param name="loggersSet"></param>
     public void Calculate_DiscreteVectorsAndMatricesPartial(Word[] wordsSubArray,
         List<Word> words,
-        int[] wordsProjectionIndices,
+        int[] wordsHashProjectionIndices,
         ILoggersSet loggersSet)
     {
         var stopwatch = Stopwatch.StartNew();
 
         CalculateDiscreteVectorsOnly(wordsSubArray,
-            wordsProjectionIndices,
+            wordsHashProjectionIndices,
             loggersSet);
 
         var temp_InRangeDataIndicesCollection_Data = Temp_InRangeDataIndicesCollection.Data;
@@ -271,10 +256,10 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     ///     Calculaters vectors only.
     /// </summary>
     /// <param name="wordsSubArray"></param>
-    /// <param name="wordsProjectionIndices"></param>
+    /// <param name="wordsHashProjectionIndices"></param>
     /// <param name="loggersSet"></param>
     public void CalculateDiscreteVectorsOnly(Word[] wordsSubArray,            
-        int[] wordsProjectionIndices,
+        int[] wordsHashProjectionIndices,
         ILoggersSet loggersSet)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -287,24 +272,24 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
             Array.Clear(discreteVector);
             Array.Clear(discreteVector_PrimaryOnly);
             Array.Clear(discreteVector_SecondaryOnly);
-            var temp_Top8ProxPrimaryWords = Temp_Top8ProxPrimaryWords[word.Index];
+            var temp_Top8ProxPrimaryWords = Temp_Top8ProxClusterInfos[word.Index];
             var temp_Top8ProxWords = Temp_Top8ProxWords[word.Index];
             for (int i = 0; i < temp_Top8ProxPrimaryWords!.Length; i += 1)
             {
-                int wordProjectionIndex = wordsProjectionIndices[temp_Top8ProxPrimaryWords[i].Item2.Index];
-                if (wordProjectionIndex >= 0)
+                int clusterHashProjectionIndex = wordsHashProjectionIndices[temp_Top8ProxPrimaryWords[i].Item2.HashProjectionIndex];
+                if (clusterHashProjectionIndex >= 0)
                 {
-                    discreteVector[wordProjectionIndex] = 1.0f;
-                    discreteVector_PrimaryOnly[wordProjectionIndex] = 1.0f;
+                    discreteVector[clusterHashProjectionIndex] = 1.0f;
+                    discreteVector_PrimaryOnly[clusterHashProjectionIndex] = 1.0f;
                 }
             }
             for (int i = 0; i < temp_Top8ProxWords.Length; i += 1)
             {
-                int wordProjectionIndex = wordsProjectionIndices[temp_Top8ProxWords[i].Item2.Index];
-                if (wordProjectionIndex >= 0)
+                int wordHashProjectionIndex = wordsHashProjectionIndices[temp_Top8ProxWords[i].Item2.Index];
+                if (wordHashProjectionIndex >= 0)
                 {
-                    discreteVector[wordProjectionIndex] = 1.0f;
-                    discreteVector_SecondaryOnly[wordProjectionIndex] = 1.0f;
+                    discreteVector[wordHashProjectionIndex] = 1.0f;
+                    discreteVector_SecondaryOnly[wordHashProjectionIndex] = 1.0f;
                 }
             }
         }

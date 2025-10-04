@@ -53,15 +53,17 @@ public partial class Model02
 
     public const string FileName_MUSE_Procrustes_RU_EN = "AdvancedEmbedding_MUSE_Procrustes_RU_EN.bin";
 
+    public const string FileName_MUSE_Best_Mapping_RU_EN_Temp = "best_mapping.pt";
+
     public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
     /// <summary>
-    ///     RusVectores        
+    ///     FastText         
     /// </summary>
     public readonly LanguageInfo LanguageInfo_RU = new();
 
     /// <summary>
-    ///     GloVe (Stanford)        
+    ///     FastText       
     /// </summary>
     public readonly LanguageInfo LanguageInfo_EN = new();        
 
@@ -225,7 +227,7 @@ public partial class Model02
             {
                 using (var _ = no_grad())
                 {
-                    var loadedWeights = load(Path.Combine(@"Data", "best_mapping.pt "));
+                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
                     trainer.Mapping.MappingLinear.weight!.copy_(loadedWeights);
                 }
 

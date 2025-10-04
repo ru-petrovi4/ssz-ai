@@ -12,6 +12,11 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     public int Index;
 
     /// <summary>
+    ///     Cluster Index.    
+    /// </summary>
+    public int ClusterIndex;
+
+    /// <summary>
     ///     Original vector.
     /// </summary>
     public float[] OldVector = null!;
@@ -37,6 +42,7 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     {
         writer.Write(Name);
         writer.WriteOptimized(Index);
+        writer.WriteOptimized(ClusterIndex);
         writer.WriteArray(OldVector);
         writer.WriteArray(OldVectorNormalized);
         writer.WriteArray(DiscreteVector);
@@ -48,6 +54,7 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     {
         Name = reader.ReadString();
         Index = reader.ReadOptimizedInt32();
+        ClusterIndex = reader.ReadOptimizedInt32();
         OldVector = reader.ReadArray<float>()!;
         OldVectorNormalized = reader.ReadArray<float>()!;
         DiscreteVector = reader.ReadArray<float>()!;
