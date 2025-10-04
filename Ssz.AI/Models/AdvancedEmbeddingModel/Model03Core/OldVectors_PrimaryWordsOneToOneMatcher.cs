@@ -59,7 +59,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float cosineSimilarity = TensorPrimitives.CosineSimilarity(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+                float cosineSimilarity = TensorPrimitives.Dot(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
                 if (cosineSimilarity > max)
                 {
                     max = cosineSimilarity;

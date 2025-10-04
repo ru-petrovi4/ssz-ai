@@ -212,6 +212,43 @@ public class VonMisesFisherClusterer
     }
 
     /// <summary>
+    /// Вычисляет логарифм нормализующей константы c_d(κ) для vMF распределения
+    /// Использует аппроксимацию для высоких размерностей чтобы избежать переполнения
+    /// </summary>
+    /// <param name="kappa">Параметр концентрации κ</param>
+    /// <param name="dimension">Размерность d</param>
+    /// <returns>Логарифм нормализующей константы</returns>
+    public static float ComputeLogNormalizingConstant(float kappa, long dimension)
+    {
+        var d = (float)dimension;
+
+        // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
+        // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
+
+        // Используем асимптотическую аппроксимацию для больших κ или d
+        // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
+        //var nu = d / 2.0f - 1.0f;
+
+        var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
+        var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) -
+                            (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
+
+        return logNormalizer;
+        
+        //if !(dimension > 50 || kappa > 100)
+        //{
+        //    // Для малых размерностей используем более точные вычисления
+        //    // Это упрощённая версия, в production коде следует использовать
+        //    // специализированные библиотеки для функций Бесселя
+        //    var logGamma = LogGamma(d / 2.0f);
+        //    var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) -
+        //                        logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
+
+        //    return logNormalizer;
+        //}
+    }
+
+    /// <summary>
     /// Проверяет, что входные данные правильно нормированы (лежат на единичной сфере)
     /// </summary>
     /// <param name="data">Данные для проверки</param>
@@ -423,60 +460,7 @@ public class VonMisesFisherClusterer
             
         // Ограничиваем κ положительными разумными значениями
         return Math.Max(0.01f, MathF.Min(1000.0f, kappa));
-    }
-
-    /// <summary>
-    /// Вычисляет логарифм нормализующей константы c_d(κ) для vMF распределения
-    /// Использует аппроксимацию для высоких размерностей чтобы избежать переполнения
-    /// </summary>
-    /// <param name="kappa">Параметр концентрации κ</param>
-    /// <param name="dimension">Размерность d</param>
-    /// <returns>Логарифм нормализующей константы</returns>
-    private float ComputeLogNormalizingConstant(float kappa, long dimension)
-    {
-        var d = (float)dimension;
-            
-        // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
-        // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
-            
-        if (dimension > 50 || kappa > 100)
-        {
-            // Используем асимптотическую аппроксимацию для больших κ или d
-            // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
-            //var nu = d / 2.0f - 1.0f;
-                
-            var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
-            var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) - 
-                                (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
-                
-            return logNormalizer;
-        }
-        else
-        {
-            // Для малых размерностей используем более точные вычисления
-            // Это упрощённая версия, в production коде следует использовать
-            // специализированные библиотеки для функций Бесселя
-            var logGamma = LogGamma(d / 2.0f);
-            var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) - 
-                                logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
-                
-            return logNormalizer;
-        }
-    }
-
-    /// <summary>
-    /// Простая аппроксимация логарифма гамма-функции
-    /// В production следует использовать более точную реализацию
-    /// </summary>
-    /// <param name="x">Аргумент</param>
-    /// <returns>Приближённое значение log Γ(x)</returns>
-    private float LogGamma(float x)
-    {
-        // Используем аппроксимацию Стирлинга: log Γ(x) ≈ (x-0.5)*log(x) - x + 0.5*log(2π)
-        if (x < 1.0f) return LogGamma(x + 1.0f) - MathF.Log(x);
-            
-        return (x - 0.5f) * MathF.Log(x) - x + 0.5f * MathF.Log(2.0f * MathF.PI);
-    }
+    }        
 
     /// <summary>
     /// Вычисляет полную логарифмическую вероятность данных для текущих параметров модели
@@ -583,3 +567,18 @@ public class VonMisesFisherClusterer
         }
     }
 }
+
+
+///// <summary>
+//    /// Простая аппроксимация логарифма гамма-функции
+//    /// В production следует использовать более точную реализацию
+//    /// </summary>
+//    /// <param name="x">Аргумент</param>
+//    /// <returns>Приближённое значение log Γ(x)</returns>
+//    private static float LogGamma(float x)
+//    {
+//        // Используем аппроксимацию Стирлинга: log Γ(x) ≈ (x-0.5)*log(x) - x + 0.5*log(2π)
+//        if (x < 1.0f) return LogGamma(x + 1.0f) - MathF.Log(x);
+
+//        return (x - 0.5f) * MathF.Log(x) - x + 0.5f * MathF.Log(2.0f * MathF.PI);
+//    }

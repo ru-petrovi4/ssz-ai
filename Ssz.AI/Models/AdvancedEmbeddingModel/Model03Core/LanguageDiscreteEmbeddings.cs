@@ -4,6 +4,7 @@ using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TorchSharp;
 using static TorchSharp.torch;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
@@ -118,5 +119,34 @@ public static class LanguageDiscreteEmbeddingsExtensions
             word.DiscreteVector_PrimaryBitsOnly.AsSpan().CopyTo(matrixFloat.GetColumn(i));
         }
         return matrixFloat;
+    }
+
+    public static int GetClusterIndex(this LanguageDiscreteEmbeddings embeddings, float[] oldVectorNormalized)
+    {
+        // Вычисляем логарифмические вероятности для численной стабильности
+        using var logProbabilities = torch.zeros(size: new long[] { 1, embeddings.ClusterInfos.Count });
+
+        using var oldVectorsTensor = torch.tensor(oldVectorNormalized).reshape([ 1, oldVectorNormalized.Length ]);
+
+        for (int k = 0; k < embeddings.ClusterInfos.Count; k += 1)
+        {
+            // Вычисляем cosine similarity между данными и k-м центром
+            var cosineSimilarities = torch.matmul(oldVectorsTensor, embeddings.MeanDirections[k, ..].t());
+
+            // Вычисляем логарифм нормализующей константы c_d(κ)
+            var logNormalizingConstant = VonMisesFisherClusterer.ComputeLogNormalizingConstant(
+                embeddings.Concentrations[k].item<float>(),
+                oldVectorsTensor.shape[1]
+            );
+
+            // Логарифм vMF плотности: log c_d(κ) + κ * μ^T * x
+            logProbabilities[.., k] = logNormalizingConstant +
+                embeddings.Concentrations[k].item<float>() * cosineSimilarities +
+                torch.log(embeddings.MixingCoefficients[k]);
+        }
+
+        // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
+        var assignments = torch.argmax(logProbabilities, dim: 1);
+        return (int)assignments[0].item<long>();
     }
 }
