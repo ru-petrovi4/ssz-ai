@@ -96,10 +96,8 @@ public class VonMisesFisherClusterer
         // Проверяем, что данные корректно нормированы
         ValidateNormalizedData(oldVectorsTensor);
             
-        var (numSamples, dimension) = (oldVectorsTensor.shape[0], oldVectorsTensor.shape[1]);
-            
         // Инициализируем параметры модели
-        InitializeParameters(oldVectorsTensor, Math.Min(10000, numSamples), dimension);
+        InitializeParameters(oldVectorsTensor);
             
         float prevLogLikelihood = float.NegativeInfinity;
 
@@ -271,11 +269,11 @@ public class VonMisesFisherClusterer
     /// Инициализирует параметры модели перед началом EM алгоритма
     /// Использует kmeans++ подобную инициализацию для выбора начальных центров
     /// </summary>
-    /// <param name="oldVectorsTensor">Входные данные</param>
-    /// <param name="numSamples">Количество образцов</param>
-    /// <param name="dimension">Размерность данных</param>
-    private void InitializeParameters(Tensor oldVectorsTensor, long numSamples, long dimension)
+    /// <param name="oldVectorsTensor">Входные данные</param>    
+    private void InitializeParameters(Tensor oldVectorsTensor)
     {
+        var (numSamples, dimension) = (oldVectorsTensor.shape[0], oldVectorsTensor.shape[1]);
+
         using (var disposeScope = torch.NewDisposeScope())
         {
             var oldVectorsTensor_device = oldVectorsTensor.to(_device);
@@ -358,7 +356,7 @@ public class VonMisesFisherClusterer
         // Вычисляем логарифмические вероятности для численной стабильности
         using var logProbabilities = torch.zeros(size: new long[] { numSamples, _numClusters });
             
-        for (int k = 0; k < _numClusters; k++)
+        for (int k = 0; k < _numClusters; k += 1)
         {
             // Вычисляем cosine similarity между данными и k-м центром
             var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
@@ -379,7 +377,7 @@ public class VonMisesFisherClusterer
         {
             // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
             var assignments = torch.argmax(logProbabilities, dim: 1);
-            for (long i = 0; i < numSamples; i++)
+            for (long i = 0; i < numSamples; i += 1)
             {
                 var assignedCluster = assignments[i].item<long>();
                 posteriors[i, assignedCluster] = 1.0f;
@@ -411,7 +409,7 @@ public class VonMisesFisherClusterer
                 
             // Вычисляем взвешенную сумму точек для кластера k
             var weightedSum = torch.zeros_like(MeanDirections[k]);
-            for (long i = 0; i < numSamples; i++)
+            for (long i = 0; i < numSamples; i += 1)
             {
                 weightedSum += posteriors[i, k] * oldVectorsTensor[i];
             }
@@ -481,7 +479,7 @@ public class VonMisesFisherClusterer
             // Вычисляем cosine similarity
             var cosineSimilarity = torch.mm(oldVectorsTensor_device, meanDirectionsr_device.t());
 
-            for (long i = 0; i < numSamples; i++)
+            for (long i = 0; i < numSamples; i += 1)
             {
                 var sampleLogLikelihood = float.NegativeInfinity;
 
