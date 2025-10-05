@@ -64,7 +64,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float cosineSimilarity = TensorPrimitives.Dot(sourceClusterInfo.CentroidOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized); // TEMPCODE
+                float cosineSimilarity = TensorPrimitives.Dot(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
                 if (cosineSimilarity > max)
                 {
                     max = cosineSimilarity;
@@ -117,7 +117,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
             TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
 
-            ClustersMapping[sourceClusterIndex] = target.GetClusterIndex(sourceClusterInfo.CentroidOldVectorNormalized);
+            ClustersMapping[sourceClusterIndex] = target.GetClusterIndex(mappedOldVectorNormalized);
         }
 
         var hs = ClustersMapping.ToHashSet();
