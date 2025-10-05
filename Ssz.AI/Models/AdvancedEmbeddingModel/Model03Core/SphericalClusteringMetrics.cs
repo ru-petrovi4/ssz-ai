@@ -31,7 +31,7 @@ public static class SphericalClusteringMetrics
     /// <param name="data">Нормированные данные [N x D] на единичной сфере</param>
     /// <param name="labels">Метки кластеров [N] (целые числа от 0 до K-1)</param>    
     /// <returns>Средний силуэт-коэффициент для всех точек</returns>
-    public static double ComputeSilhouetteScore(Tensor data, Tensor labels)
+    public static float ComputeSilhouetteScore(Tensor data, Tensor labels)
     {
         ValidateInputs(data, labels);
         
@@ -58,17 +58,17 @@ public static class SphericalClusteringMetrics
             sameClusterMask[i] = 0; // Исключаем саму точку i
             
             var sameClusterCount = torch.sum(sameClusterMask).item<long>();
-            double aScore = 0.0;
+            float aScore = 0.0f;
             
             if (sameClusterCount > 0)
             {
                 // Векторизованное вычисление среднего расстояния до точек своего кластера
                 var sameClusterDistances = distanceMatrix[i] * sameClusterMask.to(torch.float32);
-                aScore = torch.sum(sameClusterDistances).item<double>() / sameClusterCount;
+                aScore = torch.sum(sameClusterDistances).item<float>() / sameClusterCount;
             }
             
             // b(i) = минимальное среднее расстояние до точек других кластеров
-            double bScore = double.MaxValue;
+            float bScore = float.MaxValue;
             
             for (long k = 0; k < numClusters; k += 1)
             {
@@ -81,16 +81,16 @@ public static class SphericalClusteringMetrics
                 {
                     // Векторизованное вычисление среднего расстояния до точек другого кластера
                     var otherClusterDistances = distanceMatrix[i] * otherClusterMask.to(torch.float32);
-                    var avgDistance = torch.sum(otherClusterDistances).item<double>() / otherClusterCount;
+                    var avgDistance = torch.sum(otherClusterDistances).item<float>() / otherClusterCount;
                     bScore = Math.Min(bScore, avgDistance);
                 }
             }
             
             // Вычисляем силуэт-коэффициент для точки i
-            if (bScore == double.MaxValue || (aScore == 0.0 && bScore == 0.0))
+            if (bScore == float.MaxValue || (aScore == 0.0f && bScore == 0.0f))
             {
                 // Особый случай: только один кластер или все расстояния равны 0
-                silhouetteScores[i] = 0.0;
+                silhouetteScores[i] = 0.0f;
             }
             else
             {
@@ -101,7 +101,7 @@ public static class SphericalClusteringMetrics
         }
         
         // Возвращаем средний силуэт-коэффициент по всем точкам
-        var averageSilhouette = torch.mean(silhouetteScores).item<double>();
+        var averageSilhouette = torch.mean(silhouetteScores).item<float>();
         
         Console.WriteLine($"Silhouette Score computed: {averageSilhouette:F4}");
         Console.WriteLine($"Interpretation: {InterpretSilhouetteScore(averageSilhouette)}");
@@ -126,7 +126,7 @@ public static class SphericalClusteringMetrics
     /// <param name="data">Нормированные данные [N x D] на единичной сфере</param>
     /// <param name="labels">Метки кластеров [N] (целые числа от 0 до K-1)</param>    
     /// <returns>Davies-Bouldin Index (чем меньше, тем лучше)</returns>
-    public static double ComputeDaviesBouldinIndex(Tensor data, Tensor labels)
+    public static float ComputeDaviesBouldinIndex(Tensor data, Tensor labels)
     {
         ValidateInputs(data, labels);
         
@@ -141,22 +141,22 @@ public static class SphericalClusteringMetrics
         // Вычисляем межкластерные расстояния между всеми парами центров
         var centerDistances = ComputeDistanceMatrix(clusterCenters);
         
-        double totalDB = 0.0;
+        float totalDB = 0.0f;
         
         // Для каждого кластера k находим максимальное отношение с другими кластерами
         for (long k = 0; k < numClusters; k++)
         {
-            double maxRatio = 0.0;
+            float maxRatio = 0.0f;
             
             for (long j = 0; j < numClusters; j++)
             {
                 if (k == j) continue; // Пропускаем сравнение кластера с самим собой
                 
-                var scatterSum = clusterScatters[k].item<double>() + clusterScatters[j].item<double>();
-                var centerDistance = centerDistances[k, j].item<double>();
+                var scatterSum = clusterScatters[k].item<float>() + clusterScatters[j].item<float>();
+                var centerDistance = centerDistances[k, j].item<float>();
                 
                 // Избегаем деления на ноль в случае совпадающих центров
-                if (centerDistance > 1e-10)
+                if (centerDistance > 1e-10f)
                 {
                     var ratio = scatterSum / centerDistance;
                     maxRatio = Math.Max(maxRatio, ratio);
@@ -188,10 +188,10 @@ public static class SphericalClusteringMetrics
         var cosineSimilarities = torch.matmul(data, data.transpose(-2, -1));
         
         // Ограничиваем значения для численной стабильности
-        cosineSimilarities = torch.clamp(cosineSimilarities, -1.0 + 1e-7, 1.0 - 1e-7);
+        cosineSimilarities = torch.clamp(cosineSimilarities, -1.0f + 1e-7f, 1.0f - 1e-7f);
 
         // Косинусное расстояние: d(x_i, x_j) = 1 - x_i^T * x_j
-        return 1.0 - cosineSimilarities;
+        return 1.0f - cosineSimilarities;
 
         //if (useAngularDistance)
         //{
@@ -266,7 +266,7 @@ public static class SphericalClusteringMetrics
     {
         var scatters = torch.zeros(numClusters);
         
-        for (long k = 0; k < numClusters; k++)
+        for (long k = 0; k < numClusters; k += 1)
         {
             // Находим все точки кластера k
             var clusterMask = torch.eq(labels, k);
@@ -279,7 +279,7 @@ public static class SphericalClusteringMetrics
 
                 // Косинусные расстояния: 1 - center^T * points
                 var cosineSims = torch.matmul(clusterPoints, center);
-                var distances = 1.0 - cosineSims;
+                var distances = 1.0f - cosineSims;
                 scatters[k] = torch.mean(distances);
 
                 //// Вычисляем расстояния от каждой точки до центра кластера
@@ -322,10 +322,10 @@ public static class SphericalClusteringMetrics
         
         // Проверяем нормированность данных
         var norms = torch.norm(data, dimension: 1);
-        var minNorm = torch.min(norms).item<double>();
-        var maxNorm = torch.max(norms).item<double>();
+        var minNorm = torch.min(norms).item<float>();
+        var maxNorm = torch.max(norms).item<float>();
         
-        if (Math.Abs(minNorm - 1.0) > 1e-5 || Math.Abs(maxNorm - 1.0) > 1e-5)
+        if (MathF.Abs(minNorm - 1.0f) > 1e-5f || MathF.Abs(maxNorm - 1.0f) > 1e-5f)
         {
             Console.WriteLine($"Предупреждение: данные могут быть не полностью нормированы. " +
                             $"Диапазон норм: [{minNorm:F6}, {maxNorm:F6}]");
@@ -337,12 +337,12 @@ public static class SphericalClusteringMetrics
     /// </summary>
     /// <param name="score">Значение силуэта</param>
     /// <returns>Текстовая интерпретация</returns>
-    private static string InterpretSilhouetteScore(double score)
+    private static string InterpretSilhouetteScore(float score)
     {
-        if (score >= 0.7) return "Отличная структура кластеров";
-        if (score >= 0.5) return "Хорошая структура кластеров";
-        if (score >= 0.3) return "Умеренная структура кластеров";
-        if (score >= 0.1) return "Слабая структура кластеров";
+        if (score >= 0.7f) return "Отличная структура кластеров";
+        if (score >= 0.5f) return "Хорошая структура кластеров";
+        if (score >= 0.3f) return "Умеренная структура кластеров";
+        if (score >= 0.1f) return "Слабая структура кластеров";
         return "Очень слабая структура кластеров или неподходящее количество кластеров";
     }
 
@@ -351,12 +351,12 @@ public static class SphericalClusteringMetrics
     /// </summary>
     /// <param name="dbIndex">Значение DB индекса</param>
     /// <returns>Текстовая интерпретация</returns>
-    private static string InterpretDBIndex(double dbIndex)
+    private static string InterpretDBIndex(float dbIndex)
     {
-        if (dbIndex <= 0.5) return "Отличное разделение кластеров";
-        if (dbIndex <= 1.0) return "Хорошее разделение кластеров";
-        if (dbIndex <= 1.5) return "Удовлетворительное разделение кластеров";
-        if (dbIndex <= 2.0) return "Слабое разделение кластеров";
+        if (dbIndex <= 0.5f) return "Отличное разделение кластеров";
+        if (dbIndex <= 1.0f) return "Хорошее разделение кластеров";
+        if (dbIndex <= 1.5f) return "Удовлетворительное разделение кластеров";
+        if (dbIndex <= 2.0f) return "Слабое разделение кластеров";
         return "Очень слабое разделение кластеров";
     }
 
@@ -377,10 +377,10 @@ public static class SphericalClusteringMetrics
         
         // Статистика по размерам кластеров
         Console.WriteLine("\nСтатистика кластеров:");
-        for (long k = 0; k < numClusters; k++)
+        for (long k = 0; k < numClusters; k += 1)
         {
             var clusterSize = torch.sum(torch.eq(labels, k)).item<long>();
-            var percentage = (double)clusterSize / data.shape[0] * 100;
+            var percentage = (float)clusterSize / data.shape[0] * 100;
             Console.WriteLine($"  Кластер {k}: {clusterSize} точек ({percentage:F1}%)");
         }
         
@@ -409,9 +409,9 @@ public static class SphericalClusteringMetrics
         var numClusters = torch.max(labels).item<long>() + 1;
         var centers = ComputeClusterCenters(data, labels, numClusters);
         
-        double totalInertia = 0.0;
+        float totalInertia = 0.0f;
         
-        for (long k = 0; k < numClusters; k++)
+        for (long k = 0; k < numClusters; k += 1)
         {
             var clusterMask = torch.eq(labels, k);
             var clusterIndices = torch.nonzero(clusterMask).squeeze(-1);
@@ -422,17 +422,17 @@ public static class SphericalClusteringMetrics
                 var center = centers[k];
                 
                 // Вычисляем внутрикластерную инерцию
-                double clusterInertia;
+                float clusterInertia;
 
-                var distances = 1.0 - torch.matmul(clusterPoints, center);
-                clusterInertia = torch.sum(torch.pow(distances, 2)).item<double>();
+                var distances = 1.0f - torch.matmul(clusterPoints, center);
+                clusterInertia = torch.sum(torch.pow(distances, 2)).item<float>();
 
                 //if (useAngularDistance)
                 //{
                 //    var cosineSims = torch.matmul(clusterPoints, center);
                 //    cosineSims = torch.clamp(cosineSims, -1.0 + 1e-7, 1.0 - 1e-7);
                 //    var distances = torch.acos(cosineSims);
-                //    clusterInertia = torch.sum(torch.pow(distances, 2)).item<double>();
+                //    clusterInertia = torch.sum(torch.pow(distances, 2)).item<float>();
                 //}
                 
                 totalInertia += clusterInertia;
@@ -446,10 +446,10 @@ public static class SphericalClusteringMetrics
     /// <summary>
     /// Даёт общую оценку качества кластеризации на основе метрик
     /// </summary>
-    private static string EvaluateOverallQuality(double silhouetteScore, double dbIndex)
+    private static string EvaluateOverallQuality(float silhouetteScore, float dbIndex)
     {
-        var silhouetteGood = silhouetteScore >= 0.5;
-        var dbGood = dbIndex <= 1.0;
+        var silhouetteGood = silhouetteScore >= 0.5f;
+        var dbGood = dbIndex <= 1.0f;
         
         if (silhouetteGood && dbGood)
             return "Высокое качество - кластеры хорошо разделены и компактны";
