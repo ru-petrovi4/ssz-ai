@@ -62,6 +62,9 @@ public partial class Model03
         oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
         oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
+        oldVectors_PrimaryWordsOneToOneMatcher.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
+        oldVectors_PrimaryWordsOneToOneMatcher.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
+
         Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
     }
 

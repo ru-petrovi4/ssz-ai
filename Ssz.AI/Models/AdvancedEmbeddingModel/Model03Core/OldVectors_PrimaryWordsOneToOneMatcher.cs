@@ -124,6 +124,27 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
     }
 
+    public void ComputeDetailedEvaluationReport(LanguageDiscreteEmbeddings languageDiscreteEmbeddings, ILogger logger)
+    {
+        var count = languageDiscreteEmbeddings.Words.Count;
+        var dim = languageDiscreteEmbeddings.Words[0].OldVectorNormalized.Length;
+
+        float[] allData = new float[count * dim];
+        long[] allLabels = new long[count];
+
+        for (int wordIndex = 0; wordIndex < languageDiscreteEmbeddings.Words.Count; wordIndex += 1)
+        {
+            var word = languageDiscreteEmbeddings.Words[wordIndex];
+            Array.Copy(word.OldVectorNormalized, 0, allData, wordIndex * dim, dim);          
+            allLabels[wordIndex] = word.ClusterIndex;
+        }
+
+        var data = torch.tensor(allData, dimensions: [count, dim]);
+        var labels = torch.tensor(allLabels);
+
+        SphericalClusteringMetrics.ComputeDetailedEvaluationReport(data, labels, logger);
+    }
+
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {        
         writer.WriteArray(ClustersMapping);
@@ -132,7 +153,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {   
         ClustersMapping = reader.ReadArray<int>()!;
-    }
+    }    
 
     #region private fields
 

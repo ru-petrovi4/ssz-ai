@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
 using TorchSharp;
@@ -31,10 +32,10 @@ public static class SphericalClusteringMetrics
     /// <param name="data">Нормированные данные [N x D] на единичной сфере</param>
     /// <param name="labels">Метки кластеров [N] (целые числа от 0 до K-1)</param>    
     /// <returns>Средний силуэт-коэффициент для всех точек</returns>
-    public static float ComputeSilhouetteScore(Tensor data, Tensor labels)
+    public static float ComputeSilhouetteScore(Tensor data, Tensor labels, ILogger logger)
     {
-        ValidateInputs(data, labels);
-        
+        ValidateInputs(data, labels, logger);
+
         var numPoints = data.shape[0];
         var numClusters = torch.max(labels).item<long>() + 1;
         
@@ -57,13 +58,13 @@ public static class SphericalClusteringMetrics
             var sameClusterMask = clusterMasks[.., pointLabel].clone();
             sameClusterMask[i] = 0; // Исключаем саму точку i
             
-            var sameClusterCount = torch.sum(sameClusterMask).item<long>();
+            var sameClusterCount = torch.sum(sameClusterMask).item<float>();
             float aScore = 0.0f;
             
-            if (sameClusterCount > 0)
+            if (sameClusterCount > 0.0f)
             {
                 // Векторизованное вычисление среднего расстояния до точек своего кластера
-                var sameClusterDistances = distanceMatrix[i] * sameClusterMask.to(torch.float32);
+                var sameClusterDistances = distanceMatrix[i] * sameClusterMask;
                 aScore = torch.sum(sameClusterDistances).item<float>() / sameClusterCount;
             }
             
@@ -75,14 +76,14 @@ public static class SphericalClusteringMetrics
                 if (k == pointLabel) continue; // Пропускаем свой кластер
                 
                 var otherClusterMask = clusterMasks[.., k];
-                var otherClusterCount = torch.sum(otherClusterMask).item<long>();
+                var otherClusterCount = torch.sum(otherClusterMask).item<float>();
                 
                 if (otherClusterCount > 0)
                 {
                     // Векторизованное вычисление среднего расстояния до точек другого кластера
-                    var otherClusterDistances = distanceMatrix[i] * otherClusterMask.to(torch.float32);
+                    var otherClusterDistances = distanceMatrix[i] * otherClusterMask;
                     var avgDistance = torch.sum(otherClusterDistances).item<float>() / otherClusterCount;
-                    bScore = Math.Min(bScore, avgDistance);
+                    bScore = MathF.Min(bScore, avgDistance);
                 }
             }
             
@@ -95,7 +96,7 @@ public static class SphericalClusteringMetrics
             else
             {
                 // s(i) = (b(i) - a(i)) / max(a(i), b(i))
-                var maxScore = Math.Max(aScore, bScore);
+                var maxScore = MathF.Max(aScore, bScore);
                 silhouetteScores[i] = (float)((bScore - aScore) / maxScore);
             }
         }
@@ -103,8 +104,8 @@ public static class SphericalClusteringMetrics
         // Возвращаем средний силуэт-коэффициент по всем точкам
         var averageSilhouette = torch.mean(silhouetteScores).item<float>();
         
-        Console.WriteLine($"Silhouette Score computed: {averageSilhouette:F4}");
-        Console.WriteLine($"Interpretation: {InterpretSilhouetteScore(averageSilhouette)}");
+        logger.LogInformation($"Silhouette Score computed: {averageSilhouette:F4}");
+        logger.LogInformation($"Interpretation: {InterpretSilhouetteScore(averageSilhouette)}");
         
         return averageSilhouette;
     }
@@ -126,9 +127,9 @@ public static class SphericalClusteringMetrics
     /// <param name="data">Нормированные данные [N x D] на единичной сфере</param>
     /// <param name="labels">Метки кластеров [N] (целые числа от 0 до K-1)</param>    
     /// <returns>Davies-Bouldin Index (чем меньше, тем лучше)</returns>
-    public static float ComputeDaviesBouldinIndex(Tensor data, Tensor labels)
+    public static float ComputeDaviesBouldinIndex(Tensor data, Tensor labels, ILogger logger)
     {
-        ValidateInputs(data, labels);
+        ValidateInputs(data, labels, logger);
         
         var numClusters = torch.max(labels).item<long>() + 1;
         
@@ -169,15 +170,15 @@ public static class SphericalClusteringMetrics
         // DB = среднее по всем кластерам
         var dbIndex = totalDB / numClusters;
         
-        Console.WriteLine($"Davies-Bouldin Index computed: {dbIndex:F4}");
-        Console.WriteLine($"Interpretation: {InterpretDBIndex(dbIndex)}");
+        logger.LogInformation($"Davies-Bouldin Index computed: {dbIndex:F4}");
+        logger.LogInformation($"Interpretation: {InterpretDBIndex(dbIndex)}");
         
         return dbIndex;
     }
 
     /// <summary>
     /// Вычисляет матрицу попарных расстояний между точками на единичной сфере
-    /// Использует косинусную меру или угловое расстояние
+    /// Использует косинусную меру
     /// </summary>
     /// <param name="data">Данные [N x D] или [K x D]</param>    
     /// <returns>Матрица расстояний [N x N] или [K x K]</returns>
@@ -215,7 +216,7 @@ public static class SphericalClusteringMetrics
         for (long i = 0; i < numPoints; i++)
         {
             var clusterLabel = labels[i].item<long>();
-            masks[i, clusterLabel] = 1.0;
+            masks[i, clusterLabel] = 1.0f;
         }
         
         return masks;
@@ -302,7 +303,7 @@ public static class SphericalClusteringMetrics
     /// </summary>
     /// <param name="data">Данные для проверки</param>
     /// <param name="labels">Метки для проверки</param>
-    private static void ValidateInputs(Tensor data, Tensor labels)
+    private static void ValidateInputs(Tensor data, Tensor labels, ILogger logger)
     {
         if (data.shape[0] != labels.shape[0])
         {
@@ -327,7 +328,7 @@ public static class SphericalClusteringMetrics
         
         if (MathF.Abs(minNorm - 1.0f) > 1e-5f || MathF.Abs(maxNorm - 1.0f) > 1e-5f)
         {
-            Console.WriteLine($"Предупреждение: данные могут быть не полностью нормированы. " +
+            logger.LogInformation($"Предупреждение: данные могут быть не полностью нормированы. " +
                             $"Диапазон норм: [{minNorm:F6}, {maxNorm:F6}]");
         }
     }
@@ -366,45 +367,45 @@ public static class SphericalClusteringMetrics
     /// </summary>
     /// <param name="data">Нормированные данные [N x D]</param>
     /// <param name="labels">Метки кластеров [N]</param>    
-    public static void ComputeDetailedEvaluationReport(Tensor data, Tensor labels)
+    public static void ComputeDetailedEvaluationReport(Tensor data, Tensor labels, ILogger logger)
     {
-        Console.WriteLine("=== Детальный отчёт по качеству кластеризации ===");
-        Console.WriteLine($"Количество точек: {data.shape[0]}");
-        Console.WriteLine($"Размерность: {data.shape[1]}");
+        logger.LogInformation("=== Детальный отчёт по качеству кластеризации ===");
+        logger.LogInformation($"Количество точек: {data.shape[0]}");
+        logger.LogInformation($"Размерность: {data.shape[1]}");
         
         var numClusters = torch.max(labels).item<long>() + 1;
-        Console.WriteLine($"Количество кластеров: {numClusters}");
+        logger.LogInformation($"Количество кластеров: {numClusters}");
         
         // Статистика по размерам кластеров
-        Console.WriteLine("\nСтатистика кластеров:");
+        logger.LogInformation("\nСтатистика кластеров:");
         for (long k = 0; k < numClusters; k += 1)
         {
             var clusterSize = torch.sum(torch.eq(labels, k)).item<long>();
             var percentage = (float)clusterSize / data.shape[0] * 100;
-            Console.WriteLine($"  Кластер {k}: {clusterSize} точек ({percentage:F1}%)");
+            logger.LogInformation($"  Кластер {k}: {clusterSize} точек ({percentage:F1}%)");
         }
         
         var distanceType = "косинусное";
-        Console.WriteLine($"\nТип расстояния: {distanceType}");
+        logger.LogInformation($"\nТип расстояния: {distanceType}");
         
         // Вычисляем основные метрики
-        Console.WriteLine("\n--- Основные метрики ---");
-        var silhouetteScore = ComputeSilhouetteScore(data, labels);
-        var dbIndex = ComputeDaviesBouldinIndex(data, labels);
+        logger.LogInformation("\n--- Основные метрики ---");
+        var silhouetteScore = ComputeSilhouetteScore(data[..5000, ..], labels[..5000], logger);
+        var dbIndex = ComputeDaviesBouldinIndex(data[..5000, ..], labels[..5000], logger);
         
         // Дополнительная статистика
-        Console.WriteLine("\n--- Дополнительная статистика ---");
-        ComputeInertiaStatistics(data, labels);
+        logger.LogInformation("\n--- Дополнительная статистика ---");
+        ComputeInertiaStatistics(data, labels, logger);
         
-        Console.WriteLine("\n=== Итоговая оценка ===");
+        logger.LogInformation("\n=== Итоговая оценка ===");
         var overallQuality = EvaluateOverallQuality(silhouetteScore, dbIndex);
-        Console.WriteLine($"Общее качество кластеризации: {overallQuality}");
+        logger.LogInformation($"Общее качество кластеризации: {overallQuality}");
     }
 
     /// <summary>
     /// Вычисляет статистику внутрикластерной инерции
     /// </summary>
-    private static void ComputeInertiaStatistics(Tensor data, Tensor labels)
+    private static void ComputeInertiaStatistics(Tensor data, Tensor labels, ILogger logger)
     {
         var numClusters = torch.max(labels).item<long>() + 1;
         var centers = ComputeClusterCenters(data, labels, numClusters);
@@ -436,11 +437,11 @@ public static class SphericalClusteringMetrics
                 //}
                 
                 totalInertia += clusterInertia;
-                Console.WriteLine($"  Инерция кластера {k}: {clusterInertia:F4}");
+                logger.LogInformation($"  Инерция кластера {k}: {clusterInertia:F4}");
             }
         }
         
-        Console.WriteLine($"Общая внутрикластерная инерция: {totalInertia:F4}");
+        logger.LogInformation($"Общая внутрикластерная инерция: {totalInertia:F4}");
     }
 
     /// <summary>
@@ -466,7 +467,7 @@ public static class SphericalClusteringMetrics
 //{
 //    public static void Main()
 //    {
-//        Console.WriteLine("=== Демонстрация метрик качества vMF кластеризации ===");
+//        logger.LogInformation("=== Демонстрация метрик качества vMF кластеризации ===");
         
 //        // Устанавливаем случайное семя для воспроизводимости
 //        torch.manual_seed(42);
@@ -477,23 +478,23 @@ public static class SphericalClusteringMetrics
 //        // Симулируем результат кластеризации (в реальности получаем из vMF алгоритма)
 //        var predictedLabels = SimulateClusteringResults(testData, trueLabels);
         
-//        Console.WriteLine($"Данные: {testData.shape[0]} точек, размерность {testData.shape[1]}");
-//        Console.WriteLine($"Истинных кластеров: {torch.max(trueLabels).item<long>() + 1}");
-//        Console.WriteLine($"Найдено кластеров: {torch.max(predictedLabels).item<long>() + 1}");
+//        logger.LogInformation($"Данные: {testData.shape[0]} точек, размерность {testData.shape[1]}");
+//        logger.LogInformation($"Истинных кластеров: {torch.max(trueLabels).item<long>() + 1}");
+//        logger.LogInformation($"Найдено кластеров: {torch.max(predictedLabels).item<long>() + 1}");
         
 //        // Вычисляем детальный отчёт
-//        Console.WriteLine("\n=== Оценка с угловым расстоянием ===");
+//        logger.LogInformation("\n=== Оценка с угловым расстоянием ===");
 //        SphericalClusteringMetrics.ComputeDetailedEvaluationReport(testData, predictedLabels);
         
-//        Console.WriteLine("\n=== Оценка с косинусным расстоянием ===");
+//        logger.LogInformation("\n=== Оценка с косинусным расстоянием ===");
 //        SphericalClusteringMetrics.ComputeDetailedEvaluationReport(testData, predictedLabels);
         
 //        // Сравнение с идеальной кластеризацией
-//        Console.WriteLine("\n=== Сравнение с идеальными метками ===");
+//        logger.LogInformation("\n=== Сравнение с идеальными метками ===");
 //        var idealSilhouette = SphericalClusteringMetrics.ComputeSilhouetteScore(testData, trueLabels);
 //        var idealDB = SphericalClusteringMetrics.ComputeDaviesBouldinIndex(testData, trueLabels);
         
-//        Console.WriteLine($"Идеальный Silhouette Score: {idealSilhouette:F4}");
-//        Console.WriteLine($"Идеальный Davies-Bouldin Index: {idealDB:F4}");
+//        logger.LogInformation($"Идеальный Silhouette Score: {idealSilhouette:F4}");
+//        logger.LogInformation($"Идеальный Davies-Bouldin Index: {idealDB:F4}");
 //    }    
 //}
