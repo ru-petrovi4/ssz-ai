@@ -1,3 +1,4 @@
+using MathNet.Numerics;
 using Microsoft.Extensions.Logging;
 using Ssz.Utils.Logging;
 using System;
@@ -68,22 +69,19 @@ public class VonMisesFisherClusterer
     /// <param name="userFriendlyLogger"></param>
     /// <param name="numClusters">Количество кластеров K</param>
     /// <param name="maxIterations">Максимальное количество итераций EM алгоритма</param>
-    /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>
-    /// <param name="useHardAssignment">Использовать жёсткое назначение (true) или мягкое (false)</param>
+    /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>    
     public VonMisesFisherClusterer(
         Device device,
         IUserFriendlyLogger userFriendlyLogger,
         int numClusters, 
         int maxIterations, 
-        float tolerance, 
-        bool useHardAssignment)
+        float tolerance)
     {
         _device = device;
         _userFriendlyLogger = userFriendlyLogger;
         _numClusters = numClusters;
         _maxIterations = maxIterations;
-        _tolerance = tolerance;
-        _useHardAssignment = useHardAssignment;
+        _tolerance = tolerance;        
         LogLikelihoodHistory = new List<float>();
     }
 
@@ -213,12 +211,12 @@ public class VonMisesFisherClusterer
     /// Вычисляет логарифм нормализующей константы c_d(κ) для vMF распределения
     /// Использует аппроксимацию для высоких размерностей чтобы избежать переполнения
     /// </summary>
-    /// <param name="kappa">Параметр концентрации κ</param>
+    /// <param name="concentration">Параметр концентрации κ</param>
     /// <param name="dimension">Размерность d</param>
     /// <returns>Логарифм нормализующей константы</returns>
-    public static float ComputeLogNormalizingConstant(float kappa, long dimension)
+    public static float ComputeLogNormalizingConstant(float concentration, long dimension)
     {
-        var d = (float)dimension;
+        //var d = (float)dimension;
 
         // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
         // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
@@ -227,23 +225,39 @@ public class VonMisesFisherClusterer
         // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
         //var nu = d / 2.0f - 1.0f;
 
-        var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
-        var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) -
-                            (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
+        //if (dimension > 50 || kappa > 100)
+        //var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
+        //var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) -
+        //                    (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
 
-        return logNormalizer;
-        
+        //return logNormalizer;
+
         //if !(dimension > 50 || kappa > 100)
-        //{
-        //    // Для малых размерностей используем более точные вычисления
-        //    // Это упрощённая версия, в production коде следует использовать
-        //    // специализированные библиотеки для функций Бесселя
-        //    var logGamma = LogGamma(d / 2.0f);
-        //    var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) -
-        //                        logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
+        // Для малых размерностей используем более точные вычисления        
+        //var logGamma = LogGamma(d / 2.0f);
+        //var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) -
+        //                    logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
 
-        //    return logNormalizer;
-        //}
+        // Точный расчёт через LogGamma вместо асимптотической аппроксимации
+        float d = dimension;
+        float halfD = d / 2.0f;
+
+        // ln(c_d(κ)) = ln(κ^(d/2-1)) - ln(I_{d/2-1}(κ)) - (d/2-1)*ln(2π)
+        // Для модифицированной функции Бесселя используем аппроксимацию
+        // I_ν(κ) ≈ exp(κ) / sqrt(2πκ) * (1 + (4ν²-1)/(8κ) + ...)
+
+        if (concentration < 1e-6f)
+        {
+            // Для малых κ: c_d(κ) ≈ Γ(d/2) / (2π)^(d/2) * κ^(d/2-1)
+            return (float)SpecialFunctions.GammaLn(halfD) - halfD * (float)Math.Log(2 * Math.PI) + (halfD - 1) * (float)Math.Log(concentration);
+        }
+
+        // Для больших κ используем асимптотическую аппроксимацию
+        float nu = halfD - 1;
+        float logApproxBessel = concentration - 0.5f * (float)MathF.Log(2 * MathF.PI * concentration) +
+                               (4 * nu * nu - 1) / (8 * concentration);
+
+        return (nu * (float)MathF.Log(concentration)) - logApproxBessel;
     }
 
     /// <summary>
@@ -373,22 +387,23 @@ public class VonMisesFisherClusterer
                 torch.log(MixingCoefficients[k]);
         }
             
-        if (_useHardAssignment)
-        {
-            // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
-            var assignments = torch.argmax(logProbabilities, dim: 1);
-            for (long i = 0; i < numSamples; i += 1)
-            {
-                var assignedCluster = assignments[i].item<long>();
-                posteriors[i, assignedCluster] = 1.0f;
-            }
-        }
-        else
-        {
-            // Мягкое назначение: используем softmax для получения вероятностей
-            posteriors = torch.softmax(logProbabilities, dim: 1);
-        }
-            
+        //if (_useHardAssignment)
+        //{
+        //    // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
+        //    var assignments = torch.argmax(logProbabilities, dim: 1);
+        //    for (long i = 0; i < numSamples; i += 1)
+        //    {
+        //        var assignedCluster = assignments[i].item<long>();
+        //        posteriors[i, assignedCluster] = 1.0f;
+        //    }
+        //}
+        //else
+        //{            
+        //}
+
+        // Мягкое назначение: используем softmax для получения вероятностей
+        posteriors = torch.softmax(logProbabilities, dim: 1);
+
         return posteriors;
     }
 
@@ -416,7 +431,11 @@ public class VonMisesFisherClusterer
                 
             // Обновляем направление среднего μ_k
             var resultantLength = torch.norm(weightedSum);
-            MeanDirections[k] = weightedSum / resultantLength;
+            // Пропускаем назначение, если нет элементов.
+            if (resultantLength.item<float>() > 1e-8f) 
+            {
+                MeanDirections[k] = weightedSum / resultantLength;
+            }                
                 
             // Вычисляем средний resultant length для оценки κ_k
             var meanResultantLength = (resultantLength / effectiveSampleSize).item<float>();
@@ -433,6 +452,7 @@ public class VonMisesFisherClusterer
         var mask = MixingCoefficients.lt(threshold); // mask — логический тензор Nx1
         // Применяем маску и присваиваем новое значение тем элементам, где mask == true
         MixingCoefficients[mask] = threshold;
+        MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
     }
 
     /// <summary>
@@ -457,7 +477,7 @@ public class VonMisesFisherClusterer
         var kappa = numerator / denominator;
             
         // Ограничиваем κ положительными разумными значениями
-        return Math.Max(0.01f, MathF.Min(1000.0f, kappa));
+        return MathF.Max(0.01f, MathF.Min(1000.0f, kappa));
     }        
 
     /// <summary>
@@ -547,7 +567,7 @@ public class VonMisesFisherClusterer
     {
         _userFriendlyLogger.LogInformation("=== Результаты vMF Кластеризации ===");
         _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
-        _userFriendlyLogger.LogInformation($"Алгоритм назначения: {(_useHardAssignment ? "Hard (жёсткое)" : "Soft (мягкое)")}");
+        _userFriendlyLogger.LogInformation($"Алгоритм назначения: {(false ? "Hard (жёсткое)" : "Soft (мягкое)")}");
             
         _userFriendlyLogger.LogInformation("\nПараметры кластеров:");
         for (int k = 0; k < _numClusters; k++)

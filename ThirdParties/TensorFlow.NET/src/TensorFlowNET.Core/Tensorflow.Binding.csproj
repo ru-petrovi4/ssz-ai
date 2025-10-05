@@ -178,7 +178,7 @@ https://tensorflownet.readthedocs.io</Description>
 
   <ItemGroup>
     <PackageReference Include="MethodBoundaryAspect.Fody" Version="2.0.150" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="OneOf" Version="3.0.271" />
     <PackageReference Include="Protobuf.Text" Version="0.7.2" />
     <PackageReference Include="Razorvine.Pickle" Version="1.5.0" />

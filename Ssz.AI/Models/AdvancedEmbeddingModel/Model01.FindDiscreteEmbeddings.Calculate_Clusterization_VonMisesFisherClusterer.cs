@@ -58,8 +58,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 loggersSet.UserFriendlyLogger,
                 numClusters: 300,
                 maxIterations: 100,
-                tolerance: 1e-6f,
-                useHardAssignment: true
+                tolerance: 1e-6f
             );
 
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
