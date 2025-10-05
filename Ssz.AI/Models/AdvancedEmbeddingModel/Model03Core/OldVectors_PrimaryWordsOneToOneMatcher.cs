@@ -24,7 +24,12 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
 
     public int[] ClustersMapping = null!;
 
-    public void CalculateClustersMapping(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    /// <summary>
+    ///     Cosine similarity
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void CalculateClustersMapping_V1(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
     {
         ClustersMapping = new int[source.ClusterInfos.Count];
 
@@ -59,7 +64,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float cosineSimilarity = TensorPrimitives.Dot(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+                float cosineSimilarity = TensorPrimitives.Dot(sourceClusterInfo.CentroidOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized); // TEMPCODE
                 if (cosineSimilarity > max)
                 {
                     max = cosineSimilarity;
@@ -73,6 +78,46 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             else
             {
             }
+        }
+
+        var hs = ClustersMapping.ToHashSet();
+        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
+    }
+
+    /// <summary>
+    ///     Clusters similarity
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void CalculateClustersMapping_V2(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    {
+        ClustersMapping = new int[source.ClusterInfos.Count];
+
+        using Linear mappingLinear = Linear(
+            inputSize: source.Words[0].OldVector.Length,
+            outputSize: source.Words[0].OldVector.Length,
+            hasBias: false);
+        using (var _ = no_grad())
+        {
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            mappingLinear.weight!.copy_(loadedWeights);
+        }
+        //mappingLinear.to();
+
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+
+            //var norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVectorNormalized); // TEST
+            //norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVector); // TEST
+
+            var oldVectorTensor = torch.tensor(sourceClusterInfo.CentroidOldVectorNormalized).reshape([1, sourceClusterInfo.CentroidOldVectorNormalized.Length]);
+            var mappedOldVectorTensor = mappingLinear.forward(oldVectorTensor);
+            float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
+            float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
+            TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
+
+            ClustersMapping[sourceClusterIndex] = target.GetClusterIndex(sourceClusterInfo.CentroidOldVectorNormalized);
         }
 
         var hs = ClustersMapping.ToHashSet();

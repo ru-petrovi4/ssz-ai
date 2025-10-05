@@ -50,14 +50,17 @@ public partial class Model03
     public void Find_OldVectorsAndLinear_ClustersOneToOne()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists("AdvancedEmbedding_LanguageDiscreteEmbeddings_RU_v1.bin", languageDiscreteEmbeddings_RU, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists("AdvancedEmbedding_LanguageDiscreteEmbeddings_EN_v1.bin", languageDiscreteEmbeddings_EN, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
 
 
         OldVectors_PrimaryWordsOneToOneMatcher oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
-        oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+
+        oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
+        oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
         Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
     }
