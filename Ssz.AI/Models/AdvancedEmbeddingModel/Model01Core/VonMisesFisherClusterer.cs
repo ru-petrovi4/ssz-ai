@@ -214,34 +214,41 @@ public class VonMisesFisherClusterer
     public static float ComputeLogNormalizingConstant(float concentration, long dimension)
     {
         double d = dimension;
-        double nu = d / 2.0 - 1.0;
+        double nu = d / 2.0 - 1.0;  // Порядок Бесселя ν = d/2 - 1
+        double halfD = d / 2.0;     // d/2
 
-        if (concentration < 1e-8f) // Порог для малого \kappa, где BesselI может дать 0 из-за underflow
+        if (concentration < 1e-8)  // Порог для малого κ, где I_ν(κ) ≈ 0 из-за underflow
         {
-            // Лимит для равномерного распределения: log c_d(0) = log \Gamma(d/2) - (d/2) log(2 \pi)            
-            return (float)(MathNet.Numerics.SpecialFunctions.GammaLn(nu + 1.0) - (nu + 1.0) * Math.Log(2.0 * Math.PI));
+            // Правильный лимит для κ → 0: log c_d(0) = log Γ(d/2) - log 2 - (d/2) log π
+            // Площадь единичной сферы S^{d-1}: 2 π^{d/2} / Γ(d/2), так что c(0) = Γ(d/2) / (2 π^{d/2})
+            return (float)(MathNet.Numerics.SpecialFunctions.GammaLn(halfD) - Math.Log(2.0) - halfD * Math.Log(Math.PI));
         }
-        
-        double log2pi_nu1 = (nu + 1.0) * Math.Log(2.0 * Math.PI);
-        double nu_log_kappa = nu * Math.Log(concentration);
 
+        // Общие члены: - (d/2) log(2π) = - (ν + 1) log(2π)
+        double log2piHalfD = halfD * Math.Log(2.0 * Math.PI);
+        // (d/2 - 1) log κ = ν log κ
+        double nuLogKappa = nu * Math.Log(concentration);
         double logI;
+
+        // Вычисляем модифицированную функцию Бесселя I_ν(κ)
         double besselI = MathNet.Numerics.SpecialFunctions.BesselI(nu, concentration);
 
         if (double.IsPositiveInfinity(besselI) || besselI == 0.0)
         {
-            // Асимптотическая аппроксимация для большого \kappa или underflow: log I_\nu(\kappa) \approx \kappa - 0.5 log(2 \pi \kappa) - (4\nu^2 - 1)/(8 \kappa)
-            double log_term = 0.5 * Math.Log(2.0 * Math.PI * concentration);
+            // Асимптотическая аппроксимация для большого κ: log I_ν(κ) ≈ κ - 0.5 log(2 π κ) - (4ν² - 1)/(8 κ)
+            // Это log[ exp(κ) / sqrt(2 π κ) * (1 - (4ν² - 1)/(8 κ) + ...) ] ≈ κ - 0.5 log(2 π κ) - (4ν² - 1)/(8 κ)
+            double logTerm = 0.5 * Math.Log(2.0 * Math.PI * concentration);
             double correction = (4.0 * nu * nu - 1.0) / (8.0 * concentration);
-            logI = concentration - log_term - correction;
+            logI = concentration - logTerm - correction;
         }
         else
         {
             logI = Math.Log(besselI);
         }
 
-        double log_c = nu_log_kappa - log2pi_nu1 - logI;
-        return (float)log_c;
+        // Полная формула: log c = ν log κ - (ν + 1) log(2π) - log I_ν(κ)
+        double logC = nuLogKappa - log2piHalfD - logI;
+        return (float)logC;
     }
 
     /// <summary>
