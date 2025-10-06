@@ -178,7 +178,7 @@ public static class SphericalClusteringMetrics
 
     /// <summary>
     /// Вычисляет матрицу попарных расстояний между точками на единичной сфере
-    /// Использует косинусную меру
+    /// Использует угловое расстояние
     /// </summary>
     /// <param name="data">Данные [N x D] или [K x D]</param>    
     /// <returns>Матрица расстояний [N x N] или [K x K]</returns>
@@ -186,13 +186,13 @@ public static class SphericalClusteringMetrics
     {
         // Вычисляем матрицу косинусных сходств через матричное произведение
         // cosine_similarity(x_i, x_j) = x_i^T * x_j (поскольку данные нормированы)
-        var cosineSimilarities = torch.matmul(data, data.transpose(-2, -1));
-        
+        var cosineSimilarities = torch.matmul(data, data.transpose(dim0: 0, dim1: 1));
+
         // Ограничиваем значения для численной стабильности
         cosineSimilarities = torch.clamp(cosineSimilarities, -1.0f + 1e-7f, 1.0f - 1e-7f);
 
-        // Косинусное расстояние: d(x_i, x_j) = 1 - x_i^T * x_j
-        return 1.0f - cosineSimilarities;
+        //// Косинусное расстояние: d(x_i, x_j) = 1 - x_i^T * x_j
+        //return 1.0f - cosineSimilarities;
 
         //if (useAngularDistance)
         //{
@@ -200,6 +200,10 @@ public static class SphericalClusteringMetrics
         //    // Нормализуем на π, чтобы расстояние было в диапазоне [0, 1]
         //    return torch.acos(cosineSimilarities) / Math.PI;
         //}
+
+        // Угловое расстояние: d(x_i, x_j) = arccos(x_i^T * x_j) / π
+        // Нормализуем на π, чтобы расстояние было в диапазоне [0, 1]
+        return torch.acos(cosineSimilarities) / Math.PI;
     }
 
     /// <summary>
@@ -385,8 +389,8 @@ public static class SphericalClusteringMetrics
             logger.LogInformation($"  Кластер {k}: {clusterSize} точек ({percentage:F1}%)");
         }
         
-        var distanceType = "косинусное";
-        logger.LogInformation($"\nТип расстояния: {distanceType}");
+        //var distanceType = "косинусное";
+        //logger.LogInformation($"\nТип расстояния: {distanceType}");
         
         // Вычисляем основные метрики
         logger.LogInformation("\n--- Основные метрики ---");

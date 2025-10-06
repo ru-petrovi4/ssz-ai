@@ -512,6 +512,8 @@ public class VonMisesFisherClusterer
     {   
         foreach (int emptyCluster in emptyClusters)
         {
+            _userFriendlyLogger.LogInformation($"Разбиение кластера {emptyCluster}.");
+
             Tensor posteriors;
             using (var posteriors_device = ComputePosteriors_device())
             {

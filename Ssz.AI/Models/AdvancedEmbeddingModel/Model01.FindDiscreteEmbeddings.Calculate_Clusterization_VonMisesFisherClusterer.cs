@@ -57,7 +57,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 device,
                 loggersSet.UserFriendlyLogger,
                 numClusters: 300,
-                maxIterations: 100,
+                maxIterations: 300,
                 tolerance: 1e-6f
             );
 

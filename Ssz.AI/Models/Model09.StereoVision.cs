@@ -19,7 +19,6 @@ using System.Numerics;
 using System.Numerics.Tensors;
 using System.Threading;
 using System.Threading.Tasks;
-using Ude.Core;
 using static Ssz.AI.Models.Cortex_Simplified;
 using Size = System.Drawing.Size;
 
