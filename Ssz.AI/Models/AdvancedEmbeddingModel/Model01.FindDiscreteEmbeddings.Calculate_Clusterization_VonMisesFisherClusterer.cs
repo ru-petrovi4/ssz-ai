@@ -71,8 +71,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             // Демонстрируем предсказание
             loggersSet.UserFriendlyLogger.LogInformation("\n=== Тестирование предсказаний ===");
-            var predictions = clusterer.Predict(oldVectorsTensor.slice(0, 0, 10, 1)); // Первые 10 точек
-            var probabilities = clusterer.PredictProba(oldVectorsTensor.slice(0, 0, 10, 1));
+            var predictions = clusterer.Predict();
+            var probabilities = clusterer.PredictProba();
 
             loggersSet.UserFriendlyLogger.LogInformation("Предсказания для первых 10 точек:");
             for (int i = 0; i < 10; i++)
