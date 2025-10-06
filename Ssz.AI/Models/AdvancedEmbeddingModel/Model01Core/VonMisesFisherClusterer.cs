@@ -35,10 +35,7 @@ public class VonMisesFisherClusterer
     /// </summary>
     private readonly float _tolerance;
 
-    /// <summary>
-    /// Использовать жёсткое (hard) или мягкое (soft) назначение
-    /// </summary>
-    private readonly bool _useHardAssignment;
+    private Tensor _oldVectorsTensor_device = null!;
 
     // Параметры модели - изучаются в процессе обучения
     /// <summary>
@@ -103,10 +100,10 @@ public class VonMisesFisherClusterer
         for (int iteration = 0; iteration < _maxIterations; iteration += 1)
         {
             // E-шаг: вычисляем posterior probabilities p(k|x_i)
-            var posteriors = ComputePosteriors(oldVectorsTensor);
+            using var posteriors_device = ComputePosteriors_device(oldVectorsTensor);
 
             // M-шаг: обновляем параметры модели
-            UpdateParameters(oldVectorsTensor, posteriors);
+            UpdateParameters(oldVectorsTensor, posteriors_device);
 
             // Вычисляем логарифмическую вероятность для проверки сходимости
             var logLikelihood = ComputeLogLikelihood(oldVectorsTensor[..1000, ..]);
@@ -241,6 +238,7 @@ public class VonMisesFisherClusterer
         // Точный расчёт через LogGamma вместо асимптотической аппроксимации
         float d = dimension;
         float halfD = d / 2.0f;
+        float logNormalizingConstant;
 
         // ln(c_d(κ)) = ln(κ^(d/2-1)) - ln(I_{d/2-1}(κ)) - (d/2-1)*ln(2π)
         // Для модифицированной функции Бесселя используем аппроксимацию
@@ -248,16 +246,23 @@ public class VonMisesFisherClusterer
 
         if (concentration < 1e-6f)
         {
+            if (concentration < 1e-10f)
+                concentration = 1e-10f;
+
             // Для малых κ: c_d(κ) ≈ Γ(d/2) / (2π)^(d/2) * κ^(d/2-1)
-            return (float)SpecialFunctions.GammaLn(halfD) - halfD * (float)Math.Log(2 * Math.PI) + (halfD - 1) * (float)Math.Log(concentration);
+            logNormalizingConstant = (float)SpecialFunctions.GammaLn(halfD) - halfD * MathF.Log(2 * MathF.PI) + (halfD - 1.0f) * MathF.Log(concentration);
         }
+        else
+        {
+            // Для больших κ используем асимптотическую аппроксимацию
+            float nu = halfD - 1;
+            float logApproxBessel = concentration - 0.5f * (float)MathF.Log(2 * MathF.PI * concentration) +
+                                   (4 * nu * nu - 1) / (8 * concentration);
 
-        // Для больших κ используем асимптотическую аппроксимацию
-        float nu = halfD - 1;
-        float logApproxBessel = concentration - 0.5f * (float)MathF.Log(2 * MathF.PI * concentration) +
-                               (4 * nu * nu - 1) / (8 * concentration);
+            logNormalizingConstant = (nu * (float)MathF.Log(concentration)) - logApproxBessel;
+        }       
 
-        return (nu * (float)MathF.Log(concentration)) - logApproxBessel;
+        return logNormalizingConstant;
     }
 
     /// <summary>
@@ -286,25 +291,25 @@ public class VonMisesFisherClusterer
     /// <param name="oldVectorsTensor">Входные данные</param>    
     private void InitializeParameters(Tensor oldVectorsTensor)
     {
+        _oldVectorsTensor_device = oldVectorsTensor.to(_device);
+
         var (numSamples, dimension) = (oldVectorsTensor.shape[0], oldVectorsTensor.shape[1]);
 
         using (var disposeScope = torch.NewDisposeScope())
         {
-            var oldVectorsTensor_device = oldVectorsTensor.to(_device);
-
             // Инициализация направлений средних с помощью kmeans++ подобного метода
             var meanDirections_device = torch.zeros(new long[] { _numClusters, dimension }, dtype: torch.float32, device: _device);
 
             // Выбираем первый центр случайно
             var randomIndex = torch.randint(low: 0, high: numSamples, size: new long[] { 1 }).item<long>();
-            meanDirections_device[0] = oldVectorsTensor_device[randomIndex];
+            meanDirections_device[0] = _oldVectorsTensor_device[randomIndex];
 
             // Выбираем остальные центры с вероятностью пропорциональной расстоянию до ближайшего центра
             for (int k = 1; k < _numClusters; k += 1)
             {
                 // Для каждой точки данных находим расстояние до ближайшего уже выбранного центра
 
-                var similarity = torch.mm(oldVectorsTensor_device, meanDirections_device[..k, ..].t());
+                var similarity = torch.mm(_oldVectorsTensor_device, meanDirections_device[..k, ..].t());
                 var (probabilities, indices) = torch.topk(similarity, k: 1, dim: 1, largest: true);
                 probabilities.neg_().add_(1.0f).pow_(2);
 
@@ -328,12 +333,12 @@ public class VonMisesFisherClusterer
 
                 //// Выбираем следующий центр с вероятностью пропорциональной квадрату расстояния
                 //var probabilities = torch.pow(distances, 2);
-                //var s = torch.sum(probabilities);
-                //probabilities = probabilities / s;        
+                
+                probabilities = probabilities / torch.sum(probabilities);
 
                 // Используем multinomial sampling для выбора индекса
                 var selectedIndex = torch.multinomial(input: probabilities.t(), num_samples: 1).item<long>();
-                meanDirections_device[k] = oldVectorsTensor_device[selectedIndex];
+                meanDirections_device[k] = _oldVectorsTensor_device[selectedIndex];
 
                 if ((k + 1) % 10 == 0)
                 {
@@ -362,89 +367,117 @@ public class VonMisesFisherClusterer
     /// </summary>
     /// <param name="oldVectorsTensor">Входные данные [N x D]</param>
     /// <returns>Матрица posterior probabilities [N x K]</returns>
-    private Tensor ComputePosteriors(Tensor oldVectorsTensor)
+    private Tensor ComputePosteriors_device(Tensor oldVectorsTensor)
     {
         var numSamples = oldVectorsTensor.shape[0];
-        var posteriors = torch.zeros(new long[] { numSamples, _numClusters });
-            
-        // Вычисляем логарифмические вероятности для численной стабильности
-        using var logProbabilities = torch.zeros(size: new long[] { numSamples, _numClusters });
-            
-        for (int k = 0; k < _numClusters; k += 1)
+        Tensor posteriors_device; // = torch.zeros(new long[] { numSamples, _numClusters });
+
+        using (var disposeScope = torch.NewDisposeScope())
         {
-            // Вычисляем cosine similarity между данными и k-м центром
-            var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
-                
-            // Вычисляем логарифм нормализующей константы c_d(κ)
-            var logNormalizingConstant = ComputeLogNormalizingConstant(
-                Concentrations[k].item<float>(), 
-                oldVectorsTensor.shape[1]
-            );
-                
-            // Логарифм vMF плотности: log c_d(κ) + κ * μ^T * x
-            logProbabilities[.., k] = logNormalizingConstant + 
-                Concentrations[k] * cosineSimilarities + 
-                torch.log(MixingCoefficients[k]);
+            // Вычисляем логарифмические вероятности для численной стабильности
+            using var logProbabilities_device = torch.zeros(size: new long[] { numSamples, _numClusters }, device: _device);
+
+            // [N x K]
+            var meanDirections_device = MeanDirections.to(_device);           
+            var concentrations_device = Concentrations.to(_device);
+            var mixingCoefficients_device = MixingCoefficients.to(_device);
+
+            var cosineSimilarities_device = torch.mm(_oldVectorsTensor_device, meanDirections_device.transpose(dim0: 0, dim1: 1));
+
+            for (int k = 0; k < _numClusters; k += 1)
+            {
+                // UNOPTIMIZED
+                // Вычисляем cosine similarity между данными и k-м центром
+                //var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
+
+                // Вычисляем логарифм нормализующей константы c_d(κ)
+                var logNormalizingConstant = ComputeLogNormalizingConstant(
+                    Concentrations[k].item<float>(),
+                    oldVectorsTensor.shape[1]
+                );
+
+                // Логарифм vMF плотности: log c_d(κ) + κ * μ^T * x
+                logProbabilities_device[.., k] = logNormalizingConstant +
+                    concentrations_device[k] * cosineSimilarities_device[.., k] +
+                    torch.log(mixingCoefficients_device[k]);
+            }
+
+            //if (_useHardAssignment)
+            //{
+            //    // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
+            //    var assignments = torch.argmax(logProbabilities, dim: 1);
+            //    for (long i = 0; i < numSamples; i += 1)
+            //    {
+            //        var assignedCluster = assignments[i].item<long>();
+            //        posteriors[i, assignedCluster] = 1.0f;
+            //    }
+            //}
+            //else
+            //{            
+            //}
+
+            // Мягкое назначение: используем softmax для получения вероятностей
+            posteriors_device = torch.softmax(logProbabilities_device, dim: 1).DetachFromDisposeScope();
         }
-            
-        //if (_useHardAssignment)
-        //{
-        //    // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
-        //    var assignments = torch.argmax(logProbabilities, dim: 1);
-        //    for (long i = 0; i < numSamples; i += 1)
-        //    {
-        //        var assignedCluster = assignments[i].item<long>();
-        //        posteriors[i, assignedCluster] = 1.0f;
-        //    }
-        //}
-        //else
-        //{            
-        //}
 
-        // Мягкое назначение: используем softmax для получения вероятностей
-        posteriors = torch.softmax(logProbabilities, dim: 1);
-
-        return posteriors;
+        return posteriors_device;
     }
 
     /// <summary>
     /// M-шаг EM алгоритма: обновляет параметры модели на основе posterior probabilities
     /// </summary>
     /// <param name="oldVectorsTensor">Входные данные [N x D]. Device: CPU</param>
-    /// <param name="posteriors">Posterior probabilities [N x K]. Device: CPU</param>
-    private void UpdateParameters(Tensor oldVectorsTensor, Tensor posteriors)
+    /// <param name="posteriors_device">Posterior probabilities [N x K]. Device: _device</param>
+    private void UpdateParameters(Tensor oldVectorsTensor, Tensor posteriors_device)
     {
         var numSamples = oldVectorsTensor.shape[0];
-            
-        for (int k = 0; k < _numClusters; k += 1)
-        {
-            // Обновляем коэффициент смешивания α_k
-            var effectiveSampleSize = torch.sum(posteriors[.., k]);
-            MixingCoefficients[k] = effectiveSampleSize / numSamples;
-                
-            // Вычисляем взвешенную сумму точек для кластера k
-            var weightedSum = torch.zeros_like(MeanDirections[k]);
-            for (long i = 0; i < numSamples; i += 1)
+        List<int> emptyClusters = new(_numClusters);
+
+        using (var disposeScope = torch.NewDisposeScope())
+        {   
+            var weightedSums_device = torch.mm(posteriors_device.transpose(0, 1), _oldVectorsTensor_device);
+
+            for (int k = 0; k < _numClusters; k += 1)
             {
-                weightedSum += posteriors[i, k] * oldVectorsTensor[i];
+                // Обновляем коэффициент смешивания α_k
+                var effectiveSampleSize = torch.sum(posteriors_device[.., k]).item<float>();
+
+                if (effectiveSampleSize < 1e-6f) // Кластер пуст или почти пуст
+                {
+                    // Добавить в список для переинициализации
+                    emptyClusters.Add(k);
+                }
+
+                MixingCoefficients[k] = effectiveSampleSize / numSamples;
+
+                // Вычисляем взвешенную сумму точек для кластера k
+                var weightedSum = torch.zeros_like(MeanDirections[k]);
+                for (long i = 0; i < numSamples; i += 1)
+                {
+                    weightedSum += posteriors[i, k] * oldVectorsTensor[i];
+                }
+
+                // Обновляем направление среднего μ_k
+                var resultantLength = torch.norm(weightedSum);
+                // Пропускаем назначение, если нет элементов.
+                if (resultantLength.item<float>() > 1e-8f)
+                {
+                    MeanDirections[k] = weightedSum / resultantLength;
+                }
+
+                // Вычисляем средний resultant length для оценки κ_k
+                var meanResultantLength = (resultantLength / effectiveSampleSize).item<float>();
+
+                // Обновляем параметр концентрации κ_k используя аппроксимацию из статьи
+                var newConcentration = ApproximateConcentration(meanResultantLength, oldVectorsTensor.shape[1]);
+                if (!float.IsNaN(newConcentration))
+                    Concentrations[k] = newConcentration;
             }
-                
-            // Обновляем направление среднего μ_k
-            var resultantLength = torch.norm(weightedSum);
-            // Пропускаем назначение, если нет элементов.
-            if (resultantLength.item<float>() > 1e-8f) 
-            {
-                MeanDirections[k] = weightedSum / resultantLength;
-            }                
-                
-            // Вычисляем средний resultant length для оценки κ_k
-            var meanResultantLength = (resultantLength / effectiveSampleSize).item<float>();
-                
-            // Обновляем параметр концентрации κ_k используя аппроксимацию из статьи
-            var newConcentration = ApproximateConcentration(meanResultantLength, oldVectorsTensor.shape[1]);
-            Concentrations[k] = newConcentration;
-        }
-            
+        }         
+
+        //ReinitializeEmptyClusters(emptyClusters, oldVectorsTensor, posteriors);
+        SplitLargestCluster(emptyClusters, oldVectorsTensor, posteriors_device);
+
         // Нормализуем коэффициенты смешивания для обеспечения того, что их сумма равна 1
         MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
         float threshold = 1e-10f;
@@ -453,6 +486,65 @@ public class VonMisesFisherClusterer
         // Применяем маску и присваиваем новое значение тем элементам, где mask == true
         MixingCoefficients[mask] = threshold;
         MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="emptyClusters"></param>
+    /// <param name="oldVectorsTensor">Входные данные [N x D]. Device: CPU</param>
+    /// <param name="posteriors">Posterior probabilities [N x K]. Device: CPU</param>
+    private void ReinitializeEmptyClusters(List<int> emptyClusters, Tensor oldVectorsTensor, Tensor posteriors)
+    {
+        foreach (int emptyCluster in emptyClusters)
+        {
+            // Найти точку, наиболее удалённую от всех текущих центров
+            var distances = torch.mm(oldVectorsTensor, MeanDirections.t()); // [N × K] cosine similarities
+            var maxDistances = torch.max(distances, dim: 1).values; // [N] max similarity for each point
+            var farthestPointIdx = torch.argmin(maxDistances); // Точка с минимальной max similarity
+
+            // Переинициализировать центр кластера
+            MeanDirections[emptyCluster] = oldVectorsTensor[farthestPointIdx].clone();
+
+            // Установить умеренную концентрацию
+            Concentrations[emptyCluster] = 1.0f;
+
+            // Установить малый коэффициент смешивания
+            MixingCoefficients[emptyCluster] = 1.0f / _numClusters;
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="emptyClusters"></param>
+    /// <param name="oldVectorsTensor">Входные данные [N x D]. Device: CPU</param>
+    /// <param name="posteriors_device">Posterior probabilities [N x K]. Device: _device</param>
+    private void SplitLargestCluster(List<int> emptyClusters, Tensor oldVectorsTensor, Tensor posteriors_device)
+    {
+        foreach (int emptyCluster in emptyClusters)
+        {
+            // Найти кластер с максимальным числом точек
+            var clusterSizes = torch.sum(posteriors, dim: 0); // [K]
+            var largestClusterIndex = torch.argmax(clusterSizes).item<long>();
+
+            // Найти точки, принадлежащие крупнейшему кластеру
+            var belongsToLargest = posteriors[.., largestClusterIndex] > 0.5f;
+            var clusterPoints = oldVectorsTensor[belongsToLargest];
+
+            if (clusterPoints.shape[0] > 1)
+            {
+                // Выбрать точку, наиболее удалённую от центра крупнейшего кластера
+                var similarities = torch.mv(clusterPoints, MeanDirections[largestClusterIndex]);
+                var farthestInCluster = torch.argmin(similarities);
+
+                // Переинициализировать пустой кластер этой точкой
+                MeanDirections[emptyCluster] = clusterPoints[farthestInCluster].clone();
+                Concentrations[emptyCluster] = Concentrations[largestClusterIndex] * 0.5f;
+                MixingCoefficients[emptyCluster] = MixingCoefficients[largestClusterIndex] * 0.5f;
+                MixingCoefficients[largestClusterIndex] *= 0.5f;
+            }
+        }
     }
 
     /// <summary>
@@ -473,7 +565,9 @@ public class VonMisesFisherClusterer
         // κ ≈ r̄d - r̄³ / (1 - r̄²)
         var numerator = r * d - MathF.Pow(r, 3);
         var denominator = 1.0f - MathF.Pow(r, 2);
-            
+        if (denominator < 1e-8f)
+            denominator = 1e-8f;
+
         var kappa = numerator / denominator;
             
         // Ограничиваем κ положительными разумными значениями
@@ -522,14 +616,15 @@ public class VonMisesFisherClusterer
                     }
                     else
                     {
-                        var maxLog = Math.Max(sampleLogLikelihood, logComponent);
+                        var maxLog = MathF.Max(sampleLogLikelihood, logComponent);
                         sampleLogLikelihood = maxLog + MathF.Log(
                             MathF.Exp(sampleLogLikelihood - maxLog) + MathF.Exp(logComponent - maxLog)
-                        );
+                        );                        
                     }
                 }
 
-                totalLogLikelihood += sampleLogLikelihood;
+                if (!float.IsNaN(sampleLogLikelihood))
+                    totalLogLikelihood += sampleLogLikelihood;
             }
         }            
             
@@ -545,8 +640,8 @@ public class VonMisesFisherClusterer
     {
         ValidateNormalizedData(oldVectorsTensor);
             
-        var posteriors = ComputePosteriors(oldVectorsTensor);
-        return torch.argmax(posteriors, dim: 1);
+        using var posteriors_device = ComputePosteriors_device(oldVectorsTensor);
+        return torch.argmax(posteriors_device.to(CPU), dim: 1);
     }
 
     /// <summary>
@@ -557,7 +652,8 @@ public class VonMisesFisherClusterer
     public Tensor PredictProba(Tensor oldVectorsTensor)
     {
         ValidateNormalizedData(oldVectorsTensor);
-        return ComputePosteriors(oldVectorsTensor);
+        using var posteriors_device = ComputePosteriors_device(oldVectorsTensor);
+        return posteriors_device.to(CPU);
     }
 
     /// <summary>

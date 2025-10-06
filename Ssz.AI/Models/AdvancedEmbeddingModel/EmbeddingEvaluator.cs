@@ -124,7 +124,7 @@ public static class NeighborStructureComparer
         int totalMatches = 0;
         int totalChecked = 0;
 
-        for (int i = 0; i < count / 2; i++) // TEMPCODE
+        for (int i = 0; i < count; i++)
         {
             // Вектор целевого слова
             var aVec = embA.GetColumn(i);

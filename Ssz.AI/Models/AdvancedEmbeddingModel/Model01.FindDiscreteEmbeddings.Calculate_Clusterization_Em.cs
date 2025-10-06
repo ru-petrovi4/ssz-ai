@@ -155,7 +155,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //                matrixX[i, j] = matrixTempX_row[0, j] = (float)Math.Exp(matrix_ln_p[0, j] - ln_sum_p);
         //            }
 
-        //            // TEMPCODE
+        //            // TEMPCOD
         //            double sum_temp = 0;
         //            for (int j = 0; j < k; j += 1)
         //            {                        

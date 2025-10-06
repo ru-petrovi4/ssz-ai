@@ -1221,23 +1221,22 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                         i_Matching_Dictionary[i] = 0;
                     }
                 }
-
-                // TEMPCODE
-                if (saveDictionary && k > 5)
-                {
-                    List<string?[]> data = new();
-                    foreach (var kvp in i_Matching_Dictionary)
-                    {   
-                        if (kvp.Value == 1)
-                        {
-                            data.Add([
-                                _trainer.SourceDictionary.IdToWord[(int)testDictionary_SourceIds_Array[kvp.Key]],
-                                _trainer.TargetDictionary.IdToWord[(int)testDictionary_TargetIds_Array[kvp.Key]],
-                            ]);
-                        }                        
-                    }
-                    CsvHelper.SaveCsvFile(Path.Combine("Data", "PrimaryWords_RU_EN_Linear.csv"), data);
-                }
+                
+                //if (saveDictionary && k > 5)
+                //{
+                //    List<string?[]> data = new();
+                //    foreach (var kvp in i_Matching_Dictionary)
+                //    {   
+                //        if (kvp.Value == 1)
+                //        {
+                //            data.Add([
+                //                _trainer.SourceDictionary.IdToWord[(int)testDictionary_SourceIds_Array[kvp.Key]],
+                //                _trainer.TargetDictionary.IdToWord[(int)testDictionary_TargetIds_Array[kvp.Key]],
+                //            ]);
+                //        }                        
+                //    }
+                //    CsvHelper.SaveCsvFile(Path.Combine("Data", "PrimaryWords_RU_EN_Linear.csv"), data);
+                //}
 
                 float precisionAtK;
                 if (i_Matching_Dictionary.Count > 0)
