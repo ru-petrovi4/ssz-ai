@@ -213,56 +213,35 @@ public class VonMisesFisherClusterer
     /// <returns>Логарифм нормализующей константы</returns>
     public static float ComputeLogNormalizingConstant(float concentration, long dimension)
     {
-        //var d = (float)dimension;
+        double d = dimension;
+        double nu = d / 2.0 - 1.0;
 
-        // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
-        // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
-
-        // Используем асимптотическую аппроксимацию для больших κ или d
-        // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
-        //var nu = d / 2.0f - 1.0f;
-
-        //if (dimension > 50 || kappa > 100)
-        //var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
-        //var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) -
-        //                    (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
-
-        //return logNormalizer;
-
-        //if !(dimension > 50 || kappa > 100)
-        // Для малых размерностей используем более точные вычисления        
-        //var logGamma = LogGamma(d / 2.0f);
-        //var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) -
-        //                    logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
-
-        // Точный расчёт через LogGamma вместо асимптотической аппроксимации
-        float d = dimension;
-        float halfD = d / 2.0f;
-        float logNormalizingConstant;
-
-        // ln(c_d(κ)) = ln(κ^(d/2-1)) - ln(I_{d/2-1}(κ)) - (d/2-1)*ln(2π)
-        // Для модифицированной функции Бесселя используем аппроксимацию
-        // I_ν(κ) ≈ exp(κ) / sqrt(2πκ) * (1 + (4ν²-1)/(8κ) + ...)
-
-        if (concentration < 1e-6f)
+        if (concentration < 1e-8f) // Порог для малого \kappa, где BesselI может дать 0 из-за underflow
         {
-            if (concentration < 1e-10f)
-                concentration = 1e-10f;
+            // Лимит для равномерного распределения: log c_d(0) = log \Gamma(d/2) - (d/2) log(2 \pi)            
+            return (float)(MathNet.Numerics.SpecialFunctions.GammaLn(nu + 1.0) - (nu + 1.0) * Math.Log(2.0 * Math.PI));
+        }
+        
+        double log2pi_nu1 = (nu + 1.0) * Math.Log(2.0 * Math.PI);
+        double nu_log_kappa = nu * Math.Log(concentration);
 
-            // Для малых κ: c_d(κ) ≈ Γ(d/2) / (2π)^(d/2) * κ^(d/2-1)
-            logNormalizingConstant = (float)SpecialFunctions.GammaLn(halfD) - halfD * MathF.Log(2 * MathF.PI) + (halfD - 1.0f) * MathF.Log(concentration);
+        double logI;
+        double besselI = MathNet.Numerics.SpecialFunctions.BesselI(nu, concentration);
+
+        if (double.IsPositiveInfinity(besselI) || besselI == 0.0)
+        {
+            // Асимптотическая аппроксимация для большого \kappa или underflow: log I_\nu(\kappa) \approx \kappa - 0.5 log(2 \pi \kappa) - (4\nu^2 - 1)/(8 \kappa)
+            double log_term = 0.5 * Math.Log(2.0 * Math.PI * concentration);
+            double correction = (4.0 * nu * nu - 1.0) / (8.0 * concentration);
+            logI = concentration - log_term - correction;
         }
         else
         {
-            // Для больших κ используем асимптотическую аппроксимацию
-            float nu = halfD - 1;
-            float logApproxBessel = concentration - 0.5f * (float)MathF.Log(2 * MathF.PI * concentration) +
-                                   (4 * nu * nu - 1) / (8 * concentration);
+            logI = Math.Log(besselI);
+        }
 
-            logNormalizingConstant = (nu * (float)MathF.Log(concentration)) - logApproxBessel;
-        }       
-
-        return logNormalizingConstant;
+        double log_c = nu_log_kappa - log2pi_nu1 - logI;
+        return (float)log_c;
     }
 
     /// <summary>
@@ -480,7 +459,7 @@ public class VonMisesFisherClusterer
         }         
 
         //ReinitializeEmptyClusters(emptyClusters, oldVectorsTensor, posteriors);
-        SplitLargestCluster(emptyClusters, oldVectorsTensor, posteriors_device);
+        SplitLargestCluster(emptyClusters, oldVectorsTensor);
         
         float epsilon = 1e-8f;
         MixingCoefficients = torch.clamp(MixingCoefficients, min: epsilon);  // Floor        
@@ -520,12 +499,16 @@ public class VonMisesFisherClusterer
     /// <param name="emptyClusters"></param>
     /// <param name="oldVectorsTensor">Входные данные [N x D]. Device: CPU</param>
     /// <param name="posteriors_device">Posterior probabilities [N x K]. Device: _device</param>
-    private void SplitLargestCluster(List<int> emptyClusters, Tensor oldVectorsTensor, Tensor posteriors_device)
-    {
-        var posteriors = posteriors_device.to(CPU);
+    private void SplitLargestCluster(List<int> emptyClusters, Tensor oldVectorsTensor)
+    {   
         foreach (int emptyCluster in emptyClusters)
         {
-            // Найти кластер с максимальным числом точек
+            Tensor posteriors;
+            using (var posteriors_device = ComputePosteriors_device(oldVectorsTensor))
+            {
+                posteriors = posteriors_device.to(CPU);
+            }
+                // Найти кластер с максимальным числом точек
             var clusterSizes = torch.sum(posteriors, dim: 0); // [K]
             var largestClusterIndex = torch.argmax(clusterSizes).item<long>();
 
