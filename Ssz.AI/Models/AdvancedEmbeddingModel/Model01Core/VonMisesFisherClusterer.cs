@@ -112,7 +112,7 @@ public class VonMisesFisherClusterer
             UpdateParameters(posteriors_device);
 
             // Вычисляем логарифмическую вероятность для проверки сходимости
-            var logLikelihood = ComputeLogLikelihood(oldVectorsTensor[..1000, ..]);
+            var logLikelihood = ComputeLogLikelihood(_oldVectorsTensor[..1000, ..]);
             LogLikelihoodHistory.Add(logLikelihood);
 
             // Проверяем сходимость
@@ -136,25 +136,22 @@ public class VonMisesFisherClusterer
 
     /// <summary>
     /// 
-    /// </summary>
-    /// <param name="oldVectorsTensor">Device: CPU</param>
+    /// </summary>    
     /// <param name="clusterization_AlgorithmData"></param>
-    public void GetResult(Tensor oldVectorsTensor, Clusterization_AlgorithmData clusterization_AlgorithmData)
-    {
-        var numSamples = oldVectorsTensor.shape[0];        
-
+    public void GetResult(Clusterization_AlgorithmData clusterization_AlgorithmData)
+    { 
         // Вычисляем логарифмические вероятности для численной стабильности
-        using var logProbabilities = torch.zeros(size: new long[] { numSamples, _numClusters });
+        using var logProbabilities = torch.zeros(size: new long[] { _numSamples, _numClusters });
 
         for (int k = 0; k < _numClusters; k++)
         {
             // Вычисляем cosine similarity между данными и k-м центром
-            var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
+            var cosineSimilarities = torch.matmul(_oldVectorsTensor, MeanDirections[k, ..].t());
 
             // Вычисляем логарифм нормализующей константы c_d(κ)
             var logNormalizingConstant = ComputeLogNormalizingConstant(
                 Concentrations[k].item<float>(),
-                oldVectorsTensor.shape[1]
+                _dimension
             );
 
             // Логарифм vMF плотности: log c_d(κ) + κ * μ^T * x
@@ -167,7 +164,7 @@ public class VonMisesFisherClusterer
 
         // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
         var assignments = torch.argmax(logProbabilities, dim: 1);
-        for (long i = 0; i < numSamples; i++)
+        for (long i = 0; i < _numSamples; i++)
         {
             var assignedCluster = assignments[i].item<long>();
             clusterization_AlgorithmData.ClusterIndices[i] = (int)assignedCluster;

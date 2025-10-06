@@ -64,7 +64,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
             clusterer.Fit(oldVectorsTensor);
 
-            clusterer.GetResult(oldVectorsTensor, clusterization_AlgorithmData);            
+            clusterer.GetResult(clusterization_AlgorithmData);            
 
             // Выводим результаты
             clusterer.PrintModelSummary();
