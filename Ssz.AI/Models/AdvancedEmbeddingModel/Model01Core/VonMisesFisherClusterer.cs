@@ -386,10 +386,6 @@ public class VonMisesFisherClusterer
 
             for (int k = 0; k < _numClusters; k += 1)
             {
-                // UNOPTIMIZED
-                // Вычисляем cosine similarity между данными и k-м центром
-                //var cosineSimilarities = torch.matmul(oldVectorsTensor, MeanDirections[k, ..].t());
-
                 // Вычисляем логарифм нормализующей константы c_d(κ)
                 var logNormalizingConstant = ComputeLogNormalizingConstant(
                     Concentrations[k].item<float>(),
@@ -431,11 +427,17 @@ public class VonMisesFisherClusterer
     private void UpdateParameters(Tensor oldVectorsTensor, Tensor posteriors_device)
     {
         var numSamples = oldVectorsTensor.shape[0];
+        var dimension = oldVectorsTensor.shape[1];
+
         List<int> emptyClusters = new(_numClusters);
 
         using (var disposeScope = torch.NewDisposeScope())
         {   
-            var weightedSums_device = torch.mm(posteriors_device.transpose(0, 1), _oldVectorsTensor_device);
+            // Векторное вычисление размеров эффективных выборок [K]
+            var effectiveSampleSizes_device = torch.sum(posteriors_device, dim: 0);
+
+            // Обновляем коэффициенты смешивания векторно [K]
+            MixingCoefficients = (effectiveSampleSizes_device / numSamples).to(CPU).DetachFromDisposeScope();
 
             for (int k = 0; k < _numClusters; k += 1)
             {
@@ -447,29 +449,31 @@ public class VonMisesFisherClusterer
                     // Добавить в список для переинициализации
                     emptyClusters.Add(k);
                 }
+            }
 
-                MixingCoefficients[k] = effectiveSampleSize / numSamples;
+            // Векторное вычисление всех взвешенных сумм [K x D]
+            // posteriors.transpose(0,1): K x N, mm с N x D -> K x D
+            var weightedSums_device = torch.mm(posteriors_device.transpose(0, 1), _oldVectorsTensor_device);
 
-                // Вычисляем взвешенную сумму точек для кластера k
-                var weightedSum = torch.zeros_like(MeanDirections[k]);
-                for (long i = 0; i < numSamples; i += 1)
-                {
-                    weightedSum += posteriors[i, k] * oldVectorsTensor[i];
-                }
-
+            for (int k = 0; k < _numClusters; k += 1)
+            {
+                // Взвешенная сумма для k-го кластера [D]
+                var weightedSum_device = weightedSums_device[k];  
+                
                 // Обновляем направление среднего μ_k
-                var resultantLength = torch.norm(weightedSum);
+                float resultantLength = torch.norm(weightedSum_device).item<float>();
                 // Пропускаем назначение, если нет элементов.
-                if (resultantLength.item<float>() > 1e-8f)
+                if (resultantLength > 1e-8f)
                 {
-                    MeanDirections[k] = weightedSum / resultantLength;
+                    MeanDirections[k] = (weightedSum_device / resultantLength).to(CPU);
                 }
 
                 // Вычисляем средний resultant length для оценки κ_k
-                var meanResultantLength = (resultantLength / effectiveSampleSize).item<float>();
+                float effectiveSampleSize = effectiveSampleSizes_device[k].item<float>();
+                float meanResultantLength = resultantLength / effectiveSampleSize;
 
                 // Обновляем параметр концентрации κ_k используя аппроксимацию из статьи
-                var newConcentration = ApproximateConcentration(meanResultantLength, oldVectorsTensor.shape[1]);
+                var newConcentration = ApproximateConcentration(meanResultantLength, dimension);
                 if (!float.IsNaN(newConcentration))
                     Concentrations[k] = newConcentration;
             }
@@ -477,14 +481,10 @@ public class VonMisesFisherClusterer
 
         //ReinitializeEmptyClusters(emptyClusters, oldVectorsTensor, posteriors);
         SplitLargestCluster(emptyClusters, oldVectorsTensor, posteriors_device);
-
-        // Нормализуем коэффициенты смешивания для обеспечения того, что их сумма равна 1
-        MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
-        float threshold = 1e-10f;
-        // Создаём булеву маску: где tensor < порог
-        var mask = MixingCoefficients.lt(threshold); // mask — логический тензор Nx1
-        // Применяем маску и присваиваем новое значение тем элементам, где mask == true
-        MixingCoefficients[mask] = threshold;
+        
+        float epsilon = 1e-8f;
+        MixingCoefficients = torch.clamp(MixingCoefficients, min: epsilon);  // Floor        
+        // Нормализуем коэффициенты смешивания для обеспечения того, что их сумма равна 1        
         MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
     }
 
@@ -522,6 +522,7 @@ public class VonMisesFisherClusterer
     /// <param name="posteriors_device">Posterior probabilities [N x K]. Device: _device</param>
     private void SplitLargestCluster(List<int> emptyClusters, Tensor oldVectorsTensor, Tensor posteriors_device)
     {
+        var posteriors = posteriors_device.to(CPU);
         foreach (int emptyCluster in emptyClusters)
         {
             // Найти кластер с максимальным числом точек
@@ -695,4 +696,67 @@ public class VonMisesFisherClusterer
 //        if (x < 1.0f) return LogGamma(x + 1.0f) - MathF.Log(x);
 
 //        return (x - 0.5f) * MathF.Log(x) - x + 0.5f * MathF.Log(2.0f * MathF.PI);
+//    }
+
+
+
+///// <summary>
+//    /// Вычисляет логарифм нормализующей константы c_d(κ) для vMF распределения
+//    /// Использует аппроксимацию для высоких размерностей чтобы избежать переполнения
+//    /// </summary>
+//    /// <param name="concentration">Параметр концентрации κ</param>
+//    /// <param name="dimension">Размерность d</param>
+//    /// <returns>Логарифм нормализующей константы</returns>
+//    public static float ComputeLogNormalizingConstant(float concentration, long dimension)
+//    {
+//        //var d = (float)dimension;
+
+//        // Для больших d используем аппроксимацию Стирлинга для избежания переполнения
+//        // log c_d(κ) ≈ (d/2 - 1) * log(κ) - (d/2) * log(2π) - log I_{d/2-1}(κ)
+
+//        // Используем асимптотическую аппроксимацию для больших κ или d
+//        // I_ν(x) ≈ exp(x) / sqrt(2πx) для больших x
+//        //var nu = d / 2.0f - 1.0f;
+
+//        //if (dimension > 50 || kappa > 100)
+//        //var logBessel = kappa - 0.5f * MathF.Log(2.0f * MathF.PI * kappa);
+//        //var logNormalizer = (d / 2.0f - 1.0f) * MathF.Log(kappa) -
+//        //                    (d / 2.0f) * MathF.Log(2.0f * MathF.PI) - logBessel;
+
+//        //return logNormalizer;
+
+//        //if !(dimension > 50 || kappa > 100)
+//        // Для малых размерностей используем более точные вычисления        
+//        //var logGamma = LogGamma(d / 2.0f);
+//        //var logNormalizer = MathF.Log(kappa / 2.0f) * (d / 2.0f - 1.0f) -
+//        //                    logGamma - (d / 2.0f) * MathF.Log(MathF.PI);
+
+//        // Точный расчёт через LogGamma вместо асимптотической аппроксимации
+//        float d = dimension;
+//        float halfD = d / 2.0f;
+//        float logNormalizingConstant;
+
+//        // ln(c_d(κ)) = ln(κ^(d/2-1)) - ln(I_{d/2-1}(κ)) - (d/2-1)*ln(2π)
+//        // Для модифицированной функции Бесселя используем аппроксимацию
+//        // I_ν(κ) ≈ exp(κ) / sqrt(2πκ) * (1 + (4ν²-1)/(8κ) + ...)
+
+//        if (concentration < 1e-6f)
+//        {
+//            if (concentration < 1e-10f)
+//                concentration = 1e-10f;
+
+//            // Для малых κ: c_d(κ) ≈ Γ(d/2) / (2π)^(d/2) * κ^(d/2-1)
+//            logNormalizingConstant = (float)SpecialFunctions.GammaLn(halfD) - halfD * MathF.Log(2 * MathF.PI) + (halfD - 1.0f) * MathF.Log(concentration);
+//        }
+//        else
+//        {
+//            // Для больших κ используем асимптотическую аппроксимацию
+//            float nu = halfD - 1;
+//            float logApproxBessel = concentration - 0.5f * (float)MathF.Log(2 * MathF.PI * concentration) +
+//                                   (4 * nu * nu - 1) / (8 * concentration);
+
+//            logNormalizingConstant = (nu * (float)MathF.Log(concentration)) - logApproxBessel;
+//        }
+
+//        return logNormalizingConstant;
 //    }
