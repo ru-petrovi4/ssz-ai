@@ -124,6 +124,51 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
     }
 
+    /// <summary>
+    /// Hungarian algorithm
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void CalculateClustersMapping_V3(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    {
+        using Linear mappingLinear = Linear(
+            inputSize: source.Words[0].OldVector.Length,
+            outputSize: source.Words[0].OldVector.Length,
+            hasBias: false);
+        using (var _ = no_grad())
+        {
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            mappingLinear.weight!.copy_(loadedWeights);
+        }
+        //mappingLinear.to();
+
+        int[,] costMatrix = new int[source.ClusterInfos.Count, target.ClusterInfos.Count];
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];            
+
+            var oldVectorTensor = torch.tensor(sourceClusterInfo.CentroidOldVectorNormalized).reshape([1, sourceClusterInfo.CentroidOldVectorNormalized.Length]);
+            var mappedOldVectorTensor = mappingLinear.forward(oldVectorTensor);
+            float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
+            float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
+            TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
+                        
+            for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
+            {
+                var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
+
+                float cosineSimilarity = TensorPrimitives.Dot(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+
+                costMatrix[sourceClusterIndex, targetClusterIndex] = (int)(cosineSimilarity * -10000.0f);
+            }            
+        }
+
+        ClustersMapping = HungarianAlgorithm.FindAssignments(costMatrix);
+
+        var hs = ClustersMapping.ToHashSet();
+        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
+    }
+
     public void ComputeDetailedEvaluationReport(LanguageDiscreteEmbeddings languageDiscreteEmbeddings, ILogger logger)
     {
         var count = languageDiscreteEmbeddings.Words.Count;
@@ -143,17 +188,44 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         var labels = torch.tensor(allLabels);
 
         SphericalClusteringMetrics.ComputeDetailedEvaluationReport(data, labels, logger);
-    }
+    }    
+
+    public void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    {
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            ShowWords(source, sourceClusterIndex);
+            ShowWords(target, ClustersMapping[sourceClusterIndex]);
+            _userFriendlyLogger.LogInformation($"------------------------");
+        }
+    }    
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
-    {        
+    {
         writer.WriteArray(ClustersMapping);
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
-    {   
+    {
         ClustersMapping = reader.ReadArray<int>()!;
-    }    
+    }
+
+    private void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex)
+    {
+        _userFriendlyLogger.LogInformation($"Кластер: {clusterIndex}");
+
+        var clusterInfo = source.ClusterInfos[clusterIndex];
+
+        foreach (var word in source.Words
+            .Where(w => w.ClusterIndex == clusterIndex)
+            .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
+            .Take(10))
+        {
+            _userFriendlyLogger.LogInformation(word.Name);
+        }
+
+        _userFriendlyLogger.LogInformation($"------------------------");
+    }
 
     #region private fields
 

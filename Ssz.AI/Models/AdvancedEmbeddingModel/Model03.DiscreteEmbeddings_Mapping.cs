@@ -47,7 +47,7 @@ public partial class Model03
 
     #endregion
 
-    public void Find_OldVectorsAndLinear_ClustersOneToOne()
+    public void AnalyzeClusters()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
@@ -66,6 +66,28 @@ public partial class Model03
         oldVectors_PrimaryWordsOneToOneMatcher.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
 
         Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
+    }
+
+    public void Find_OldVectors_ClustersOneToOne()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+
+        bool calculate = false;
+        OldVectors_PrimaryWordsOneToOneMatcher oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
+        if (calculate)
+        {
+            oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V3(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+            Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
+        }
+        else
+        {
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null);
+        }
+        oldVectors_PrimaryWordsOneToOneMatcher.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
     }
 
     public void FindDiscreteEmbeddings_Mapping()
