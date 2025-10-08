@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils;
 using Ssz.Utils.Logging;
 using System;
@@ -207,6 +208,29 @@ public static class WordsHelper
         }
         for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
         {   
+            for (; ; )
+            {
+                var word = words[r.Next(words.Count)];
+                if (word.Temp_Flag)
+                    continue;
+
+                randomOrderWords.Add(word);
+                word.Temp_Flag = true;
+                break;
+            }
+        }
+        return randomOrderWords;
+    }
+
+    public static List<WordWithDiscreteEmbedding> GetRandomOrderWords(List<WordWithDiscreteEmbedding> words, int wordsCount, Random r)
+    {
+        var randomOrderWords = new List<WordWithDiscreteEmbedding>(wordsCount);
+        foreach (var word in words)
+        {
+            word.Temp_Flag = false;
+        }
+        for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+        {
             for (; ; )
             {
                 var word = words[r.Next(words.Count)];

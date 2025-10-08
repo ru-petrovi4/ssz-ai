@@ -30,9 +30,7 @@ public partial class Model03View : UserControl
         Model = new Model03();
         Task.Run(() =>
         {
-            Model.Find_OldVectors_ClustersOneToOne();
-            //Model.TestQuality_DiscreteEmbeddings_Mapping();
-            //Model.VisualizeData_V2();
+            Model.Find_DiscreteVectors_ClustersOneToOne_V2();            
         });
     }
 

@@ -9,9 +9,12 @@ using System.Numerics.Tensors; // Для TensorPrimitives
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
-public class PrimaryWordsOneToOneMatcher
+/// <summary>
+/// Сопоставление на основе генерации гипотез
+/// </summary>
+public class PrimaryWordsOneToOneMatcher_V1
 {
-    public PrimaryWordsOneToOneMatcher(IUserFriendlyLogger userFriendlyLogger, Model03.Parameters parameters)
+    public PrimaryWordsOneToOneMatcher_V1(IUserFriendlyLogger userFriendlyLogger, Model03.Parameters parameters)
     {
         _userFriendlyLogger = userFriendlyLogger;
         _parameters = parameters;
@@ -278,9 +281,9 @@ public class PrimaryWordsOneToOneMatcher
     }
 
     // Получить итоговое соответствие
-    public Dictionary<int, int> GetFinalMappingForcedExclusive()
+    public int[] GetFinalMappingForcedExclusive()
     {
-        var result = new Dictionary<int, int>(VectorLength);
+        var result = new int[VectorLength];
         var usedB = new HashSet<int>();
 
         for (int i = 0; i < VectorLength; i++)
@@ -305,9 +308,9 @@ public class PrimaryWordsOneToOneMatcher
         return result;
     }
 
-    public Dictionary<int, int> GetFinalMapping()
+    public int[] GetFinalMapping()
     {
-        var result = new Dictionary<int, int>(VectorLength);        
+        var result = new int[VectorLength];        
 
         for (int i = 0; i < VectorLength; i++)
         {

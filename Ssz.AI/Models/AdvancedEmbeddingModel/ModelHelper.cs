@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
@@ -8,12 +9,40 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Numerics.Tensors;
 using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {
     public static partial class ModelHelper
     {
+        public static void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target, int[] clustersMapping, ILogger logger)
+        {
+            for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+            {
+                ShowWords(source, sourceClusterIndex, logger);
+                ShowWords(target, clustersMapping[sourceClusterIndex], logger);
+                logger.LogInformation($"------------------------");
+            }
+        }
+
+        private static void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex, ILogger logger)
+        {
+            logger.LogInformation($"Кластер: {clusterIndex}");
+
+            var clusterInfo = source.ClusterInfos[clusterIndex];
+
+            foreach (var word in source.Words
+                .Where(w => w.ClusterIndex == clusterIndex)
+                .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
+                .Take(10))
+            {
+                logger.LogInformation(word.Name);
+            }
+
+            logger.LogInformation($"------------------------");
+        }
+
         public static async Task Operation1(AddonsManager addonsManager, IServiceProvider serviceProvider, IConfiguration configuration, ILoggersSet loggersSet)
         {
             string programDataDirectoryFullName = Directory.GetCurrentDirectory();

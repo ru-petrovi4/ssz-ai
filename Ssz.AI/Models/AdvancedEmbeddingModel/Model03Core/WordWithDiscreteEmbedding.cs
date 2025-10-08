@@ -38,6 +38,8 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     /// </summary>
     public float[] DiscreteVector_SecondaryBitsOnly = null!;
 
+    public bool Temp_Flag;
+
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         writer.Write(Name);

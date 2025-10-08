@@ -7,15 +7,22 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Numerics.Tensors;
+using TorchSharp;
+using static TorchSharp.torch;
 
-namespace Ssz.AI.Models.AdvancedEmbeddingModel;
+namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
-public class MappingData_V1 : ISerializableModelObject
+/// <summary>
+/// Сопоставление на основе перестановок
+/// </summary>
+public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
 {
     private ILoggersSet _loggersSet;
-    public LanguageInfo LanguageInfo_RU;
-    public LanguageInfo LanguageInfo_EN;
+    private Device _device;
+    public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_RU;
+    public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_EN;
+
+    public int WordsCount;
 
     /// <summary>
     ///     Index RU -> Index EN
@@ -26,11 +33,8 @@ public class MappingData_V1 : ISerializableModelObject
     /// </summary>
     public int[] Mapping_EN_RU = null!;
 
-    public MatrixFloat Temp_ProxBits_RU = new();
-    /// <summary>
-    ///     Word for each bit.
-    /// </summary>
-    public Word[] Temp_BitWords_RU = null!;
+    public torch.Tensor Temp_ProxBits_Tensor_RU = null!;
+    public MatrixFloat Temp_ProxBits_RU = null!;
     /// <summary>
     ///     [Word, [Bit Index]]
     /// </summary>
@@ -40,11 +44,8 @@ public class MappingData_V1 : ISerializableModelObject
     /// </summary>
     public int[][] Temp_WordMappedBitIndices_Collection_RU = null!;
 
-    public MatrixFloat Temp_ProxBits_EN = new();
-    /// <summary>
-    ///     Word for each bit.
-    /// </summary>
-    public Word[] Temp_BitWords_EN = null!;
+    public torch.Tensor Temp_ProxBits_Tensor_EN = null!;
+    public MatrixFloat Temp_ProxBits_EN = null!;
     /// <summary>
     ///     [Word, [Bit Index]]
     /// </summary>
@@ -60,18 +61,19 @@ public class MappingData_V1 : ISerializableModelObject
 
     //public float[] Temp_EnergyOfBitCollection = null!;
 
-    public MappingData_V1(ILoggersSet loggersSet, LanguageInfo languageInfo_RU, LanguageInfo languageInfo_EN)
+    public PrimaryWordsOneToOneMatcher_V2(ILoggersSet loggersSet, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN)
     {
         _loggersSet = loggersSet;
-        LanguageInfo_RU = languageInfo_RU;
-        LanguageInfo_EN = languageInfo_EN;        
+        _device = cuda.is_available() ? CUDA : CPU;
+        LanguageDiscreteEmbeddings_RU = languageDiscreteEmbeddings_RU;
+        LanguageDiscreteEmbeddings_EN = languageDiscreteEmbeddings_EN;        
     }
 
     public void GenerateOwnedData(int vectorLength)
     {
         Mapping_RU_EN = new int[vectorLength];
         Mapping_EN_RU = new int[vectorLength];
-        bool[] isMapped_EN = new bool[vectorLength];
+        bool[] isMapped_RU_EN = new bool[vectorLength];
 
         var r = new Random(1);
         
@@ -80,12 +82,12 @@ public class MappingData_V1 : ISerializableModelObject
             for (; ; )
             {
                 int bitIndex_EN = r.Next(vectorLength);                
-                if (isMapped_EN[bitIndex_EN])
+                if (isMapped_RU_EN[bitIndex_EN])
                     continue;
 
                 Mapping_RU_EN[bitIndex_RU] = bitIndex_EN;
                 Mapping_EN_RU[bitIndex_EN] = bitIndex_RU;
-                isMapped_EN[bitIndex_EN] = true;
+                isMapped_RU_EN[bitIndex_EN] = true;
                 break;
             }
         }
@@ -93,30 +95,25 @@ public class MappingData_V1 : ISerializableModelObject
 
     public void Prepare()
     {
-        Temp_ProxBits_RU = new MatrixFloat(Mapping_RU_EN.Length, Mapping_RU_EN.Length);
-        Temp_BitWords_RU = new Word[Mapping_RU_EN.Length];
-        var h = LanguageInfo_RU.Clusterization_AlgorithmData.PrimaryWords.Select(w => w.Index).ToHashSet();
-        foreach (var primaryWord in LanguageInfo_RU.Clusterization_AlgorithmData.PrimaryWords)
+        WordsCount = 10000;
+        using (var disposeScope = torch.NewDisposeScope())
         {
-            int prjectionIndex = LanguageInfo_RU.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices[primaryWord.Index];
-            Temp_BitWords_RU[prjectionIndex] = primaryWord;
-        }
-        for (int i = 0; i < Mapping_RU_EN.Length; i += 1)
-        {
-            for (int j = 0; j < Mapping_RU_EN.Length; j += 1)
-            {
-                Temp_ProxBits_RU[i, j] = TensorPrimitives.CosineSimilarity(
-                    LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors[Temp_BitWords_RU[i].Index],
-                    LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors[Temp_BitWords_RU[j].Index]);
-            }
-        }
-        Temp_WordBitIndices_Collection_RU = new int[LanguageInfo_RU.Words.Count][];
-        Temp_WordMappedBitIndices_Collection_RU = new int[LanguageInfo_RU.Words.Count][];
+            var primaryBitsOnlyEmbeddingsTensor_RU = LanguageDiscreteEmbeddings_RU.GetDiscrete_PrimaryBitsOnlyEmbeddingsTensor(WordsCount, _device);
+            Temp_ProxBits_Tensor_RU = torch.mm(primaryBitsOnlyEmbeddingsTensor_RU.t(), primaryBitsOnlyEmbeddingsTensor_RU).to(CPU).DetachFromDisposeScope();
+            Temp_ProxBits_RU = MatrixFloat.FromTensor(Temp_ProxBits_Tensor_RU);
+
+            var primaryBitsOnlyEmbeddingsTensor_EN = LanguageDiscreteEmbeddings_EN.GetDiscrete_PrimaryBitsOnlyEmbeddingsTensor(WordsCount, _device);
+            Temp_ProxBits_Tensor_EN = torch.mm(primaryBitsOnlyEmbeddingsTensor_EN.t(), primaryBitsOnlyEmbeddingsTensor_EN).to(CPU).DetachFromDisposeScope();
+            Temp_ProxBits_EN = MatrixFloat.FromTensor(Temp_ProxBits_Tensor_EN);
+        }        
+
+        Temp_WordBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
+        Temp_WordMappedBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
         List<int> wordBitIndices = new List<int>(16);
         List<int> wordMappedBitIndices = new List<int>(16);
-        for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
+        for (int i = 0; i < WordsCount; i += 1)
         {            
-            var discreteVector_PrimaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_PrimaryBitsOnly[LanguageInfo_RU.Words[i].Index];
+            var discreteVector_PrimaryBitsOnly = LanguageDiscreteEmbeddings_RU.Words[i].DiscreteVector_PrimaryBitsOnly;
             wordBitIndices.Clear();
             wordMappedBitIndices.Clear();
             for (int j = 0; j < discreteVector_PrimaryBitsOnly.Length; j += 1)
@@ -129,29 +126,13 @@ public class MappingData_V1 : ISerializableModelObject
             }
             Temp_WordBitIndices_Collection_RU[i] = wordBitIndices.ToArray();
             Temp_WordMappedBitIndices_Collection_RU[i] = wordMappedBitIndices.ToArray();
-        }
-
-        Temp_ProxBits_EN = new MatrixFloat(Mapping_RU_EN.Length, Mapping_RU_EN.Length);
-        Temp_BitWords_EN = new Word[Mapping_RU_EN.Length];
-        foreach (var primaryWord in LanguageInfo_EN.Clusterization_AlgorithmData.PrimaryWords)
+        }        
+              
+        Temp_WordBitIndices_Collection_EN = new int[LanguageDiscreteEmbeddings_EN.Words.Count][];
+        Temp_WordMappedBitIndices_Collection_EN = new int[LanguageDiscreteEmbeddings_EN.Words.Count][];        
+        for (int i = 0; i < WordsCount; i += 1)
         {
-            int prjectionIndex = LanguageInfo_EN.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices[primaryWord.Index];
-            Temp_BitWords_EN[prjectionIndex] = primaryWord;
-        }
-        for (int i = 0; i < Mapping_RU_EN.Length; i += 1)
-        {
-            for (int j = 0; j < Mapping_RU_EN.Length; j += 1)
-            {
-                Temp_ProxBits_EN[i, j] = TensorPrimitives.CosineSimilarity(
-                    LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors[Temp_BitWords_EN[i].Index],
-                    LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors[Temp_BitWords_EN[j].Index]);
-            }
-        }
-        Temp_WordBitIndices_Collection_EN = new int[LanguageInfo_EN.Words.Count][];
-        Temp_WordMappedBitIndices_Collection_EN = new int[LanguageInfo_EN.Words.Count][];        
-        for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
-        {
-            var discreteVector = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors[LanguageInfo_EN.Words[i].Index];
+            var discreteVector = LanguageDiscreteEmbeddings_EN.Words[i].DiscreteVector_PrimaryBitsOnly;
             wordBitIndices.Clear();
             wordMappedBitIndices.Clear();
             for (int j = 0; j < discreteVector.Length; j += 1)
@@ -165,8 +146,6 @@ public class MappingData_V1 : ISerializableModelObject
             Temp_WordBitIndices_Collection_EN[i] = wordBitIndices.ToArray();
             Temp_WordMappedBitIndices_Collection_EN[i] = wordMappedBitIndices.ToArray();
         }
-
-        //Temp_EnergyOfBitCollection = new float[Mapping_RU_EN.Length];
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -199,8 +178,8 @@ public class MappingData_V1 : ISerializableModelObject
 
         for (int i = 0; i < 3 * 3600 * 10; i += 1)
         {
-            var random_Words_RU = WordsHelper.GetRandomOrderWords(LanguageInfo_RU.Words, r);
-            var random_Words_EN = WordsHelper.GetRandomOrderWords(LanguageInfo_EN.Words, r);
+            var random_Words_RU = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_RU.Words, WordsCount, r);
+            var random_Words_EN = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_EN.Words, WordsCount, r);
             for (int randomWordsIndex = 0; randomWordsIndex < 10000; randomWordsIndex += 1)
             {   
                 OptimizeWord_RU(random_Words_RU[randomWordsIndex].Index, r);
@@ -231,7 +210,7 @@ public class MappingData_V1 : ISerializableModelObject
         int toOptimize_i = r.Next(wordBitIndices.Length);
         //for (int toOptimize_i = 0; toOptimize_i < wordBitIndices.Length; toOptimize_i += 1)
         {             
-            Temp_MinEnergy = Single.MaxValue;
+            Temp_MinEnergy = float.MaxValue;
             int originalBitIndex = wordMappedBitIndices[toOptimize_i];
             int minEnergy_BitIndex_EN = 0;
             for (int test_BitIndex_EN = 0; test_BitIndex_EN < Mapping_RU_EN.Length; test_BitIndex_EN += 1)
@@ -273,7 +252,7 @@ public class MappingData_V1 : ISerializableModelObject
         int toOptimize_i = r.Next(wordBitIndices.Length);
         //for (int toOptimize_i = 0; toOptimize_i < wordBitIndices.Length; toOptimize_i += 1)
         {   
-            float minEnergy = Single.MaxValue;
+            float minEnergy = float.MaxValue;
             int originalBitIndex = wordMappedBitIndices[toOptimize_i];
             int minEnergy_BitIndex_RU = 0;
             for (int test_BitIndex_RU = 0; test_BitIndex_RU < Mapping_EN_RU.Length; test_BitIndex_RU += 1)

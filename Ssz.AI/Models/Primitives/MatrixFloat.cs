@@ -1,6 +1,7 @@
 ﻿using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
+using TorchSharp;
 
 namespace Ssz.AI.Models;
 
@@ -111,7 +112,15 @@ public class MatrixFloat : IOwnedDataSerializable
         }
     }
 
-    #endregion        
+    public static MatrixFloat_RowMajor FromTensor(torch.Tensor tensor)
+    {
+        var data = tensor.data<float>();        
+        var result = new MatrixFloat_RowMajor((int)tensor.shape[0], (int)tensor.shape[1]);
+        data.CopyTo(result.Data);
+        return result;
+    }
+
+    #endregion
 }
 
 public class MatrixFloat_RowMajor : MatrixFloat

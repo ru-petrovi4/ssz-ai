@@ -30,13 +30,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
 public partial class Model03
 {
+    // Obsolete
     public const string FileName_HypothesisSupport = "AdvancedEmbedding_HypothesisSupport.bin";
     public const string FileName_DistanceMatrixA = "AdvancedEmbedding_DistanceMatrixA.bin";
     public const string FileName_NearestA = "AdvancedEmbedding_NearestA.bin";
     public const string FileName_DistanceMatrixB = "AdvancedEmbedding_DistanceMatrixB.bin";
     public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
-
     public const string FileName_OldVectors_PrimaryWordsOneToOneMatcher = "OldVectors_PrimaryWordsOneToOneMatcher.bin";
+
+    public const string FileName_PrimaryWordsOneToOneMatcher_V2 = "AdvancedEmbedding_PrimaryWordsOneToOneMatcher_V2.bin";
 
     #region construction and destruction
 
@@ -87,10 +89,13 @@ public partial class Model03
         {
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null);
         }
-        oldVectors_PrimaryWordsOneToOneMatcher.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, oldVectors_PrimaryWordsOneToOneMatcher.ClustersMapping, _loggersSet.UserFriendlyLogger);
     }
 
-    public void FindDiscreteEmbeddings_Mapping()
+    /// <summary>
+    /// Поддержка гипотез ближайших
+    /// </summary>
+    public void Find_DiscreteVectors_ClustersOneToOne_V1()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
@@ -101,7 +106,7 @@ public partial class Model03
         var setA = languageDiscreteEmbeddings_RU.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();
         var setB = languageDiscreteEmbeddings_EN.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();          
 
-        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        var matcher = new PrimaryWordsOneToOneMatcher_V1(_loggersSet.UserFriendlyLogger, new Parameters());
         bool calculateDistanceMatrices = false;
         if (calculateDistanceMatrices)
         {
@@ -118,19 +123,26 @@ public partial class Model03
         else
         {
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestA = new PrimaryWordsOneToOneMatcher.Nearest();
+            matcher.NearestA = new PrimaryWordsOneToOneMatcher_V1.Nearest();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
 
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
+            matcher.NearestB = new PrimaryWordsOneToOneMatcher_V1.Nearest();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
         }
 
-        matcher.SupportHypotheses_V2(setA, setB, count: 500);
+        bool calculate = false;
+        if (calculate)
+        {
+            matcher.SupportHypotheses_V1(setA, setB, count: 5000);
+            Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+        }
+        else
+        {
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+        }
 
-        Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
-
-        //var resultMapping = matcher.GetFinalMappingForcedExclusive();
+        //var resultMapping = matcher.GetFinalMapping();
 
         //// Выводим часть соответствий
         //_loggersSet.UserFriendlyLogger.LogInformation("Top 10 соответствий:");
@@ -138,18 +150,50 @@ public partial class Model03
         //{
         //    _loggersSet.UserFriendlyLogger.LogInformation($"{pair.Key} -> {pair.Value}");
         //}
-    }
 
-    public void TestQuality_DiscreteEmbeddings_Mapping()
-    {
-        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+        var clustersMapping = matcher.GetFinalMappingForcedExclusive();
 
-        var resultBits = matcher.GetFinalMapping().Values.ToHashSet();
-
+        var resultBits = clustersMapping.ToHashSet();
         // Выводим часть соответствий
         _loggersSet.UserFriendlyLogger.LogInformation($"resultBits.Count: {resultBits.Count}");
+
+        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger);
     }
+
+    /// <summary>
+    /// Перестановки
+    /// </summary>
+    public void Find_DiscreteVectors_ClustersOneToOne_V2()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);        
+
+        var matcher = new PrimaryWordsOneToOneMatcher_V2(_loggersSet, languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        bool calculate = true;
+        if (calculate)
+        {
+            matcher.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+            matcher.Prepare();
+            matcher.CalculateMapping();
+            
+            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);            
+        }
+        else
+        {
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);            
+        }
+
+        var clustersMapping = matcher.Mapping_RU_EN;
+
+        var resultBits = clustersMapping.ToHashSet();
+        // Выводим часть соответствий
+        _loggersSet.UserFriendlyLogger.LogInformation($"resultBits.Count: {resultBits.Count}");
+
+        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger);
+    }    
 
     public void VisualizeData_V1()
     {
@@ -186,27 +230,27 @@ public partial class Model03
 
     public void VisualizeData_V2()
     {
-        var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());        
-        matcher.NearestA = new PrimaryWordsOneToOneMatcher.Nearest();
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
-        matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
+        //var matcher = new PrimaryWordsOneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());        
+        //matcher.NearestA = new PrimaryWordsOneToOneMatcher.Nearest();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
+        //matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
 
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
-        dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
+        //var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        //dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
 
-        var nearest = matcher.NearestB.Array;
-        for (int idx = 0; idx < Model01.Constants.DiscreteVectorLength; idx += 1)
-        {
-            //dataToDisplayHolder.Distribution[idxB] += 1;
-            // Подкрепляем также все пары в 16 ближайших
-            foreach (var nearIdx in nearest[idx].Items)
-            {
-                dataToDisplayHolder.Distribution[nearIdx] += 1;
-            }
-        }
+        //var nearest = matcher.NearestB.Array;
+        //for (int idx = 0; idx < Model01.Constants.DiscreteVectorLength; idx += 1)
+        //{
+        //    //dataToDisplayHolder.Distribution[idxB] += 1;
+        //    // Подкрепляем также все пары в 16 ближайших
+        //    foreach (var nearIdx in nearest[idx].Items)
+        //    {
+        //        dataToDisplayHolder.Distribution[nearIdx] += 1;
+        //    }
+        //}
 
-        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V1() Done.");
+        //_loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V1() Done.");
     }
 
     public sealed record Parameters

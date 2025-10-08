@@ -78,47 +78,22 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
 
 public static class LanguageDiscreteEmbeddingsExtensions
 {
-    public static MatrixFloat GetOldEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
-    {
-        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
-        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
-        {
-            var word = embeddings.Words[i];
-            word.OldVector.AsSpan().CopyTo(matrixFloat.GetColumn(i));
-        }
-        return matrixFloat;
-    }
-
     /// <summary>
-    ///     Returns Columns Major matrix.
+    /// Device: CPU    
     /// </summary>
     /// <param name="embeddings"></param>
     /// <returns></returns>
-    public static MatrixFloat GetDiscreteEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
-    {
-        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
-        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+    public static torch.Tensor GetDiscrete_PrimaryBitsOnlyEmbeddingsTensor(this LanguageDiscreteEmbeddings embeddings, int wordsCount, Device device)
+    {        
+        int dimension = embeddings.Words[0].DiscreteVector.Length;
+        float[] data = new float[wordsCount * dimension];
+        foreach (var i in Enumerable.Range(0, wordsCount))
         {
             var word = embeddings.Words[i];
-            word.DiscreteVector.AsSpan().CopyTo(matrixFloat.GetColumn(i));
+            word.DiscreteVector_PrimaryBitsOnly.AsSpan().CopyTo(data.AsSpan(i * dimension, dimension));
         }
-        return matrixFloat;
-    }
-
-    /// <summary>
-    ///     Returns Columns Major matrix.
-    /// </summary>
-    /// <param name="embeddings"></param>
-    /// <returns></returns>
-    public static MatrixFloat GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
-    {
-        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
-        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
-        {
-            var word = embeddings.Words[i];
-            word.DiscreteVector_PrimaryBitsOnly.AsSpan().CopyTo(matrixFloat.GetColumn(i));
-        }
-        return matrixFloat;
+        return tensor(data, device: device)
+                .reshape(wordsCount, dimension);
     }
 
     public static int GetClusterIndex(this LanguageDiscreteEmbeddings embeddings, float[] oldVectorNormalized)
@@ -126,7 +101,7 @@ public static class LanguageDiscreteEmbeddingsExtensions
         // Вычисляем логарифмические вероятности для численной стабильности
         using var logProbabilities = torch.zeros(size: new long[] { 1, embeddings.ClusterInfos.Count });
 
-        using var oldVectorsTensor = torch.tensor(oldVectorNormalized).reshape([ 1, oldVectorNormalized.Length ]);
+        using var oldVectorsTensor = torch.tensor(oldVectorNormalized).reshape([1, oldVectorNormalized.Length]);
 
         for (int k = 0; k < embeddings.ClusterInfos.Count; k += 1)
         {
@@ -148,5 +123,55 @@ public static class LanguageDiscreteEmbeddingsExtensions
         // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
         var assignments = torch.argmax(logProbabilities, dim: 1);
         return (int)assignments[0].item<long>();
+    }
+
+    /// <summary>
+    /// Obsolete
+    /// </summary>
+    /// <param name="embeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetOldEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
+    {
+        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
+        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+        {
+            var word = embeddings.Words[i];
+            word.OldVector.AsSpan().CopyTo(matrixFloat.GetColumn(i));
+        }
+        return matrixFloat;
+    }    
+
+    /// <summary>
+    /// Obsolete
+    ///     Returns Columns Major matrix.
+    /// </summary>
+    /// <param name="embeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetDiscreteEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
+    {
+        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
+        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+        {
+            var word = embeddings.Words[i];
+            word.DiscreteVector.AsSpan().CopyTo(matrixFloat.GetColumn(i));
+        }
+        return matrixFloat;
+    }
+
+    /// <summary>
+    /// Obsolete
+    ///     Returns Columns Major matrix.
+    /// </summary>
+    /// <param name="embeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix(this LanguageDiscreteEmbeddings embeddings)
+    {
+        MatrixFloat matrixFloat = new MatrixFloat(embeddings.Words[0].DiscreteVector.Length, embeddings.Words.Count);
+        foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+        {
+            var word = embeddings.Words[i];
+            word.DiscreteVector_PrimaryBitsOnly.AsSpan().CopyTo(matrixFloat.GetColumn(i));
+        }
+        return matrixFloat;
     }
 }
