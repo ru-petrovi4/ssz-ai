@@ -118,7 +118,7 @@ public static class NeighborStructureComparer
     /// <param name="embA">Эмбеддинги A (MatrixFloat)</param>
     /// <param name="embB">Эмбеддинги B (MatrixFloat)</param>
     /// <param name="topN">Сколько брать ближайших соседей</param>
-    public static double Compare(string[] labels, MatrixFloat embA, MatrixFloat embB, int topN = 10)
+    public static double Compare(string[] labels, MatrixFloat_ColumnMajor embA, MatrixFloat_ColumnMajor embB, int topN = 10)
     {
         int count = labels.Length;
         int totalMatches = 0;

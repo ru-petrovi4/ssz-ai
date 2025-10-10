@@ -15,7 +15,7 @@ public class LanguageInfo
     /// <remarks>
     ///     Normalized vectors scalar product.       
     /// </remarks>
-    public MatrixFloat ProxWordsOldMatrix = null!;
+    public MatrixFloat_ColumnMajor ProxWordsOldMatrix = null!;
 
     public Clusterization_AlgorithmData Clusterization_AlgorithmData = null!;
 

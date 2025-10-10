@@ -419,7 +419,7 @@ namespace Ssz.AI.Models
             DataToDisplayHolder.ContextSyncingMiniColumn = Cortex.MiniColumns[winnerMiniColumn.MCX, winnerMiniColumn.MCY - 1];
 
             // Кэш свободных матриц
-            Stack<MatrixFloat> freeMatrixFloatsStack = new(100);
+            Stack<MatrixFloat_ColumnMajor> freeMatrixFloatsStack = new(100);
 
             // TEMPCODE
             //while (true)

@@ -223,7 +223,7 @@ namespace Ssz.AI.Models
         //    }
         //}        
 
-        private static void MatrixMultiply(float[] input, MatrixFloat weights, float[] output)
+        private static void MatrixMultiply(float[] input, MatrixFloat_ColumnMajor weights, float[] output)
         {
             for (int j = 0; j < weights.Dimensions[1]; j++)
             {
@@ -240,7 +240,7 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient_Rated, Span<float> temp_Input, MatrixFloat weights)
+        private static void MatrixMultiplyGradient(ReadOnlySpan<float> input, ReadOnlySpan<float> gradient_Rated, Span<float> temp_Input, MatrixFloat_ColumnMajor weights)
         {
             for (int j = 0; j < weights.Dimensions[1]; j++)
             {
@@ -258,7 +258,7 @@ namespace Ssz.AI.Models
             //}
         }
 
-        private static void PropagateError(ReadOnlySpan<float> gradient, MatrixFloat weightsDecoder, ReadOnlySpan<float> bottleneckFloat, Span<float> temp_Bottleneck4, Span<float> temp_Bottleneck5, Span<float> bottleneckGradient)
+        private static void PropagateError(ReadOnlySpan<float> gradient, MatrixFloat_ColumnMajor weightsDecoder, ReadOnlySpan<float> bottleneckFloat, Span<float> temp_Bottleneck4, Span<float> temp_Bottleneck5, Span<float> bottleneckGradient)
         {
             bottleneckGradient.Clear();
             for (int j = 0; j < weightsDecoder.Dimensions[1]; j++)
@@ -301,9 +301,9 @@ namespace Ssz.AI.Models
         //    return 1 / (1 + MathF.Exp(-x));
         //}
 
-        private static MatrixFloat CreateRandomMatrixFloat(int rows, int columns)
+        private static MatrixFloat_ColumnMajor CreateRandomMatrixFloat(int rows, int columns)
         {
-            var matrixFloat = new MatrixFloat(rows, columns);
+            var matrixFloat = new MatrixFloat_ColumnMajor(rows, columns);
             var random = new Random();
             for (int i = 0; i < matrixFloat.Data.Length; i++)
             {
@@ -318,9 +318,9 @@ namespace Ssz.AI.Models
         private int _bottleneckSize;
         private int? _bottleneck_MaxBitsCount;
 
-        private MatrixFloat _weightsEncoder = null!;
+        private MatrixFloat_ColumnMajor _weightsEncoder = null!;
         private float[] _biasesEncoder = null!;
-        private MatrixFloat _weightsDecoder = null!;
+        private MatrixFloat_ColumnMajor _weightsDecoder = null!;
         private float[] _biasesDecoder = null!;
 
         // Буферы для временных данных       

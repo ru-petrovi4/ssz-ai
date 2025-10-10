@@ -90,7 +90,7 @@ namespace Ssz.AI.Models
             }
 
             // Плотность детекторов, в зависимости от модуля градиента и угла градиента (в градусах).
-            MatrixFloat detectorDensities = new MatrixFloat(DetectorsRanges.Dimensions[0], DetectorsRanges.Dimensions[1]);
+            MatrixFloat_ColumnMajor detectorDensities = new MatrixFloat_ColumnMajor(DetectorsRanges.Dimensions[0], DetectorsRanges.Dimensions[1]);
 
             foreach (int gradientMagnitude in Enumerable.Range(0, detectorDensities.Dimensions[0]))//Enumerable.Range(constants.GeneratedMinGradientMagnitude, gradientMagnitudeRange))
             {
@@ -117,7 +117,7 @@ namespace Ssz.AI.Models
             //    }                
             //}            
 
-            MatrixFloat detectorDensities_Accumulative = new MatrixFloat(detectorDensities.Dimensions[0], detectorDensities.Dimensions[1]);
+            MatrixFloat_ColumnMajor detectorDensities_Accumulative = new MatrixFloat_ColumnMajor(detectorDensities.Dimensions[0], detectorDensities.Dimensions[1]);
             detectorDensities_Accumulative.Data = DistributionHelper.GetAccumulativeDistribution(detectorDensities.Data);
 
             //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();

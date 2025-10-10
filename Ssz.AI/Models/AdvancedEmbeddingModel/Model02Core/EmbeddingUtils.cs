@@ -203,7 +203,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <returns>Матрица эмбеддингов</returns>
         private static MatrixFloat CreateMatrixFromEmbeddings(List<float[]> embeddings, int embeddingDim)
         {
-            var matrix = new MatrixFloat_RowMajor(embeddings.Count, embeddingDim);
+            var matrix = new MatrixFloat(embeddings.Count, embeddingDim);
             
             // Используем параллельное копирование для лучшей производительности
             Parallel.For(0, embeddings.Count, i =>
@@ -227,7 +227,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="normalizationTypes">Типы нормализации, разделенные запятыми (center, renorm)</param>
         /// <param name="mean">Предыдущее среднее значение (для центрирования)</param>
         /// <returns>Среднее значение после нормализации (если применялось центрирование)</returns>
-        public static MatrixFloat? NormalizeEmbeddings(MatrixFloat embeddings, string normalizationTypes, MatrixFloat? mean = null)
+        public static MatrixFloat_ColumnMajor? NormalizeEmbeddings(MatrixFloat_ColumnMajor embeddings, string normalizationTypes, MatrixFloat_ColumnMajor? mean = null)
         {
             if (string.IsNullOrWhiteSpace(normalizationTypes))
                 return mean;
@@ -236,7 +236,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
                                         .Select(t => t.Trim().ToLowerInvariant())
                                         .ToArray();
 
-            MatrixFloat? resultMean = mean;
+            MatrixFloat_ColumnMajor? resultMean = mean;
 
             foreach (var type in types)
             {
@@ -262,17 +262,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="embeddings">Матрица эмбеддингов</param>
         /// <param name="mean">Предыдущее среднее (если есть)</param>
         /// <returns>Среднее значение</returns>
-        private static MatrixFloat CenterEmbeddings(MatrixFloat embeddings, MatrixFloat? mean = null)
+        private static MatrixFloat_ColumnMajor CenterEmbeddings(MatrixFloat_ColumnMajor embeddings, MatrixFloat_ColumnMajor? mean = null)
         {
             var embeddingDim = embeddings.ColumnsCount;
             var vocabSize = embeddings.RowsCount;
-            
-            MatrixFloat meanVector;
+
+            MatrixFloat_ColumnMajor meanVector;
             
             if (mean == null)
             {
                 // Вычисляем среднее значение для каждой размерности
-                meanVector = new MatrixFloat_RowMajor(1, embeddingDim);
+                meanVector = new MatrixFloat_ColumnMajor(1, embeddingDim);
                 
                 // Используем параллельные вычисления для каждой размерности
                 Parallel.For(0, embeddingDim, dim =>
@@ -304,7 +304,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// Ренормализует эмбеддинги (приводит норму к единице) с использованием TensorPrimitives
         /// </summary>
         /// <param name="embeddings">Матрица эмбеддингов</param>
-        private static void RenormalizeEmbeddings(MatrixFloat embeddings)
+        private static void RenormalizeEmbeddings(MatrixFloat_ColumnMajor embeddings)
         {
             var vocabSize = embeddings.RowsCount;
             
@@ -339,7 +339,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="queries">Матрица запросов</param>
         /// <param name="k">Количество ближайших соседей</param>
         /// <returns>Массив средних расстояний</returns>
-        public static float[] GetNearestNeighborAverageDistances(MatrixFloat embeddings, MatrixFloat queries, int k)
+        public static float[] GetNearestNeighborAverageDistances(MatrixFloat_ColumnMajor embeddings, MatrixFloat_ColumnMajor queries, int k)
         {
             var queryCount = queries.RowsCount;
             var embeddingCount = embeddings.RowsCount;
@@ -389,7 +389,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="embeddings1">Первый набор эмбеддингов</param>
         /// <param name="embeddings2">Второй набор эмбеддингов</param>
         /// <returns>Матрица сходств</returns>
-        public static MatrixFloat ComputeCosineSimilarityMatrix(MatrixFloat embeddings1, MatrixFloat embeddings2)
+        public static MatrixFloat_ColumnMajor ComputeCosineSimilarityMatrix(MatrixFloat_ColumnMajor embeddings1, MatrixFloat_ColumnMajor embeddings2)
         {
             var count1 = embeddings1.RowsCount;
             var count2 = embeddings2.RowsCount;
@@ -398,7 +398,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
             if (embeddings2.ColumnsCount != dimension)
                 throw new ArgumentException("Размерности эмбеддингов должны совпадать");
             
-            var similarityMatrix = new MatrixFloat_RowMajor(count1, count2);
+            var similarityMatrix = new MatrixFloat_ColumnMajor(count1, count2);
             
             // Параллельно вычисляем сходства
             Parallel.For(0, count1, i =>
@@ -427,7 +427,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="embeddings">Матрица эмбеддингов</param>
         /// <param name="filePath">Путь к файлу для экспорта</param>
         /// <param name="logger">Логгер</param>
-        public static async Task ExportEmbeddingsAsync(Dictionary dictionary, MatrixFloat embeddings, string filePath, ILogger? logger = null)
+        public static async Task ExportEmbeddingsAsync(Dictionary dictionary, MatrixFloat_ColumnMajor embeddings, string filePath, ILogger? logger = null)
         {
             logger?.LogInformation($"Экспорт эмбеддингов в файл: {filePath}");
             
@@ -464,10 +464,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="size">Размер матрицы</param>
         /// <param name="seed">Seed для генератора случайных чисел</param>
         /// <returns>Ортогональная матрица</returns>
-        public static MatrixFloat CreateOrthogonalMatrix(int size, int? seed = null)
+        public static MatrixFloat_ColumnMajor CreateOrthogonalMatrix(int size, int? seed = null)
         {
             var random = seed.HasValue ? new Random(seed.Value) : new Random();
-            var matrix = new MatrixFloat_RowMajor(size, size);
+            var matrix = new MatrixFloat_ColumnMajor(size, size);
             
             // Генерируем случайную матрицу
             for (int i = 0; i < size; i++)
@@ -525,7 +525,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Utils
         /// <param name="checkForNaN">Проверять ли на NaN значения</param>
         /// <param name="checkForInfinity">Проверять ли на бесконечные значения</param>
         /// <returns>true, если матрица валидна</returns>
-        public static bool ValidateEmbeddings(MatrixFloat embeddings, bool checkForNaN = true, bool checkForInfinity = true)
+        public static bool ValidateEmbeddings(MatrixFloat_ColumnMajor embeddings, bool checkForNaN = true, bool checkForInfinity = true)
         {
             var data = embeddings.Data;
             

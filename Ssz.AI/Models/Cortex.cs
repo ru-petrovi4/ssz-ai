@@ -359,7 +359,7 @@ namespace Ssz.AI.Models
             public int RangeLeftUpperY;
             public int RangeRightBottomX;
             public int RangeRightBottomY;
-            public MatrixFloat CorrelationMatrix;
+            public MatrixFloat_ColumnMajor CorrelationMatrix;
         }
 
         public class MiniColumn : ISerializableModelObject
@@ -490,7 +490,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;
 
-            public MatrixFloat? Temp_ShortHashConversionMatrix;
+            public MatrixFloat_ColumnMajor? Temp_ShortHashConversionMatrix;
 
             public int Temp_ShortHashConversionMatrix_TrainingCount;
 

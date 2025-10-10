@@ -103,7 +103,7 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
         ProxWordsDiscreteMatrix_SecondaryBitsOnly = new float[wordsCount * wordsCount];
     }
 
-    public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat proxWordsOldMatrix)
+    public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat_ColumnMajor proxWordsOldMatrix)
     {
         int wordsCount = words.Count;
         ClusterInfo[] clusterInfos = clusterization_AlgorithmData.ClusterInfos;

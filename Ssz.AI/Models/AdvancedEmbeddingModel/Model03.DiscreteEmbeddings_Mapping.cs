@@ -25,6 +25,8 @@ using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
+using TorchSharp;
+using static TorchSharp.torch;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
@@ -195,6 +197,9 @@ public partial class Model03
         ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger);
     }    
 
+    /// <summary>
+    ///     Показывает количество примеров в каждом бите [0..300)
+    /// </summary>
     public void VisualizeData_V1()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
@@ -211,7 +216,7 @@ public partial class Model03
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
 
-        var embeddings = languageDiscreteEmbeddings_EN;
+        var embeddings = languageDiscreteEmbeddings_RU;
         foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
         {
             var word = embeddings.Words[i];
@@ -251,6 +256,43 @@ public partial class Model03
         //}
 
         //_loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V1() Done.");
+    }
+
+    /// <summary>
+    /// Показывает распредление в матрице расстояний
+    /// </summary>
+    public void VisualizeData_V3()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null);
+
+        var clustersCosineSimilarityTensor = languageDiscreteEmbeddings_RU.GetClustersCosineSimilarityTensor(CPU);
+
+        //var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        ////Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+        //matcher.NearestA = new OneToOneMatcher.Nearest();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
+
+        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
+        
+        //foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
+        //{
+        //    var word = embeddings.Words[i];
+        //    var vec = word.DiscreteVector_PrimaryBitsOnly.AsSpan();
+        //    for (int idx = 0; idx < Model01.Constants.DiscreteVectorLength; idx += 1)
+        //    {
+        //        if (vec[idx] > 0.5f)
+        //        {
+        //            dataToDisplayHolder.Distribution[idx] += 1;
+        //        }
+        //    }
+        //}
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V3() Done.");
     }
 
     public sealed record Parameters

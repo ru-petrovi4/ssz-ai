@@ -32,7 +32,7 @@ public class VectorSetAlignment
     /// Производительность: Hungarian O(n^3) для n=300 (~27M операций per iter) feasible; TensorPrimitives для dot.
     /// Предполагается наличие реализации HungarianMatching(float[,] costMatrix), где cost = -similarity для максимизации.
     /// </summary>
-    public MatrixFloat FindOptimalRotation(MatrixFloat A, MatrixFloat B, int maxIterations = 50, float epsilon = 1e-5f)
+    public MatrixFloat_ColumnMajor FindOptimalRotation(MatrixFloat_ColumnMajor A, MatrixFloat_ColumnMajor B, int maxIterations = 50, float epsilon = 1e-5f)
     {
         int vectorDim = A.Dimensions[0];
         int nVectors = A.Dimensions[1];
@@ -40,10 +40,10 @@ public class VectorSetAlignment
             throw new ArgumentException("Множества должны иметь одинаковые размеры.");
 
         // Копируем A для итеративного поворота
-        MatrixFloat rotatedA = A.Clone();
+        MatrixFloat_ColumnMajor rotatedA = A.Clone();
 
         // Аккумулятор полной матрицы поворота (инициализируем как единичную)
-        MatrixFloat R_total = CreateIdentityMatrix(vectorDim);
+        MatrixFloat_ColumnMajor R_total = CreateIdentityMatrix(vectorDim);
 
         // Начальное вычисление для сходимости (iter=0)
         float prevTotalSimilarity = ComputeTotalSimilarity(rotatedA, B);
@@ -90,7 +90,7 @@ public class VectorSetAlignment
             prevTotalSimilarity = totalSimilarity;
 
             // Шаг 3: Строим кросс-ковариационную матрицу M на основе matched пар
-            MatrixFloat M = new MatrixFloat(new[] { vectorDim, vectorDim });
+            MatrixFloat_ColumnMajor M = new MatrixFloat_ColumnMajor(new[] { vectorDim, vectorDim });
             for (int k = 0; k < nVectors; ++k)
             {
                 int j = matching[k];
@@ -132,7 +132,7 @@ public class VectorSetAlignment
             }
 
             // Конвертируем в MatrixFloat
-            MatrixFloat R_iter = new MatrixFloat(new[] { vectorDim, vectorDim });
+            MatrixFloat_ColumnMajor R_iter = new MatrixFloat_ColumnMajor(new[] { vectorDim, vectorDim });
             for (int i = 0; i < vectorDim; ++i)
                 for (int j = 0; j < vectorDim; ++j)
                     R_iter[i, j] = (float)R_temp[i, j];
@@ -157,7 +157,7 @@ public class VectorSetAlignment
     /// <summary>
     /// Вычисляет суммарное сходство для начальной оценки (без matching).
     /// </summary>
-    private float ComputeTotalSimilarity(MatrixFloat X, MatrixFloat Y)
+    private float ComputeTotalSimilarity(MatrixFloat_ColumnMajor X, MatrixFloat_ColumnMajor Y)
     {
         float[,] sim = ComputeCosineSimilarityMatrix(X, Y);
         float total = 0f;
@@ -174,10 +174,10 @@ public class VectorSetAlignment
     /// <summary>
     /// Вычисляет разницу структур по Frobenius норме матриц косинусных расстояний.
     /// </summary>
-    private float ComputeStructureDifference(MatrixFloat X, MatrixFloat Y)
+    private float ComputeStructureDifference(MatrixFloat_ColumnMajor X, MatrixFloat_ColumnMajor Y)
     {
-        MatrixFloat distX = ComputeCosineDistanceMatrix(X);
-        MatrixFloat distY = ComputeCosineDistanceMatrix(Y);
+        MatrixFloat_ColumnMajor distX = ComputeCosineDistanceMatrix(X);
+        MatrixFloat_ColumnMajor distY = ComputeCosineDistanceMatrix(Y);
         float diff = 0f;
         for (int i = 0; i < distX.Data.Length; ++i)
             diff += (distX.Data[i] - distY.Data[i]) * (distX.Data[i] - distY.Data[i]);
@@ -187,10 +187,10 @@ public class VectorSetAlignment
     /// <summary>
     /// Транспонирует квадратную матрицу.
     /// </summary>
-    private MatrixFloat Transpose(MatrixFloat M)
+    private MatrixFloat_ColumnMajor Transpose(MatrixFloat_ColumnMajor M)
     {
         int dim = M.Dimensions[0];
-        MatrixFloat T = new MatrixFloat(new[] { dim, dim });
+        MatrixFloat_ColumnMajor T = new MatrixFloat_ColumnMajor(new[] { dim, dim });
         for (int i = 0; i < dim; ++i)
             for (int j = 0; j < dim; ++j)
                 T[i, j] = M[j, i];
@@ -200,9 +200,9 @@ public class VectorSetAlignment
     /// <summary>
     /// Создает единичную матрицу размера dim x dim.
     /// </summary>
-    private MatrixFloat CreateIdentityMatrix(int dim)
+    private MatrixFloat_ColumnMajor CreateIdentityMatrix(int dim)
     {
-        MatrixFloat I = new MatrixFloat(new[] { dim, dim });
+        MatrixFloat_ColumnMajor I = new MatrixFloat_ColumnMajor(new[] { dim, dim });
         for (int i = 0; i < dim; ++i)
             I[i, i] = 1f;
         return I;
@@ -212,10 +212,10 @@ public class VectorSetAlignment
     /// Матричное умножение A * B (A и B - [dim, dim]).
     /// Оптимизировано с TensorPrimitives для inner loops.
     /// </summary>
-    private MatrixFloat MatrixMultiply(MatrixFloat A, MatrixFloat B)
+    private MatrixFloat_ColumnMajor MatrixMultiply(MatrixFloat_ColumnMajor A, MatrixFloat_ColumnMajor B)
     {
         int dim = A.Dimensions[0];
-        MatrixFloat result = new MatrixFloat(new[] { dim, dim });
+        MatrixFloat_ColumnMajor result = new MatrixFloat_ColumnMajor(new[] { dim, dim });
         for (int i = 0; i < dim; ++i)
         {
             for (int j = 0; j < dim; ++j)
@@ -237,7 +237,7 @@ public class VectorSetAlignment
     /// Результат: [nA, nB], значения от -1 до 1 (косинус угла).
     /// Для производительности: Полное матричное умножение с TensorPrimitives.
     /// </summary>
-    private float[,] ComputeCosineSimilarityMatrix(MatrixFloat A, MatrixFloat B)
+    private float[,] ComputeCosineSimilarityMatrix(MatrixFloat_ColumnMajor A, MatrixFloat_ColumnMajor B)
     {
         int nA = A.Dimensions[1];
         int nB = B.Dimensions[1];
@@ -261,11 +261,11 @@ public class VectorSetAlignment
     /// Возвращает новую MatrixFloat [vectorDim, nVectors].
     /// Учитывает column-major хранение: Извлекает элементы без contiguous Span для строк.
     /// </summary>
-    public MatrixFloat ApplyRotation(MatrixFloat R, MatrixFloat A)
+    public MatrixFloat_ColumnMajor ApplyRotation(MatrixFloat_ColumnMajor R, MatrixFloat_ColumnMajor A)
     {
         int vectorDim = A.Dimensions[0];
         int nVectors = A.Dimensions[1];
-        var result = new MatrixFloat(new[] { vectorDim, nVectors });
+        var result = new MatrixFloat_ColumnMajor(new[] { vectorDim, nVectors });
 
         for (int k = 0; k < nVectors; ++k)
         {
@@ -289,7 +289,7 @@ public class VectorSetAlignment
     /// Использует TensorPrimitives для вычисления норм и деления.
     /// Обработка нулевых векторов: бросаем исключение (или можно оставить как есть).
     /// </summary>
-    public void NormalizeColumns(MatrixFloat X)
+    public void NormalizeColumns(MatrixFloat_ColumnMajor X)
     {
         int vectorDim = X.Dimensions[0];
         int nVectors = X.Dimensions[1];
@@ -308,11 +308,11 @@ public class VectorSetAlignment
     /// Результат: [nVectors, nVectors], значения от 0 до 2.
     /// Нормализует вход заранее.
     /// </summary>
-    public MatrixFloat ComputeCosineDistanceMatrix(MatrixFloat X)
+    public MatrixFloat_ColumnMajor ComputeCosineDistanceMatrix(MatrixFloat_ColumnMajor X)
     {
         NormalizeColumns(X); // Нормализация перед вычислением
         int nVectors = X.Dimensions[1];
-        MatrixFloat result = new MatrixFloat(new[] { nVectors, nVectors });
+        MatrixFloat_ColumnMajor result = new MatrixFloat_ColumnMajor(new[] { nVectors, nVectors });
         for (int i = 0; i < nVectors; ++i)
         {
             Span<float> vi = X.GetColumn(i);
@@ -338,7 +338,7 @@ public class VectorSetAlignment
     /// Вход: rotatedA - повернутое множество A; B - целевое множество.
     /// Выход: int[] matching, где matching[i] - индекс вектора в B, сопоставленного вектору i в rotatedA.
     /// </summary>
-    public int[] ComputeUniqueMatching(MatrixFloat rotatedA, MatrixFloat B)
+    public int[] ComputeUniqueMatching(MatrixFloat_ColumnMajor rotatedA, MatrixFloat_ColumnMajor B)
     {
         int nVectors = rotatedA.Dimensions[1];
         float[,] similarity = ComputeCosineSimilarityMatrix(rotatedA, B);

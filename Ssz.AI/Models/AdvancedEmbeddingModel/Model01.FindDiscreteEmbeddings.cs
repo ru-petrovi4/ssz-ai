@@ -96,9 +96,9 @@ public partial class Model01
         }
         else
         {
-            LanguageInfo_RU.ProxWordsOldMatrix = new MatrixFloat();
+            LanguageInfo_RU.ProxWordsOldMatrix = new MatrixFloat_ColumnMajor();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_ProxWordsOldMatrix_RU, LanguageInfo_RU.ProxWordsOldMatrix, null);
-            LanguageInfo_EN.ProxWordsOldMatrix = new MatrixFloat();
+            LanguageInfo_EN.ProxWordsOldMatrix = new MatrixFloat_ColumnMajor();
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_ProxWordsOldMatrix_EN, LanguageInfo_EN.ProxWordsOldMatrix, null);
         }
 
@@ -306,7 +306,7 @@ public partial class Model01
         var words = languageInfo.Words;
         int wordsCount = words.Count;
 
-        var proxWordsOldMatrix = new MatrixFloat(wordsCount, wordsCount);
+        var proxWordsOldMatrix = new MatrixFloat_ColumnMajor(wordsCount, wordsCount);
         Parallel.For(0, wordsCount, index1 =>
         {
             int indexBias = index1 * wordsCount;

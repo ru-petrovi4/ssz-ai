@@ -178,7 +178,7 @@ namespace Ssz.AI.Models
         }
 
         public static Bitmap? GetContextSyncingMatrixFloatBitmap(
-            MatrixFloat? contextSyncingMatrixFloat,
+            MatrixFloat_ColumnMajor? contextSyncingMatrixFloat,
             int? syncingMatrixFloat_TrainingCount)
         {
             if (contextSyncingMatrixFloat is null)
@@ -225,7 +225,7 @@ namespace Ssz.AI.Models
         }
 
         public static Bitmap? GetContextSyncingMatrixFloatBitmap2(
-            MatrixFloat? contextSyncingMatrixFloat,
+            MatrixFloat_ColumnMajor? contextSyncingMatrixFloat,
             int? syncingMatrixFloat_TrainingCount)
         {
             if (contextSyncingMatrixFloat is null)
@@ -1034,7 +1034,7 @@ namespace Ssz.AI.Models
             return bitmap;
         }
 
-        public static Bitmap GetBigMatrixFloatBitmap(MatrixFloat bigMatrixFloat, int j)
+        public static Bitmap GetBigMatrixFloatBitmap(MatrixFloat_ColumnMajor bigMatrixFloat, int j)
         {            
             Bitmap bitmap = new Bitmap((int)(bigMatrixFloat.Dimensions[1]), (int)(bigMatrixFloat.Dimensions[0]));
 

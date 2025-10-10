@@ -7,17 +7,17 @@ namespace Ssz.AI.Helpers;
 
 public static class LinAlg
 {
-    public static MatrixFloat Identity(int dim)
+    public static MatrixFloat_ColumnMajor Identity(int dim)
     {
-        var I = new MatrixFloat(new[] { dim, dim });
+        var I = new MatrixFloat_ColumnMajor(new[] { dim, dim });
         for (int i = 0; i < dim; i++) I[i, i] = 1f;
         return I;
     }
 
-    public static MatrixFloat Transpose(MatrixFloat A)
+    public static MatrixFloat_ColumnMajor Transpose(MatrixFloat_ColumnMajor A)
     {
         int r = A.Dimensions[0], c = A.Dimensions[1];
-        var T = new MatrixFloat(new[] { c, r });
+        var T = new MatrixFloat_ColumnMajor(new[] { c, r });
         for (int j = 0; j < c; j++)
         {
             var src = A.GetColumn(j);
@@ -28,7 +28,7 @@ public static class LinAlg
     }
 
     // y = W * x
-    public static void MatVec(MatrixFloat W, ReadOnlySpan<float> x, Span<float> y)
+    public static void MatVec(MatrixFloat_ColumnMajor W, ReadOnlySpan<float> x, Span<float> y)
     {
         int d0 = W.Dimensions[0];
         int d1 = W.Dimensions[1];
@@ -44,10 +44,10 @@ public static class LinAlg
     }
 
     // C = A * B (both square dxd)
-    public static MatrixFloat MatMul(MatrixFloat A, MatrixFloat B)
+    public static MatrixFloat_ColumnMajor MatMul(MatrixFloat_ColumnMajor A, MatrixFloat_ColumnMajor B)
     {
         int d = A.Dimensions[0];
-        var C = new MatrixFloat(new[] { d, d });
+        var C = new MatrixFloat_ColumnMajor(new[] { d, d });
         var tmp = new float[d];
         for (int j = 0; j < d; j++)
         {
@@ -60,10 +60,10 @@ public static class LinAlg
     }
 
     // Computes G = W^T * W (square)
-    public static MatrixFloat Gram(MatrixFloat W)
+    public static MatrixFloat_ColumnMajor Gram(MatrixFloat_ColumnMajor W)
     {
         int d = W.Dimensions[0];
-        var G = new MatrixFloat(new[] { d, d });
+        var G = new MatrixFloat_ColumnMajor(new[] { d, d });
         // G[i,j] = dot(W[:,i], W[:,j])
         for (int j = 0; j < d; j++)
         {
@@ -80,7 +80,7 @@ public static class LinAlg
     }
 
     // M += scale * (a ⊗ b^T)
-    public static void OuterAddInPlace(MatrixFloat M, ReadOnlySpan<float> a, ReadOnlySpan<float> b, float scale)
+    public static void OuterAddInPlace(MatrixFloat_ColumnMajor M, ReadOnlySpan<float> a, ReadOnlySpan<float> b, float scale)
     {
         int rows = M.Dimensions[0];
         int cols = M.Dimensions[1];
@@ -94,7 +94,7 @@ public static class LinAlg
     }
 
     // W <- (3/2)W - (1/2) W (W^T W)  (Newton–Schulz step)
-    public static void OrthogonalizeInPlaceNewtonSchulz(MatrixFloat W, int iterations = 2)
+    public static void OrthogonalizeInPlaceNewtonSchulz(MatrixFloat_ColumnMajor W, int iterations = 2)
     {
         int d = W.Dimensions[0];
         for (int k = 0; k < iterations; k++)

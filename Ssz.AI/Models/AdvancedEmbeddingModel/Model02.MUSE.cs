@@ -73,7 +73,7 @@ public partial class Model02
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: wordsCount, _loggersSet);
         var ruDictionary = GetDictionary(LanguageInfo_RU.Words.Take(wordsCount).Select(w => w.Name).ToList(), "ru");
         var d = WordsHelper.OldVectorLength_RU;
-        var ruEmb = new MatrixFloat_RowMajor(wordsCount, d);
+        var ruEmb = new MatrixFloat(wordsCount, d);
         for (int i = 0; i < wordsCount; i += 1)
         {
             var row = LanguageInfo_RU.Words[i];
@@ -86,7 +86,7 @@ public partial class Model02
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: wordsCount, _loggersSet);
         var enDictionary = GetDictionary(LanguageInfo_EN.Words.Take(wordsCount).Select(w => w.Name).ToList(), "en");
         d = WordsHelper.OldVectorLength_EN;
-        var enEmb = new MatrixFloat_RowMajor(wordsCount, d);
+        var enEmb = new MatrixFloat(wordsCount, d);
         for (int i = 0; i < wordsCount; i += 1)
         {
             var row = LanguageInfo_EN.Words[i];

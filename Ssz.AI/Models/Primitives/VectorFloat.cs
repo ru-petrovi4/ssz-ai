@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Ssz.AI.Models;
 
-public class VectorFloat : MatrixFloat
+public class VectorFloat : MatrixFloat_ColumnMajor
 {
     #region construction and destruction
 

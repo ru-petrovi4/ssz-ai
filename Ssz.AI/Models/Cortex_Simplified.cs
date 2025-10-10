@@ -371,7 +371,7 @@ namespace Ssz.AI.Models
             /// </summary>
             public UInt32 Temp_SyncedMiniColumnsToProcess_Handle;            
 
-            public MatrixFloat? Temp_ShortHashConversionMatrix;
+            public MatrixFloat_ColumnMajor? Temp_ShortHashConversionMatrix;
 
             public int Temp_ShortHashConversionMatrix_TrainingCount;
 

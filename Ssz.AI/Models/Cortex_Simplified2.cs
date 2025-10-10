@@ -45,7 +45,7 @@ namespace Ssz.AI.Models
                 if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.Detectors.Dimensions[1])
                     detectorCorrelation.RangeRightBottomY = leftEye.Retina.Detectors.Dimensions[1];
 
-                detectorCorrelation.CorrelationMatrix = new MatrixFloat(
+                detectorCorrelation.CorrelationMatrix = new MatrixFloat_ColumnMajor(
                     detectorCorrelation.RangeRightBottomX - detectorCorrelation.RangeLeftUpperX,
                     detectorCorrelation.RangeRightBottomY - detectorCorrelation.RangeLeftUpperY);
 
@@ -148,7 +148,7 @@ namespace Ssz.AI.Models
             public int RangeLeftUpperY;
             public int RangeRightBottomX;
             public int RangeRightBottomY;
-            public MatrixFloat CorrelationMatrix;
+            public MatrixFloat_ColumnMajor CorrelationMatrix;
         }
     }    
 }

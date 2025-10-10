@@ -21,9 +21,9 @@ public class PrimaryWordsOneToOneMatcher_V1
 
         VectorLength = Model01.Constants.DiscreteVectorLength;
         var d = Model01.Constants.DiscreteVectorLength;
-        DistanceMatrixA = new MatrixFloat(d, d);
-        DistanceMatrixB = new MatrixFloat(d, d);
-        HypothesisSupport = new MatrixFloat(d, d);
+        DistanceMatrixA = new MatrixFloat_ColumnMajor(d, d);
+        DistanceMatrixB = new MatrixFloat_ColumnMajor(d, d);
+        HypothesisSupport = new MatrixFloat_ColumnMajor(d, d);
     }
 
     public int VectorLength;
@@ -31,28 +31,28 @@ public class PrimaryWordsOneToOneMatcher_V1
     /// <summary>
     ///     Матрицы близости: [позиция, позиция] -> float
     /// </summary>
-    public MatrixFloat DistanceMatrixA;
+    public MatrixFloat_ColumnMajor DistanceMatrixA;
 
     public Nearest NearestA = null!;
 
     /// <summary>
     ///     Матрицы близости: [позиция, позиция] -> float
     /// </summary>
-    public MatrixFloat DistanceMatrixB;
+    public MatrixFloat_ColumnMajor DistanceMatrixB;
 
     public Nearest NearestB = null!;
 
     /// <summary>
     ///     Таблица накопления весов для гипотез: [позицияA, позицияB] -> float
     /// </summary>
-    public MatrixFloat HypothesisSupport;
+    public MatrixFloat_ColumnMajor HypothesisSupport;
 
     /// <summary>
     ///     Заполнить матрицы близости по множеству векторов (0/1 значения)
     /// </summary>
     /// <param name="allExamples"></param>
     /// <param name="distanceMatrix"></param>
-    public void BuildDistanceMatrix_V1(MatrixFloat allExamples, MatrixFloat distanceMatrix)
+    public void BuildDistanceMatrix_V1(MatrixFloat_ColumnMajor allExamples, MatrixFloat_ColumnMajor distanceMatrix)
     {   
         var count = allExamples.Dimensions[1];
 
@@ -83,7 +83,7 @@ public class PrimaryWordsOneToOneMatcher_V1
     /// </summary>
     /// <param name="allExamples"></param>
     /// <param name="distanceMatrix"></param>
-    public void BuildDistanceMatrix_V2(MatrixFloat allExamples, MatrixFloat distanceMatrix)
+    public void BuildDistanceMatrix_V2(MatrixFloat_ColumnMajor allExamples, MatrixFloat_ColumnMajor distanceMatrix)
     {
         var count = allExamples.Dimensions[1];
 
@@ -109,7 +109,7 @@ public class PrimaryWordsOneToOneMatcher_V1
     /// </summary>
     /// <param name="distanceMatrix"></param>
     /// <returns></returns>
-    public Nearest BuildNearest(MatrixFloat distanceMatrix)
+    public Nearest BuildNearest(MatrixFloat_ColumnMajor distanceMatrix)
     {
         var array = new FastList<int>[VectorLength];
         for (int i = 0; i < VectorLength; i++)
@@ -134,7 +134,7 @@ public class PrimaryWordsOneToOneMatcher_V1
     /// </summary>
     /// <param name="setA"></param>
     /// <param name="setB"></param>
-    public void SupportHypotheses_V1(MatrixFloat setA, MatrixFloat setB, int? count = 0)
+    public void SupportHypotheses_V1(MatrixFloat_ColumnMajor setA, MatrixFloat_ColumnMajor setB, int? count = 0)
     {   
         var nearestA = NearestA.Array;
         var nearestB = NearestB.Array;
@@ -210,7 +210,7 @@ public class PrimaryWordsOneToOneMatcher_V1
     /// </summary>
     /// <param name="setA"></param>
     /// <param name="setB"></param>
-    public void SupportHypotheses_V2(MatrixFloat setA, MatrixFloat setB, int? count = 0)
+    public void SupportHypotheses_V2(MatrixFloat_ColumnMajor setA, MatrixFloat_ColumnMajor setB, int? count = 0)
     {
         var nearestA = NearestA.Array;
         var nearestB = NearestB.Array;
