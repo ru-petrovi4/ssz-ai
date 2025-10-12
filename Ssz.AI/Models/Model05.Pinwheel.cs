@@ -78,10 +78,10 @@ namespace Ssz.AI.Models
             if (generateRetina)
                 Retina.GenerateOwnedData(random, Constants, gradientDistribution);
             if (!generateRetina)
-                SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
+                SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null, null);
             Retina.Prepare();
             if (generateRetina)
-                SerializationHelper.SaveToFile("Retina.bin", Retina, null);            
+                SerializationHelper.SaveToFile("Retina.bin", Retina, null, null);            
 
             Cortex = new Cortex_Simplified(Constants, Retina);
             Cortex.GenerateOwnedData(Retina);

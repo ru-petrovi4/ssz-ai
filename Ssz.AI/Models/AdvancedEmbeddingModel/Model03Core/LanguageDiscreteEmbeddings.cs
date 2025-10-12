@@ -83,21 +83,20 @@ public static class LanguageDiscreteEmbeddingsExtensions
     /// </summary>
     /// <param name="embeddings"></param>
     /// <returns></returns>
-    public static torch.Tensor GetClustersCosineSimilarityTensor(this LanguageDiscreteEmbeddings embeddings, Device device)
+    public static MatrixFloat GetClustersCosineSimilarityMatrixFloat(this LanguageDiscreteEmbeddings embeddings)
     {
         int dimension = embeddings.ClusterInfos.Count;
-        var data = new MatrixFloat(dimension, dimension);
+        var matrixFloat = new MatrixFloat(dimension, dimension);
         foreach (var i in Enumerable.Range(0, dimension))
         {
             foreach (var j in Enumerable.Range(0, dimension))
             {
-                data[i, j] = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
+                matrixFloat[i, j] = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
                     embeddings.ClusterInfos[i].CentroidOldVectorNormalized,
                     embeddings.ClusterInfos[j].CentroidOldVectorNormalized);
             }
         }
-        return tensor(data.Data, device: device)
-                .reshape(dimension, dimension);
+        return matrixFloat;
     }
 
     /// <summary>

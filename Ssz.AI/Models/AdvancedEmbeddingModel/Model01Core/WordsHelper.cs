@@ -229,11 +229,11 @@ public static class WordsHelper
         {
             word.Temp_Flag = false;
         }
-        for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+        for (int wordIndex = 0; wordIndex < wordsCount; wordIndex += 1)
         {
             for (; ; )
             {
-                var word = words[r.Next(words.Count)];
+                var word = words[r.Next(wordsCount)];
                 if (word.Temp_Flag)
                     continue;
 

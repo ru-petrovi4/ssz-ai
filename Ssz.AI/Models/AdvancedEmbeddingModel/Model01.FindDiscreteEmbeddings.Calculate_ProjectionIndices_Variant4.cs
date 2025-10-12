@@ -96,14 +96,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     wordN += 1;
                     if (wordN % 100 == 0)
                     {
-                        loggersSet.UserFriendlyLogger.LogInformation($"Calculate_ProjectionIndices_Variant3 iteration; WordN: {wordN} done. Energy: {energy}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
+                        loggersSet.UserFriendlyLogger.LogInformation($"Calculate_ProjectionIndices_V4 iteration; WordN: {wordN} done. Energy: {energy}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
                         stopwatch.Restart();
                     }
                 }                
             }
 
             totalStopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("Calculate_ProjectionIndices_Variant3 totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("Calculate_ProjectionIndices_V4 totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
         }
 
         private float OptimizeWordProjection_V4(LanguageInfo languageInfo, Word word, DiscreteVectorsAndMatrices discreteVectorsAndMatrices, Buffers buffers, ILoggersSet loggersSet)

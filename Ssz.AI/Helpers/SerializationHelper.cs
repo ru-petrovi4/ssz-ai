@@ -6,7 +6,7 @@ namespace Ssz.AI.Helpers
 {
     public static class SerializationHelper
     {
-        public static void SaveToFile(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
+        public static void SaveToFile(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger)
         {
             fileName = Path.Combine(@"Data", fileName);
             using (FileStream stream = File.Create(fileName))
@@ -17,7 +17,7 @@ namespace Ssz.AI.Helpers
             logger?.LogInformation($"Saved: {fileName}");
         }
 
-        public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger = null)
+        public static void LoadFromFileIfExists(string fileName, IOwnedDataSerializable ownedDataSerializable, object? context, ILogger? logger)
         {
             fileName = Path.Combine(@"Data", fileName);
             if (File.Exists(fileName))

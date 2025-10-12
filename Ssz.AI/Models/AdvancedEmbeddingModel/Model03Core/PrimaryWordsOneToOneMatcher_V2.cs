@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using TorchSharp;
 using static TorchSharp.torch;
 
@@ -22,7 +24,9 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_RU;
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_EN;
 
-    public int WordsCount;
+    public const int BatchSize = 128;
+
+    public const int WordsCount = 10000;
 
     /// <summary>
     ///     Index RU -> Index EN
@@ -33,31 +37,31 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     /// </summary>
     public int[] Mapping_EN_RU = null!;
 
-    public torch.Tensor Temp_ProxBits_Tensor_RU = null!;
-    public MatrixFloat Temp_ProxBits_RU = null!;
+    //public torch.Tensor Temp_EnergyBits_Tensor_RU = null!;
+    public MatrixFloat Temp_ClustersEnergy_Matrix_RU = null!;
     /// <summary>
-    ///     [Word, [Bit Index]]
+    ///     [Word.Index, [Bit Index]]
     /// </summary>
     public int[][] Temp_WordBitIndices_Collection_RU = null!;
     /// <summary>
-    ///     [Word, [Mapped Bit Index]]
+    ///     [Word.Index, [Mapped Bit Index]]
     /// </summary>
     public int[][] Temp_WordMappedBitIndices_Collection_RU = null!;
 
-    public torch.Tensor Temp_ProxBits_Tensor_EN = null!;
-    public MatrixFloat Temp_ProxBits_EN = null!;
+    //public torch.Tensor Temp_EnergyBits_Tensor_EN = null!;
+    public MatrixFloat Temp_ClustersEnergy_Matrix_EN = null!;
     /// <summary>
-    ///     [Word, [Bit Index]]
+    ///     [Word.Index, [Bit Index]]
     /// </summary>
     public int[][] Temp_WordBitIndices_Collection_EN = null!;
     /// <summary>
-    ///     [Word, [Mapped Bit Index]]
+    ///     [Word.Index, [Mapped Bit Index]]
     /// </summary>
     public int[][] Temp_WordMappedBitIndices_Collection_EN = null!;
 
-    public float Temp_MinEnergy;
+    public float Temp_MinMeanEnergy;
 
-    public float Temp_ForWordChangesCount;
+    public float Temp_ForBatchChangesCount;
 
     //public float[] Temp_EnergyOfBitCollection = null!;
 
@@ -94,18 +98,9 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     }
 
     public void Prepare()
-    {
-        WordsCount = 10000;
-        using (var disposeScope = torch.NewDisposeScope())
-        {
-            var primaryBitsOnlyEmbeddingsTensor_RU = LanguageDiscreteEmbeddings_RU.GetDiscrete_PrimaryBitsOnlyEmbeddingsTensor(WordsCount, _device);
-            Temp_ProxBits_Tensor_RU = torch.mm(primaryBitsOnlyEmbeddingsTensor_RU.t(), primaryBitsOnlyEmbeddingsTensor_RU).to(CPU).DetachFromDisposeScope();
-            Temp_ProxBits_RU = MatrixFloat.FromTensor(Temp_ProxBits_Tensor_RU);
-
-            var primaryBitsOnlyEmbeddingsTensor_EN = LanguageDiscreteEmbeddings_EN.GetDiscrete_PrimaryBitsOnlyEmbeddingsTensor(WordsCount, _device);
-            Temp_ProxBits_Tensor_EN = torch.mm(primaryBitsOnlyEmbeddingsTensor_EN.t(), primaryBitsOnlyEmbeddingsTensor_EN).to(CPU).DetachFromDisposeScope();
-            Temp_ProxBits_EN = MatrixFloat.FromTensor(Temp_ProxBits_Tensor_EN);
-        }        
+    {        
+        Temp_ClustersEnergy_Matrix_RU = GetClustersEnergy_Matrix_V1(LanguageDiscreteEmbeddings_RU);
+        Temp_ClustersEnergy_Matrix_EN = GetClustersEnergy_Matrix_V1(LanguageDiscreteEmbeddings_EN);        
 
         Temp_WordBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
         Temp_WordMappedBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
@@ -175,19 +170,47 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     {
         var stopwatch = Stopwatch.StartNew();
         var r = new Random(5);
-
-        for (int i = 0; i < 3 * 3600 * 10; i += 1)
+        
+        int iterationsCount = WordsCount / BatchSize + 1;
+        for (int epoch = 0; epoch < 1; epoch += 1)
         {
-            var random_Words_RU = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_RU.Words, WordsCount, r);
-            var random_Words_EN = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_EN.Words, WordsCount, r);
-            for (int randomWordsIndex = 0; randomWordsIndex < 10000; randomWordsIndex += 1)
-            {   
-                OptimizeWord_RU(random_Words_RU[randomWordsIndex].Index, r);
-                OptimizeWord_EN(random_Words_EN[randomWordsIndex].Index, r);
+            var random_Words_RU = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_RU.Words, WordsCount, r).ToArray();
+            var random_Words_EN = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_EN.Words, WordsCount, r).ToArray();
 
-                if (randomWordsIndex % 1000 == 0)
+            for (int iterationN = 0; iterationN < iterationsCount; iterationN += 1)
+            {
+                int wordIndexStart = iterationN * BatchSize;
+                if (wordIndexStart >= WordsCount)
+                    break;
+                var batchWords_RU = random_Words_RU.AsMemory(wordIndexStart, Math.Min(BatchSize, random_Words_RU.Length - wordIndexStart));
+                var batchWords_EN = random_Words_EN.AsMemory(wordIndexStart, Math.Min(BatchSize, random_Words_EN.Length - wordIndexStart));
+
+                float minMeanEnergy = float.MaxValue;
+                for (; ; )
                 {
-                    _loggersSet.UserFriendlyLogger.LogInformation($"CalculateMapping iteration; randomWordsIndex: {i}:{randomWordsIndex} done. MinEnergy: {Temp_MinEnergy}; ForWordChangesCount: {Temp_ForWordChangesCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);                    
+                    Temp_ForBatchChangesCount = 0;
+
+                    for (int i = 0; i < Mapping_RU_EN.Length; i += 1)
+                    {
+                        OptimizeWordsBatch(
+                            r.Next(Mapping_RU_EN.Length),
+                            batchWords_RU,
+                            Mapping_RU_EN,
+                            Temp_WordBitIndices_Collection_RU,
+                            Temp_WordMappedBitIndices_Collection_RU,
+                            Mapping_EN_RU
+                            );
+                    }
+
+                    if (Temp_MinMeanEnergy == minMeanEnergy) 
+                        break;
+
+                    minMeanEnergy = Temp_MinMeanEnergy;
+                }                
+
+                //if (iterationN % 10 == 0)
+                {
+                    _loggersSet.UserFriendlyLogger.LogInformation($"CalculateMapping iteration: {iterationN} done. MinEnergy: {Temp_MinMeanEnergy}; ForBatchChangesCount: {Temp_ForBatchChangesCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
                 }
             }
         }
@@ -196,107 +219,156 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
         _loggersSet.UserFriendlyLogger.LogInformation("CalculateMapping totally done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
     }
 
-    private void OptimizeWord_RU(int wordIndex_RU, Random r)
+    /// <summary>
+    ///     1-cos, экспонента, квадрат
+    ///     Индексы соотвествуют индексам главных бит в слове.
+    /// </summary>
+    /// <param name="languageDiscreteEmbeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetClustersEnergy_Matrix_V1(LanguageDiscreteEmbeddings embeddings)
     {
-        int[] wordBitIndices = Temp_WordBitIndices_Collection_RU[wordIndex_RU];
-        int[] wordMappedBitIndices = Temp_WordMappedBitIndices_Collection_RU[wordIndex_RU];
-
-        Temp_ForWordChangesCount = 0;
-        for (int i = 0; i < wordBitIndices.Length; i += 1)
+        int dimension = embeddings.ClusterInfos.Count;
+        var matrixFloat = new MatrixFloat(dimension, dimension);
+        foreach (var i in Enumerable.Range(0, dimension))
         {
-            int bitIndex = wordBitIndices[i];
-            wordMappedBitIndices[i] = Mapping_RU_EN[bitIndex];
-        }
-        int toOptimize_i = r.Next(wordBitIndices.Length);
-        //for (int toOptimize_i = 0; toOptimize_i < wordBitIndices.Length; toOptimize_i += 1)
-        {             
-            Temp_MinEnergy = float.MaxValue;
-            int originalBitIndex = wordMappedBitIndices[toOptimize_i];
-            int minEnergy_BitIndex_EN = 0;
-            for (int test_BitIndex_EN = 0; test_BitIndex_EN < Mapping_RU_EN.Length; test_BitIndex_EN += 1)
+            foreach (var j in Enumerable.Range(0, dimension))
             {
-                wordMappedBitIndices[toOptimize_i] = test_BitIndex_EN;
-                float energy = GetEnergy(toOptimize_i, wordMappedBitIndices, Temp_ProxBits_EN);
-                if (energy < Temp_MinEnergy)
-                {
-                    Temp_MinEnergy = energy;
-                    minEnergy_BitIndex_EN = test_BitIndex_EN;
-                }
-            }
-            wordMappedBitIndices[toOptimize_i] = minEnergy_BitIndex_EN;
-
-            if (originalBitIndex != minEnergy_BitIndex_EN)
-            {
-                Temp_ForWordChangesCount += 1;
-                int bitIndexToOptimize_RU = wordBitIndices[toOptimize_i];
-                int old_MinEnergy_BitIndex_RU = Mapping_EN_RU[minEnergy_BitIndex_EN];
-                int old_MinEnergy_BitIndex_EN = Mapping_RU_EN[bitIndexToOptimize_RU];
-                Mapping_RU_EN[bitIndexToOptimize_RU] = minEnergy_BitIndex_EN;
-                Mapping_RU_EN[old_MinEnergy_BitIndex_RU] = old_MinEnergy_BitIndex_EN;
-                Mapping_EN_RU[minEnergy_BitIndex_EN] = bitIndexToOptimize_RU;
-                Mapping_EN_RU[old_MinEnergy_BitIndex_EN] = old_MinEnergy_BitIndex_RU;
+                var clusterI = embeddings.ClusterInfos[i];
+                var clusterJ = embeddings.ClusterInfos[j];
+                float v = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
+                    clusterI.CentroidOldVectorNormalized,
+                    clusterJ.CentroidOldVectorNormalized);
+                v = MathF.Exp((1 - v) * 3.0f) - 1;
+                v = v * v;
+                matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;
             }
         }
+        return matrixFloat;
     }
 
-    private void OptimizeWord_EN(int wordIndex_EN, Random r)
+    public static float GetWordEnergy(WordWithDiscreteEmbedding word, MatrixFloat energyMatrix)
     {
-        int[] wordBitIndices = Temp_WordBitIndices_Collection_EN[wordIndex_EN];
-        int[] wordMappedBitIndices = Temp_WordMappedBitIndices_Collection_EN[wordIndex_EN];
+        var vector = word.DiscreteVector_PrimaryBitsOnly;
 
-        for (int i = 0; i < wordBitIndices.Length; i += 1)
+        // Список индексов, где vector[i] == 1 для быстрого перебора (около 8 элементов)
+        Span<int> activeIndices = stackalloc int[8];
+        int count = 0;
+        for (int i = 0; i < vector.Length; i += 1)
         {
-            int bitIndex = wordBitIndices[i];
-            wordMappedBitIndices[i] = Mapping_EN_RU[bitIndex];
-        }
-        int toOptimize_i = r.Next(wordBitIndices.Length);
-        //for (int toOptimize_i = 0; toOptimize_i < wordBitIndices.Length; toOptimize_i += 1)
-        {   
-            float minEnergy = float.MaxValue;
-            int originalBitIndex = wordMappedBitIndices[toOptimize_i];
-            int minEnergy_BitIndex_RU = 0;
-            for (int test_BitIndex_RU = 0; test_BitIndex_RU < Mapping_EN_RU.Length; test_BitIndex_RU += 1)
+            if (vector[i] == 1.0f)
             {
-                wordMappedBitIndices[toOptimize_i] = test_BitIndex_RU;
-                float energy = GetEnergy(toOptimize_i, wordMappedBitIndices, Temp_ProxBits_RU);
-                if (energy < minEnergy)
-                {
-                    minEnergy = energy;
-                    minEnergy_BitIndex_RU = test_BitIndex_RU;
-                }
+                // Обычно у вас мало единичных элементов, stackalloc более производителен для малых массивов
+                activeIndices[count] = i;
+                count += 1;
             }
-            wordMappedBitIndices[toOptimize_i] = minEnergy_BitIndex_RU;
-
-            if (originalBitIndex != minEnergy_BitIndex_RU)
-            {
-                int bitIndexToOptimize_EN = wordBitIndices[toOptimize_i];
-                int old_MinEnergy_BitIndex_EN = Mapping_RU_EN[minEnergy_BitIndex_RU];
-                int old_MinEnergy_BitIndex_RU = Mapping_EN_RU[bitIndexToOptimize_EN];
-                Mapping_EN_RU[bitIndexToOptimize_EN] = minEnergy_BitIndex_RU;
-                Mapping_EN_RU[old_MinEnergy_BitIndex_EN] = old_MinEnergy_BitIndex_RU;
-                Mapping_RU_EN[minEnergy_BitIndex_RU] = bitIndexToOptimize_EN;
-                Mapping_RU_EN[old_MinEnergy_BitIndex_RU] = old_MinEnergy_BitIndex_EN;
-            }                
         }
+
+        return GetEnergy(activeIndices, energyMatrix);
     }
 
-    private float GetEnergy(int toOptimize_i, int[] wordMappedBitIndices, MatrixFloat proxBits)
-    {
-        int toOptimizeBitIndex = wordMappedBitIndices[toOptimize_i];
-        float energy = 0;
-        for (int i = 0; i < wordMappedBitIndices.Length; i += 1)
+    private void OptimizeWordsBatch(
+        int toOptimize_BitIndex_A,
+        Memory<WordWithDiscreteEmbedding> batchWords_A,
+        int[] mapping_A_B,
+        int[][] wordBitIndices_Collection_A,
+        int[][] wordMappedBitIndices_Collection_A,
+        int[] mapping_B_A)
+    {   
+        Temp_MinMeanEnergy = float.MaxValue;
+
+        int original_BitIndex_B = mapping_A_B[toOptimize_BitIndex_A];
+        int minEnergy_BitIndex_B = 0;
+        for (int test_BitIndex_B = 0; test_BitIndex_B < mapping_A_B.Length; test_BitIndex_B += 1)
         {
-            if (i == toOptimize_i)
-                continue;
-            int mappedBitIndex = wordMappedBitIndices[i];
-            if (mappedBitIndex == toOptimizeBitIndex)
+            int old_Test_BitIndex_A = mapping_B_A[test_BitIndex_B];
+            int old_ToOptimize_BitIndex_B = mapping_A_B[toOptimize_BitIndex_A];
+            mapping_A_B[toOptimize_BitIndex_A] = test_BitIndex_B;
+            mapping_A_B[old_Test_BitIndex_A] = old_ToOptimize_BitIndex_B;
+            mapping_B_A[test_BitIndex_B] = toOptimize_BitIndex_A;
+            mapping_B_A[old_ToOptimize_BitIndex_B] = old_Test_BitIndex_A;
+
+            int energy = 0;
+
+            Parallel.For(
+                0, // начальный индекс (включительно)
+                batchWords_A.Length, // конечный индекс (не включительно)
+                () => 0, // Функция инициализации локальной переменной для каждого потока: localSum = 0
+                (batchWordsIndex, loopState, localEnergy) => // Основной делегат, исполняемый в параллельном потоке
+                {   
+                    int wordIndex_A = batchWords_A.Span[batchWordsIndex].Index;
+                    int[] wordBitIndices = wordBitIndices_Collection_A[wordIndex_A];
+                    int[] wordMappedBitIndices = wordMappedBitIndices_Collection_A[wordIndex_A];
+
+                    for (int i = 0; i < wordBitIndices.Length; i += 1)
+                    {
+                        int bitIndex = wordBitIndices[i];
+                        wordMappedBitIndices[i] = mapping_A_B[bitIndex];
+                    }
+
+                    // Добавляем к локальной сумме результат текущей итерации
+                    localEnergy += (int)GetEnergy(wordMappedBitIndices, Temp_ClustersEnergy_Matrix_EN);                    
+                    
+                    return localEnergy;
+                },
+                // Итоговая агрегация локальных сумм каждого потока
+                localEnergy =>
+                {
+                    Interlocked.Add(ref energy, localEnergy);                    
+                });
+            // UNOPTIMIZED
+            //for (int batchWordsIndex = 0; batchWordsIndex < batchWords_Span_A.Length; batchWordsIndex += 1)
+            //{
+            //    int wordIndex_A = batchWords_Span_A[batchWordsIndex].Index;
+            //    int[] wordBitIndices = wordBitIndices_Collection_A[wordIndex_A];
+            //    int[] wordMappedBitIndices = wordMappedBitIndices_Collection_A[wordIndex_A];
+
+            //    for (int i = 0; i < wordBitIndices.Length; i += 1)
+            //    {
+            //        int bitIndex = wordBitIndices[i];
+            //        wordMappedBitIndices[i] = mapping_A_B[bitIndex];
+            //    }
+
+            //    energy += GetEnergy(wordMappedBitIndices, Temp_ClustersEnergy_Matrix_EN);
+            //}
+            float meanEnergy = (float)energy / (float)batchWords_A.Length;
+
+            if (meanEnergy < Temp_MinMeanEnergy)
             {
-                return 1000.0f; // Collision
+                Temp_MinMeanEnergy = meanEnergy;
+                minEnergy_BitIndex_B = test_BitIndex_B;
             }
-            else
+
+            mapping_A_B[toOptimize_BitIndex_A] = old_ToOptimize_BitIndex_B;
+            mapping_A_B[old_Test_BitIndex_A] = test_BitIndex_B;
+            mapping_B_A[test_BitIndex_B] = old_Test_BitIndex_A;
+            mapping_B_A[old_ToOptimize_BitIndex_B] = toOptimize_BitIndex_A;
+        }        
+
+        if (original_BitIndex_B != minEnergy_BitIndex_B)
+        {
+            int old_Test_BitIndex_A = mapping_B_A[minEnergy_BitIndex_B];
+            int old_ToOptimize_BitIndex_B = mapping_A_B[toOptimize_BitIndex_A];
+            mapping_A_B[toOptimize_BitIndex_A] = minEnergy_BitIndex_B;
+            mapping_A_B[old_Test_BitIndex_A] = old_ToOptimize_BitIndex_B;
+            mapping_B_A[minEnergy_BitIndex_B] = toOptimize_BitIndex_A;
+            mapping_B_A[old_ToOptimize_BitIndex_B] = old_Test_BitIndex_A;
+
+            Temp_ForBatchChangesCount += 1;
+        }        
+    }            
+
+    private static float GetEnergy(ReadOnlySpan<int> bitIndices, MatrixFloat energyMatrix)
+    {
+        float energy = 0.0f;
+        // Перебираем только пары (i < j), чтобы не считать симметричную/диагональную энергию дважды
+        for (int k = 0; k < bitIndices.Length - 1; k += 1)
+        {
+            int i = bitIndices[k];
+            for (int l = k + 1; l < bitIndices.Length; l += 1)
             {
-                energy -= proxBits[toOptimizeBitIndex, mappedBitIndex];
-            }   
+                int j = bitIndices[l];
+                energy += energyMatrix[i, j];
+            }
         }
         return energy;
     }

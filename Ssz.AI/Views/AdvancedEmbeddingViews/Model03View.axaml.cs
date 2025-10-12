@@ -30,7 +30,7 @@ public partial class Model03View : UserControl
         Model = new Model03();
         Task.Run(() =>
         {
-            Model.VisualizeData_V3();            
+            Model.Find_DiscreteVectors_ClustersOneToOne_V2();            
         });
     }
 

@@ -55,7 +55,7 @@ namespace Ssz.AI.Models
             Retina = new Retina(Constants);
             //Retina.GenerateOwnedData(Constants, gradientDistribution);
             //Helpers.SerializationHelper.SaveToFile("retina.bin", Retina, null);
-            Helpers.SerializationHelper.LoadFromFileIfExists("retina.bin", Retina, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists("retina.bin", Retina, null, null);
             Retina.Prepare();
 
             Cortex = new Cortex_Simplified(Constants, Retina);
@@ -283,7 +283,7 @@ namespace Ssz.AI.Models
 
             const string fileName = @"autoencoder.bin";
 
-            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, Cortex, "autoencoder");
+            Helpers.SerializationHelper.LoadFromFileIfExists(fileName, Cortex, "autoencoder", null);
 
             Logger.LogInformation($"CalculateAutoencoder(...) started;");
 
@@ -392,7 +392,7 @@ namespace Ssz.AI.Models
 
             if (Cortex.InputAutoencoder.IterationsCount > 0)
             {
-                Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoder");
+                Helpers.SerializationHelper.SaveToFile(fileName, Cortex, "autoencoder", null);
             }
         }        
 

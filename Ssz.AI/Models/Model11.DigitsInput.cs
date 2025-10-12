@@ -100,7 +100,7 @@ namespace Ssz.AI.Models
 #endif
             StereoInput.Prepare();
 #if GENERATE_INPUT_DATA
-            Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);
+            Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null, null);
 #endif
 
             LeftEye.Retina = new Retina(Constants);

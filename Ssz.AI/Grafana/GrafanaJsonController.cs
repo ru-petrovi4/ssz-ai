@@ -339,7 +339,7 @@ namespace Ssz.AI.Grafana
             List<object[]> rows = new List<object[]>(data.Length);
             for (int i = 0; i < data.Length; i += 1)
             {
-                rows.Add([(ulong)i, data[i]]);
+                rows.Add([_dataToDisplayHolder.DistributionMin + (_dataToDisplayHolder.DistributionMax - _dataToDisplayHolder.DistributionMin) * i / data.Length, data[i]]);
             }
 
             var queryResponse =
@@ -350,7 +350,7 @@ namespace Ssz.AI.Grafana
                     Type = QueryResponse.TypeEnum.Table,
                     Columns = new List<QueryResponseColumn>
                     {
-                                new QueryResponseColumn { Text = @"Индекс", Type = QueryResponseColumn.TypeEnum.Number },
+                                new QueryResponseColumn { Text = @"Величина", Type = QueryResponseColumn.TypeEnum.Number },
                                 new QueryResponseColumn { Text = @"Количество", Type = QueryResponseColumn.TypeEnum.Number },
                     },
                     Rows = rows,

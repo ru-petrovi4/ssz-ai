@@ -24,6 +24,9 @@ namespace Ssz.AI.Grafana
         ///     Распределение чего-либо
         /// </summary>
         public ulong[] Distribution { get; set; } = null!;
+
+        public float DistributionMin { get; set; } = 0.0f;
+        public float DistributionMax { get; set; } = 1.0f;
     }
 
     public class GradientDistribution
