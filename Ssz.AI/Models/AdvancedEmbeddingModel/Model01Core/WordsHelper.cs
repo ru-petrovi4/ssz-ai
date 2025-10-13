@@ -220,28 +220,5 @@ public static class WordsHelper
             }
         }
         return randomOrderWords;
-    }
-
-    public static List<WordWithDiscreteEmbedding> GetRandomOrderWords(List<WordWithDiscreteEmbedding> words, int wordsCount, Random r)
-    {
-        var randomOrderWords = new List<WordWithDiscreteEmbedding>(wordsCount);
-        foreach (var word in words)
-        {
-            word.Temp_Flag = false;
-        }
-        for (int wordIndex = 0; wordIndex < wordsCount; wordIndex += 1)
-        {
-            for (; ; )
-            {
-                var word = words[r.Next(wordsCount)];
-                if (word.Temp_Flag)
-                    continue;
-
-                randomOrderWords.Add(word);
-                word.Temp_Flag = true;
-                break;
-            }
-        }
-        return randomOrderWords;
-    }
+    }    
 }

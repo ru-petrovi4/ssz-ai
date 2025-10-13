@@ -25,7 +25,7 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_RU;
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_EN;
 
-    public const int BatchSize = 128;
+    public const int BatchSize = 5000;
 
     public const int WordsCount = 10000;
 
@@ -166,15 +166,17 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
         var stopwatch = Stopwatch.StartNew();
         var r = new Random(5);
         
-        int iterationsCount = WordsCount / BatchSize + 1;
-        for (int epoch = 0; epoch < 5; epoch += 1)
+        int batchesCount = WordsCount / BatchSize + 1;
+        for (int epoch = 0; epoch < 15; epoch += 1)
         {
-            var random_Words_RU = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_RU.Words, WordsCount, r).ToArray();
-            var random_Words_EN = WordsHelper.GetRandomOrderWords(LanguageDiscreteEmbeddings_EN.Words, WordsCount, r).ToArray();
+            var random_Words_RU = LanguageDiscreteEmbeddings_RU.Words.Take(WordsCount).ToArray();
+            r.Shuffle(random_Words_RU);
+            var random_Words_EN = LanguageDiscreteEmbeddings_EN.Words.Take(WordsCount).ToArray();
+            r.Shuffle(random_Words_EN);
 
-            for (int iterationN = 0; iterationN < iterationsCount; iterationN += 1)
+            for (int batchN = 0; batchN < batchesCount; batchN += 1)
             {
-                int wordIndexStart = iterationN * BatchSize;
+                int wordIndexStart = batchN * BatchSize;
                 if (wordIndexStart >= WordsCount)
                     break;
                 var batchWords_RU = random_Words_RU.AsMemory(wordIndexStart, Math.Min(BatchSize, random_Words_RU.Length - wordIndexStart));
@@ -186,11 +188,18 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
                 {   
                     totalSwapsCount = 0;
 
+                    int[] numbers = new int[Mapping_EN_RU.Length]; // numbers[] — отсюда получим уникальные значения.                    
+                    for (int i = 0; i < Mapping_EN_RU.Length; i += 1)
+                    {
+                        numbers[i] = i;
+                    }
+                    r.Shuffle(numbers);
+
                     for (int i = 0; i < Mapping_EN_RU.Length; i += 1)
                     {
                         (batchEnergy, int swapsCount) = OptimizeWordsBatch(
                             batchEnergy,
-                            r.Next(Mapping_RU_EN.Length),
+                            numbers[i],
                             batchWords_RU,
                             Mapping_RU_EN,
                             Temp_WordBitIndices_Collection_RU,
@@ -218,9 +227,11 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
 
                 //if (iterationN % 10 == 0)
                 {
-                    _loggersSet.UserFriendlyLogger.LogInformation($"CalculateMapping iteration: {iterationN} done. MinEnergy: {batchEnergy}; Количество перестановок: {totalSwapsCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
+                    _loggersSet.UserFriendlyLogger.LogInformation($"Batch done: {batchN}. Epoch: {epoch}; MinEnergy: {batchEnergy}; Количество перестановок: {totalSwapsCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
                 }
             }
+
+            _loggersSet.UserFriendlyLogger.LogInformation($"Epoch done: {epoch}. Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
         }
 
         stopwatch.Stop();

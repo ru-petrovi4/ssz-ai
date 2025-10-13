@@ -174,10 +174,11 @@ public partial class Model03
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);        
 
         var matcher = new PrimaryWordsOneToOneMatcher_V2(_loggersSet, languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-        bool calculate = true;
-        if (calculate)
+        bool calculateFromBeginning = false;
+        if (calculateFromBeginning)
         {
             matcher.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+
             matcher.Prepare();
             matcher.CalculateMapping();
             
@@ -185,7 +186,12 @@ public partial class Model03
         }
         else
         {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);            
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);
+
+            matcher.Prepare();
+            matcher.CalculateMapping();
+
+            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);
         }
 
         var clustersMapping = matcher.Mapping_RU_EN;
