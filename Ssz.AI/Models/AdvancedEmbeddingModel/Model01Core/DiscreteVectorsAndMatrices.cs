@@ -274,14 +274,17 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
             Array.Clear(discreteVector_SecondaryOnly);
             var temp_Top8ProxClusterInfos = Temp_Top8ProxClusterInfos[word.Index];
             var temp_Top8ProxWords = Temp_Top8ProxWords[word.Index];
+
+            Debug.Assert(temp_Top8ProxClusterInfos!.Length == 8);            
+
             for (int i = 0; i < temp_Top8ProxClusterInfos!.Length; i += 1)
             {
-                int clusterHashProjectionIndex = wordsHashProjectionIndices[temp_Top8ProxClusterInfos[i].Item2.HashProjectionIndex];
+                int clusterHashProjectionIndex = temp_Top8ProxClusterInfos[i].Item2.HashProjectionIndex;
                 if (clusterHashProjectionIndex >= 0)
                 {
                     discreteVector[clusterHashProjectionIndex] = 1.0f;
                     discreteVector_PrimaryOnly[clusterHashProjectionIndex] = 1.0f;
-                }
+                }                
             }
             for (int i = 0; i < temp_Top8ProxWords.Length; i += 1)
             {

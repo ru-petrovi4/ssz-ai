@@ -61,7 +61,7 @@ public partial class DebugWindow : Window
         {
             var scrollViewer = MainTextEditor.FindDescendantOfType<ScrollViewer>()!;
             bool atBottom = false;
-            if (scrollViewer.Offset.Y > scrollViewer.ScrollBarMaximum.Y * 0.95)
+            if (scrollViewer.Offset.Y > scrollViewer.ScrollBarMaximum.Y * 0.99)
                 atBottom = true;
 
             MainTextEditor.Text += line + "\n";  

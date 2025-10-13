@@ -304,7 +304,7 @@ public partial class Model03
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
-        var matrix = PrimaryWordsOneToOneMatcher_V2.GetClustersEnergy_Matrix_V1(languageDiscreteEmbeddings_RU);
+        var matrix = PrimaryWordsOneToOneMatcher_V2.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_EN);
 
         //float energy = 0.0f;
         //int wordsCount = 10000; 
@@ -314,16 +314,16 @@ public partial class Model03
         //}
         //energy = energy / wordsCount;
 
-        int n = 1000;
+        int n = 500;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 6000.0f;
+        dataToDisplayHolder.DistributionMax = 5000.0f;
 
         int wordsCount = 10000;
         foreach (var wordIndex in Enumerable.Range(0, wordsCount))
         {
-            var v = PrimaryWordsOneToOneMatcher_V2.GetWordEnergy(languageDiscreteEmbeddings_RU.Words[wordIndex], matrix);
+            var v = PrimaryWordsOneToOneMatcher_V2.GetWordEnergy(languageDiscreteEmbeddings_EN.Words[wordIndex], matrix);
             dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
         }
 

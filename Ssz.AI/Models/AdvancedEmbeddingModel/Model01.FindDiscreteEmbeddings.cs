@@ -225,6 +225,10 @@ public partial class Model01
                 DiscreteVector_PrimaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_PrimaryBitsOnly[i],
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
+#if DEBUG
+            var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
+            Debug.Assert(primaryBitsSum > 7.9999f && primaryBitsSum < 8.0001f);
+#endif
             languageDiscreteEmbeddings_RU.Words.Add(wordWithDiscreteEmbedding);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
@@ -251,6 +255,10 @@ public partial class Model01
                 DiscreteVector_PrimaryBitsOnly = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors_PrimaryBitsOnly[i],
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
+#if DEBUG
+            var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
+            Debug.Assert(primaryBitsSum > 7.9999f && primaryBitsSum < 8.0001f);
+#endif
             languageDiscreteEmbeddings_EN.Words.Add(wordWithDiscreteEmbedding);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
