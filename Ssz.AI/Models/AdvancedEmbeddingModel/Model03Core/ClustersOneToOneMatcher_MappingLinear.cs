@@ -14,12 +14,14 @@ using static TorchSharp.torch.nn;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
-public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
+/// <summary>
+/// Сопоставление кластеров на основе поворота и их центров float[]
+/// </summary>
+public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 {
-    public OldVectors_PrimaryWordsOneToOneMatcher(IUserFriendlyLogger userFriendlyLogger, Model03.Parameters parameters)
+    public ClustersOneToOneMatcher_MappingLinear(IUserFriendlyLogger userFriendlyLogger)
     {
-        _userFriendlyLogger = userFriendlyLogger;
-        _parameters = parameters;
+        _userFriendlyLogger = userFriendlyLogger;        
     }
 
     public int[] ClustersMapping = null!;
@@ -56,8 +58,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
             float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);            
             TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
-
-            // Ищем позицию B с максимальным весом среди неиспользованных
+            
             float max = float.MinValue;
             int selected = -1;
             for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
@@ -79,13 +80,10 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             {
             }
         }
-
-        var hs = ClustersMapping.ToHashSet();
-        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
     }
 
     /// <summary>
-    ///     Clusters similarity
+    ///     Clusters distribution
     /// </summary>
     /// <param name="source"></param>
     /// <param name="target"></param>
@@ -119,13 +117,10 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
 
             ClustersMapping[sourceClusterIndex] = target.GetClusterIndex(mappedOldVectorNormalized);
         }
-
-        var hs = ClustersMapping.ToHashSet();
-        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
     }
 
     /// <summary>
-    /// Hungarian algorithm
+    /// Energy matrix Hungarian algorithm
     /// </summary>
     /// <param name="source"></param>
     /// <param name="target"></param>
@@ -142,7 +137,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         }
         //mappingLinear.to();
 
-        int[,] costMatrix = new int[source.ClusterInfos.Count, target.ClusterInfos.Count];
+        long[,] costMatrix = new long[source.ClusterInfos.Count, target.ClusterInfos.Count];
         for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
         {
             var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];            
@@ -157,16 +152,67 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float cosineSimilarity = TensorPrimitives.Dot(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
 
-                costMatrix[sourceClusterIndex, targetClusterIndex] = (int)(cosineSimilarity * -10000.0f);
+                costMatrix[sourceClusterIndex, targetClusterIndex] = (long)(energy * 10000.0f);
             }            
         }
 
         ClustersMapping = HungarianAlgorithm.FindAssignments(costMatrix);
+    }
 
-        var hs = ClustersMapping.ToHashSet();
-        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
+    /// <summary>
+    ///     Energy matrix
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void CalculateClustersMapping_V4(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    {
+        ClustersMapping = new int[source.ClusterInfos.Count];
+
+        using Linear mappingLinear = Linear(
+            inputSize: source.Words[0].OldVector.Length,
+            outputSize: source.Words[0].OldVector.Length,
+            hasBias: false);
+        using (var _ = no_grad())
+        {
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            mappingLinear.weight!.copy_(loadedWeights);
+        }
+        //mappingLinear.to();
+
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+
+            //var norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVectorNormalized); // TEST
+            //norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVector); // TEST
+
+            var oldVectorTensor = torch.tensor(sourceClusterInfo.CentroidOldVectorNormalized).reshape([1, sourceClusterInfo.CentroidOldVectorNormalized.Length]);
+            var mappedOldVectorTensor = mappingLinear.forward(oldVectorTensor);
+            float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
+            float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
+            TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
+
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float minEnergy = float.MaxValue;
+            int selected = -1;
+            for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
+            {
+                var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
+
+                float energy = ModelHelper.GetEnergy(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+                if (energy < minEnergy)
+                {
+                    minEnergy = energy;
+                    selected = targetClusterIndex;
+                }
+            }
+            if (selected != -1)
+            {
+                ClustersMapping[sourceClusterIndex] = selected;
+            }            
+        }        
     }
 
     public void ComputeDetailedEvaluationReport(LanguageDiscreteEmbeddings languageDiscreteEmbeddings, ILogger logger)
@@ -188,17 +234,7 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
         var labels = torch.tensor(allLabels);
 
         SphericalClusteringMetrics.ComputeDetailedEvaluationReport(data, labels, logger);
-    }    
-
-    public void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
-    {
-        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
-        {
-            ShowWords(source, sourceClusterIndex);
-            ShowWords(target, ClustersMapping[sourceClusterIndex]);
-            _userFriendlyLogger.LogInformation($"------------------------");
-        }
-    }    
+    }         
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -208,30 +244,40 @@ public class OldVectors_PrimaryWordsOneToOneMatcher : IOwnedDataSerializable
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
         ClustersMapping = reader.ReadArray<int>()!;
-    }
-
-    private void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex)
-    {
-        _userFriendlyLogger.LogInformation($"Кластер: {clusterIndex}");
-
-        var clusterInfo = source.ClusterInfos[clusterIndex];
-
-        foreach (var word in source.Words
-            .Where(w => w.ClusterIndex == clusterIndex)
-            .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
-            .Take(10))
-        {
-            _userFriendlyLogger.LogInformation(word.Name);
-        }
-
-        _userFriendlyLogger.LogInformation($"------------------------");
-    }
+    }    
 
     #region private fields
 
-    private IUserFriendlyLogger _userFriendlyLogger;
-    private Model03.Parameters _parameters;
+    private IUserFriendlyLogger _userFriendlyLogger;    
 
     #endregion
 }
 
+
+//public void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+//    {
+//        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+//        {
+//            ShowWords(source, sourceClusterIndex);
+//            ShowWords(target, ClustersMapping[sourceClusterIndex]);
+//            _userFriendlyLogger.LogInformation($"------------------------");
+//        }
+//   }   
+
+
+//private void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex)
+//    {
+//        _userFriendlyLogger.LogInformation($"Кластер: {clusterIndex}");
+
+//        var clusterInfo = source.ClusterInfos[clusterIndex];
+
+//        foreach (var word in source.Words
+//            .Where(w => w.ClusterIndex == clusterIndex)
+//            .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
+//            .Take(10))
+//        {
+//            _userFriendlyLogger.LogInformation(word.Name);
+//        }
+
+//        _userFriendlyLogger.LogInformation($"------------------------");
+//    }

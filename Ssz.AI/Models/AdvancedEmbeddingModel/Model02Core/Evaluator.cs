@@ -17,6 +17,7 @@ using Tensor = TorchSharp.torch.Tensor;
 using static TorchSharp.torch.nn;
 using Tensorflow;
 using Ssz.Utils;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 {
@@ -447,7 +448,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             testDictionary = testDictionary.to(_trainer.Device);
 
             var mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
-            var targetEmbeddings = _trainer.TargetEmbeddings.weight!;
+            var targetEmbeddings = _trainer.TargetEmbeddings.weight!;            
 
             var methods = new[] { "nn", "csls_knn_10" };
             foreach (var method in methods)
@@ -1189,6 +1190,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             var testDictionary_SourceIds_Array = testDictionary.select(dim: 1, index: 0).data<long>().ToArray();
             var testDictionary_TargetIds_Array = testDictionary.select(dim: 1, index: 1).data<long>().ToArray();
 
+            var wordTranslation_Dictionary = new Dictionary<int, WordTranslation>();
+
             foreach (var k in kValues)
             {
                 var topKMatches = topMatches[TensorIndex.Ellipsis, TensorIndex.Slice(null, k)];                
@@ -1198,7 +1201,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                 for (int i = 0; i < testDictionary_TargetIds_Array.Length; i++)
                 {
-                    //var sourceId = (int)testDictionary_SourceIds_Array[i];
+                    var sourceId = (int)testDictionary_SourceIds_Array[i];
                     var targetId = (int)testDictionary_TargetIds_Array[i];
 
                     var isMatch = false;
@@ -1214,29 +1217,25 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
 
                     if (isMatch)
                     {
+                        wordTranslation_Dictionary.TryGetValue(i, out WordTranslation? wordTranslation);
+                        if (wordTranslation is null)
+                        {
+                            wordTranslation = new()
+                            {
+                                IndexA = sourceId,
+                                IndexB = targetId,
+                                K = k,
+                            };
+                            wordTranslation_Dictionary.Add(i, wordTranslation);
+                        }
+
                         i_Matching_Dictionary[i] = 1;
                     }
                     else
                     {
                         i_Matching_Dictionary[i] = 0;
                     }
-                }
-                
-                //if (saveDictionary && k > 5)
-                //{
-                //    List<string?[]> data = new();
-                //    foreach (var kvp in i_Matching_Dictionary)
-                //    {   
-                //        if (kvp.Value == 1)
-                //        {
-                //            data.Add([
-                //                _trainer.SourceDictionary.IdToWord[(int)testDictionary_SourceIds_Array[kvp.Key]],
-                //                _trainer.TargetDictionary.IdToWord[(int)testDictionary_TargetIds_Array[kvp.Key]],
-                //            ]);
-                //        }                        
-                //    }
-                //    CsvHelper.SaveCsvFile(Path.Combine("Data", "PrimaryWords_RU_EN_Linear.csv"), data);
-                //}
+                }                
 
                 float precisionAtK;
                 if (i_Matching_Dictionary.Count > 0)
@@ -1245,6 +1244,27 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                     precisionAtK = 0.0f;
 
                 results[$"precision_at_{k}"] = precisionAtK;
+            }
+
+            if (saveDictionary)
+            {
+                //List<string?[]> data = new();
+                //foreach (var kvp in i_Matching_Dictionary)
+                //{
+                //    if (kvp.Value == 1)
+                //    {
+                //        data.Add([
+                //            _trainer.SourceDictionary.IdToWord[(int)testDictionary_SourceIds_Array[kvp.Key]],
+                //            _trainer.TargetDictionary.IdToWord[(int)testDictionary_TargetIds_Array[kvp.Key]],
+                //        ]);
+                //    }
+                //}
+                //CsvHelper.SaveCsvFile(Path.Combine("Data", "PrimaryWords_RU_EN_Linear.csv"), data);
+                WordTranslationsCollection wordTranslationsCollection = new()
+                {
+                    WordTranslations = wordTranslation_Dictionary.Values.ToList()
+                };
+                Helpers.SerializationHelper.SaveToFile("WordTranslationsCollection.bin", wordTranslationsCollection, null, null);
             }
 
             return results;

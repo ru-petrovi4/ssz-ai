@@ -18,7 +18,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 /// <summary>
 /// Сопоставление на основе перестановок
 /// </summary>
-public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
+public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
 {
     private ILoggersSet _loggersSet;
     private Device _device;
@@ -60,7 +60,7 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
     /// </summary>
     public int[][] Temp_WordMappedBitIndices_Collection_EN = null!;
 
-    public PrimaryWordsOneToOneMatcher_V2(ILoggersSet loggersSet, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN)
+    public ClustersOneToOneMatcher_Swapping(ILoggersSet loggersSet, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU, LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN)
     {
         _loggersSet = loggersSet;
         _device = cuda.is_available() ? CUDA : CPU;
@@ -94,11 +94,11 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
 
     public void Prepare()
     {        
-        Temp_ClustersEnergy_Matrix_RU = GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_RU);
-        Temp_ClustersEnergy_Matrix_EN = GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_EN);        
+        Temp_ClustersEnergy_Matrix_RU = ModelHelper.GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_RU);
+        Temp_ClustersEnergy_Matrix_EN = ModelHelper.GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_EN);        
 
-        Temp_WordBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
-        Temp_WordMappedBitIndices_Collection_RU = new int[LanguageDiscreteEmbeddings_RU.Words.Count][];
+        Temp_WordBitIndices_Collection_RU = new int[WordsCount][];
+        Temp_WordMappedBitIndices_Collection_RU = new int[WordsCount][];
         List<int> wordBitIndices = new List<int>(16);
         List<int> wordMappedBitIndices = new List<int>(16);
         for (int i = 0; i < WordsCount; i += 1)
@@ -118,8 +118,8 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
             Temp_WordMappedBitIndices_Collection_RU[i] = wordMappedBitIndices.ToArray();
         }        
               
-        Temp_WordBitIndices_Collection_EN = new int[LanguageDiscreteEmbeddings_EN.Words.Count][];
-        Temp_WordMappedBitIndices_Collection_EN = new int[LanguageDiscreteEmbeddings_EN.Words.Count][];        
+        Temp_WordBitIndices_Collection_EN = new int[WordsCount][];
+        Temp_WordMappedBitIndices_Collection_EN = new int[WordsCount][];        
         for (int i = 0; i < WordsCount; i += 1)
         {
             var discreteVector = LanguageDiscreteEmbeddings_EN.Words[i].DiscreteVector_PrimaryBitsOnly;
@@ -236,56 +236,7 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
 
         stopwatch.Stop();
         _loggersSet.UserFriendlyLogger.LogInformation("CalculateMapping totally done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
-    }
-
-    /// <summary>
-    ///     1-cos, экспонента, квадрат
-    ///     Индексы соотвествуют индексам главных бит в слове.
-    /// </summary>
-    /// <param name="languageDiscreteEmbeddings"></param>
-    /// <returns></returns>
-    public static MatrixFloat GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings embeddings)
-    {
-        int dimension = embeddings.ClusterInfos.Count;
-        var matrixFloat = new MatrixFloat(dimension, dimension);
-        foreach (var i in Enumerable.Range(0, dimension))
-        {
-            foreach (var j in Enumerable.Range(0, dimension))
-            {
-                var clusterI = embeddings.ClusterInfos[i];
-                var clusterJ = embeddings.ClusterInfos[j];
-                float v = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
-                    clusterI.CentroidOldVectorNormalized,
-                    clusterJ.CentroidOldVectorNormalized);
-                v = MathF.Exp((1 - v) * 3.0f) - 1;
-                v = v * v;
-                matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;
-            }
-        }
-        return matrixFloat;
-    }
-
-    public static float GetWordEnergy(WordWithDiscreteEmbedding word, MatrixFloat energyMatrix)
-    {
-        var vector = word.DiscreteVector_PrimaryBitsOnly;
-
-        // Список индексов, где vector[i] == 1 для быстрого перебора (около 8 элементов)
-        Span<int> activeIndices = stackalloc int[8];
-        int count = 0;
-        for (int i = 0; i < vector.Length; i += 1)
-        {
-            if (vector[i] > 0.5f)
-            {
-                // Обычно у вас мало единичных элементов, stackalloc более производителен для малых массивов
-                activeIndices[count] = i;
-                count += 1;
-            }
-        }
-
-        Debug.Assert(count == 8);
-
-        return GetEnergy(activeIndices, energyMatrix);
-    }
+    }    
 
     private (float batchEnergy, int swapsCount) OptimizeWordsBatch(
         float prevBatchEnergy,
@@ -327,7 +278,7 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
                     }
 
                     // Добавляем к локальной сумме результат текущей итерации
-                    localEnergyLong += (long)(GetEnergy(wordMappedBitIndices, Temp_ClustersEnergy_Matrix_EN) * 10000);                    
+                    localEnergyLong += (long)(ModelHelper.GetEnergy(wordMappedBitIndices, Temp_ClustersEnergy_Matrix_EN) * 10000);                    
                     
                     return localEnergyLong;
                 },
@@ -384,21 +335,5 @@ public class PrimaryWordsOneToOneMatcher_V2 : ISerializableModelObject
         {
             return (minBatchEnergy, 0);
         }
-    }            
-
-    private static float GetEnergy(ReadOnlySpan<int> bitIndices, MatrixFloat energyMatrix)
-    {
-        float energy = 0.0f;
-        // Перебираем только пары (i < j), чтобы не считать симметричную/диагональную энергию дважды
-        for (int k = 0; k < bitIndices.Length - 1; k += 1)
-        {
-            int i = bitIndices[k];
-            for (int l = k + 1; l < bitIndices.Length; l += 1)
-            {
-                int j = bitIndices[l];
-                energy += energyMatrix[i, j];
-            }
-        }
-        return energy;
-    }
+    }                
 }

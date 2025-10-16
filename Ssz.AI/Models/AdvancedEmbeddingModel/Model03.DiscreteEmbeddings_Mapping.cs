@@ -38,7 +38,7 @@ public partial class Model03
     public const string FileName_NearestA = "AdvancedEmbedding_NearestA.bin";
     public const string FileName_DistanceMatrixB = "AdvancedEmbedding_DistanceMatrixB.bin";
     public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
-    public const string FileName_OldVectors_PrimaryWordsOneToOneMatcher = "OldVectors_PrimaryWordsOneToOneMatcher.bin";
+    //public const string FileName_OldVectors_PrimaryWordsOneToOneMatcher = "OldVectors_PrimaryWordsOneToOneMatcher.bin";
 
     public const string FileName_PrimaryWordsOneToOneMatcher_V2 = "AdvancedEmbedding_PrimaryWordsOneToOneMatcher_V2.bin";
 
@@ -60,19 +60,19 @@ public partial class Model03
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
 
-        OldVectors_PrimaryWordsOneToOneMatcher oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
-        oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
-        oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
-        oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
-        oldVectors_PrimaryWordsOneToOneMatcher.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
-        oldVectors_PrimaryWordsOneToOneMatcher.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
+        clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
+        clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
 
-        Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
+        //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
     }
 
-    public void Find_OldVectors_ClustersOneToOne()
+    public void Find_ClustersOneToOneMatcher_MappingLinear()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
@@ -80,68 +80,48 @@ public partial class Model03
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
-        bool calculate = false;
-        OldVectors_PrimaryWordsOneToOneMatcher oldVectors_PrimaryWordsOneToOneMatcher = new(_loggersSet.UserFriendlyLogger, new Parameters());
+        bool calculate = true;
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         if (calculate)
         {
-            oldVectors_PrimaryWordsOneToOneMatcher.CalculateClustersMapping_V3(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-            Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, _loggersSet.UserFriendlyLogger);
+            clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V3(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+            //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
         }
         else
         {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_OldVectors_PrimaryWordsOneToOneMatcher, oldVectors_PrimaryWordsOneToOneMatcher, null, null);
+            //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, null);
         }
-        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, oldVectors_PrimaryWordsOneToOneMatcher.ClustersMapping, _loggersSet.UserFriendlyLogger);
+        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersOneToOneMatcher_MappingLinear.ClustersMapping, _loggersSet.UserFriendlyLogger);
     }
 
     /// <summary>
     /// Поддержка гипотез ближайших
     /// </summary>
-    public void Find_DiscreteVectors_ClustersOneToOne_V1()
+    public void Find_ClustersOneToOneMatcher_Hypothesis()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);          
 
-        var setA = languageDiscreteEmbeddings_RU.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();
-        var setB = languageDiscreteEmbeddings_EN.GetDiscrete_PrimaryBitsOnlyEmbeddingsMatrix();          
+        var clustersOneToOneMatcher_Hypothesis = new ClustersOneToOneMatcher_Hypothesis(
+            _loggersSet.UserFriendlyLogger,
+            languageDiscreteEmbeddings_RU,
+            languageDiscreteEmbeddings_EN);        
 
-        var matcher = new PrimaryWordsOneToOneMatcher_V1(_loggersSet.UserFriendlyLogger, new Parameters());
-        bool calculateDistanceMatrices = false;
-        if (calculateDistanceMatrices)
-        {
-            matcher.BuildDistanceMatrix_V2(setA, matcher.DistanceMatrixA);
-            Helpers.SerializationHelper.SaveToFile(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestA = matcher.BuildNearest(matcher.DistanceMatrixA);
-            Helpers.SerializationHelper.SaveToFile(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
-
-            matcher.BuildDistanceMatrix_V2(setB, matcher.DistanceMatrixB);
-            Helpers.SerializationHelper.SaveToFile(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestB = matcher.BuildNearest(matcher.DistanceMatrixB);
-            Helpers.SerializationHelper.SaveToFile(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
-        }
-        else
-        {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixA, matcher.DistanceMatrixA, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestA = new PrimaryWordsOneToOneMatcher_V1.Nearest();
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);
-
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DistanceMatrixB, matcher.DistanceMatrixB, null, _loggersSet.UserFriendlyLogger);
-            matcher.NearestB = new PrimaryWordsOneToOneMatcher_V1.Nearest();
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
-        }
-
-        bool calculate = false;
+        bool calculate = true;
         if (calculate)
         {
-            matcher.SupportHypotheses_V1(setA, setB, count: 5000);
-            Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, null, _loggersSet.UserFriendlyLogger);
+            clustersOneToOneMatcher_Hypothesis.GenerateOwnedData();
+            clustersOneToOneMatcher_Hypothesis.Prepare();
+
+            clustersOneToOneMatcher_Hypothesis.SupportHypotheses_V1();
+            //Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, null, _loggersSet.UserFriendlyLogger);
         }
         else
         {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, null, _loggersSet.UserFriendlyLogger);
+            //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher, null, _loggersSet.UserFriendlyLogger);
         }
 
         //var resultMapping = matcher.GetFinalMapping();
@@ -153,7 +133,8 @@ public partial class Model03
         //    _loggersSet.UserFriendlyLogger.LogInformation($"{pair.Key} -> {pair.Value}");
         //}
 
-        var clustersMapping = matcher.GetFinalMappingForcedExclusive();
+        //var clustersMapping = matcher.GetFinalMappingForcedExclusive();
+        var clustersMapping = clustersOneToOneMatcher_Hypothesis.GetFinalMapping();
 
         var resultBits = clustersMapping.ToHashSet();
         // Выводим часть соответствий
@@ -165,7 +146,7 @@ public partial class Model03
     /// <summary>
     /// Перестановки
     /// </summary>
-    public void Find_DiscreteVectors_ClustersOneToOne_V2()
+    public void Find_ClustersOneToOneMatcher_Swapping()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
@@ -173,28 +154,28 @@ public partial class Model03
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);        
 
-        var matcher = new PrimaryWordsOneToOneMatcher_V2(_loggersSet, languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        var clustersOneToOneMatcher_Swapping = new ClustersOneToOneMatcher_Swapping(_loggersSet, languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
         bool calculateFromBeginning = false;
         if (calculateFromBeginning)
         {
-            matcher.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+            clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
 
-            matcher.Prepare();
-            matcher.CalculateMapping();
+            clustersOneToOneMatcher_Swapping.Prepare();
+            clustersOneToOneMatcher_Swapping.CalculateMapping();
             
-            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);            
+            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);            
         }
         else
         {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
 
-            matcher.Prepare();
-            matcher.CalculateMapping();
+            clustersOneToOneMatcher_Swapping.Prepare();
+            clustersOneToOneMatcher_Swapping.CalculateMapping();
 
-            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, matcher, null, _loggersSet.UserFriendlyLogger);
+            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
         }
 
-        var clustersMapping = matcher.Mapping_RU_EN;
+        var clustersMapping = clustersOneToOneMatcher_Swapping.Mapping_RU_EN;
 
         var resultBits = clustersMapping.ToHashSet();
         // Выводим часть соответствий
@@ -222,7 +203,7 @@ public partial class Model03
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
 
-        var embeddings = languageDiscreteEmbeddings_RU;
+        var embeddings = languageDiscreteEmbeddings_EN;
         foreach (var i in Enumerable.Range(0, embeddings.Words.Count))
         {
             var word = embeddings.Words[i];
@@ -310,7 +291,7 @@ public partial class Model03
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
-        var matrix = PrimaryWordsOneToOneMatcher_V2.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_EN);
+        var matrix = ModelHelper.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_EN);
 
         //float energy = 0.0f;
         //int wordsCount = 10000; 
@@ -329,19 +310,48 @@ public partial class Model03
         int wordsCount = 10000;
         foreach (var wordIndex in Enumerable.Range(0, wordsCount))
         {
-            var v = PrimaryWordsOneToOneMatcher_V2.GetWordEnergy(languageDiscreteEmbeddings_EN.Words[wordIndex], matrix);
+            var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordIndex], matrix);
             dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V4() Done.");
     }
 
-    public sealed record Parameters
+    /// <summary>
+    /// Показывает разницу между энергиями слова и его перевода.
+    /// </summary>
+    public void VisualizeData_V5()
     {
-        /// <summary>
-        /// Количество ближайших для подкрепления
-        /// </summary>
-        public int NearestCount { get; set; } = 16;
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+
+        WordTranslationsCollection wordTranslationsCollection = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists("WordTranslationsCollection.bin", wordTranslationsCollection, null, null);
+
+        var matrix_RU = ModelHelper.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_RU);
+        var matrix_EN = ModelHelper.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_EN);        
+
+        int n = 500;
+        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        dataToDisplayHolder.Distribution = new ulong[n];
+        dataToDisplayHolder.DistributionMin = -5000.0f;
+        dataToDisplayHolder.DistributionMax = 5000.0f;
+        
+        foreach (var index in Enumerable.Range(0, wordTranslationsCollection.WordTranslations.Count))
+        {
+            var wordTranslation = wordTranslationsCollection.WordTranslations[index];
+            var name_RU = languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA].Name; // For Assert
+            var name_EN = languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB].Name; // For Assert
+            var energy_RU = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA], matrix_RU);
+            var energy_EN = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB], matrix_EN);
+            float v = energy_EN - energy_RU;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+        }
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V5() Done.");
     }
 
     #region private fields

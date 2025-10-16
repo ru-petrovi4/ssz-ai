@@ -54,10 +54,10 @@ public class VectorSetAlignment
             float[,] similarityMatrix = ComputeCosineSimilarityMatrix(rotatedA, B);
 
             // Шаг 2: Оптимальное уникальное matching с Hungarian (cost = -max(0, similarity) для максимизации положительных сходств)
-            int[,] costMatrix = new int[nVectors, nVectors];
+            long[,] costMatrix = new long[nVectors, nVectors];
             for (int i = 0; i < nVectors; ++i)
                 for (int j = 0; j < nVectors; ++j)
-                    costMatrix[i, j] = (int)(similarityMatrix[i, j] * -10000.0f);
+                    costMatrix[i, j] = (long)(similarityMatrix[i, j] * -10000.0f);
             //costMatrix[i, j] = (int)(-MathF.Max(0f, similarityMatrix[i, j]) * 100.0f); // Только положительные, минус для максимизации
 
             int[] matching = HungarianAlgorithm.FindAssignments(costMatrix); // Предполагаемая реализация: matching[i] = j для A_i -> B_j
@@ -343,10 +343,10 @@ public class VectorSetAlignment
         int nVectors = rotatedA.Dimensions[1];
         float[,] similarity = ComputeCosineSimilarityMatrix(rotatedA, B);
 
-        int[,] costMatrix = new int[nVectors, nVectors];
+        long[,] costMatrix = new long[nVectors, nVectors];
         for (int i = 0; i < nVectors; ++i)
             for (int j = 0; j < nVectors; ++j)
-                costMatrix[i, j] = (int)(similarity[i, j] * -10000.0f);
+                costMatrix[i, j] = (long)(similarity[i, j] * -10000.0f);
         //costMatrix[i, j] = (int)(-MathF.Max(0f, similarity[i, j]) * 100.0f); // Только положительные
 
         int[] matching = HungarianAlgorithm.FindAssignments(costMatrix); // Предполагаемая реализация Hungarian

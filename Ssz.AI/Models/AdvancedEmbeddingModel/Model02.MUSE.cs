@@ -30,6 +30,7 @@ using static TorchSharp.torch;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 using Avalonia.Controls.Documents;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 

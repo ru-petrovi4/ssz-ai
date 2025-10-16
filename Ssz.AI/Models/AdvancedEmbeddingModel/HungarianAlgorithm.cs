@@ -14,11 +14,8 @@ public static class HungarianAlgorithm
     /// <param name="costs">A cost matrix; the element at row <em>i</em> and column <em>j</em> represents the cost of agent <em>i</em> performing task <em>j</em>.</param>
     /// <returns>A matrix of assignments; the value of element <em>i</em> is the column of the task assigned to agent <em>i</em>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="costs"/> is null.</exception>
-    public static int[] FindAssignments(int[,] costs)
+    public static int[] FindAssignments(long[,] costs)
     {
-        if (costs == null)
-            throw new ArgumentNullException(nameof(costs));
-
         var h = costs.GetLength(0);
         var w = costs.GetLength(1);
         bool rowsGreaterThanCols = h > w;
@@ -27,7 +24,7 @@ public static class HungarianAlgorithm
             // make sure cost matrix has number of rows greater than columns
             var row = w;
             var col = h;
-            var transposeCosts = new int[row, col];
+            var transposeCosts = new long[row, col];
             for (var i = 0; i < row; i++)
             {
                 for (var j = 0; j < col; j++)
@@ -42,7 +39,7 @@ public static class HungarianAlgorithm
 
         for (var i = 0; i < h; i++)
         {
-            var min = int.MaxValue;
+            var min = long.MaxValue;
 
             for (var j = 0; j < w; j++)
             {
@@ -128,12 +125,6 @@ public static class HungarianAlgorithm
 
     private static int RunStep1(byte[,] masks, bool[] colsCovered, int w, int h)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         for (var i = 0; i < h; i++)
         {
             for (var j = 0; j < w; j++)
@@ -156,20 +147,9 @@ public static class HungarianAlgorithm
 
         return 2;
     }
-    private static int RunStep2(int[,] costs, byte[,] masks, bool[] rowsCovered, bool[] colsCovered, int w, int h, ref Location pathStart)
+
+    private static int RunStep2(long[,] costs, byte[,] masks, bool[] rowsCovered, bool[] colsCovered, int w, int h, ref Location pathStart)
     {
-        if (costs == null)
-            throw new ArgumentNullException(nameof(costs));
-
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         while (true)
         {
             var loc = FindZero(costs, rowsCovered, colsCovered, w, h);
@@ -191,17 +171,9 @@ public static class HungarianAlgorithm
             }
         }
     }
+
     private static int RunStep3(byte[,] masks, bool[] rowsCovered, bool[] colsCovered, int w, int h, Location[] path, Location pathStart)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         var pathIndex = 0;
         path[0] = pathStart;
 
@@ -226,17 +198,9 @@ public static class HungarianAlgorithm
 
         return 1;
     }
-    private static int RunStep4(int[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
+
+    private static int RunStep4(long[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
     {
-        if (costs == null)
-            throw new ArgumentNullException(nameof(costs));
-
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         var minValue = FindMinimum(costs, rowsCovered, colsCovered, w, h);
 
         for (var i = 0; i < h; i++)
@@ -252,18 +216,9 @@ public static class HungarianAlgorithm
         return 2;
     }
 
-    private static int FindMinimum(int[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
+    private static long FindMinimum(long[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
     {
-        if (costs == null)
-            throw new ArgumentNullException(nameof(costs));
-
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
-        var minValue = int.MaxValue;
+        var minValue = long.MaxValue;
 
         for (var i = 0; i < h; i++)
         {
@@ -276,11 +231,9 @@ public static class HungarianAlgorithm
 
         return minValue;
     }
+
     private static int FindStarInRow(byte[,] masks, int w, int row)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
         for (var j = 0; j < w; j++)
         {
             if (masks[row, j] == 1)
@@ -289,11 +242,9 @@ public static class HungarianAlgorithm
 
         return -1;
     }
+
     private static int FindStarInColumn(byte[,] masks, int h, int col)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
         for (var i = 0; i < h; i++)
         {
             if (masks[i, col] == 1)
@@ -302,11 +253,9 @@ public static class HungarianAlgorithm
 
         return -1;
     }
+
     private static int FindPrimeInRow(byte[,] masks, int w, int row)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
         for (var j = 0; j < w; j++)
         {
             if (masks[row, j] == 2)
@@ -315,17 +264,9 @@ public static class HungarianAlgorithm
 
         return -1;
     }
-    private static Location FindZero(int[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
+
+    private static Location FindZero(long[,] costs, bool[] rowsCovered, bool[] colsCovered, int w, int h)
     {
-        if (costs == null)
-            throw new ArgumentNullException(nameof(costs));
-
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         for (var i = 0; i < h; i++)
         {
             for (var j = 0; j < w; j++)
@@ -337,14 +278,9 @@ public static class HungarianAlgorithm
 
         return new Location(-1, -1);
     }
+
     private static void ConvertPath(byte[,] masks, Location[] path, int pathLength)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
-        if (path == null)
-            throw new ArgumentNullException(nameof(path));
-
         for (var i = 0; i < pathLength; i++)
         {
             masks[path[i].row, path[i].column] = masks[path[i].row, path[i].column] switch
@@ -355,11 +291,9 @@ public static class HungarianAlgorithm
             };
         }
     }
+
     private static void ClearPrimes(byte[,] masks, int w, int h)
     {
-        if (masks == null)
-            throw new ArgumentNullException(nameof(masks));
-
         for (var i = 0; i < h; i++)
         {
             for (var j = 0; j < w; j++)
@@ -369,14 +303,9 @@ public static class HungarianAlgorithm
             }
         }
     }
+
     private static void ClearCovers(bool[] rowsCovered, bool[] colsCovered, int w, int h)
     {
-        if (rowsCovered == null)
-            throw new ArgumentNullException(nameof(rowsCovered));
-
-        if (colsCovered == null)
-            throw new ArgumentNullException(nameof(colsCovered));
-
         for (var i = 0; i < h; i++)
         {
             rowsCovered[i] = false;
