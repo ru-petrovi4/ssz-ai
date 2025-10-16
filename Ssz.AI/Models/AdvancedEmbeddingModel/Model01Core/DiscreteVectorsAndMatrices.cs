@@ -58,13 +58,13 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
     ///     Top 8 word refs (ordered by proximity, nearest first) for each word.
     ///     (Proximity, Word)
     /// </summary>
-    public (float, Word)[][] Temp_Top8ProxWords = null!;
+    public (float, Word)[][] Temp_TopNProxWords = null!;
 
     /// <summary>
     ///     Top 8 ClusterInfo refs (ordered by proximity, nearest first) for each word.
     ///     (Proximity, ClusterInfo)
     /// </summary>
-    public (float, ClusterInfo)[][] Temp_Top8ProxClusterInfos = null!;
+    public (float, ClusterInfo)[][] Temp_TopNProxClusterInfos = null!;
 
     public Word[][] Temp_DependentWords = null!;  
 
@@ -103,15 +103,15 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
         ProxWordsDiscreteMatrix_SecondaryBitsOnly = new float[wordsCount * wordsCount];
     }
 
-    public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat_ColumnMajor proxWordsOldMatrix)
+    public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat wordsDistancesOldMatrix)
     {
         int wordsCount = words.Count;
         ClusterInfo[] clusterInfos = clusterization_AlgorithmData.ClusterInfos;
 
-        Temp_Top8ProxWords = new (float, Word)[wordsCount][];
-        Temp_Top8ProxClusterInfos = new (float, ClusterInfo)[wordsCount][];        
+        Temp_TopNProxWords = new (float, Word)[wordsCount][];
+        Temp_TopNProxClusterInfos = new (float, ClusterInfo)[wordsCount][];        
         
-        List<Word>[] dependentWords = Enumerable.Range(0, wordsCount).Select(_ => new List<Word>()).ToArray();        
+        List<Word>[] dependentWords = Enumerable.Range(0, wordsCount).Select(_ => new List<Word>()).ToArray();
 
         foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
         {
@@ -122,23 +122,22 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
                 .ToArray();            
 
             foreach (Word clusterWord in clusterWords)
-            {
-                int indexBias = clusterWord.Index * wordsCount;
-                var temp_Top8ProxWords = clusterWords.Select(w => (proxWordsOldMatrix.Data[indexBias + w.Index], w))
-                    .OrderByDescending(it => it.Item1)
-                    .Take(8)
+            {   
+                var temp_TopNProxWords = clusterWords.Select(w => (wordsDistancesOldMatrix[clusterWord.Index, w.Index], w))
+                    .OrderBy(it => it.Item1)
+                    .Take(Model01.Constants.Words_DiscreteVector_BitsCount)
                     .ToArray();
-                Temp_Top8ProxWords[clusterWord.Index] = temp_Top8ProxWords;
-                foreach (var it in temp_Top8ProxWords)
+                Temp_TopNProxWords[clusterWord.Index] = temp_TopNProxWords;
+                foreach (var it in temp_TopNProxWords)
                 {
                     dependentWords[it.Item2.Index].Add(clusterWord);
                 }
 
-                var temp_Top8ProxClusterInfos = clusterInfos.Select(ci => (TensorPrimitives.Dot(clusterWord.OldVectorNormalized, ci.CentroidOldVectorNormalized), ci))
-                    .OrderByDescending(it => it.Item1)
-                    .Take(8)
+                var temp_TopNProxClusterInfos = clusterInfos.Select(ci => (ModelHelper.GetEnergy(clusterWord.OldVectorNormalized, ci.CentroidOldVectorNormalized), ci))
+                    .OrderBy(it => it.Item1)
+                    .Take(Model01.Constants.Clusters_DiscreteVector_BitsCount)
                     .ToArray();
-                Temp_Top8ProxClusterInfos[clusterWord.Index] = temp_Top8ProxClusterInfos;                
+                Temp_TopNProxClusterInfos[clusterWord.Index] = temp_TopNProxClusterInfos;                
             }                
         }
         
@@ -156,7 +155,7 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
         for (int rangeIndex = count - 1; rangeIndex >= 0; rangeIndex -= 1)
         {
             float low = high - delta;
-            var rangeDataIndices = proxWordsOldMatrix.Data.Select((f, i) => (f, i))
+            var rangeDataIndices = wordsDistancesOldMatrix.Data.Select((f, i) => (f, i))
                 .Where(it => low <= it.f && it.f < high)
                 .Select(it => it.i)
                 .ToArray();
@@ -272,23 +271,24 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
             Array.Clear(discreteVector);
             Array.Clear(discreteVector_PrimaryOnly);
             Array.Clear(discreteVector_SecondaryOnly);
-            var temp_Top8ProxClusterInfos = Temp_Top8ProxClusterInfos[word.Index];
-            var temp_Top8ProxWords = Temp_Top8ProxWords[word.Index];
+            var temp_TopNProxClusterInfos = Temp_TopNProxClusterInfos[word.Index];
+            var temp_TopNProxWords = Temp_TopNProxWords[word.Index];
 
-            Debug.Assert(temp_Top8ProxClusterInfos!.Length == 8);            
+            Debug.Assert(temp_TopNProxClusterInfos!.Length == Model01.Constants.Clusters_DiscreteVector_BitsCount);
+            Debug.Assert(temp_TopNProxWords!.Length == Model01.Constants.Words_DiscreteVector_BitsCount);
 
-            for (int i = 0; i < temp_Top8ProxClusterInfos!.Length; i += 1)
+            for (int i = 0; i < temp_TopNProxClusterInfos!.Length; i += 1)
             {
-                int clusterHashProjectionIndex = temp_Top8ProxClusterInfos[i].Item2.HashProjectionIndex;
+                int clusterHashProjectionIndex = temp_TopNProxClusterInfos[i].Item2.HashProjectionIndex;
                 if (clusterHashProjectionIndex >= 0)
                 {
                     discreteVector[clusterHashProjectionIndex] = 1.0f;
                     discreteVector_PrimaryOnly[clusterHashProjectionIndex] = 1.0f;
                 }                
             }
-            for (int i = 0; i < temp_Top8ProxWords.Length; i += 1)
+            for (int i = 0; i < temp_TopNProxWords.Length; i += 1)
             {
-                int wordHashProjectionIndex = wordsHashProjectionIndices[temp_Top8ProxWords[i].Item2.Index];
+                int wordHashProjectionIndex = wordsHashProjectionIndices[temp_TopNProxWords[i].Item2.Index];
                 if (wordHashProjectionIndex >= 0)
                 {
                     discreteVector[wordHashProjectionIndex] = 1.0f;

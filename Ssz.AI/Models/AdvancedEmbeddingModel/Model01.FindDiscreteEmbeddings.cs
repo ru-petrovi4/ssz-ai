@@ -67,8 +67,8 @@ public partial class Model01
 
     public WordsNewEmbeddings? CurrentWordsNewEmbeddings;
 
-    public const string FileName_LanguageInfo_ProxWordsOldMatrix_RU = "AdvancedEmbedding_LanguageInfo_ProxWordsOldMatrix_RU.bin";
-    public const string FileName_LanguageInfo_ProxWordsOldMatrix_EN = "AdvancedEmbedding_LanguageInfo_ProxWordsOldMatrix_EN.bin";
+    public const string FileName_LanguageInfo_WordsDistancesOldMatrix_RU = "AdvancedEmbedding_LanguageInfo_WordsDistancesOldMatrix_RU.bin";
+    public const string FileName_LanguageInfo_WordsDistancesOldMatrix_EN = "AdvancedEmbedding_LanguageInfo_WordsDistancesOldMatrix_EN.bin";
     public const string FileName_Clusterization_AlgorithmData_RU = "AdvancedEmbedding_Clusterization_AlgorithmData_RU.bin";
     public const string FileName_Clusterization_AlgorithmData_EN = "AdvancedEmbedding_Clusterization_AlgorithmData_EN.bin";
     public const string FileName_ProjectionOptimization_AlgorithmData_RU = "AdvancedEmbedding_ProjectionOptimization_AlgorithmData_RU.bin";
@@ -85,26 +85,26 @@ public partial class Model01
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: WordsCount, _loggersSet);
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: WordsCount, _loggersSet);
 
-        bool calculate = false;
+        bool calculate = true;
         if (calculate)
         {
-            ProxWordsOldMatrix_Calculate(LanguageInfo_RU, _loggersSet);
-            Helpers.SerializationHelper.SaveToFile(FileName_LanguageInfo_ProxWordsOldMatrix_RU, LanguageInfo_RU.ProxWordsOldMatrix, null, _loggersSet.UserFriendlyLogger);
+            WordsDistancesOldMatrix_Calculate(LanguageInfo_RU, _loggersSet);
+            Helpers.SerializationHelper.SaveToFile(FileName_LanguageInfo_WordsDistancesOldMatrix_RU, LanguageInfo_RU.WordsDistancesOldMatrix, null, _loggersSet.UserFriendlyLogger);
 
-            ProxWordsOldMatrix_Calculate(LanguageInfo_EN, _loggersSet);
-            Helpers.SerializationHelper.SaveToFile(FileName_LanguageInfo_ProxWordsOldMatrix_EN, LanguageInfo_EN.ProxWordsOldMatrix, null, _loggersSet.UserFriendlyLogger);
+            WordsDistancesOldMatrix_Calculate(LanguageInfo_EN, _loggersSet);
+            Helpers.SerializationHelper.SaveToFile(FileName_LanguageInfo_WordsDistancesOldMatrix_EN, LanguageInfo_EN.WordsDistancesOldMatrix, null, _loggersSet.UserFriendlyLogger);
         }
         else
         {
-            LanguageInfo_RU.ProxWordsOldMatrix = new MatrixFloat_ColumnMajor();
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_ProxWordsOldMatrix_RU, LanguageInfo_RU.ProxWordsOldMatrix, null, null);
-            LanguageInfo_EN.ProxWordsOldMatrix = new MatrixFloat_ColumnMajor();
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_ProxWordsOldMatrix_EN, LanguageInfo_EN.ProxWordsOldMatrix, null, null);
+            LanguageInfo_RU.WordsDistancesOldMatrix = new MatrixFloat_ColumnMajor();
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_WordsDistancesOldMatrix_RU, LanguageInfo_RU.WordsDistancesOldMatrix, null, null);
+            LanguageInfo_EN.WordsDistancesOldMatrix = new MatrixFloat_ColumnMajor();
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_LanguageInfo_WordsDistancesOldMatrix_EN, LanguageInfo_EN.WordsDistancesOldMatrix, null, null);
         }
 
         //Calculate_Clusterization_AlgorithmData_Random(_loggersSet);
 
-        calculate = false;
+        calculate = true;
         if (calculate)
         {
             Calculate_Clusterization_AlgorithmData_VonMisesFisherClusterer(LanguageInfo_RU, _loggersSet);
@@ -309,30 +309,29 @@ public partial class Model01
 
     #region private functions    
 
-    private void ProxWordsOldMatrix_Calculate(LanguageInfo languageInfo, ILoggersSet loggersSet)
+    private void WordsDistancesOldMatrix_Calculate(LanguageInfo languageInfo, ILoggersSet loggersSet)
     {
         var stopwatch = Stopwatch.StartNew();
 
         var words = languageInfo.Words;
         int wordsCount = words.Count;
 
-        var proxWordsOldMatrix = new MatrixFloat_ColumnMajor(wordsCount, wordsCount);
+        var wordsDistancesOldMatrix = new MatrixFloat(wordsCount, wordsCount);
         Parallel.For(0, wordsCount, index1 =>
         {
-            int indexBias = index1 * wordsCount;
             var oldVectrorNormalized = words[index1].OldVectorNormalized;
             for (var index2 = 0; index2 < wordsCount; index2 += 1)
             {
                 if (index2 != index1)
-                    proxWordsOldMatrix.Data[indexBias + index2] = TensorPrimitives.Dot(oldVectrorNormalized, words[index2].OldVectorNormalized);
+                    wordsDistancesOldMatrix[index1, index2] = ModelHelper.GetEnergy(oldVectrorNormalized, words[index2].OldVectorNormalized);
                 else
-                    proxWordsOldMatrix.Data[indexBias + index2] = 1.0f;
+                    wordsDistancesOldMatrix[index1, index2] = 0.0f;
             }
         });
-        languageInfo.ProxWordsOldMatrix = proxWordsOldMatrix;
+        languageInfo.WordsDistancesOldMatrix = wordsDistancesOldMatrix;
 
         stopwatch.Stop();
-        loggersSet.UserFriendlyLogger.LogInformation("ProxWordsMatrixCalculate done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);   
+        loggersSet.UserFriendlyLogger.LogInformation("WordsDistancesOldMatrix_Calculate done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);   
     }
 
     //private void SaveToCsvFile_WordsNewEmbeddings(WordsNewEmbeddings wordsNewEmbeddings, string fileName, ILoggersSet loggersSet)
@@ -369,16 +368,16 @@ public partial class Model01
     {
         public int OldVectorLength { get; } = 300;
 
-        public int DiscreteVectorLength { get; } = 300;
+        public int DiscreteVectorLength { get; } = 200;
 
         /// <summary>
         ///     For algorithmDatas with fixed primary words count.
         /// </summary>
-        public int PrimaryWordsCount { get; } = 300;
+        public int ClustersCount { get; } = 200;
 
-        public int PrimaryWords_DiscreteVector_BitsCount { get; } = 8;
+        public int Clusters_DiscreteVector_BitsCount { get; } = 7;
 
-        public int SecondaryWords_DiscreteVector_BitsCount { get; } = 8;
+        public int Words_DiscreteVector_BitsCount { get; } = 7;
     }
 }
 

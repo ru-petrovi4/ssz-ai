@@ -60,7 +60,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
             discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
-            discreteVectorsAndMatrices.Prepare(clusterization_AlgorithmData, words, languageInfo.ProxWordsOldMatrix);
+            discreteVectorsAndMatrices.Prepare(clusterization_AlgorithmData, words, languageInfo.WordsDistancesOldMatrix);
             discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsProjectionIndices, loggersSet);
 
             Buffers buffers = new(discreteVectorsAndMatrices);
@@ -68,24 +68,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             // TEMPCODE
             for (int i = 0; i < 0; i += 1)
             {
-                var words_RandomOrder = new List<Word>(words.Count);
-                foreach (var word in words)
-                {
-                    word.Temp_Flag = false;
-                }
-                for (int _ = 0; _ < words.Count(w => !w.Temp_Flag); _ += 1)
-                {
-                    for (; ; )
-                    {
-                        var word = words[r.Next(words.Count)];
-                        if (word.Temp_Flag)
-                            continue;
-
-                        words_RandomOrder.Add(word);
-                        word.Temp_Flag = true;
-                        break;
-                    }
-                }
+                var words_RandomOrder = words.ToArray();
+                r.Shuffle(words_RandomOrder);                
 
                 var stopwatch = Stopwatch.StartNew();
                 float energy;
@@ -182,6 +166,31 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             //loggersSet.UserFriendlyLogger.LogInformation($"GetEnergy done. Energy: {energy}; Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return energy;
-        }        
+        }
+
+        private class Buffers
+        {
+            public Buffers(DiscreteVectorsAndMatrices discreteVectorsAndMatrices)
+            {
+                RangeDiscreteDotProductsCollection = new float[discreteVectorsAndMatrices.Temp_RangeDataIndicesCollection.Length][];
+                for (int i = 0; i < RangeDiscreteDotProductsCollection.Length; i++)
+                {
+                    RangeDiscreteDotProductsCollection[i] = new float[discreteVectorsAndMatrices.Temp_RangeDataIndicesCollection[i].Length];
+                }
+                DispersionOfRange_Collection = new float[discreteVectorsAndMatrices.Temp_RangeDataIndicesCollection.Length];
+            }
+
+            public readonly float[] EnergiesOfBits = new float[Constants.DiscreteVectorLength];
+
+            /// <summary>
+            ///     [Range of cosine similarity [0.50-0.55), [0.55-0.60), [0.95-1.00); [ProxWordsDisctreMatrix value]]
+            /// </summary>
+            public readonly float[][] RangeDiscreteDotProductsCollection;
+
+            /// <summary>
+            ///     [Range of cosine similarity [0.50-0.55), [0.55-0.60), [0.95-1.00); Dispersion]
+            /// </summary>
+            public readonly float[] DispersionOfRange_Collection;
+        }
     }    
 }

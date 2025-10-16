@@ -29,7 +29,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var words = languageInfo.Words;
 
             var clusterization_AlgorithmData = new Clusterization_AlgorithmData(languageInfo, name: "VonMisesFisherClusterer");
-            clusterization_AlgorithmData.GenerateOwnedData(Constants.PrimaryWordsCount);
+            clusterization_AlgorithmData.GenerateOwnedData(Constants.ClustersCount);
             languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData;
 
             var totalStopwatch = Stopwatch.StartNew();
@@ -56,7 +56,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var clusterer = new VonMisesFisherClusterer(
                 device,
                 loggersSet.UserFriendlyLogger,
-                numClusters: 300,
+                numClusters: Constants.ClustersCount,
                 maxIterations: 300,
                 tolerance: 1e-6f
             );

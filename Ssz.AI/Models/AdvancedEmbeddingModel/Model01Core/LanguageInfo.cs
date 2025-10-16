@@ -10,12 +10,9 @@ public class LanguageInfo
     public List<Word> Words = null!;
 
     /// <summary>
-    ///     [WordIndex1, WordIndex2] Words correlation matrix.
-    /// </summary>
-    /// <remarks>
-    ///     Normalized vectors scalar product.       
-    /// </remarks>
-    public MatrixFloat_ColumnMajor ProxWordsOldMatrix = null!;
+    ///     [WordIndex1, WordIndex2] Words energy matrix.
+    /// </summary>    
+    public MatrixFloat WordsDistancesOldMatrix = null!;
 
     public Clusterization_AlgorithmData Clusterization_AlgorithmData = null!;
 

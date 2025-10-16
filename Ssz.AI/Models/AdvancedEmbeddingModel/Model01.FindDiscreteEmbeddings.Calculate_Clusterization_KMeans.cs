@@ -25,14 +25,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             var words = languageInfo.Words;
 
             var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo, name: "KMeans");
-            clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.PrimaryWordsCount);
+            clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.ClustersCount);
             languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
             var totalStopwatch = Stopwatch.StartNew();
 
             Random r = new();
 
-            var primaryWords_Random = new Word[Constants.PrimaryWordsCount];
+            var primaryWords_Random = new Word[Constants.ClustersCount];
             for (int index = 0; index < primaryWords_Random.Length; index += 1)
             {
                 for (; ; )
@@ -50,7 +50,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             int Q = 0;            
             double delta_llh = 0;
             
-            WordCluster[] wordClusters = new WordCluster[Constants.PrimaryWordsCount];
+            WordCluster[] wordClusters = new WordCluster[Constants.ClustersCount];
             for (int clusterIndex = 0; clusterIndex < wordClusters.Length; clusterIndex += 1)
             {
                 WordCluster wordClustrer = new()

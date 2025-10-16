@@ -114,12 +114,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                         point.Temp_TopProxPoints = new (float, Point)[0];
                     }
                     else
-                    {
-                        int indexBias = point.WordIndex * languageInfo.Words.Count;
+                    {   
                         point.Temp_TopProxPoints = Cortex.Array
                             .Where(point2 => point2.WordIndex != -1 && point2.WordIndex != point.WordIndex)
-                            .Select(point2 => (languageInfo.ProxWordsOldMatrix.Data[indexBias + point2.WordIndex], point2))
-                            .OrderByDescending(i => i.Item1)
+                            .Select(point2 => (languageInfo.WordsDistancesOldMatrix[point.WordIndex, point2.WordIndex], point2))
+                            .OrderBy(i => i.Item1)
                             .Take(TopProxPointsCount2)
                             .Where(it => it.Item1 > 0.0)
                             .ToArray();
@@ -127,8 +126,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                         {
                             point.Temp_TopProxPrimaryPoints = Cortex.Array
                                 .Where(point2 => point2.WordIndex != -1 && point2.WordIndex != point.WordIndex && languageInfo.Words[point2.WordIndex].Temp_Flag)
-                                .Select(point2 => (languageInfo.ProxWordsOldMatrix.Data[indexBias + point2.WordIndex], point2))
-                                .OrderByDescending(i => i.Item1)
+                                .Select(point2 => (languageInfo.WordsDistancesOldMatrix[point.WordIndex, point2.WordIndex], point2))
+                                .OrderBy(i => i.Item1)
                                 .Take(TopProxPrimaryPointsCount2)
                                 .ToArray();
                             point.GroupId_ToDisplay = (int)PointGroupId_ToDisplay.PrimaryPoint;
