@@ -170,38 +170,6 @@ public class VonMisesFisherClusterer
             clusterization_AlgorithmData.ClusterIndices[i] = (int)assignedCluster;
         }
 
-        var clusterInfos = clusterization_AlgorithmData.ClusterInfos;
-        Word[] primaryWords = clusterization_AlgorithmData.PrimaryWords;
-        var words = clusterization_AlgorithmData.LanguageInfo.Words;
-
-        Parallel.For(0, clusterInfos.Length, clusterIndex =>
-        {
-            var centroidOldVectorNormalized = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
-
-            int nearestWordIndex = -1;
-            float nearestDotProduct = 0.0f;
-            for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
-            {
-                Word word = words[wordIndex];
-                var oldVectror = word.OldVectorNormalized;
-
-                float dotProduct = System.Numerics.Tensors.TensorPrimitives.Dot(oldVectror, centroidOldVectorNormalized);
-                if (dotProduct > nearestDotProduct)
-                {
-                    nearestDotProduct = dotProduct;
-                    nearestWordIndex = wordIndex;
-                }
-            }
-
-            primaryWords[clusterIndex] = words[nearestWordIndex];
-        });
-
-        Array.Clear(clusterization_AlgorithmData.IsPrimaryWord);        
-        foreach (var primaryWord in primaryWords)
-        {
-            clusterization_AlgorithmData.IsPrimaryWord[primaryWord.Index] = true;
-        }
-
         clusterization_AlgorithmData.MeanDirections = MeanDirections;
         clusterization_AlgorithmData.Concentrations = Concentrations;
         clusterization_AlgorithmData.MixingCoefficients = MixingCoefficients;
@@ -671,6 +639,39 @@ public class VonMisesFisherClusterer
         }
     }
 }
+
+
+//var clusterInfos = clusterization_AlgorithmData.ClusterInfos;
+//    Word[] primaryWords = clusterization_AlgorithmData.PrimaryWords;
+//    var words = clusterization_AlgorithmData.LanguageInfo.Words;
+
+//        Parallel.For(0, clusterInfos.Length, clusterIndex =>
+//        {
+//            var centroidOldVectorNormalized = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
+
+//int nearestWordIndex = -1;
+//float nearestDotProduct = 0.0f;
+//            for (int wordIndex = 0; wordIndex<words.Count; wordIndex += 1)
+//            {
+//                Word word = words[wordIndex];
+//var oldVectror = word.OldVectorNormalized;
+
+//float dotProduct = System.Numerics.Tensors.TensorPrimitives.Dot(oldVectror, centroidOldVectorNormalized);
+//                if (dotProduct > nearestDotProduct)
+//                {
+//                    nearestDotProduct = dotProduct;
+//                    nearestWordIndex = wordIndex;
+//                }
+//            }
+
+//            primaryWords[clusterIndex] = words[nearestWordIndex];
+//        });
+
+//Array.Clear(clusterization_AlgorithmData.IsPrimaryWord);
+//foreach (var primaryWord in primaryWords)
+//{
+//    clusterization_AlgorithmData.IsPrimaryWord[primaryWord.Index] = true;
+//}
 
 
 ///// <summary>

@@ -32,10 +32,6 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 
         public ClusterInfo[] ClusterInfos = null!;
 
-        public Word[] PrimaryWords = null!;        
-
-        public bool[] IsPrimaryWord = null!;
-
         // Параметры модели - изучаются в процессе обучения
         /// <summary>
         /// μ_k - направления средних для каждого кластера [K x D]
@@ -62,19 +58,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
             ClusterInfos = Enumerable.Range(0, clustersCount).Select(_ => new ClusterInfo
             { 
                 CentroidOldVectorNormalized = new float[d] 
-            }).ToArray();
-            PrimaryWords = new Word[clustersCount];
-            IsPrimaryWord = new bool[LanguageInfo.Words.Count];            
+            }).ToArray();                 
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(1))
+            using (writer.EnterBlock(2))
             {
                 writer.WriteArray(ClusterIndices);
-                writer.WriteArrayOfOwnedDataSerializable(ClusterInfos, null);
-                var primaryWordIndices = PrimaryWords!.Select(w => w.Index).ToList();
-                writer.WriteList(primaryWordIndices);
+                writer.WriteArrayOfOwnedDataSerializable(ClusterInfos, null);                
 
                 TorchSharpHelper.WriteTensor(MeanDirections, writer);
                 TorchSharpHelper.WriteTensor(Concentrations, writer);
@@ -88,18 +80,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
             {
                 switch (block.Version)
                 {
-                    case 1:
+                    case 2:
                         ClusterIndices = reader.ReadArray<int>()!;
                         ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);
-                        var primaryWordIndices = reader.ReadList<int>()!;
-                        //if (list.Count != PrimaryWordsCount)
-                        //    throw new InvalidOperationException();                        
-                        PrimaryWords = primaryWordIndices.Select(i => LanguageInfo.Words[i]).ToArray();
-                        IsPrimaryWord = new bool[LanguageInfo.Words.Count];                                              
-                        foreach (int primaryWordIndex in primaryWordIndices)
-                        {
-                            IsPrimaryWord[primaryWordIndex] = true;
-                        }
+                        var primaryWordIndices = reader.ReadList<int>()!;                        
 
                         MeanDirections = TorchSharpHelper.ReadTensor(reader);
                         Concentrations = TorchSharpHelper.ReadTensor(reader);

@@ -98,11 +98,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             {
                 languageInfo.Words[wordIndex].Temp_Flag = false;
             }
-            for (int i = 0; i < clusterization_AlgorithmData.PrimaryWords!.Length; i += 1)
-            {
-                Word primaryWord = clusterization_AlgorithmData.PrimaryWords[i];
-                primaryWord.Temp_Flag = true; // PrimaryWord
-            }
+            // TODO
+            //for (int i = 0; i < clusterization_AlgorithmData.PrimaryWords!.Length; i += 1)
+            //{
+            //    Word primaryWord = clusterization_AlgorithmData.PrimaryWords[i];
+            //    primaryWord.Temp_Flag = true; // PrimaryWord
+            //}
 
             for (ix = 0; ix < Cortex.XCount; ix += 1)
             {
