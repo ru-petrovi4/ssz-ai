@@ -36,20 +36,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             
             //LoadFromFile_ProjectionIndices(ProjectionOptimization_AlgorithmData_Variant3, "ProjectionOptimization.bin", _loggersSet);
             var clusterInfos = languageInfo.Clusterization_AlgorithmData.ClusterInfos;
-            bool[] isBitOccupied = new bool[Constants.DiscreteVectorLength];
+            int[] hashProjectionIndices = new int[clusterInfos.Length];
             foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
             {
-                int hashProjectionIndex = 0;
-                for (; ; )
-                {
-                    hashProjectionIndex = r.Next(Constants.DiscreteVectorLength);
-                    if (isBitOccupied[hashProjectionIndex])
-                        continue;
-                    isBitOccupied[hashProjectionIndex] = true;
-                    break;
-                }
-                clusterInfos[clusterIndex].HashProjectionIndex = hashProjectionIndex;
+                hashProjectionIndices[clusterIndex] = clusterIndex;
             }
+            r.Shuffle(hashProjectionIndices);
+            foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
+            {
+                clusterInfos[clusterIndex].HashProjectionIndex = hashProjectionIndices[clusterIndex];
+            }            
 
             //Random initial hash
             var wordsProjectionIndices = projectionOptimization_AlgorithmData.WordsHashProjectionIndices;

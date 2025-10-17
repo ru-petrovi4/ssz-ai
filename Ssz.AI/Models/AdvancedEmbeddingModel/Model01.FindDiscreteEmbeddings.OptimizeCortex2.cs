@@ -482,15 +482,6 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     }
 }
 
-public class WordCluster
-{
-    public float[] CentroidOldVector = null!;
-
-    public int PrimaryWordIndex;
-
-    public int WordsCount;
-}
-
 public enum CortexDisplayType
 {
     GroupId_ToDisplay = 0,

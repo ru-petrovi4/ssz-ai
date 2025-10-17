@@ -82,8 +82,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                 {
                     case 2:
                         ClusterIndices = reader.ReadArray<int>()!;
-                        ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);
-                        var primaryWordIndices = reader.ReadList<int>()!;                        
+                        ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);                                        
 
                         MeanDirections = TorchSharpHelper.ReadTensor(reader);
                         Concentrations = TorchSharpHelper.ReadTensor(reader);

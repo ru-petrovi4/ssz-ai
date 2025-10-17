@@ -78,7 +78,7 @@ public partial class Model01
     public const string FileName_LanguageDiscreteEmbeddings_RU = "AdvancedEmbedding_LanguageDiscreteEmbeddings_RU.bin";
     public const string FileName_LanguageDiscreteEmbeddings_EN = "AdvancedEmbedding_LanguageDiscreteEmbeddings_EN.bin";
 
-    public const int WordsCount = 40000;
+    public const int WordsCount = 20000;
 
     public void FindDiscreteEmbeddings()
     {
@@ -227,7 +227,7 @@ public partial class Model01
             };
 #if DEBUG
             var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
-            Debug.Assert(primaryBitsSum > 7.9999f && primaryBitsSum < 8.0001f);
+            Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
             languageDiscreteEmbeddings_RU.Words.Add(wordWithDiscreteEmbedding);            
         }
@@ -257,7 +257,7 @@ public partial class Model01
             };
 #if DEBUG
             var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
-            Debug.Assert(primaryBitsSum > 7.9999f && primaryBitsSum < 8.0001f);
+            Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
             languageDiscreteEmbeddings_EN.Words.Add(wordWithDiscreteEmbedding);            
         }
@@ -368,16 +368,16 @@ public partial class Model01
     {
         public int OldVectorLength { get; } = 300;
 
-        public int DiscreteVectorLength { get; } = 200;
+        public int DiscreteVectorLength { get; } = 300;
 
         /// <summary>
         ///     For algorithmDatas with fixed primary words count.
         /// </summary>
-        public int ClustersCount { get; } = 200;
+        public int ClustersCount { get; } = 300;
 
-        public int Clusters_DiscreteVector_BitsCount { get; } = 7;
+        public int DiscreteVector_SecondaryBitsCount { get; } = 7;
 
-        public int Words_DiscreteVector_BitsCount { get; } = 7;
+        public int DiscreteVector_PrimaryBitsCount { get; } = 7;
     }
 }
 

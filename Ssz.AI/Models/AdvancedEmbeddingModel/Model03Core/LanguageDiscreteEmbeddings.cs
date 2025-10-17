@@ -19,7 +19,7 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
     /// <summary>        
     ///     <para>Ordered Descending by Freq</para>      
     /// </summary>
-    public List<ClusterInfo> ClusterInfos = null!;
+    public List<Model01Core.ClusterInfo> ClusterInfos = null!;
 
     // Параметры модели - изучаются в процессе обучения
     /// <summary>
@@ -61,11 +61,11 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
             {
                 case 1:
                     Words = reader.ReadListOfOwnedDataSerializable(() => new WordWithDiscreteEmbedding(), null);
-                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new ClusterInfo(), null);
+                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), null);
                     break;
                 case 2:
                     Words = reader.ReadListOfOwnedDataSerializable(() => new WordWithDiscreteEmbedding(), null);
-                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new ClusterInfo(), null);
+                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), null);
 
                     MeanDirections = TorchSharpHelper.ReadTensor(reader);
                     Concentrations = TorchSharpHelper.ReadTensor(reader);

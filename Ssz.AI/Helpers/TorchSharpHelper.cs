@@ -10,22 +10,31 @@ namespace Ssz.AI.Helpers;
 
 public static class TorchSharpHelper
 {
-    public static void WriteTensor(torch.Tensor tensor, SerializationWriter writer)
+    public static void WriteTensor(torch.Tensor? tensor, SerializationWriter writer)
     {
-        if (tensor.dtype != ScalarType.Float32)
-            throw new InvalidArgumentError("tensor.dtype != ScalarType.Float32");
-        writer.WriteArray(tensor.shape);
-        var model = new TensorHolder(tensor);
-        using (MemoryStream memoryStream = new())
-        {            
-            model.save(memoryStream); // сериализация через поток
-            writer.WriteArray(memoryStream.ToArray());
+        if (tensor is null)
+        {
+            writer.WriteArray((long[]?)null);
+        }
+        else
+        {
+            if (tensor.dtype != ScalarType.Float32)
+                throw new InvalidArgumentError("tensor.dtype != ScalarType.Float32");
+            writer.WriteArray(tensor.shape);
+            var model = new TensorHolder(tensor);
+            using (MemoryStream memoryStream = new())
+            {
+                model.save(memoryStream); // сериализация через поток
+                writer.WriteArray(memoryStream.ToArray());
+            }
         }
     }
 
-    public static torch.Tensor ReadTensor(SerializationReader reader)
+    public static torch.Tensor? ReadTensor(SerializationReader reader)
     {
         var shape = reader.ReadArray<long>()!;
+        if (shape is null)
+            return null;
         long length = 1;
         foreach (int dim in shape)
             length *= dim;

@@ -26,7 +26,9 @@ using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using TorchSharp;
+using TorchSharp.Modules; // Для TensorPrimitives
 using static TorchSharp.torch;
+using static TorchSharp.torch.nn;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
@@ -53,21 +55,21 @@ public partial class Model03
 
     public void AnalyzeClusters()
     {
-        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+        //LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
 
-        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+        //LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
 
-        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
-        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        //ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        //clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
-        clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
-        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        //clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        //clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
-        clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
-        clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
+        //clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
+        //clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
 
         //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
     }
@@ -84,7 +86,7 @@ public partial class Model03
         ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         if (calculate)
         {
-            clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V3(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+            clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
             //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
         }
         else
@@ -187,7 +189,7 @@ public partial class Model03
     /// <summary>
     ///     Показывает количество примеров в каждом бите [0..300)
     /// </summary>
-    public void VisualizeData_V1()
+    public void VisualizeData_WordsBitsDistribution()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
@@ -246,9 +248,9 @@ public partial class Model03
     }
 
     /// <summary>
-    /// Показывает распредление в матрице расстояний
+    /// Показывает распредление косинусных расстояний клстеров
     /// </summary>
-    public void VisualizeData_V3()
+    public void VisualizeData_СlustersCosineSimilarityMatrix()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
@@ -271,9 +273,7 @@ public partial class Model03
 
         foreach (var i in Enumerable.Range(0, clustersCosineSimilarityMatrix.Data.Length))
         {
-            var v = clustersCosineSimilarityMatrix.Data[i];
-            //v = -MathF.Log(1 + (v - 1) / 1.1f);
-            v = MathF.Exp((1 - v) * 3.5f) - 1;
+            var v = clustersCosineSimilarityMatrix.Data[i];            
             dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
         }
 
@@ -281,9 +281,42 @@ public partial class Model03
     }
 
     /// <summary>
-    /// Показывает распредление в матрице энергмй
+    /// Показывает распредление косинусных расстояний клстеров
     /// </summary>
-    public void VisualizeData_V4()
+    public void VisualizeData_СlustersEnerigesMatrix()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+
+        var clustersEnergy_Matrix = ModelHelper.GetClustersEnergy_Matrix(languageDiscreteEmbeddings_RU);
+
+        //var matcher = new OneToOneMatcher(_loggersSet.UserFriendlyLogger, new Parameters());
+        ////Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher.HypothesisSupport, _loggersSet.UserFriendlyLogger);
+        //matcher.NearestA = new OneToOneMatcher.Nearest();
+        //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
+
+        int n = 1000;
+        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        dataToDisplayHolder.Distribution = new ulong[n];
+        dataToDisplayHolder.DistributionMin = 0.0f;
+        dataToDisplayHolder.DistributionMax = 800.0f;
+
+        foreach (var i in Enumerable.Range(0, clustersEnergy_Matrix.Data.Length))
+        {
+            var v = clustersEnergy_Matrix.Data[i];            
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+        }
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V3() Done.");
+    }
+
+    /// <summary>
+    /// Показывает распредление энергий слов
+    /// </summary>
+    public void VisualizeData_WordsEnergy()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
@@ -318,9 +351,74 @@ public partial class Model03
     }
 
     /// <summary>
+    /// Показывает распредление в матрице энергмй
+    /// </summary>
+    public void VisualizeData_V4_MappingLinear()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+
+        using Linear mappingLinear = Linear(
+            inputSize: languageDiscreteEmbeddings_RU.Words[0].OldVector.Length,
+            outputSize: languageDiscreteEmbeddings_RU.Words[0].OldVector.Length,
+            hasBias: false);
+        using (var _ = no_grad())
+        {
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            mappingLinear.weight!.copy_(loadedWeights);
+        }
+
+        int dimension = languageDiscreteEmbeddings_RU.ClusterInfos.Count;
+        var matrix = new MatrixFloat(dimension, dimension);
+        foreach (var i in Enumerable.Range(0, dimension))
+        {
+            foreach (var j in Enumerable.Range(0, dimension))
+            {
+                var clusterI = languageDiscreteEmbeddings_RU.ClusterInfos[i];
+                var clusterJ = languageDiscreteEmbeddings_RU.ClusterInfos[j];
+
+                var oldVectorTensorI = torch.tensor(clusterI.CentroidOldVectorNormalized).reshape([1, clusterI.CentroidOldVectorNormalized.Length]);
+                var mappedOldVectorTensorI = mappingLinear.forward(oldVectorTensorI);
+                float[] mappedOldVectorNormalizedI = mappedOldVectorTensorI.data<float>().ToArray();
+                float norm = TensorPrimitives.Norm(mappedOldVectorNormalizedI);
+                TensorPrimitives.Divide(mappedOldVectorNormalizedI, norm, mappedOldVectorNormalizedI);
+
+                var oldVectorTensorJ = torch.tensor(clusterJ.CentroidOldVectorNormalized).reshape([1, clusterJ.CentroidOldVectorNormalized.Length]);
+                var mappedOldVectorTensorJ = mappingLinear.forward(oldVectorTensorJ);
+                float[] mappedOldVectorNormalizedJ = mappedOldVectorTensorJ.data<float>().ToArray();
+                norm = TensorPrimitives.Norm(mappedOldVectorNormalizedJ);
+                TensorPrimitives.Divide(mappedOldVectorNormalizedJ, norm, mappedOldVectorNormalizedJ);
+
+                float v = ModelHelper.GetEnergy(
+                    mappedOldVectorNormalizedI,
+                    mappedOldVectorNormalizedJ);
+                matrix[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;
+            }
+        }        
+
+        int n = 500;
+        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        dataToDisplayHolder.Distribution = new ulong[n];
+        dataToDisplayHolder.DistributionMin = 0.0f;
+        dataToDisplayHolder.DistributionMax = 5000.0f;
+
+        int wordsCount = 10000;
+        foreach (var wordIndex in Enumerable.Range(0, wordsCount))
+        {
+            var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordIndex], matrix);
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+        }
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V4_MappingLinear() Done.");
+    }
+
+    /// <summary>
     /// Показывает разницу между энергиями слова и его перевода.
     /// </summary>
-    public void VisualizeData_V5()
+    public void VisualizeData_WordsTranslationsEnergyDifference()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);

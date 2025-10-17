@@ -18,140 +18,146 @@ using Ssz.Utils.Serialization;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 
-//public partial class Model01
-//{
-//    public void Calculate_Clusterization_AlgorithmData_KMeans(LanguageInfo languageInfo, ILoggersSet loggersSet)
-//    {
-//        var words = languageInfo.Words;
+public partial class Model01
+{
+    public void Calculate_Clusterization_AlgorithmData_KMeans(LanguageInfo languageInfo, ILoggersSet loggersSet)
+    {
+        var words = languageInfo.Words;
 
-//        var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo, name: "KMeans");
-//        clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.ClustersCount);
-//        languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
+        var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo, name: "KMeans");
+        clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.ClustersCount);
+        languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
-//        var totalStopwatch = Stopwatch.StartNew();
+        var totalStopwatch = Stopwatch.StartNew();
 
-//        Random r = new();
+        Random r = new(43);
 
-//        var primaryWords_Random = new Word[Constants.ClustersCount];
-//        for (int index = 0; index < primaryWords_Random.Length; index += 1)
-//        {
-//            for (; ; )
-//            {
-//                var word = words[r.Next(words.Count)];
-//                if (word.Temp_Flag)
-//                    continue;
+        var primaryWords_Random = new Word[Constants.ClustersCount];
+        for (int index = 0; index < primaryWords_Random.Length; index += 1)
+        {
+            for (; ; )
+            {
+                var word = words[r.Next(words.Count)];
+                if (word.Temp_Flag)
+                    continue;
 
-//                primaryWords_Random[index] = word;
-//                word.Temp_Flag = true;
-//                break;
-//            }
-//        }
+                primaryWords_Random[index] = word;
+                word.Temp_Flag = true;
+                break;
+            }
+        }
 
-//        int Q = 0;            
-//        double delta_llh = 0;
-        
-//        WordCluster[] wordClusters = new WordCluster[Constants.ClustersCount];
-//        for (int clusterIndex = 0; clusterIndex < wordClusters.Length; clusterIndex += 1)
-//        {
-//            WordCluster wordClustrer = new()
-//            {
-//                CentroidOldVector = new float[Constants.OldVectorLength],                    
-//            };
-//            Array.Copy(primaryWords_Random[clusterIndex].OldVectorNormalized, wordClustrer.CentroidOldVector, Constants.OldVectorLength);
-//            wordClusters[clusterIndex] = wordClustrer;
-//        }
+        int Q = 0;
+        double delta_llh = 0;
 
-//        Array.Clear(clusterization_AlgorithmData_KMeans.ClusterIndices);
+        ClusterInfo[] clusterInfos = new ClusterInfo[Constants.ClustersCount];
+        clusterization_AlgorithmData_KMeans.ClusterInfos = clusterInfos;
+        for (int clusterIndex = 0; clusterIndex < clusterInfos.Length; clusterIndex += 1)
+        {
+            ClusterInfo wordClustrer = new()
+            {
+                CentroidOldVectorNormalized = new float[Constants.OldVectorLength],
+            };
+            Array.Copy(primaryWords_Random[clusterIndex].OldVectorNormalized, wordClustrer.CentroidOldVectorNormalized, Constants.OldVectorLength);
+            clusterInfos[clusterIndex] = wordClustrer;
+        }
 
-//        while (TimeSpan.FromMilliseconds(totalStopwatch.ElapsedMilliseconds) < TimeSpan.FromHours(1))
-//        {
-//            var stopwatch = Stopwatch.StartNew();
-//            Q += 1;
+        Array.Clear(clusterization_AlgorithmData_KMeans.ClusterIndices);
 
-//            int[] newClusterIndices = new int[words.Count];
+        while (TimeSpan.FromMilliseconds(totalStopwatch.ElapsedMilliseconds) < TimeSpan.FromHours(1))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            Q += 1;
 
-//            #region ЕXPECTATION                
+            int[] newClusterIndices = new int[words.Count];
 
-//            Parallel.For(0, words.Count, wordIndex =>
-//            {
-//                Word word = words[wordIndex];
-//                var oldVectror = word.OldVectorNormalized;
-//                int nearestClusterIndex = -1;
-//                float nearestDotProduct = 0.0f;
-//                for (int clusterIndex = 0; clusterIndex < wordClusters.Length; clusterIndex += 1)
-//                {
-//                    var wordCluster_CentroidOldVector = wordClusters[clusterIndex].CentroidOldVector;
-//                    float dotProduct = TensorPrimitives.Dot(oldVectror, wordCluster_CentroidOldVector);
-//                    if (dotProduct > nearestDotProduct) 
-//                    {
-//                        nearestDotProduct = dotProduct;
-//                        nearestClusterIndex = clusterIndex;
-//                    }
-//                }
-//                wordClusters[nearestClusterIndex].WordsCount += 1;
-//                newClusterIndices[wordIndex] = nearestClusterIndex;
-//            });                
+            #region ЕXPECTATION                
 
-//            #endregion
+            Parallel.For(0, words.Count, wordIndex =>
+            {
+                Word word = words[wordIndex];
+                var oldVectorNormalized = word.OldVectorNormalized;
+                int nearestClusterIndex = -1;
+                float energyMin = float.MaxValue;
+                for (int clusterIndex = 0; clusterIndex < clusterInfos.Length; clusterIndex += 1)
+                {
+                    var wordCluster_CentroidOldVectorNormalized = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
+                    float energy = ModelHelper.GetEnergy(oldVectorNormalized, wordCluster_CentroidOldVectorNormalized);
+                    if (energy < energyMin)
+                    {
+                        energyMin = energy;
+                        nearestClusterIndex = clusterIndex;
+                    }
+                }
+                clusterInfos[nearestClusterIndex].WordsCount += 1;
+                newClusterIndices[wordIndex] = nearestClusterIndex;
+            });
 
-//            stopwatch.Stop();
-//            loggersSet.UserFriendlyLogger.LogInformation("ЕXPECTATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
-//            stopwatch.Restart();
+            #endregion
 
-//            if (newClusterIndices.SequenceEqual(clusterization_AlgorithmData_KMeans.ClusterIndices))
-//            {
-//                loggersSet.UserFriendlyLogger.LogInformation("newClusterIndices.SequenceEqual(clusterIndices)");
-//                break;
-//            }
+            stopwatch.Stop();
+            loggersSet.UserFriendlyLogger.LogInformation("ЕXPECTATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            stopwatch.Restart();
 
-//            clusterization_AlgorithmData_KMeans.ClusterIndices = newClusterIndices;
+            if (newClusterIndices.SequenceEqual(clusterization_AlgorithmData_KMeans.ClusterIndices))
+            {
+                loggersSet.UserFriendlyLogger.LogInformation("newClusterIndices.SequenceEqual(clusterIndices)");
+                break;
+            }
 
-//            #region MAXIMIZATION   
+            clusterization_AlgorithmData_KMeans.ClusterIndices = newClusterIndices;
 
-//            Parallel.For(0, wordClusters.Length, clusterIndex =>
-//            {
-//                var wordCluster_CentroidOldVector = wordClusters[clusterIndex].CentroidOldVector;
-//                Array.Clear(wordCluster_CentroidOldVector);
-//            });
+            #region MAXIMIZATION   
 
-//            Parallel.For(0, words.Count, wordIndex =>
-//            {
-//                Word word = words[wordIndex];
-//                var oldVectror = word.OldVectorNormalized;
-//                var wordCluster_CentroidOldVector = wordClusters[clusterization_AlgorithmData_KMeans.ClusterIndices[wordIndex]].CentroidOldVector; 
-//                lock (wordCluster_CentroidOldVector) 
-//                {
-//                    TensorPrimitives.Add(wordCluster_CentroidOldVector, word.OldVectorNormalized, wordCluster_CentroidOldVector);
-//                }                    
-//            });
+            Parallel.For(0, clusterInfos.Length, clusterIndex =>
+            {
+                var wordCluster_CentroidOldVector = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
+                Array.Clear(wordCluster_CentroidOldVector);
+            });
 
-//            Parallel.For(0, wordClusters.Length, clusterIndex =>
-//            {
-//                var wordCluster_CentroidOldVector = wordClusters[clusterIndex].CentroidOldVector;
-//                float norm = TensorPrimitives.Norm(wordCluster_CentroidOldVector);
-//                TensorPrimitives.Divide(wordCluster_CentroidOldVector, norm, wordCluster_CentroidOldVector);
-//            });
+            Parallel.For(0, words.Count, wordIndex =>
+            {
+                Word word = words[wordIndex];
+                var wordOldVectrorNormalized = word.OldVectorNormalized;
+                var wordCluster_CentroidOldVector = clusterInfos[clusterization_AlgorithmData_KMeans.ClusterIndices[wordIndex]].CentroidOldVectorNormalized;
+                lock (wordCluster_CentroidOldVector)
+                {
+                    TensorPrimitives.Add(wordCluster_CentroidOldVector, wordOldVectrorNormalized, wordCluster_CentroidOldVector);
+                }
+            });
 
-//            #endregion
+            Parallel.For(0, clusterInfos.Length, clusterIndex =>
+            {
+                var wordCluster_CentroidOldVector = clusterInfos[clusterIndex].CentroidOldVectorNormalized;
+                float norm = TensorPrimitives.Norm(wordCluster_CentroidOldVector);
+                TensorPrimitives.Divide(wordCluster_CentroidOldVector, norm, wordCluster_CentroidOldVector);
+            });
 
-//            stopwatch.Stop();
-//            loggersSet.UserFriendlyLogger.LogInformation("MAXIMIZATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
-//        }
+            #endregion
 
-//        Word[] primaryWords_KMeans = clusterization_AlgorithmData_KMeans.PrimaryWords;
+            stopwatch.Stop();
+            loggersSet.UserFriendlyLogger.LogInformation("MAXIMIZATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+        }        
+
+        totalStopwatch.Stop();
+        loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_KMeans.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
+    }
+}
+
+//Word[] primaryWords_KMeans = clusterization_AlgorithmData_KMeans.PrimaryWords;
 
 //        Parallel.For(0, wordClusters.Length, clusterIndex =>
 //        {
-//            var wordCluster_CentroidOldVector = wordClusters[clusterIndex].CentroidOldVector;
+//            var wordCluster_CentroidOldVector = wordClusters[clusterIndex].CentroidOldVectorNormalized;
 
-//            int nearestWordIndex = -1;
-//            float nearestDotProduct = 0.0f;
-//            for (int wordIndex = 0; wordIndex < words.Count; wordIndex += 1)
+//int nearestWordIndex = -1;
+//float nearestDotProduct = 0.0f;
+//            for (int wordIndex = 0; wordIndex<words.Count; wordIndex += 1)
 //            {
 //                Word word = words[wordIndex];
-//                var oldVectror = word.OldVectorNormalized;
+//var oldVectror = word.OldVectorNormalized;
 
-//                float dotProduct = TensorPrimitives.Dot(oldVectror, wordCluster_CentroidOldVector);
+//float dotProduct = TensorPrimitives.Dot(oldVectror, wordCluster_CentroidOldVector);
 //                if (dotProduct > nearestDotProduct)
 //                {
 //                    nearestDotProduct = dotProduct;
@@ -162,13 +168,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel;
 //            primaryWords_KMeans[clusterIndex] = words[nearestWordIndex];
 //        });
 
-//        Array.Clear(clusterization_AlgorithmData_KMeans.IsPrimaryWord);            
-//        foreach (var primaryWord in primaryWords_KMeans)
-//        {
-//            clusterization_AlgorithmData_KMeans.IsPrimaryWord[primaryWord.Index] = true;
-//        }
-
-//        totalStopwatch.Stop();
-//        loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_KMeans.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
-//    }
-//}    
+//Array.Clear(clusterization_AlgorithmData_KMeans.IsPrimaryWord);
+//foreach (var primaryWord in primaryWords_KMeans)
+//{
+//    clusterization_AlgorithmData_KMeans.IsPrimaryWord[primaryWord.Index] = true;
+//}

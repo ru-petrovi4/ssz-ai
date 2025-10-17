@@ -74,7 +74,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 }
             }
 
-            Debug.Assert(count == 8);
+            Debug.Assert(count == Model01.Constants.DiscreteVector_PrimaryBitsCount);
 
             return GetEnergy(activeIndices, energyMatrix);
         }

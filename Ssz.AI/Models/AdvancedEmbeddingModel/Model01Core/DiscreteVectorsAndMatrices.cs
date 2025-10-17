@@ -119,13 +119,15 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
                 .Select((ci, wordIndex) => (words[wordIndex], ci))
                 .Where(it => it.Item2 == clusterIndex)
                 .Select(it => it.Item1)
-                .ToArray();            
+                .ToArray();
+
+            clusterInfos[clusterIndex].WordsCount = clusterWords.Length;
 
             foreach (Word clusterWord in clusterWords)
             {   
                 var temp_TopNProxWords = clusterWords.Select(w => (wordsDistancesOldMatrix[clusterWord.Index, w.Index], w))
                     .OrderBy(it => it.Item1)
-                    .Take(Model01.Constants.Words_DiscreteVector_BitsCount)
+                    .Take(Model01.Constants.DiscreteVector_PrimaryBitsCount)
                     .ToArray();
                 Temp_TopNProxWords[clusterWord.Index] = temp_TopNProxWords;
                 foreach (var it in temp_TopNProxWords)
@@ -135,7 +137,7 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
 
                 var temp_TopNProxClusterInfos = clusterInfos.Select(ci => (ModelHelper.GetEnergy(clusterWord.OldVectorNormalized, ci.CentroidOldVectorNormalized), ci))
                     .OrderBy(it => it.Item1)
-                    .Take(Model01.Constants.Clusters_DiscreteVector_BitsCount)
+                    .Take(Model01.Constants.DiscreteVector_SecondaryBitsCount)
                     .ToArray();
                 Temp_TopNProxClusterInfos[clusterWord.Index] = temp_TopNProxClusterInfos;                
             }                
@@ -274,8 +276,10 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
             var temp_TopNProxClusterInfos = Temp_TopNProxClusterInfos[word.Index];
             var temp_TopNProxWords = Temp_TopNProxWords[word.Index];
 
-            Debug.Assert(temp_TopNProxClusterInfos!.Length == Model01.Constants.Clusters_DiscreteVector_BitsCount);
-            Debug.Assert(temp_TopNProxWords!.Length == Model01.Constants.Words_DiscreteVector_BitsCount);
+            Debug.Assert(temp_TopNProxClusterInfos!.Length == Model01.Constants.DiscreteVector_SecondaryBitsCount);
+            if (temp_TopNProxWords!.Length != Model01.Constants.DiscreteVector_PrimaryBitsCount)
+            {
+            }
 
             for (int i = 0; i < temp_TopNProxClusterInfos!.Length; i += 1)
             {

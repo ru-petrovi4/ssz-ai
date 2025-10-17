@@ -30,8 +30,8 @@ public partial class Model03View : UserControl
         Model = new Model03();
         Task.Run(() =>
         {
-            //Model.VisualizeData_V1();
-            Model.Find_ClustersOneToOneMatcher_MappingLinear();            
+            Model.VisualizeData_ÑlustersEnerigesMatrix();
+            //Model.Find_ClustersOneToOneMatcher_MappingLinear();            
         });
     }
 
