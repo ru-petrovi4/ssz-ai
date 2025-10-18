@@ -24,6 +24,9 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         _userFriendlyLogger = userFriendlyLogger;        
     }
 
+    /// <summary>
+    /// Индексы как в ClusterInfos[]
+    /// </summary>
     public int[] ClustersMapping = null!;
 
     /// <summary>
@@ -160,7 +163,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
 
-                float energy = ModelHelper.GetEnergy(mappedOldVectorNormalized, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)
                 {
                     minEnergy = energy;
@@ -172,34 +175,34 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
                 ClustersMapping[sourceClusterIndex] = selected;
             }
         }
-        var hsA = ClustersMapping.ToHashSet();
+        //var hsA = ClustersMapping.ToHashSet();
 
-        var clustersMapping_Reverse = new int[source.ClusterInfos.Count];
-        for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
-        {
-            var targetClusterInfo = target.ClusterInfos[targetClusterIndex];              
+        //var clustersMapping_Reverse = new int[source.ClusterInfos.Count];
+        //for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
+        //{
+        //    var targetClusterInfo = target.ClusterInfos[targetClusterIndex];              
 
-            // Ищем позицию B с максимальным весом среди неиспользованных
-            float minEnergy = float.MaxValue;
-            int selected = -1;
-            for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
-            {
-                var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+        //    // Ищем позицию B с максимальным весом среди неиспользованных
+        //    float minEnergy = float.MaxValue;
+        //    int selected = -1;
+        //    for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        //    {
+        //        var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
 
-                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
-                if (energy < minEnergy)
-                {
-                    minEnergy = energy;
-                    selected = sourceClusterIndex;
-                }
-            }
-            if (selected != -1)
-            {
-                clustersMapping_Reverse[targetClusterIndex] = selected;
-            }
-        }
-        var hsB = clustersMapping_Reverse.ToHashSet();
-        _userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
+        //        float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+        //        if (energy < minEnergy)
+        //        {
+        //            minEnergy = energy;
+        //            selected = sourceClusterIndex;
+        //        }
+        //    }
+        //    if (selected != -1)
+        //    {
+        //        clustersMapping_Reverse[targetClusterIndex] = selected;
+        //    }
+        //}
+        //var hsB = clustersMapping_Reverse.ToHashSet();
+        //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
     }
 
     /// <summary>

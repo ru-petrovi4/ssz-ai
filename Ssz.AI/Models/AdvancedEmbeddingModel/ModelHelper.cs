@@ -20,7 +20,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
     public static partial class ModelHelper
     {
         /// <summary>
-        ///     1-cos, экспонента, квадрат
+        ///     1-cos, экспонента
         ///     Индексы соотвествуют индексам главных бит в слове.
         /// </summary>
         /// <param name="languageDiscreteEmbeddings"></param>
@@ -38,22 +38,21 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     float v = GetEnergy(
                         clusterI.CentroidOldVectorNormalized,
                         clusterJ.CentroidOldVectorNormalized);                    
-                    matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;
+                    matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;                    
                 }
             }
             return matrixFloat;
         }
 
         /// <summary>
-        ///     1-cos, экспонента, квадрат        
+        ///     1-cos, экспонента 
         /// </summary>        
         public static float GetEnergy(float[] oldVectorNormalizedA, float[] oldVectorNormalizedB)
         {
             float v = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
                         oldVectorNormalizedA,
                         oldVectorNormalizedB);
-            v = MathF.Exp((1 - v) * 3.0f) - 1;
-            v = v * v;
+            v = MathF.Exp((1 - v) * 2.0f) - 1;            
             return v;
         }
 
@@ -120,15 +119,15 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             }
         }
 
-        private static void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex, ILogger logger)
+        private static void ShowWords(LanguageDiscreteEmbeddings embeddings, int clusterIndex, ILogger logger)
         {
-            logger.LogInformation($"Кластер: {clusterIndex}");
+            var clusterInfo = embeddings.ClusterInfos[clusterIndex];
 
-            var clusterInfo = source.ClusterInfos[clusterIndex];
+            logger.LogInformation($"Кластер: {clusterIndex}; Слов в кластере: {clusterInfo.WordsCount}");            
 
-            foreach (var word in source.Words
+            foreach (var word in embeddings.Words
                 .Where(w => w.ClusterIndex == clusterIndex)
-                .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
+                .OrderBy(w => GetEnergy(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
                 .Take(10))
             {
                 logger.LogInformation(word.Name);
