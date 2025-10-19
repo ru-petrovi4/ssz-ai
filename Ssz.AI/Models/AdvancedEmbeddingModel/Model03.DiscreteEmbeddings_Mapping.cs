@@ -55,23 +55,23 @@ public partial class Model03
 
     public void OptimizeClusters()
     {
-        //LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
-        //Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
 
-        //LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        //Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+        
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
+        clustersOneToOneMatcher_MappingLinear.FilterOptimized(languageDiscreteEmbeddings_RU);
+        clustersOneToOneMatcher_MappingLinear.FilterOptimized(languageDiscreteEmbeddings_EN);
 
-        //ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
-        //clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V1(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-
-        //clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
-        //clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_V2(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-
-        //clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_RU, _loggersSet.UserFriendlyLogger);
-        //clustersOneToOneMatcher_MappingLinear.ComputeDetailedEvaluationReport(languageDiscreteEmbeddings_EN, _loggersSet.UserFriendlyLogger);        
-
-        //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
     }
 
     public void Find_ClustersOneToOneMatcher_MappingLinear()

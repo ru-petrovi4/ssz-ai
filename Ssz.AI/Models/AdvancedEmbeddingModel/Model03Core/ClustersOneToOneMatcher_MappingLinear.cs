@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.Utils;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
@@ -127,9 +128,10 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
     /// </summary>
     /// <param name="source"></param>
     /// <param name="target"></param>
-    public void CalculateClustersMapping_EnergyMatrix(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    public void OptimizeClusters(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
     {
-        ClustersMapping = new int[source.ClusterInfos.Count];
+        var clustersMapping = new int[source.ClusterInfos.Count];
+        Array.Fill(clustersMapping, -1);
 
         using Linear mappingLinear = Linear(
             inputSize: source.Words[0].OldVector.Length,
@@ -145,6 +147,8 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
         {
             var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+            if (sourceClusterInfo is null)
+                continue;
 
             //var norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVectorNormalized); // TEST
             //norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVector); // TEST
@@ -162,6 +166,141 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
             {
                 var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
+                if (targetClusterInfo is null)
+                    continue;
+
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                if (energy < minEnergy)
+                {
+                    minEnergy = energy;
+                    selected = targetClusterIndex;
+                }
+            }
+            if (selected != -1)
+            {
+                clustersMapping[sourceClusterIndex] = selected;
+            }
+        }
+        var targetClusterIndices = clustersMapping.ToHashSet();
+        foreach (var targetClusterIndex in Enumerable.Range(0, target.ClusterInfos.Count))
+        {
+            if (targetClusterIndices.Contains(targetClusterIndex))
+                continue;
+
+            target.ClusterInfos[targetClusterIndex] = null!;
+        }
+
+        var clustersMapping_Reverse = new int[source.ClusterInfos.Count];
+        Array.Fill(clustersMapping_Reverse, -1);
+        for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
+        {
+            var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
+            if (targetClusterInfo is null)
+                continue;
+
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float minEnergy = float.MaxValue;
+            int selected = -1;
+            for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+            {
+                var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+                if (sourceClusterInfo is null)
+                    continue;
+
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                if (energy < minEnergy)
+                {
+                    minEnergy = energy;
+                    selected = sourceClusterIndex;
+                }
+            }
+            if (selected != -1)
+            {
+                clustersMapping_Reverse[targetClusterIndex] = selected;
+            }
+        }
+        var sourceClusterIndices = clustersMapping_Reverse.ToHashSet();
+        foreach (var sourceClusterIndex in Enumerable.Range(0, source.ClusterInfos.Count))
+        {
+            if (sourceClusterIndices.Contains(sourceClusterIndex))
+                continue;
+
+            source.ClusterInfos[sourceClusterIndex] = null!;
+        }
+
+        //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
+    }
+
+    public void FilterOptimized(LanguageDiscreteEmbeddings embeddings)
+    {
+        int[] newClusterIndices = new int[embeddings.ClusterInfos.Count];
+        Array.Fill(newClusterIndices, -1);
+        List<ClusterInfo> newClusters = new List<ClusterInfo>(embeddings.ClusterInfos.Count);
+        foreach (int i in Enumerable.Range(0, embeddings.ClusterInfos.Count))
+        {
+            var clusterInfo = embeddings.ClusterInfos[i];
+            if (clusterInfo is null)
+                continue;
+
+            newClusterIndices[i] = newClusters.Count;
+            newClusters.Add(clusterInfo);
+        }
+        embeddings.ClusterInfos = newClusters.ToList();
+        embeddings.Words = embeddings.Words.Where(w => newClusterIndices[w.ClusterIndex] != -1)
+            .Select(w =>
+            {
+                w.ClusterIndex = newClusterIndices[w.ClusterIndex];
+                return w;
+            }
+            ).ToList();
+
+    }
+
+    /// <summary>
+    /// Energy matrix.
+    /// </summary>
+    /// <param name="source"></param>
+    /// <param name="target"></param>
+    public void CalculateClustersMapping_EnergyMatrix(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target)
+    {
+        ClustersMapping = new int[source.ClusterInfos.Count];
+        Array.Fill(ClustersMapping, -1);
+
+        using Linear mappingLinear = Linear(
+            inputSize: source.Words[0].OldVector.Length,
+            outputSize: source.Words[0].OldVector.Length,
+            hasBias: false);
+        using (var _ = no_grad())
+        {
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
+            mappingLinear.weight!.copy_(loadedWeights);
+        }
+        //mappingLinear.to();
+
+        for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            var sourceClusterInfo = source.ClusterInfos[sourceClusterIndex];
+            if (sourceClusterInfo is null)
+                continue;
+
+            //var norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVectorNormalized); // TEST
+            //norm = TensorPrimitives.Norm(sourcePrimaryWord.OldVector); // TEST
+
+            var oldVectorTensor = torch.tensor(sourceClusterInfo.CentroidOldVectorNormalized).reshape([1, sourceClusterInfo.CentroidOldVectorNormalized.Length]);
+            var mappedOldVectorTensor = mappingLinear.forward(oldVectorTensor);
+            float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
+            float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
+            TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
+            sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
+
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float minEnergy = float.MaxValue;
+            int selected = -1;
+            for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
+            {
+                var targetClusterInfo = target.ClusterInfos[targetClusterIndex];
+                if (targetClusterInfo is null)
+                    continue;
 
                 float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)

@@ -96,10 +96,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
         public static void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target, int[] clustersMapping, ILogger logger)
         {
-            var hs = clustersMapping.ToHashSet();
-            logger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}");
-            var counts = new Dictionary<int, int>(clustersMapping.Length);            
-            foreach (int number in clustersMapping)
+            var clustersMappingFiltered = clustersMapping.Where(m => m != -1).ToArray();
+            var hs = clustersMappingFiltered.ToHashSet();
+            logger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}/{clustersMappingFiltered.Length}");
+            var counts = new Dictionary<int, int>(clustersMappingFiltered.Length);            
+            foreach (int number in clustersMappingFiltered)
             {                
                 if (counts.ContainsKey(number))
                     counts[number] += 1;
@@ -121,7 +122,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
         private static void ShowWords(LanguageDiscreteEmbeddings embeddings, int clusterIndex, ILogger logger)
         {
+            if (clusterIndex == -1)
+                return;
             var clusterInfo = embeddings.ClusterInfos[clusterIndex];
+            if (clusterInfo is null)
+                return;
 
             logger.LogInformation($"Кластер: {clusterIndex}; Слов в кластере: {clusterInfo.WordsCount}");            
 
