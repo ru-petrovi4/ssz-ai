@@ -13,7 +13,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Seed для инициализации (-1 для случайного)
     /// </summary>
-    public int Seed { get; init; } = 5;
+    public int Seed { get; init; } = 43;
     /// <summary>
     /// Уровень подробности (2:debug, 1:info, 0:warning)
     /// </summary>
@@ -29,11 +29,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// ID эксперимента
     /// </summary>
-    public string ExpId { get; init; } = "";
-    /// <summary>
-    /// Использовать GPU
-    /// </summary>
-    public bool UseCuda { get; init; } = true;
+    public string ExpId { get; init; } = "";    
     /// <summary>
     /// Формат экспорта эмбеддингов (txt / pth)
     /// </summary>
@@ -113,7 +109,7 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// <summary>
     /// Количество эпох
     /// </summary>
-    public int NEpochs { get; init; } = 15;
+    public int NEpochs { get; init; } = 30;
     /// <summary>
     /// Итераций на эпоху
     /// </summary>
@@ -194,8 +190,6 @@ public sealed record UnsupervisedParameters : IDiscriminatorParameters, IMapping
     /// Использовать ли bias в линейном преобразовании
     /// </summary>
     public bool UseBias { get; init; } = false;
-
-    public Device Device { get; } = CPU;
 
     /// <summary>
     /// Путь для сохранения экспериментов

@@ -86,7 +86,7 @@ public partial class Model03
         ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         if (calculate)
         {
-            clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrixHungarian(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+            clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
             //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
         }
         else
@@ -330,7 +330,7 @@ public partial class Model03
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
 

@@ -45,11 +45,6 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Максимальный размер словаря
         /// </summary>
         int DicoMaxSize { get; }
-        
-        /// <summary>
-        /// Использовать GPU для вычислений
-        /// </summary>
-        bool UseCuda { get; }
     }
 
     /// <summary>
@@ -166,7 +161,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             
             logger?.LogInformation($"Новый обучающий словарь из {finalDictionary?.size(0) ?? 0} пар");
             
-            return finalDictionary?.to(parameters.UseCuda ? CUDA : CPU);
+            return finalDictionary;
         }
 
         #endregion

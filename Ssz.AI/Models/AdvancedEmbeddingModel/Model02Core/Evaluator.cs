@@ -121,7 +121,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             Dictionary<string, float>? targetScores = null;
             if (!string.IsNullOrEmpty(_trainer.TargetDictionary?.Language))
             {
-                var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
+                var targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!.cpu();
                 targetScores = await GetWordSimilarityScoresAsync(
                     _trainer.TargetDictionary.Language, 
                     _trainer.TargetDictionary, 
@@ -229,7 +229,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             Dictionary<string, float>? targetAnalogies = null;
             if (!string.IsNullOrEmpty(_trainer.TargetDictionary?.Language))
             {
-                var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
+                var targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!.cpu();
                 targetAnalogies = await GetWordAnalogyScoresAsync(
                     _trainer.TargetDictionary.Language, _trainer.TargetDictionary, targetEmbeddings);
             }
@@ -361,7 +361,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             _logger?.LogInformation("Оценка кросс-лингвального семантического сходства...");
 
             var sourceEmbeddings = GetMappedSourceEmbeddings();
-            var targetEmbeddings = _trainer.TargetEmbeddings.weight!.cpu();
+            var targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!.cpu();
 
             var crossLingualScores = await GetCrossLingualWordSimilarityScoresAsync(
                 _trainer.SourceDictionary.Language, _trainer.SourceDictionary, sourceEmbeddings,
@@ -447,8 +447,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                     _trainer.TargetDictionary);            
             testDictionary = testDictionary.to(_trainer.Device);
 
-            var mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
-            var targetEmbeddings = _trainer.TargetEmbeddings.weight!;            
+            var mappedSourceEmbeddings = _trainer.Mapping_Device.forward(_trainer.SourceEmbeddings_Device.weight!);
+            var targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!;            
 
             var methods = new[] { "nn", "csls_knn_10" };
             foreach (var method in methods)
@@ -548,8 +548,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 return;
             }
 
-            var sourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
-            var targetEmbeddings = _trainer.TargetEmbeddings.weight!;
+            var sourceEmbeddings = _trainer.Mapping_Device.forward(_trainer.SourceEmbeddings_Device.weight!);
+            var targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!;
 
             // Вычисляем IDF веса
             var idf = ComputeIdfWeights(_europarlData, sourceLang, targetLang, nIdf);
@@ -597,8 +597,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Получаем нормализованные эмбеддинги
             using var _ = no_grad();
 
-            torch.Tensor mappedSourceEmbeddings = _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!);
-            torch.Tensor targetEmbeddings = _trainer.TargetEmbeddings.weight!;
+            torch.Tensor mappedSourceEmbeddings = _trainer.Mapping_Device.forward(_trainer.SourceEmbeddings_Device.weight!);
+            torch.Tensor targetEmbeddings = _trainer.TargetEmbeddings_Device.weight!;
 
             mappedSourceEmbeddings = functional.normalize(mappedSourceEmbeddings, p: 2, dim: 1);
             targetEmbeddings = functional.normalize(targetEmbeddings, p: 2, dim: 1);
@@ -621,11 +621,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
                 };
 
                 // Строим словарь
-                var dictionary = await DictionaryBuilder.BuildDictionaryAsync(
+                var dictionary = (await DictionaryBuilder.BuildDictionaryAsync(
                     mappedSourceEmbeddings, 
                     targetEmbeddings, 
                     parameters, 
-                    logger: _logger);
+                    logger: _logger))?.to(_trainer.Device);
 
                 float meanCosine;
                 if (dictionary is null || dictionary.size(0) == 0)
@@ -664,7 +664,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <param name="results">Словарь для записи результатов</param>
         public Task EvaluateDiscriminatorAsync(TrainingStats stats)
         {
-            if (_trainer.Discriminator == null)
+            if (_trainer.Discriminator_Device == null)
             {
                 _logger?.LogWarning("Дискриминатор не найден, пропускаем оценку");
                 return Task.CompletedTask;
@@ -673,34 +673,34 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             _logger?.LogInformation("Оценка дискриминатора...");
 
             using var _ = no_grad();
-            _trainer.Discriminator.eval();
+            _trainer.Discriminator_Device.eval();
 
             var sourcePredictions = new List<float>();
             var targetPredictions = new List<float>();
 
             // Оценка предсказаний для исходных эмбеддингов
-            var sourceVocabSize = _trainer.SourceEmbeddings.weight!.shape[0];
+            var sourceVocabSize = _trainer.SourceEmbeddings_Device.weight!.shape[0];
             for (int i = 0; i < sourceVocabSize; i += BatchSize)
             {
                 var endIdx = Math.Min(sourceVocabSize, i + BatchSize);
-                var indices = arange(i, endIdx, dtype: ScalarType.Int64, device: _trainer.SourceEmbeddings.weight!.device);
+                var indices = arange(i, endIdx, dtype: ScalarType.Int64, device: _trainer.SourceEmbeddings_Device.weight!.device);
 
-                var embeddings = _trainer.SourceEmbeddings.forward(indices);
-                var mappedEmbeddings = _trainer.Mapping.forward(embeddings);
-                var predictions = _trainer.Discriminator.forward(mappedEmbeddings);
+                var embeddings = _trainer.SourceEmbeddings_Device.forward(indices);
+                var mappedEmbeddings = _trainer.Mapping_Device.forward(embeddings);
+                var predictions = _trainer.Discriminator_Device.forward(mappedEmbeddings);
 
                 sourcePredictions.AddRange(predictions.data<float>().ToArray());
             }
 
             // Оценка предсказаний для целевых эмбеддингов
-            var targetVocabSize = _trainer.TargetEmbeddings.weight!.shape[0];
+            var targetVocabSize = _trainer.TargetEmbeddings_Device.weight!.shape[0];
             for (int i = 0; i < targetVocabSize; i += BatchSize)
             {
                 var endIdx = Math.Min(targetVocabSize, i + BatchSize);
-                var indices = arange(i, endIdx, dtype: ScalarType.Int64, device: _trainer.TargetEmbeddings.weight!.device);
+                var indices = arange(i, endIdx, dtype: ScalarType.Int64, device: _trainer.TargetEmbeddings_Device.weight!.device);
 
-                var embeddings = _trainer.TargetEmbeddings.forward(indices);
-                var predictions = _trainer.Discriminator.forward(embeddings);
+                var embeddings = _trainer.TargetEmbeddings_Device.forward(indices);
+                var predictions = _trainer.Discriminator_Device.forward(embeddings);
 
                 targetPredictions.AddRange(predictions.data<float>().ToArray());
             }
@@ -756,7 +756,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         private Tensor GetMappedSourceEmbeddings()
         {
             using var _ = no_grad();
-            return _trainer.Mapping.forward(_trainer.SourceEmbeddings.weight!).cpu();
+            return _trainer.Mapping_Device.forward(_trainer.SourceEmbeddings_Device.weight!).cpu();
         }
 
         /// <summary>

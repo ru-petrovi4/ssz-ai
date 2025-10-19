@@ -63,22 +63,22 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Эмбеддинги исходного языка
         /// </summary>
-        private readonly Embedding _sourceEmbeddings;
+        private readonly Embedding _sourceEmbeddings_Device;
         
         /// <summary>
         /// Эмбеддинги целевого языка
         /// </summary>
-        private readonly Embedding _targetEmbeddings;
+        private readonly Embedding _targetEmbeddings_Device;
         
         /// <summary>
         /// Модель выравнивания
         /// </summary>
-        private readonly Mapping _mapping;
+        private readonly Mapping _mapping_Device;
         
         /// <summary>
         /// Дискриминатор (может быть null для supervised обучения)
         /// </summary>
-        private readonly Discriminator? _discriminator;
+        private readonly Discriminator? _discriminator_Device;
         
         /// <summary>
         /// Словарь исходного языка
@@ -103,8 +103,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Логгер
         /// </summary>
-        private readonly ILogger? _logger;
-        
+        private readonly ILogger? _logger;        
+
         /// <summary>
         /// Оптимизатор для модели выравнивания
         /// </summary>
@@ -119,7 +119,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// Обучающий словарь (пары индексов)
         /// (self.dico)
         /// </summary>
-        private Tensor? _trainingDictionary;
+        private Tensor? _trainingDictionary_Device;
         
         /// <summary>
         /// Лучшая метрика валидации
@@ -148,19 +148,19 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Инициализирует новый экземпляр тренера
         /// </summary>
-        /// <param name="sourceEmbeddings">Эмбеддинги исходного языка</param>
-        /// <param name="targetEmbeddings">Эмбеддинги целевого языка</param>
-        /// <param name="mapping">Модель выравнивания</param>
-        /// <param name="discriminator">Дискриминатор (может быть null)</param>
+        /// <param name="sourceEmbeddings_Device">Эмбеддинги исходного языка</param>
+        /// <param name="targetEmbeddings_Device">Эмбеддинги целевого языка</param>
+        /// <param name="mapping_Device">Модель выравнивания</param>
+        /// <param name="discriminator_Device">Дискриминатор (может быть null)</param>
         /// <param name="sourceDictionary">Словарь исходного языка</param>
         /// <param name="targetDictionary">Словарь целевого языка</param>
         /// <param name="trainerParameters">Параметры тренера</param>
         /// <param name="logger">Логгер</param>
         public Trainer(
-            Embedding sourceEmbeddings,
-            Embedding targetEmbeddings,
-            Mapping mapping,
-            Discriminator? discriminator,
+            Embedding sourceEmbeddings_Device,
+            Embedding targetEmbeddings_Device,
+            Mapping mapping_Device,
+            Discriminator? discriminator_Device,
             Dictionary sourceDictionary,
             Dictionary targetDictionary,
             ITrainerParameters trainerParameters,
@@ -168,10 +168,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             string experimentPath,
             ILogger? logger = null)
         {
-            _sourceEmbeddings = sourceEmbeddings ?? throw new ArgumentNullException(nameof(sourceEmbeddings));
-            _targetEmbeddings = targetEmbeddings ?? throw new ArgumentNullException(nameof(targetEmbeddings));
-            _mapping = mapping ?? throw new ArgumentNullException(nameof(mapping));
-            _discriminator = discriminator;
+            _sourceEmbeddings_Device = sourceEmbeddings_Device ?? throw new ArgumentNullException(nameof(sourceEmbeddings_Device));
+            _targetEmbeddings_Device = targetEmbeddings_Device ?? throw new ArgumentNullException(nameof(targetEmbeddings_Device));
+            _mapping_Device = mapping_Device ?? throw new ArgumentNullException(nameof(mapping_Device));
+            _discriminator_Device = discriminator_Device;
             _sourceDictionary = sourceDictionary ?? throw new ArgumentNullException(nameof(sourceDictionary));
             _targetDictionary = targetDictionary ?? throw new ArgumentNullException(nameof(targetDictionary));
             _trainerParameters = trainerParameters;
@@ -182,9 +182,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 
         #endregion
 
-        #region Public Properties
-
-        public const string FileName_Best_Mapping = "best_mapping.pt";
+        #region Public Properties        
 
         /// <summary>
         /// Устройство для обучения
@@ -194,12 +192,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Эмбеддинги исходного языка
         /// </summary>
-        public Embedding SourceEmbeddings => _sourceEmbeddings;
+        public Embedding SourceEmbeddings_Device => _sourceEmbeddings_Device;
 
         /// <summary>
         /// Эмбеддинги целевого языка
         /// </summary>
-        public Embedding TargetEmbeddings => _targetEmbeddings;
+        public Embedding TargetEmbeddings_Device => _targetEmbeddings_Device;
 
         /// <summary>
         /// Словарь исходного языка
@@ -229,12 +227,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <summary>
         /// Модель выравнивания
         /// </summary>
-        public Mapping Mapping => _mapping;
+        public Mapping Mapping_Device => _mapping_Device;
 
         /// <summary>
         /// Дискриминатор (может быть null для supervised обучения)
         /// </summary>
-        public Discriminator? Discriminator => _discriminator;
+        public Discriminator? Discriminator_Device => _discriminator_Device;
 
         #endregion
 
@@ -245,19 +243,19 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// </summary>
         /// <param name="mappingOptimizerConfig">Конфигурация оптимизатора для маппинга (например, "sgd,lr=0.1")</param>
         /// <param name="discriminatorOptimizerConfig">Конфигурация оптимизатора для дискриминатора</param>
-        public void SetupOptimizers(string mappingOptimizerConfig, string? discriminatorOptimizerConfig = null)
+        public void Initialize_SetupOptimizers(string mappingOptimizerConfig, string? discriminatorOptimizerConfig = null)
         {
             _logger?.LogInformation("Настройка оптимизаторов...");
             
             // Настраиваем оптимизатор для маппинга
             _mappingOptimizer?.Dispose();
-            _mappingOptimizer = CreateOptimizerFromConfig(mappingOptimizerConfig, _mapping.parameters());
+            _mappingOptimizer = CreateOptimizerFromConfig(mappingOptimizerConfig, _mapping_Device.parameters());
             
             // Настраиваем оптимизатор для дискриминатора (если есть)
-            if (_discriminator != null && !string.IsNullOrEmpty(discriminatorOptimizerConfig))
+            if (_discriminator_Device != null && !string.IsNullOrEmpty(discriminatorOptimizerConfig))
             {
                 _discriminatorOptimizer?.Dispose();
-                _discriminatorOptimizer = CreateOptimizerFromConfig(discriminatorOptimizerConfig, _discriminator.parameters());
+                _discriminatorOptimizer = CreateOptimizerFromConfig(discriminatorOptimizerConfig, _discriminator_Device.parameters());
             }
             
             _logger?.LogInformation($"Оптимизатор маппинга: {mappingOptimizerConfig}");
@@ -310,18 +308,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             
             if (dictionaryPath == "identical_char")
             {
-                _trainingDictionary = await LoadIdenticalCharacterDictionaryAsync();
+                _trainingDictionary_Device = await LoadIdenticalCharacterDictionaryAsync();
             }
             else if (dictionaryPath == "default")
             {
-                _trainingDictionary = await LoadDefaultDictionaryAsync();
+                _trainingDictionary_Device = await LoadDefaultDictionaryAsync();
             }
             else
             {
-                _trainingDictionary = await LoadDictionaryFromFileAsync(dictionaryPath);
+                _trainingDictionary_Device = await LoadDictionaryFromFileAsync(dictionaryPath);
             }
             
-            _logger?.LogInformation($"Загружен словарь с {_trainingDictionary!.size(0)} парами");
+            _logger?.LogInformation($"Загружен словарь с {_trainingDictionary_Device!.size(0)} парами");
         }
 
         /// <summary>
@@ -442,16 +440,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// <returns>Потери дискриминатора</returns>
         public float DiscriminatorStep(TrainingStats stats)
         {
-            if (_discriminator == null || _discriminatorOptimizer == null)
+            if (_discriminator_Device == null || _discriminatorOptimizer == null)
                 throw new InvalidOperationException("Дискриминатор или его оптимизатор не настроены");
-            
-            _discriminator.train();
+
+            using var disposeScope = torch.NewDisposeScope();
+
+            _discriminator_Device.train();
             
             // Получаем батч данных для дискриминатора
             var (x, y) = GetDiscriminatorBatch(volatile_: true);
             
             // Прямой проход
-            var predictions = _discriminator.forward(x);
+            var predictions = _discriminator_Device.forward(x);
             var loss = nn.functional.binary_cross_entropy(predictions, y);
             
             // Проверяем на NaN
@@ -469,7 +469,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             // Обрезаем градиенты если необходимо
             if (_trainerParameters.DisClipWeights > 0)
             {
-                _discriminator.ClipGradients(_trainerParameters.DisClipWeights);
+                _discriminator_Device.ClipGradients(_trainerParameters.DisClipWeights);
             }
             
             var lossValue = loss.item<float>();
@@ -488,11 +488,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             if (_trainerParameters.DisLambda == 0.0)
                 return 0;
             
-            if (_discriminator == null || _mappingOptimizer == null)
+            if (_discriminator_Device == null || _mappingOptimizer == null)
                 throw new InvalidOperationException("Дискриминатор или оптимизатор маппинга не настроены");
-            
-            _discriminator.eval();
-            _mapping.train();
+
+            using var disposeScope = torch.NewDisposeScope();
+
+            _discriminator_Device.eval();
+            _mapping_Device.train();
             
             // Получаем батч данных
             var (x, y) = GetDiscriminatorBatch(volatile_: false);
@@ -501,7 +503,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             var invertedY = ones_like(y) - y;
             
             // Прямой проход
-            var predictions = _discriminator.forward(x);
+            var predictions = _discriminator_Device.forward(x);
             var loss = nn.functional.binary_cross_entropy(predictions, invertedY);
             loss = loss * _trainerParameters.DisLambda;
             
@@ -518,7 +520,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             _mappingOptimizer.step();
             
             // Ортогонализуем матрицу маппинга
-            _mapping.OrthogonalizeWeights();
+            _mapping_Device.OrthogonalizeWeights();
             
             stats.MappingLosses.Add(loss.item<float>());
             return 2 * _trainerParameters.BatchSize;
@@ -526,18 +528,18 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 
         public async Task BuildDictionaryAsync(IDictionaryBuilderParameters parameters)
         {
-            torch.Tensor mappedSourceEmbeddings = Mapping.forward(SourceEmbeddings.weight!);
-            torch.Tensor targetEmbeddings = TargetEmbeddings.weight!;
+            torch.Tensor mappedSourceEmbeddings = Mapping_Device.forward(SourceEmbeddings_Device.weight!);
+            torch.Tensor targetEmbeddings = TargetEmbeddings_Device.weight!;
 
             mappedSourceEmbeddings = mappedSourceEmbeddings / mappedSourceEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(mappedSourceEmbeddings);
             targetEmbeddings = targetEmbeddings / targetEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(targetEmbeddings);
             
             // Строим словарь
-            _trainingDictionary = await DictionaryBuilder.BuildDictionaryAsync(
+            _trainingDictionary_Device = (await DictionaryBuilder.BuildDictionaryAsync(
                 mappedSourceEmbeddings,
                 targetEmbeddings,
                 parameters,
-                logger: _logger);
+                logger: _logger))?.to(Device);
         }
 
         /// <summary>
@@ -545,7 +547,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// </summary>
         public void ApplyProcrustesAlignment()
         {
-            if (_trainingDictionary is null)
+            if (_trainingDictionary_Device is null)
                 throw new InvalidOperationException("Обучающий словарь не загружен");
             
             _logger?.LogInformation("Применение решения ортогонального Прокруста...");
@@ -553,16 +555,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             using var _ = no_grad();
             
             // Получаем эмбеддинги для обучающих пар
-            var sourceIndices = _trainingDictionary.select(1, 0);
-            var targetIndices = _trainingDictionary.select(1, 1);
+            var sourceIndices = _trainingDictionary_Device.select(1, 0);
+            var targetIndices = _trainingDictionary_Device.select(1, 1);
             
-            var sourceEmbeddings = _sourceEmbeddings.forward(sourceIndices);
-            var targetEmbeddings = _targetEmbeddings.forward(targetIndices);
+            var sourceEmbeddings = _sourceEmbeddings_Device.forward(sourceIndices);
+            var targetEmbeddings = _targetEmbeddings_Device.forward(targetIndices);
             
             // Применяем Прокруст
-            _mapping.ApplyProcrustesAlignment(sourceEmbeddings, targetEmbeddings);
+            _mapping_Device.ApplyProcrustesAlignment(sourceEmbeddings, targetEmbeddings);
             
-            var orthogonalityError = _mapping.CheckOrthogonality();
+            var orthogonalityError = _mapping_Device.CheckOrthogonality();
             _logger?.LogInformation($"Применено решение Прокруста. Ошибка ортогональности: {orthogonalityError:E6}");
         }
 
@@ -590,12 +592,12 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                     Directory.CreateDirectory(_experimentPath);
                 }
                 
-                var modelPath = Path.Combine(_experimentPath, FileName_Best_Mapping);
+                var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_RU_EN);
                 _logger?.LogInformation($"* Сохранение модели в {modelPath}...");
                 
                 // Сохраняем веса модели маппинга
                 using var _ = no_grad();
-                var weightsToSave = _mapping.MappingLinear.weight.cpu();
+                var weightsToSave = _mapping_Device.MappingLinear.weight.cpu();
                 weightsToSave.save(modelPath);
                 
                 return Task.FromResult(true);
@@ -609,7 +611,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// </summary>
         public Task ReloadBestMappingWeightsAsync()
         {
-            var modelPath = Path.Combine(_experimentPath, FileName_Best_Mapping);
+            var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_RU_EN);
 
             if (!File.Exists(modelPath))
                 throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");
@@ -618,7 +620,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 
             using var _ = no_grad();
             var loadedWeights = load(modelPath);
-            _mapping.MappingLinear.weight!.copy_(loadedWeights);
+            _mapping_Device.MappingLinear.weight!.copy_(loadedWeights);
 
             _logger?.LogInformation("Лучшая модель успешно загружена");
 
@@ -696,11 +698,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                 size: new long[] { batchSize }, dtype: ScalarType.Int64, device: Device);
             
             // Получаем эмбеддинги
-            var sourceEmb = _sourceEmbeddings.forward(sourceIds);
-            var targetEmb = _targetEmbeddings.forward(targetIds);
+            var sourceEmb = _sourceEmbeddings_Device.forward(sourceIds);
+            var targetEmb = _targetEmbeddings_Device.forward(targetIds);
             
             // Применяем маппинг к исходным эмбеддингам
-            var mappedSourceEmb = _mapping.forward(sourceEmb.detach());
+            var mappedSourceEmb = _mapping_Device.forward(sourceEmb.detach());
             
             // Объединяем исходные (замаппированные) и целевые эмбеддинги
             var x = cat(new[] { mappedSourceEmb, targetEmb.detach() }, dim: 0);
@@ -736,11 +738,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             {
                 _mappingOptimizer?.Dispose();
                 _discriminatorOptimizer?.Dispose();
-                _trainingDictionary?.Dispose();
-                _sourceEmbeddings?.Dispose();
-                _targetEmbeddings?.Dispose();
-                _mapping?.Dispose();
-                _discriminator?.Dispose();
+                _trainingDictionary_Device?.Dispose();
+                _sourceEmbeddings_Device?.Dispose();
+                _targetEmbeddings_Device?.Dispose();
+                _mapping_Device?.Dispose();
+                _discriminator_Device?.Dispose();
                 
                 _disposed = true;
             }

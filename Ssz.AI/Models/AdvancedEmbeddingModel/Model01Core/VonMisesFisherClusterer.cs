@@ -532,9 +532,10 @@ public class VonMisesFisherClusterer
             denominator = 1e-8f;
 
         var kappa = numerator / denominator;
-            
+
         // Ограничиваем κ положительными разумными значениями
-        return MathF.Max(0.01f, MathF.Min(1000.0f, kappa));
+        // ORIG: return MathF.Max(0.01f, MathF.Min(1000.0f, kappa));
+        return MathF.Max(0.01f, MathF.Min(500.0f, kappa)); 
     }        
 
     /// <summary>

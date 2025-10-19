@@ -44,7 +44,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
         //mappingLinear.to();
@@ -100,7 +100,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
         //mappingLinear.to();
@@ -137,7 +137,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
         //mappingLinear.to();
@@ -218,7 +218,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             hasBias: false);
         using (var _ = no_grad())
         {
-            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Procrustes_RU_EN));
+            var loadedWeights = load(Path.Combine(@"Data", Model02.FileName_MUSE_Best_Mapping_RU_EN));
             mappingLinear.weight!.copy_(loadedWeights);
         }
         //mappingLinear.to();

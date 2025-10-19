@@ -85,7 +85,7 @@ public partial class Model01
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: WordsCount, _loggersSet);
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: WordsCount, _loggersSet);
 
-        bool calculate = true;
+        bool calculate = false;
         if (calculate)
         {
             WordsDistancesOldMatrix_Calculate(LanguageInfo_RU, _loggersSet);

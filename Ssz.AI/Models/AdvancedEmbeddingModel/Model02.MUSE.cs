@@ -54,7 +54,7 @@ public partial class Model02
 
     public const string FileName_MUSE_Procrustes_RU_EN = "AdvancedEmbedding_MUSE_Procrustes_RU_EN.bin";
 
-    public const string FileName_MUSE_Best_Mapping_RU_EN_Temp = "best_mapping.pt";
+    public const string FileName_MUSE_Best_Mapping_RU_EN = "best_mapping.pt";
 
     public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
@@ -104,7 +104,9 @@ public partial class Model02
 
         try
         {
-            // Парсинг аргументов командной строки
+            using var disposeScope = torch.NewDisposeScope();
+
+                // Парсинг аргументов командной строки
             UnsupervisedParameters parameters = new();
 
             // Валидация параметров
@@ -121,7 +123,7 @@ public partial class Model02
             }
 
             // Устройство для размещения тензоров
-            var device = parameters.UseCuda ? CUDA : CPU;
+            var device = cuda.is_available() ? CUDA : CPU;
 
             //// Загружаем исходные эмбеддинги            
             //var (sourceDictionary, sourceEmbeddingMatrix) = await EmbeddingUtils.LoadTextEmbeddingsAsync(
@@ -132,27 +134,19 @@ public partial class Model02
             //var (targetDictionary, targetEmbeddingMatrix) = await EmbeddingUtils.LoadTextEmbeddingsAsync(
             //    parameters.TgtEmb, parameters.MaxVocab, parameters.EmbDim, true, logger);
             var (targetDictionary, targetEmbeddingMatrix) = (enDictionary, enEmb);
-
-            // Создаем тензоры эмбеддингов
-            var sourceTensor = tensor(sourceEmbeddingMatrix.Data)
-                .reshape(sourceEmbeddingMatrix.RowsCount, sourceEmbeddingMatrix.ColumnsCount) // Row major
-                .to(device);
-            var targetTensor = tensor(targetEmbeddingMatrix.Data)
-                .reshape(targetEmbeddingMatrix.RowsCount, targetEmbeddingMatrix.ColumnsCount) // Row major
-                .to(device);
-
+            
             // Создаем embedding слои
-            var sourceEmbeddings = nn.Embedding(sourceDictionary.Count, parameters.EmbDim, sparse: true);
-            var targetEmbeddings = nn.Embedding(targetDictionary.Count, parameters.EmbDim, sparse: true);
-
+            var sourceEmbeddings_Device = nn.Embedding(sourceDictionary.Count, parameters.EmbDim, sparse: true);
+            var targetEmbeddings_Device = nn.Embedding(targetDictionary.Count, parameters.EmbDim, sparse: true);
             using (no_grad())
             {
-                sourceEmbeddings.weight!.copy_(sourceTensor);
-                targetEmbeddings.weight!.copy_(targetTensor);
+                sourceEmbeddings_Device.weight!.copy_(tensor(sourceEmbeddingMatrix.Data)
+                    .reshape(sourceEmbeddingMatrix.RowsCount, sourceEmbeddingMatrix.ColumnsCount));
+                targetEmbeddings_Device.weight!.copy_(tensor(targetEmbeddingMatrix.Data)
+                    .reshape(targetEmbeddingMatrix.RowsCount, targetEmbeddingMatrix.ColumnsCount));
             }
-
-            sourceEmbeddings.to(device);
-            targetEmbeddings.to(device);
+            sourceEmbeddings_Device.to(device);
+            targetEmbeddings_Device.to(device);
 
             // Применяем нормализацию если указана
             //if (!string.IsNullOrEmpty(parameters.NormalizeEmbeddings))
@@ -168,25 +162,24 @@ public partial class Model02
             //}            
 
             // Создаем модели
-            var mapping = new Mapping(parameters);
-            var discriminator = new Discriminator(parameters);
-
-            // Перемещаем на устройство
-            mapping = mapping.to(device);
-            discriminator = discriminator.to(device);
-
+            var mapping_Device = (new Mapping(parameters)).to(device);
+            var discriminator_Device = (new Discriminator(parameters)).to(device);
+            
             // Инициализируем веса
-            mapping.InitializeWeights();
-            discriminator.InitializeWeights();
+            mapping_Device.InitializeWeights();
+            discriminator_Device.InitializeWeights();
 
             logger.LogInformation($"Созданы модели на устройстве {device.type}:");
-            logger.LogInformation(mapping.GetModelInfo());
-            logger.LogInformation(discriminator.GetArchitectureInfo());
+            logger.LogInformation(mapping_Device.GetModelInfo());
+            logger.LogInformation(discriminator_Device.GetArchitectureInfo());
 
             logger.LogInformation("Модели успешно созданы и инициализированы");
             
             using var trainer = new Trainer(
-                sourceEmbeddings, targetEmbeddings, mapping, discriminator,
+                sourceEmbeddings_Device, 
+                targetEmbeddings_Device, 
+                mapping_Device, 
+                discriminator_Device,
                 sourceDictionary, targetDictionary, 
                 parameters, 
                 device,
@@ -195,9 +188,9 @@ public partial class Model02
                 logger);
 
             // Настраиваем оптимизаторы
-            trainer.SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
+            trainer.Initialize_SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            bool runTraining = false;
+            bool runTraining = true;
             if (runTraining)
             {
                 // Состязательное обучение
@@ -205,12 +198,12 @@ public partial class Model02
                 {
                     await RunAdversarialTrainingAsync(trainer, parameters, logger);
 
-                    var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                    var weightsToSave = trainer.Mapping_Device.MappingLinear.weight.cpu();
                     weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Adversarial_RU_EN));
                 }
             }
 
-            bool runNRefinement = false;
+            bool runNRefinement = true;
             if (runNRefinement)
             {                
                 // Procrustes refinement
@@ -218,7 +211,7 @@ public partial class Model02
                 {   
                     await RunProcrustesRefinementAsync(trainer, parameters, logger);
 
-                    var weightsToSave = trainer.Mapping.MappingLinear.weight.cpu();
+                    var weightsToSave = trainer.Mapping_Device.MappingLinear.weight.cpu();
                     weightsToSave.save(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
                 }
             }
@@ -228,8 +221,8 @@ public partial class Model02
             {
                 using (var _ = no_grad())
                 {
-                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Procrustes_RU_EN));
-                    trainer.Mapping.MappingLinear.weight!.copy_(loadedWeights);
+                    var loadedWeights = load(Path.Combine(@"Data", FileName_MUSE_Best_Mapping_RU_EN));
+                    trainer.Mapping_Device.MappingLinear.weight!.copy_(loadedWeights);
                 }
 
                 TrainingStats stats = new();
@@ -264,10 +257,6 @@ public partial class Model02
     /// <exception cref="ArgumentException">При некорректных параметрах</exception>
     private static void ValidateParameters(UnsupervisedParameters parameters)
     {
-        // Проверяем CUDA доступность
-        if (parameters.UseCuda && !cuda.is_available())
-            throw new ArgumentException("CUDA не доступна, но была запрошена");
-
         // Проверяем параметры dropout
         if (parameters.DisDropout < 0 || parameters.DisDropout >= 1)
             throw new ArgumentException("dis-dropout должен быть в диапазоне [0, 1)");
