@@ -528,16 +528,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
 
         public async Task BuildDictionaryAsync(IDictionaryBuilderParameters parameters)
         {
-            torch.Tensor mappedSourceEmbeddings = Mapping_Device.forward(SourceEmbeddings_Device.weight!);
-            torch.Tensor targetEmbeddings = TargetEmbeddings_Device.weight!;
+            torch.Tensor mappedSourceEmbeddings_Device = Mapping_Device.forward(SourceEmbeddings_Device.weight!);
+            torch.Tensor targetEmbeddings_Device = TargetEmbeddings_Device.weight!;
 
-            mappedSourceEmbeddings = mappedSourceEmbeddings / mappedSourceEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(mappedSourceEmbeddings);
-            targetEmbeddings = targetEmbeddings / targetEmbeddings.norm(p: 2, dim: 1, keepdim: true).expand_as(targetEmbeddings);
+            mappedSourceEmbeddings_Device = mappedSourceEmbeddings_Device / mappedSourceEmbeddings_Device.norm(p: 2, dim: 1, keepdim: true).expand_as(mappedSourceEmbeddings_Device);
+            targetEmbeddings_Device = targetEmbeddings_Device / targetEmbeddings_Device.norm(p: 2, dim: 1, keepdim: true).expand_as(targetEmbeddings_Device);
             
             // Строим словарь
             _trainingDictionary_Device = (await DictionaryBuilder.BuildDictionaryAsync(
-                mappedSourceEmbeddings,
-                targetEmbeddings,
+                mappedSourceEmbeddings_Device,
+                targetEmbeddings_Device,
                 parameters,
                 logger: _logger))?.to(Device);
         }
@@ -555,14 +555,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
             using var _ = no_grad();
             
             // Получаем эмбеддинги для обучающих пар
-            var sourceIndices = _trainingDictionary_Device.select(1, 0);
-            var targetIndices = _trainingDictionary_Device.select(1, 1);
+            var sourceIndices_Device = _trainingDictionary_Device.select(1, 0);
+            var targetIndices_Device = _trainingDictionary_Device.select(1, 1);
             
-            var sourceEmbeddings = _sourceEmbeddings_Device.forward(sourceIndices);
-            var targetEmbeddings = _targetEmbeddings_Device.forward(targetIndices);
+            var sourceEmbeddings_Device = _sourceEmbeddings_Device.forward(sourceIndices_Device);
+            var targetEmbeddings_Device = _targetEmbeddings_Device.forward(targetIndices_Device);
             
             // Применяем Прокруст
-            _mapping_Device.ApplyProcrustesAlignment(sourceEmbeddings, targetEmbeddings);
+            _mapping_Device.ApplyProcrustesAlignment(sourceEmbeddings_Device, targetEmbeddings_Device);
             
             var orthogonalityError = _mapping_Device.CheckOrthogonality();
             _logger?.LogInformation($"Применено решение Прокруста. Ошибка ортогональности: {orthogonalityError:E6}");
@@ -592,7 +592,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
                     Directory.CreateDirectory(_experimentPath);
                 }
                 
-                var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_RU_EN);
+                var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_Temp_RU_EN);
                 _logger?.LogInformation($"* Сохранение модели в {modelPath}...");
                 
                 // Сохраняем веса модели маппинга
@@ -611,7 +611,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Training
         /// </summary>
         public Task ReloadBestMappingWeightsAsync()
         {
-            var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_RU_EN);
+            var modelPath = Path.Combine(_experimentPath, Model02.FileName_MUSE_Best_Mapping_Temp_RU_EN);
 
             if (!File.Exists(modelPath))
                 throw new FileNotFoundException($"Файл лучшей модели не найден: {modelPath}");

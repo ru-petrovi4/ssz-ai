@@ -67,22 +67,22 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Получает лучших кандидатов для перевода
         /// </summary>
-        /// <param name="sourceEmbeddings">Исходные эмбеддинги [vocab_size, emb_dim]</param>
-        /// <param name="targetEmbeddings">Целевые эмбеддинги [vocab_size, emb_dim]</param>
+        /// <param name="sourceEmbeddings_Device">Исходные эмбеддинги [vocab_size, emb_dim]</param>
+        /// <param name="targetEmbeddings_Device">Целевые эмбеддинги [vocab_size, emb_dim]</param>
         /// <param name="parameters">Параметры построения словаря</param>
         /// <param name="logger">Логгер</param>
         /// <returns>Пары кандидатов [n_pairs, 2] (source_idx, target_idx)</returns>
         public static async Task<Tensor> GetCandidatesAsync(
-            Tensor sourceEmbeddings, 
-            Tensor targetEmbeddings,
+            Tensor sourceEmbeddings_Device, 
+            Tensor targetEmbeddings_Device,
             IDictionaryBuilderParameters parameters,
             ILogger? logger = null)
         {
             logger?.LogInformation($"Получение кандидатов методом {parameters.DicoMethod}...");
             
-            var sourceVocabSize = sourceEmbeddings.size(0);
-            var targetVocabSize = targetEmbeddings.size(0);
-            var embeddingDim = sourceEmbeddings.size(1);
+            var sourceVocabSize = sourceEmbeddings_Device.size(0);
+            var targetVocabSize = targetEmbeddings_Device.size(0);
+            var embeddingDim = sourceEmbeddings_Device.size(1);
             
             // Ограничиваем количество исходных слов если задан max_rank
             var nSourceWords = parameters.DicoMaxRank > 0 && !parameters.DicoMethod.StartsWith("invsm_beta_") 
@@ -91,11 +91,11 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             
             return parameters.DicoMethod switch
             {
-                "nn" => await GetNearestNeighborCandidatesAsync(sourceEmbeddings, targetEmbeddings, nSourceWords, logger),
+                "nn" => await GetNearestNeighborCandidatesAsync(sourceEmbeddings_Device, targetEmbeddings_Device, nSourceWords, logger),
                 var method when method.StartsWith("invsm_beta_") => await GetInvertedSoftmaxCandidatesAsync(
-                    sourceEmbeddings, targetEmbeddings, method, parameters, logger),
+                    sourceEmbeddings_Device, targetEmbeddings_Device, method, parameters, logger),
                 var method when method.StartsWith("csls_knn_") => await GetCSLSCandidatesAsync(
-                    sourceEmbeddings, targetEmbeddings, method, nSourceWords, parameters, logger),
+                    sourceEmbeddings_Device, targetEmbeddings_Device, method, nSourceWords, parameters, logger),
                 _ => throw new ArgumentException($"Неизвестный метод построения словаря: {parameters.DicoMethod}")
             };
         }
@@ -103,16 +103,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// <summary>
         /// Строит словарь из выровненных эмбеддингов
         /// </summary>
-        /// <param name="mappedSourceEmbeddings">Исходные эмбеддинги</param>
-        /// <param name="targetEmbeddings">Целевые эмбеддинги</param>
+        /// <param name="mappedSourceEmbeddings_Device">Исходные эмбеддинги</param>
+        /// <param name="targetEmbeddings_Device">Целевые эмбеддинги</param>
         /// <param name="parameters">Параметры</param>
         /// <param name="sourceToTargetCandidates">Кандидаты Source->Target (опционально)</param>
         /// <param name="targetToSourceCandidates">Кандидаты Target->Source (опционально)</param>
         /// <param name="logger">Логгер</param>
         /// <returns>Словарь пар [n_pairs, 2] или null если словарь пустой</returns>
         public static async Task<Tensor?> BuildDictionaryAsync(
-            Tensor mappedSourceEmbeddings,
-            Tensor targetEmbeddings,
+            Tensor mappedSourceEmbeddings_Device,
+            Tensor targetEmbeddings_Device,
             IDictionaryBuilderParameters parameters,
             Tensor? sourceToTargetCandidates = null,
             Tensor? targetToSourceCandidates = null,
@@ -129,13 +129,13 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Получаем кандидатов SourceToTarget
             if (buildSourceToTarget && sourceToTargetCandidates is null)
             {
-                sourceToTargetCandidates = await GetCandidatesAsync(mappedSourceEmbeddings, targetEmbeddings, parameters, logger);
+                sourceToTargetCandidates = await GetCandidatesAsync(mappedSourceEmbeddings_Device, targetEmbeddings_Device, parameters, logger);
             }
             
             // Получаем кандидатов TargetToSource
             if (buildTargetToSource && targetToSourceCandidates is null)
             {
-                targetToSourceCandidates = await GetCandidatesAsync(targetEmbeddings, mappedSourceEmbeddings, parameters, logger);
+                targetToSourceCandidates = await GetCandidatesAsync(targetEmbeddings_Device, mappedSourceEmbeddings_Device, parameters, logger);
                 // Меняем местами колонки для TargetToSource
                 targetToSourceCandidates = cat(new[] { targetToSourceCandidates.select(1, 1).unsqueeze(1), targetToSourceCandidates.select(1, 0).unsqueeze(1) }, dim: 1);
             }
@@ -172,8 +172,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
         /// Получает кандидатов методом ближайших соседей
         /// </summary>
         private static Task<Tensor> GetNearestNeighborCandidatesAsync(
-            Tensor sourceEmbeddings, 
-            Tensor targetEmbeddings, 
+            Tensor sourceEmbeddings_Device, 
+            Tensor targetEmbeddings_Device, 
             int nSourceWords,
             ILogger? logger)
         {
@@ -185,15 +185,17 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation
             // Обрабатываем батчами для оптимизации памяти
             for (int i = 0; i < nSourceWords; i += BatchSize)
             {
+                using var disposeScope = torch.NewDisposeScope();
+
                 var endIdx = Math.Min(nSourceWords, i + BatchSize);
-                var batchSourceEmb = sourceEmbeddings[TensorIndex.Slice(i, endIdx)];
+                var batchSourceEmb = sourceEmbeddings_Device[TensorIndex.Slice(i, endIdx)];
                 
                 // Вычисляем скоры: target_emb * source_emb^T
-                var scores = targetEmbeddings.mm(batchSourceEmb.transpose(0, 1)).transpose(0, 1);
+                var scores = targetEmbeddings_Device.mm(batchSourceEmb.transpose(0, 1)).transpose(0, 1);
                 var (bestScores, bestTargets) = scores.topk(2, dim: 1, largest: true, sorted: true);
                 
-                allScores.Add(bestScores.cpu());
-                allTargets.Add(bestTargets.cpu());
+                allScores.Add(bestScores.cpu().DetachFromDisposeScope());
+                allTargets.Add(bestTargets.cpu().DetachFromDisposeScope());
                 
                 if (i % (BatchSize * 10) == 0)
                 {

@@ -56,6 +56,8 @@ public partial class Model02
 
     public const string FileName_MUSE_Best_Mapping_RU_EN = "best_mapping.pt";
 
+    public const string FileName_MUSE_Best_Mapping_Temp_RU_EN = "best_mapping_temp.pt";
+
     public const string VALIDATION_METRIC = "mean_cosine-csls_knn_10-SourceToTarget-10000";
 
     /// <summary>
@@ -122,8 +124,9 @@ public partial class Model02
                 //}
             }
 
-            // Устройство для размещения тензоров
+            // Устройство для размещения тензоров            
             var device = cuda.is_available() ? CUDA : CPU;
+            //var device = new torch.Device("cuda:1"); // конкретный индекс
 
             //// Загружаем исходные эмбеддинги            
             //var (sourceDictionary, sourceEmbeddingMatrix) = await EmbeddingUtils.LoadTextEmbeddingsAsync(
@@ -190,7 +193,7 @@ public partial class Model02
             // Настраиваем оптимизаторы
             trainer.Initialize_SetupOptimizers(parameters.MapOptimizerConfig, parameters.DisOptimizerConfig);
 
-            bool runTraining = true;
+            bool runTraining = false;
             if (runTraining)
             {
                 // Состязательное обучение
@@ -203,7 +206,7 @@ public partial class Model02
                 }
             }
 
-            bool runNRefinement = true;
+            bool runNRefinement = false;
             if (runNRefinement)
             {                
                 // Procrustes refinement
@@ -227,7 +230,7 @@ public partial class Model02
 
                 TrainingStats stats = new();
                 var evaluator = new Evaluator(trainer, logger);
-                await evaluator.EvaluateWordTranslationAsync(stats, Path.Combine("Data", "Words_RU_EN.csv"));
+                await evaluator.EvaluateWordTranslationAsync(stats, Path.Combine("Data", "Words_RU_EN_ExternalSource.csv"));
             }
 
             //// Экспорт финальных эмбеддингов
@@ -434,6 +437,8 @@ public partial class Model02
 
         for (int iteration = 0; iteration < parameters.NRefinement; iteration++)
         {
+            using var disposeScope = torch.NewDisposeScope();
+
             logger.LogInformation($"Начало итерации refinement {iteration}...");
 
             await trainer.BuildDictionaryAsync(parameters);

@@ -19,7 +19,7 @@
 
 	<dh:DialogHost Identifier="RootDialog">
 		<Grid>
-            <advancedEmbeddingViews:Model02View />
+            <advancedEmbeddingViews:Model03View />
 		</Grid>
 	</dh:DialogHost>
 </Window>

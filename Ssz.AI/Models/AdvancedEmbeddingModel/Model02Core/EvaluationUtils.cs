@@ -307,6 +307,8 @@ public static class EvaluationUtils
         int bs = 1024;
         for (int i = 0; i < queryCount; i += bs)
         {
+            using var disposeScope = torch.NewDisposeScope();
+
             var endIdx = Math.Min(queryCount, i + bs);
             var batchQuery = query[TensorIndex.Slice(i, endIdx)];
 

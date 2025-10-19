@@ -111,25 +111,25 @@ public sealed class Mapping : Module<Tensor, Tensor>
     /// Применяет решение задачи ортогонального Прокруста
     /// Находит оптимальную ортогональную матрицу для выравнивания эмбеддингов
     /// </summary>
-    /// <param name="sourceEmbeddings">Исходные эмбеддинги [n_pairs, embedding_dim]</param>
-    /// <param name="targetEmbeddings">Целевые эмбеддинги [n_pairs, embedding_dim]</param>
+    /// <param name="sourceEmbeddings_Device">Исходные эмбеддинги [n_pairs, embedding_dim]</param>
+    /// <param name="targetEmbeddings_Device">Целевые эмбеддинги [n_pairs, embedding_dim]</param>
     /// <exception cref="ArgumentException">Если размерности не совпадают</exception>
-    public void ApplyProcrustesAlignment(Tensor sourceEmbeddings, Tensor targetEmbeddings)
+    public void ApplyProcrustesAlignment(Tensor sourceEmbeddings_Device, Tensor targetEmbeddings_Device)
     {
-        if (sourceEmbeddings.shape[0] != targetEmbeddings.shape[0])
+        if (sourceEmbeddings_Device.shape[0] != targetEmbeddings_Device.shape[0])
             throw new ArgumentException("Количество исходных и целевых эмбеддингов должно совпадать");
 
-        if (sourceEmbeddings.shape[1] != _mappingParameters.EmbDim ||
-            targetEmbeddings.shape[1] != _mappingParameters.EmbDim)
+        if (sourceEmbeddings_Device.shape[1] != _mappingParameters.EmbDim ||
+            targetEmbeddings_Device.shape[1] != _mappingParameters.EmbDim)
             throw new ArgumentException("Размерности эмбеддингов должны соответствовать параметрам модели");
 
         using var _ = no_grad();
 
         // Вычисляем матрицу M = B^T * A (где A - source, B - target)
-        var M = targetEmbeddings.transpose(0, 1).mm(sourceEmbeddings);
+        var M_Device = targetEmbeddings_Device.transpose(0, 1).mm(sourceEmbeddings_Device);
 
         // Применяем SVD разложение: M = U * S * V^T
-        var (U, S, Vt) = linalg.svd(M, fullMatrices: true);
+        var (U, S, Vt) = linalg.svd(M_Device, fullMatrices: true);
 
         // Оптимальная ортогональная матрица: W = U * V^T
         var optimalW = U.mm(Vt);
