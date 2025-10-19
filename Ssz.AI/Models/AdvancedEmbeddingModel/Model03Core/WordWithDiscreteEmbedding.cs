@@ -2,8 +2,15 @@
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 
-public class WordWithDiscreteEmbedding : IOwnedDataSerializable
+public class Word : IOwnedDataSerializable
 {
+    public Word()
+    {
+        OldVector = new float[Model01.Constants.OldVectorLength];
+        OldVectorNormalized = new float[Model01.Constants.OldVectorLength];
+        Temp_DiscreteVector_ToDisplay = new float[Model01.Constants.DiscreteVectorLength];
+    }
+
     public string Name = null!;
 
     /// <summary>
@@ -39,6 +46,13 @@ public class WordWithDiscreteEmbedding : IOwnedDataSerializable
     public float[] DiscreteVector_SecondaryBitsOnly = null!;
 
     public bool Temp_Flag;
+
+    /// <summary>
+    ///     Initialized when Cortex is initialized.
+    /// </summary>
+    public Point Temp_Point = null!;
+
+    public float[]? Temp_DiscreteVector_ToDisplay;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {

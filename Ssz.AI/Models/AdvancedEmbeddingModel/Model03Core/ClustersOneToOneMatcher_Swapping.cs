@@ -241,7 +241,7 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
     private (float batchEnergy, int swapsCount) OptimizeWordsBatch(
         float prevBatchEnergy,
         int toOptimize_BitIndex_A,
-        Memory<WordWithDiscreteEmbedding> batchWords_A,
+        Memory<Word> batchWords_A,
         int[] mapping_A_B,
         int[][] wordBitIndices_Collection_A,
         int[][] wordMappedBitIndices_Collection_A,

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
+using System.Collections.Generic;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 

@@ -71,7 +71,7 @@ public static class WordsHelper
                     float norm = TensorPrimitives.Norm(oldVectror);
                     TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
                 }
-                word.Freq = new Any(parts[^1]).ValueAsDouble(false);
+                //word.Freq = new Any(parts[^1]).ValueAsDouble(false);
 
                 languageInfo_RU.Words.Add(word);
 
@@ -133,7 +133,7 @@ public static class WordsHelper
                     float norm = TensorPrimitives.Norm(oldVectror);
                     TensorPrimitives.Divide(oldVectror, norm, oldVectrorNormalized);
                 }
-                word.Freq = new Any(parts[^1]).ValueAsDouble(false);
+                //word.Freq = new Any(parts[^1]).ValueAsDouble(false);
 
                 languageInfo_EN.Words.Add(word);
 
@@ -189,7 +189,7 @@ public static class WordsHelper
                     norm = TensorPrimitives.Norm(oldVectror);
                 }                
                 TensorPrimitives.Divide(oldVectror, norm, word.OldVectorNormalized);
-                word.Freq = norm;
+                //word.Freq = norm;
             }            
 
             languageInfo.Words.Add(word);

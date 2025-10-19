@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;

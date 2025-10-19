@@ -56,7 +56,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return v;
         }
 
-        public static float GetWord_PrimaryBitsOnly_Energy(WordWithDiscreteEmbedding word, MatrixFloat energyMatrix)
+        public static float GetWord_PrimaryBitsOnly_Energy(Word word, MatrixFloat energyMatrix)
         {
             var vector = word.DiscreteVector_PrimaryBitsOnly;
 

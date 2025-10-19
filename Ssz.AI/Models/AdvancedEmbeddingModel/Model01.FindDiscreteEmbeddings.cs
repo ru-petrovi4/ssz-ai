@@ -213,8 +213,8 @@ public partial class Model01
         };
         for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
         {
-            Word word = LanguageInfo_RU.Words[i];
-            WordWithDiscreteEmbedding wordWithDiscreteEmbedding = new()
+            Model03Core.Word word = LanguageInfo_RU.Words[i];
+            Model03Core.Word Word = new()
             {
                 Name = word.Name,
                 Index = i,
@@ -226,10 +226,10 @@ public partial class Model01
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_RU.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
 #if DEBUG
-            var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
+            var primaryBitsSum = TensorPrimitives.Sum(Word.DiscreteVector_PrimaryBitsOnly);
             Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
-            languageDiscreteEmbeddings_RU.Words.Add(wordWithDiscreteEmbedding);            
+            languageDiscreteEmbeddings_RU.Words.Add(Word);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
 
@@ -243,8 +243,8 @@ public partial class Model01
         };
         for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
         {
-            Word word = LanguageInfo_EN.Words[i];
-            WordWithDiscreteEmbedding wordWithDiscreteEmbedding = new()
+            Model03Core.Word word = LanguageInfo_EN.Words[i];
+            Model03Core.Word Word = new()
             {
                 Name = word.Name,
                 Index = i,
@@ -256,10 +256,10 @@ public partial class Model01
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_EN.DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
 #if DEBUG
-            var primaryBitsSum = TensorPrimitives.Sum(wordWithDiscreteEmbedding.DiscreteVector_PrimaryBitsOnly);
+            var primaryBitsSum = TensorPrimitives.Sum(Word.DiscreteVector_PrimaryBitsOnly);
             Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
-            languageDiscreteEmbeddings_EN.Words.Add(wordWithDiscreteEmbedding);            
+            languageDiscreteEmbeddings_EN.Words.Add(Word);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
     }

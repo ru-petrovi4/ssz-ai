@@ -63,7 +63,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                             V = [ix, iy]
                         };
                         pointRef = point;
-                        languageInfo.Words[wordIndex].Point = point;
+                        languageInfo.Words[wordIndex].Temp_Point = point;
                         break;
                     }
                 }
@@ -81,7 +81,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                             V = [ix, iy]
                         };
                         pointRef = emptyPoint;
-                        languageInfo.Words[0].Point = emptyPoint; // Ref to any empty point.
+                        languageInfo.Words[0].Temp_Point = emptyPoint; // Ref to any empty point.
                     }
                 }
             }
@@ -351,7 +351,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 {
                     ref var pointRef = ref Cortex[ix, iy];
                     if (pointRef.WordIndex >= 0)
-                        languageInfo.Words[pointRef.WordIndex].Point = pointRef;
+                        languageInfo.Words[pointRef.WordIndex].Temp_Point = pointRef;
                 }
             }
 
