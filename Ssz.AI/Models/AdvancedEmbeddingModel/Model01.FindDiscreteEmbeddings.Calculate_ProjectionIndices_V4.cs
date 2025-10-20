@@ -23,41 +23,39 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 {    
     public partial class Model01
     {
-        public void Calculate_ProjectionIndices_V4(LanguageInfo languageInfo, Random r, ILoggersSet loggersSet)
+        public ProjectionOptimization_AlgorithmData Calculate_ProjectionIndices_V4(
+            List<Word> words, 
+            List<ClusterInfo> clusterInfos,
+            MatrixFloat wordsDistancesOldMatrix,
+            Random r, 
+            ILoggersSet loggersSet)
         {
-            var words = languageInfo.Words;
-
             var projectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "V4");
-            projectionOptimization_AlgorithmData.GenerateOwnedData(words.Count);
-            languageInfo.ProjectionOptimization_AlgorithmData = projectionOptimization_AlgorithmData;
+            projectionOptimization_AlgorithmData.GenerateOwnedData(words.Count);            
 
-            var clusterization_AlgorithmData = languageInfo.Clusterization_AlgorithmData;    
-
-            var totalStopwatch = Stopwatch.StartNew();            
+            var totalStopwatch = Stopwatch.StartNew();
             
-            //LoadFromFile_ProjectionIndices(ProjectionOptimization_AlgorithmData_Variant3, "ProjectionOptimization.bin", _loggersSet);
-            var clusterInfos = languageInfo.Clusterization_AlgorithmData.ClusterInfos;
-            int[] hashProjectionIndices = new int[clusterInfos.Length];
-            foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
+            int[] hashProjectionIndices = new int[clusterInfos.Count];
+            foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Count))
             {
                 hashProjectionIndices[clusterIndex] = clusterIndex;
             }
             r.Shuffle(hashProjectionIndices);
-            foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
+            foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Count))
             {
                 clusterInfos[clusterIndex].HashProjectionIndex = hashProjectionIndices[clusterIndex];
-            }            
+            }
 
             //Random initial hash
             var wordsProjectionIndices = projectionOptimization_AlgorithmData.WordsHashProjectionIndices;
             foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
             {
                 wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
-            }                                      
+            }
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
             discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
-            discreteVectorsAndMatrices.Prepare(clusterization_AlgorithmData, words, languageInfo.WordsDistancesOldMatrix);
+            discreteVectorsAndMatrices.Prepare(clusterInfos, words, wordsDistancesOldMatrix);
             discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsProjectionIndices, loggersSet);
 
             Buffers buffers = new(discreteVectorsAndMatrices);
@@ -66,34 +64,48 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             for (int i = 0; i < 0; i += 1)
             {
                 var words_RandomOrder = words.ToArray();
-                r.Shuffle(words_RandomOrder);                
+                r.Shuffle(words_RandomOrder);
 
                 var stopwatch = Stopwatch.StartNew();
                 float energy;
                 int wordN = 0;
                 foreach (Word word in words_RandomOrder)
                 {
-                    energy = OptimizeWordProjection_V4(languageInfo, word, discreteVectorsAndMatrices, buffers, loggersSet);
+                    energy = OptimizeWordProjection_V4(
+                        projectionOptimization_AlgorithmData,
+                        words,
+                        word,
+                        discreteVectorsAndMatrices, 
+                        buffers, 
+                        loggersSet);
                     wordN += 1;
                     if (wordN % 100 == 0)
                     {
                         loggersSet.UserFriendlyLogger.LogInformation($"Calculate_ProjectionIndices_V4 iteration; WordN: {wordN} done. Energy: {energy}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
                         stopwatch.Restart();
                     }
-                }                
+                }
             }
 
             totalStopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("Calculate_ProjectionIndices_V4 totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
+
+            return projectionOptimization_AlgorithmData;
         }
 
-        private float OptimizeWordProjection_V4(LanguageInfo languageInfo, Word word, DiscreteVectorsAndMatrices discreteVectorsAndMatrices, Buffers buffers, ILoggersSet loggersSet)
+        private float OptimizeWordProjection_V4(
+            ProjectionOptimization_AlgorithmData projectionOptimization_AlgorithmData,
+            List<Word> words, 
+            Word word, 
+            DiscreteVectorsAndMatrices discreteVectorsAndMatrices, 
+            Buffers buffers, 
+            ILoggersSet loggersSet)
         {
             //var stopwatch = Stopwatch.StartNew();            
 
             var dependentWords = discreteVectorsAndMatrices.Temp_DependentWords[word.Index];
 
-            int[] wordsProjectionIndices = languageInfo.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices;
+            int[] wordsProjectionIndices = projectionOptimization_AlgorithmData.WordsHashProjectionIndices;
 
             int minEnergyBitIndex = -1;
             float minEnergy = Single.MaxValue;
@@ -102,7 +114,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 wordsProjectionIndices[word.Index] = bitIndex;
 
                 discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatricesPartial(dependentWords,
-                    languageInfo.Words,
+                    words,
                     wordsProjectionIndices,                    
                     loggersSet);
 
@@ -119,8 +131,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             wordsProjectionIndices[word.Index] = minEnergyBitIndex;
 
-            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatricesPartial(dependentWords,
-                    languageInfo.Words,
+            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatricesPartial(
+                    dependentWords,
+                    words,
                     wordsProjectionIndices,
                     loggersSet);
 

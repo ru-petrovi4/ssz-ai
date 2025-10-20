@@ -23,12 +23,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
         
         public readonly LanguageInfo LanguageInfo;
 
-        public readonly string Name = null!;
-
-        /// <summary>
-        ///    For each Word. ClusterIndices.Length == Words.Length
-        /// </summary>
-        public int[] ClusterIndices = null!;
+        public readonly string Name = null!;        
 
         public ClusterInfo[] ClusterInfos = null!;
 
@@ -52,8 +47,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
         public Tensor MixingCoefficients { get; set; } = null!;
 
         public void GenerateOwnedData(int clustersCount)
-        {
-            ClusterIndices = new int[LanguageInfo.Words.Count];
+        {            
             int d = LanguageInfo.Words[0].OldVectorNormalized.Length;
             ClusterInfos = Enumerable.Range(0, clustersCount).Select(_ => new ClusterInfo
             { 
@@ -63,9 +57,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(2))
-            {
-                writer.WriteArray(ClusterIndices);
+            using (writer.EnterBlock(3))
+            {                
                 writer.WriteArrayOfOwnedDataSerializable(ClusterInfos, null);                
 
                 TorchSharpHelper.WriteTensor(MeanDirections, writer);
@@ -81,7 +74,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
                 switch (block.Version)
                 {
                     case 2:
-                        ClusterIndices = reader.ReadArray<int>()!;
+                        reader.ReadArray<int>();
                         ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);                                        
 
                         MeanDirections = TorchSharpHelper.ReadTensor(reader);
@@ -90,6 +83,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core
 #if DEBUG
                         //var sum = IsPrimaryWord.Sum(b => b ? 1 : 0);
 #endif
+                        break;
+                    case 3:                        
+                        ClusterInfos = reader.ReadArrayOfOwnedDataSerializable(() => new ClusterInfo(), null);
+
+                        MeanDirections = TorchSharpHelper.ReadTensor(reader);
+                        Concentrations = TorchSharpHelper.ReadTensor(reader);
+                        MixingCoefficients = TorchSharpHelper.ReadTensor(reader);
+
                         break;
                 }
             }

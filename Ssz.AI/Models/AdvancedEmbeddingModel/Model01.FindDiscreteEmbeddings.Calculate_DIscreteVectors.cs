@@ -153,32 +153,42 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         //    return result;
         //}
 
-        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsAndMatrices(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsAndMatrices(
+            List<Word> words,
+            List<ClusterInfo> clusterInfos,
+            MatrixFloat wordsDistancesOldMatrix,
+            ProjectionOptimization_AlgorithmData projectionOptimization_AlgorithmData,
+            ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();            
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
-            discreteVectorsAndMatrices.GenerateOwnedData(languageInfo.Words.Count);
-            discreteVectorsAndMatrices.Prepare(languageInfo.Clusterization_AlgorithmData, languageInfo.Words, languageInfo.WordsDistancesOldMatrix);
-            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(languageInfo.Words, languageInfo.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
+            discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
+            discreteVectorsAndMatrices.Prepare(clusterInfos, words, wordsDistancesOldMatrix);
+            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, projectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("Clusterization:" + languageInfo.Clusterization_AlgorithmData.Name + "; ProjectionOptimization:" + languageInfo.ProjectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + projectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return discreteVectorsAndMatrices;
         }
 
-        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsOnly(LanguageInfo languageInfo, ILoggersSet loggersSet)
+        public DiscreteVectorsAndMatrices Calculate_DiscreteVectorsOnly(
+            List<Word> words, 
+            List<ClusterInfo> clusterInfos,
+            MatrixFloat wordsDistancesOldMatrix,
+            ProjectionOptimization_AlgorithmData projectionOptimization_AlgorithmData,
+            ILoggersSet loggersSet)
         {
             var stopwatch = Stopwatch.StartNew();
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
-            discreteVectorsAndMatrices.GenerateOwnedData(languageInfo.Words.Count);
-            discreteVectorsAndMatrices.Prepare(languageInfo.Clusterization_AlgorithmData, languageInfo.Words, languageInfo.WordsDistancesOldMatrix);
-            discreteVectorsAndMatrices.CalculateDiscreteVectorsOnly(languageInfo.Words.ToArray(), languageInfo.ProjectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
+            discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
+            discreteVectorsAndMatrices.Prepare(clusterInfos, words, wordsDistancesOldMatrix);
+            discreteVectorsAndMatrices.CalculateDiscreteVectorsOnly(words.ToArray(), projectionOptimization_AlgorithmData.WordsHashProjectionIndices, loggersSet);
 
             stopwatch.Stop();
-            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + languageInfo.ProjectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
+            loggersSet.UserFriendlyLogger.LogInformation("ProjectionOptimization:" + projectionOptimization_AlgorithmData.Name + " CalculateDiscreteVectors done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
 
             return discreteVectorsAndMatrices;
         }

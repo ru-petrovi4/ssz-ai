@@ -104,22 +104,19 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
         ProxWordsDiscreteMatrix_SecondaryBitsOnly = new float[wordsCount * wordsCount];
     }
 
-    public void Prepare(Clusterization_AlgorithmData clusterization_AlgorithmData, List<Word> words, MatrixFloat wordsDistancesOldMatrix)
+    public void Prepare(List<ClusterInfo> clusterInfos, List<Word> words, MatrixFloat wordsDistancesOldMatrix)
     {
         int wordsCount = words.Count;
-        ClusterInfo[] clusterInfos = clusterization_AlgorithmData.ClusterInfos;
 
         Temp_TopNProxWords = new (float, Word)[wordsCount][];
         Temp_TopNProxClusterInfos = new (float, ClusterInfo)[wordsCount][];        
         
         List<Word>[] dependentWords = Enumerable.Range(0, wordsCount).Select(_ => new List<Word>()).ToArray();
 
-        foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Length))
+        foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Count))
         {
-            Word[] clusterWords = clusterization_AlgorithmData.ClusterIndices
-                .Select((ci, wordIndex) => (words[wordIndex], ci))
-                .Where(it => it.Item2 == clusterIndex)
-                .Select(it => it.Item1)
+            Word[] clusterWords = words                
+                .Where(w => w.ClusterIndex == clusterIndex)                
                 .ToArray();
 
             clusterInfos[clusterIndex].WordsCount = clusterWords.Length;

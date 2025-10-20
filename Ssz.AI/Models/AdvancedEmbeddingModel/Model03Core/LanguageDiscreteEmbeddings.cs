@@ -40,6 +40,15 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
     /// <remarks>device: CPU</remarks>
     public Tensor MixingCoefficients = null!;
 
+    /// <summary>
+    ///     [WordIndex1, WordIndex2] Words energy matrix.
+    /// </summary>    
+    public MatrixFloat Temp_WordsDistancesOldMatrix = null!;
+
+    public ProjectionOptimization_AlgorithmData Temp_ProjectionOptimization_AlgorithmData = null!;
+
+    public DiscreteVectorsAndMatrices Temp_DiscreteVectorsAndMatrices = null!;
+
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(2))

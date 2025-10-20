@@ -13,11 +13,11 @@ public class LanguageInfo
     /// <summary>
     ///     [WordIndex1, WordIndex2] Words energy matrix.
     /// </summary>    
-    public MatrixFloat WordsDistancesOldMatrix = null!;
+    public MatrixFloat Temp_WordsDistancesOldMatrix = null!;
 
-    public Clusterization_AlgorithmData Clusterization_AlgorithmData = null!;
+    public Clusterization_AlgorithmData Temp_Clusterization_AlgorithmData = null!;
 
-    public ProjectionOptimization_AlgorithmData ProjectionOptimization_AlgorithmData = null!;
+    public ProjectionOptimization_AlgorithmData Temp_ProjectionOptimization_AlgorithmData = null!;
 
-    public DiscreteVectorsAndMatrices DiscreteVectorsAndMatrices = null!;
+    public DiscreteVectorsAndMatrices Temp_DiscreteVectorsAndMatrices = null!;
 }

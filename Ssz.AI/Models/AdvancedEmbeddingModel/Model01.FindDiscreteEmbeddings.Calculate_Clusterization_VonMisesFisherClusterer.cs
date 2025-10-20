@@ -30,7 +30,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             var clusterization_AlgorithmData = new Clusterization_AlgorithmData(languageInfo, name: "VonMisesFisherClusterer");
             clusterization_AlgorithmData.GenerateOwnedData(Constants.ClustersCount);
-            languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData;
+            languageInfo.Temp_Clusterization_AlgorithmData = clusterization_AlgorithmData;
 
             var totalStopwatch = Stopwatch.StartNew();
 
@@ -64,7 +64,10 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation("\nНачинаем обучение...");
             clusterer.Fit(oldVectorsTensor);
 
-            clusterer.GetResult(clusterization_AlgorithmData);            
+            clusterer.GetResult(
+                words,
+                clusterization_AlgorithmData
+                );            
 
             // Выводим результаты
             clusterer.PrintModelSummary();

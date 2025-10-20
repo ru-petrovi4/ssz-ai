@@ -1,5 +1,6 @@
 using MathNet.Numerics;
 using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
@@ -138,7 +139,10 @@ public class VonMisesFisherClusterer
     /// 
     /// </summary>    
     /// <param name="clusterization_AlgorithmData"></param>
-    public void GetResult(Clusterization_AlgorithmData clusterization_AlgorithmData)
+    public void GetResult(
+        List<Word> words,
+        Clusterization_AlgorithmData clusterization_AlgorithmData
+        )
     { 
         // Вычисляем логарифмические вероятности для численной стабильности
         using var logProbabilities = torch.zeros(size: new long[] { _numSamples, _numClusters });
@@ -164,10 +168,10 @@ public class VonMisesFisherClusterer
 
         // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
         var assignments = torch.argmax(logProbabilities, dim: 1);
-        for (long i = 0; i < _numSamples; i++)
+        for (int i = 0; i < _numSamples; i++)
         {
-            var assignedCluster = assignments[i].item<long>();
-            clusterization_AlgorithmData.ClusterIndices[i] = (int)assignedCluster;
+            var assignedCluster = assignments[i].item<long>();            
+            words[i].ClusterIndex = (int)assignedCluster;
         }
 
         clusterization_AlgorithmData.MeanDirections = MeanDirections;

@@ -27,7 +27,7 @@ public partial class Model01
 
         var clusterization_AlgorithmData_KMeans = new Clusterization_AlgorithmData(languageInfo, name: "KMeans");
         clusterization_AlgorithmData_KMeans.GenerateOwnedData(Constants.ClustersCount);
-        languageInfo.Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
+        languageInfo.Temp_Clusterization_AlgorithmData = clusterization_AlgorithmData_KMeans;
 
         var totalStopwatch = Stopwatch.StartNew();
 
@@ -63,7 +63,7 @@ public partial class Model01
             clusterInfos[clusterIndex] = wordClustrer;
         }
 
-        Array.Clear(clusterization_AlgorithmData_KMeans.ClusterIndices);
+        var clusterIndices = new int[words.Count];
 
         while (TimeSpan.FromMilliseconds(totalStopwatch.ElapsedMilliseconds) < TimeSpan.FromHours(1))
         {
@@ -100,13 +100,13 @@ public partial class Model01
             loggersSet.UserFriendlyLogger.LogInformation("ЕXPECTATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
             stopwatch.Restart();
 
-            if (newClusterIndices.SequenceEqual(clusterization_AlgorithmData_KMeans.ClusterIndices))
+            if (newClusterIndices.SequenceEqual(clusterIndices))
             {
                 loggersSet.UserFriendlyLogger.LogInformation("newClusterIndices.SequenceEqual(clusterIndices)");
                 break;
             }
 
-            clusterization_AlgorithmData_KMeans.ClusterIndices = newClusterIndices;
+            clusterIndices = newClusterIndices;
 
             #region MAXIMIZATION   
 
@@ -120,7 +120,7 @@ public partial class Model01
             {
                 Word word = words[wordIndex];
                 var wordOldVectrorNormalized = word.OldVectorNormalized;
-                var wordCluster_CentroidOldVector = clusterInfos[clusterization_AlgorithmData_KMeans.ClusterIndices[wordIndex]].CentroidOldVectorNormalized;
+                var wordCluster_CentroidOldVector = clusterInfos[clusterIndices[wordIndex]].CentroidOldVectorNormalized;
                 lock (wordCluster_CentroidOldVector)
                 {
                     TensorPrimitives.Add(wordCluster_CentroidOldVector, wordOldVectrorNormalized, wordCluster_CentroidOldVector);
@@ -139,6 +139,11 @@ public partial class Model01
             stopwatch.Stop();
             loggersSet.UserFriendlyLogger.LogInformation("MAXIMIZATION done. delta_llh=" + delta_llh + "; Q=" + Q + " Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
         }        
+
+        foreach (int wordIndex in Enumerable.Range(0, words.Count))
+        {
+            words[wordIndex].ClusterIndex = clusterIndices[wordIndex];
+        }
 
         totalStopwatch.Stop();
         loggersSet.UserFriendlyLogger.LogInformation("CalculateAlgorithmData_KMeans.PrimaryWords totally done. Elapsed Milliseconds = " + totalStopwatch.ElapsedMilliseconds);
