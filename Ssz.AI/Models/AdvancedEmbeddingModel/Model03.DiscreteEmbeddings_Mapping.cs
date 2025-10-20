@@ -40,7 +40,7 @@ public partial class Model03
     public const string FileName_NearestA = "AdvancedEmbedding_NearestA.bin";
     public const string FileName_DistanceMatrixB = "AdvancedEmbedding_DistanceMatrixB.bin";
     public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
-    //public const string FileName_OldVectors_PrimaryWordsOneToOneMatcher = "OldVectors_PrimaryWordsOneToOneMatcher.bin";
+    public const string FileName_PrimaryWordsOneToOneMatcher_Ideal = "PrimaryWordsOneToOneMatcher_Ideal.bin";
 
     public const string FileName_PrimaryWordsOneToOneMatcher_V2 = "AdvancedEmbedding_PrimaryWordsOneToOneMatcher_V2.bin";
 
@@ -87,11 +87,11 @@ public partial class Model03
         if (calculate)
         {
             clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-            //Helpers.SerializationHelper.SaveToFile(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
+            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, _loggersSet.UserFriendlyLogger);
         }
         else
         {
-            //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_OldVectors_PrimaryWordsOneToOneMatcher, clustersOneToOneMatcher_MappingLinear, null, null);
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, null);
         }
         ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersOneToOneMatcher_MappingLinear.ClustersMapping, _loggersSet.UserFriendlyLogger);
     }
@@ -154,16 +154,20 @@ public partial class Model03
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);        
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+
+
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, null);
 
         var clustersOneToOneMatcher_Swapping = new ClustersOneToOneMatcher_Swapping(_loggersSet, languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-        bool calculateFromBeginning = false;
+        bool calculateFromBeginning = true;
         if (calculateFromBeginning)
         {
             clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
 
             clustersOneToOneMatcher_Swapping.Prepare();
-            clustersOneToOneMatcher_Swapping.CalculateMapping();
+            clustersOneToOneMatcher_Swapping.CalculateMapping(clustersOneToOneMatcher_MappingLinear.ClustersMapping);
             
             Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);            
         }
@@ -172,7 +176,7 @@ public partial class Model03
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
 
             clustersOneToOneMatcher_Swapping.Prepare();
-            clustersOneToOneMatcher_Swapping.CalculateMapping();
+            clustersOneToOneMatcher_Swapping.CalculateMapping(clustersOneToOneMatcher_MappingLinear.ClustersMapping);
 
             Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
         }

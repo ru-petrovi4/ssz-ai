@@ -79,10 +79,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             if (selected != -1)
             {
                 ClustersMapping[sourceClusterIndex] = selected;                
-            }
-            else
-            {
-            }
+            }            
         }
     }
 
@@ -190,7 +187,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             target.ClusterInfos[targetClusterIndex] = null!;
         }
 
-        var clustersMapping_Reverse = new int[source.ClusterInfos.Count];
+        var clustersMapping_Reverse = new int[target.ClusterInfos.Count];
         Array.Fill(clustersMapping_Reverse, -1);
         for (int targetClusterIndex = 0; targetClusterIndex < target.ClusterInfos.Count; targetClusterIndex += 1)
         {
@@ -254,6 +251,11 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             }
             ).ToList();
 
+        for (int i = 0; i < embeddings.Words.Count; i += 1)
+        {
+            Model03Core.Word word = embeddings.Words[i];
+            word.Index = i;
+        }
     }
 
     /// <summary>

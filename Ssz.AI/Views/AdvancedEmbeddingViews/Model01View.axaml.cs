@@ -29,9 +29,8 @@ public partial class Model01View : UserControl
 
         Model = new Model01();
         Task.Run(() =>
-        {
-            Model.FindDiscreteEmbeddings();
-            Model.GenerateAndSave_LanguageDiscreteEmbeddings_Object();
+        {            
+            Model.FindDiscreteEmbeddings_LanguageDiscreteEmbeddings_Object();
             //Model.GetEmbeddingsQualityInfo2();
         });
     }

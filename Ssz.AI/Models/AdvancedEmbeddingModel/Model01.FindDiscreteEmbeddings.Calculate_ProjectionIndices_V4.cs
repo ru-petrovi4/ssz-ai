@@ -47,16 +47,16 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             }
 
             //Random initial hash
-            var wordsProjectionIndices = projectionOptimization_AlgorithmData.WordsHashProjectionIndices;
-            foreach (int wordIndex in Enumerable.Range(0, wordsProjectionIndices.Length))
+            var wordsHashProjectionIndices = projectionOptimization_AlgorithmData.WordsHashProjectionIndices;
+            foreach (int wordIndex in Enumerable.Range(0, wordsHashProjectionIndices.Length))
             {
-                wordsProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
+                wordsHashProjectionIndices[wordIndex] = r.Next(Constants.DiscreteVectorLength);
             }
 
             DiscreteVectorsAndMatrices discreteVectorsAndMatrices = new();
             discreteVectorsAndMatrices.GenerateOwnedData(words.Count);
             discreteVectorsAndMatrices.Prepare(clusterInfos, words, wordsDistancesOldMatrix);
-            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsProjectionIndices, loggersSet);
+            discreteVectorsAndMatrices.Calculate_DiscreteVectorsAndMatrices(words, wordsHashProjectionIndices, loggersSet);
 
             Buffers buffers = new(discreteVectorsAndMatrices);
 
