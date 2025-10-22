@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
@@ -9,6 +10,7 @@ using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -25,7 +27,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
         /// </summary>
         /// <param name="languageDiscreteEmbeddings"></param>
         /// <returns></returns>
-        public static MatrixFloat GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings embeddings)
+        public static MatrixFloat GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings embeddings)
         {
             int dimension = embeddings.ClusterInfos.Count;
             var matrixFloat = new MatrixFloat(dimension, dimension);
@@ -228,6 +230,36 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             await File.WriteAllLinesAsync(Path.Combine(programDataDirectoryFullName, @"model_short.csv"), shortLines.OrderByDescending(l => l.Item2).Select(l => l.Item1));
             //await File.WriteAllLinesAsync(Path.Combine(programDataDirectoryFullName, @"model_short_sorted.csv"), shortLines.OrderBy(l => l));
-        }        
+        }
+
+        [return:NotNullIfNotNull(nameof(clustersMapping_A_B))]
+        public static int[]? GetPrimaryBitsMapping(int[]? clustersMapping_A_B, List<Model01Core.ClusterInfo> clusterInfos_A, List<Model01Core.ClusterInfo> clusterInfos_B)
+        {
+            if (clustersMapping_A_B is null)
+                return null;
+
+            int[] primaryBitsMapping_A_B = new int[clustersMapping_A_B.Length];
+
+            foreach (int clusterIndexA in Enumerable.Range(0, clustersMapping_A_B.Length))
+            {
+                primaryBitsMapping_A_B[clusterInfos_A[clusterIndexA].HashProjectionIndex] =
+                    clusterInfos_B[clustersMapping_A_B[clusterIndexA]].HashProjectionIndex;
+            }
+
+            return primaryBitsMapping_A_B;
+        }
+
+        public static int[] GetClustersMapping(int[] primaryBitsMapping_A_B, List<ClusterInfo> clusterInfos_A, List<ClusterInfo> clusterInfos_B)
+        {
+            int[] clustersMapping_A_B = new int[primaryBitsMapping_A_B.Length];
+
+            foreach (int bitIndexA in Enumerable.Range(0, primaryBitsMapping_A_B.Length))
+            {
+                clustersMapping_A_B[clusterInfos_A.FindIndex(ci => ci.HashProjectionIndex == bitIndexA)] =
+                    clusterInfos_B.FindIndex(ci => ci.HashProjectionIndex == primaryBitsMapping_A_B[bitIndexA]);
+            }
+            
+            return clustersMapping_A_B;
+        }
     }
 }

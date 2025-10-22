@@ -274,8 +274,8 @@ public class DiscreteVectorsAndMatrices : ISerializableModelObject
             var temp_TopNProxClusterInfos = Temp_TopNProxClusterInfos[word.Index];
             var temp_TopNProxWords = Temp_TopNProxWords[word.Index];
 
-            Debug.Assert(temp_TopNProxClusterInfos!.Length == Model01.Constants.DiscreteVector_SecondaryBitsCount);
-            if (temp_TopNProxWords!.Length != Model01.Constants.DiscreteVector_PrimaryBitsCount)
+            Debug.Assert(temp_TopNProxClusterInfos!.Length == Model01.Constants.DiscreteVector_PrimaryBitsCount);
+            if (temp_TopNProxWords!.Length != Model01.Constants.DiscreteVector_SecondaryBitsCount)
             {
             }
 

@@ -28,33 +28,33 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     public int VectorLength;
 
     /// <summary>
-    ///     Index RU -> Index EN
+    ///     Primary Bit Index RU -> Primary Bit Index EN
     /// </summary>
-    public int[] Mapping_RU_EN = null!;
+    public int[] PrimaryBitsMapping_RU_EN = null!;
     /// <summary>
-    ///     Index EN -> Index RU
+    ///     Primary Bit Index EN -> Primary Bit Index RU
     /// </summary>
-    public int[] Mapping_EN_RU = null!;    
+    public int[] PrimaryBitsMapping_EN_RU = null!;    
 
     //public torch.Tensor Temp_EnergyBits_Tensor_RU = null!;
-    public MatrixFloat Temp_ClustersEnergy_Matrix_RU = null!;    
+    public MatrixFloat Temp_PrimaryBitsEnergy_Matrix_RU = null!;    
 
     //public torch.Tensor Temp_EnergyBits_Tensor_EN = null!;
-    public MatrixFloat Temp_ClustersEnergy_Matrix_EN = null!;
+    public MatrixFloat Temp_PrimaryBitsEnergy_Matrix_EN = null!;
 
-    public Nearest Temp_NearestA = null!;
+    public PrimaryBitsNearest Temp_PrimaryBitsNearestA = null!;
 
-    public Nearest Temp_NearestB = null!;
-
-    /// <summary>
-    ///     [Word.Index, [Bit Index]]
-    /// </summary>
-    public int[][] Temp_WordBitIndices_Collection_RU = null!;
+    public PrimaryBitsNearest Temp_PrimaryBitsNearestB = null!;
 
     /// <summary>
     ///     [Word.Index, [Bit Index]]
     /// </summary>
-    public int[][] Temp_WordBitIndices_Collection_EN = null!;
+    public int[][] Temp_WordPrimaryBitIndices_Collection_RU = null!;
+
+    /// <summary>
+    ///     [Word.Index, [Bit Index]]
+    /// </summary>
+    public int[][] Temp_WordPrimaryBitIndices_Collection_EN = null!;
 
     /// <summary>
     ///     Таблица накопления весов для гипотез: [позицияA, позицияB] -> float
@@ -80,24 +80,24 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         VectorLength = Model01.Constants.DiscreteVectorLength;        
     }
 
-    public void GenerateOwnedData()
+    public void GenerateOwnedData(int clustersCount)
     {
-        Mapping_RU_EN = new int[VectorLength];
-        Mapping_EN_RU = new int[VectorLength];
-        bool[] isMapped_RU_EN = new bool[VectorLength];
+        PrimaryBitsMapping_RU_EN = new int[clustersCount];
+        PrimaryBitsMapping_EN_RU = new int[clustersCount];
+        bool[] isMapped_RU_EN = new bool[clustersCount];
 
         var r = new Random(1);
         
-        for (int bitIndex_RU = 0; bitIndex_RU < VectorLength; bitIndex_RU += 1)
+        for (int bitIndex_RU = 0; bitIndex_RU < clustersCount; bitIndex_RU += 1)
         {
             for (; ; )
             {
-                int bitIndex_EN = r.Next(VectorLength);                
+                int bitIndex_EN = r.Next(clustersCount);                
                 if (isMapped_RU_EN[bitIndex_EN])
                     continue;
 
-                Mapping_RU_EN[bitIndex_RU] = bitIndex_EN;
-                Mapping_EN_RU[bitIndex_EN] = bitIndex_RU;
+                PrimaryBitsMapping_RU_EN[bitIndex_RU] = bitIndex_EN;
+                PrimaryBitsMapping_EN_RU[bitIndex_EN] = bitIndex_RU;
                 isMapped_RU_EN[bitIndex_EN] = true;
                 break;
             }
@@ -106,69 +106,69 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
 
     public void Prepare()
     {        
-        Temp_ClustersEnergy_Matrix_RU = ModelHelper.GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_RU);
-        Temp_ClustersEnergy_Matrix_EN = ModelHelper.GetClustersEnergy_Matrix(LanguageDiscreteEmbeddings_EN);
+        Temp_PrimaryBitsEnergy_Matrix_RU = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_RU);
+        Temp_PrimaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_EN);
 
         Temp_HypothesisSupport = new MatrixFloat(VectorLength, VectorLength);
 
-        Temp_NearestA = BuildNearest(Temp_ClustersEnergy_Matrix_RU);
-        Temp_NearestB = BuildNearest(Temp_ClustersEnergy_Matrix_EN);
+        Temp_PrimaryBitsNearestA = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_RU);
+        Temp_PrimaryBitsNearestB = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_EN);
 
-        Temp_WordBitIndices_Collection_RU = BuildWordBitIndices_Collection(LanguageDiscreteEmbeddings_RU);
-        Temp_WordBitIndices_Collection_EN = BuildWordBitIndices_Collection(LanguageDiscreteEmbeddings_EN);        
+        Temp_WordPrimaryBitIndices_Collection_RU = BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings_RU);
+        Temp_WordPrimaryBitIndices_Collection_EN = BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings_EN);        
     }    
 
     /// <summary>
     ///     Найти ближайшие позиции для всех (по строкам)
     /// </summary>
-    /// <param name="clustersEnergy_Matrix"></param>
+    /// <param name="primaryBitsEnergy_Matrix"></param>
     /// <returns></returns>
-    public Nearest BuildNearest(MatrixFloat clustersEnergy_Matrix)
+    public PrimaryBitsNearest BuildPrimaryBitsNearest(MatrixFloat primaryBitsEnergy_Matrix)
     {
         var nearestArray = new FastList<int>[VectorLength];
-        for (int i = 0; i < VectorLength; i++)
+        for (int i = 0; i < primaryBitsEnergy_Matrix.Dimensions[0]; i += 1)
         {
             var list = new List<(int idx, float val)>(VectorLength);
-            for (int j = 0; j < VectorLength; j++)
+            for (int j = 0; j < primaryBitsEnergy_Matrix.Dimensions[1]; j += 1)
             {
                 if (i != j)
-                    list.Add((j, clustersEnergy_Matrix[i, j]));
+                    list.Add((j, primaryBitsEnergy_Matrix[i, j]));
             }
             // Берём NearestCount ближайших
             nearestArray[i] = new FastList<int>(list.OrderBy(it => it.val).Take(NearestCount).Select(x => x.idx).ToArray());
         }
-        return new Nearest()
+        return new PrimaryBitsNearest()
         {
             Array = nearestArray
         };
     }
 
-    public int[][] BuildWordBitIndices_Collection(LanguageDiscreteEmbeddings languageDiscreteEmbeddings)
+    public int[][] BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings languageDiscreteEmbeddings)
     {
-        var wordBitIndices_Collection = new int[WordsCount][];
-        List<int> wordBitIndices = new List<int>(16);
+        var wordPrimaryBitIndices_Collection = new int[WordsCount][];
+        List<int> wordPrimaryBitIndices = new List<int>(16);
         for (int i = 0; i < WordsCount; i += 1)
         {
             var discreteVector_PrimaryBitsOnly = languageDiscreteEmbeddings.Words[i].DiscreteVector_PrimaryBitsOnly;
-            wordBitIndices.Clear();
+            wordPrimaryBitIndices.Clear();
             for (int j = 0; j < discreteVector_PrimaryBitsOnly.Length; j += 1)
             {
                 if (discreteVector_PrimaryBitsOnly[j] > 0.5f)
                 {
-                    wordBitIndices.Add(j);
+                    wordPrimaryBitIndices.Add(j);
                 }
             }
-            wordBitIndices_Collection[i] = wordBitIndices.ToArray();
+            wordPrimaryBitIndices_Collection[i] = wordPrimaryBitIndices.ToArray();
         }
-        return wordBitIndices_Collection;
+        return wordPrimaryBitIndices_Collection;
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
         {
-            writer.WriteArray(Mapping_RU_EN);
-            writer.WriteArray(Mapping_EN_RU);
+            writer.WriteArray(PrimaryBitsMapping_RU_EN);
+            writer.WriteArray(PrimaryBitsMapping_EN_RU);
         }
     }
 
@@ -179,8 +179,8 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:
-                    Mapping_RU_EN = reader.ReadArray<int>()!;
-                    Mapping_EN_RU = reader.ReadArray<int>()!;
+                    PrimaryBitsMapping_RU_EN = reader.ReadArray<int>()!;
+                    PrimaryBitsMapping_EN_RU = reader.ReadArray<int>()!;
                     break;
             }
         }
@@ -193,14 +193,14 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// <param name="setB"></param>
     public void SupportHypotheses_V1()
     {
-        var nearestB = Temp_NearestB.Array;
+        var primaryBitsNearestB = Temp_PrimaryBitsNearestB.Array;
         
         for (int i = 0; i < WordsCount; i += 1)
         {
             if (i % 100 == 0)
                 _userFriendlyLogger.LogInformation($"A i = {i}");
 
-            var vecA = Temp_WordBitIndices_Collection_RU[i];
+            var vecA = Temp_WordPrimaryBitIndices_Collection_RU[i];
             // Индексы позиций с единицей
             for (int idxA = 0; idxA < vecA.Length; idxA += 1)
             {
@@ -210,7 +210,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
                     //Temp_HypothesisSupport[vecA[idxA], idxB] += 1.0f;
 
                     // Подкрепляем также все пары ближайших
-                    foreach (var nearB in nearestB[idxB].Items)
+                    foreach (var nearB in primaryBitsNearestB[idxB].Items)
                     {
                         for (int idxA2 = 0; idxA2 < vecA.Length; idxA2 += 1)
                         {
@@ -265,15 +265,15 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// <param name="setB"></param>
     public void SupportHypotheses_V2()
     {
-        var nearestA = Temp_NearestA.Array;
-        var nearestB = Temp_NearestB.Array;
+        var primaryBitsNearestA = Temp_PrimaryBitsNearestA.Array;
+        var primaryBitsNearestB = Temp_PrimaryBitsNearestB.Array;
         
         for (int i = 0; i < WordsCount; i += 1)
         {
             if (i % 100 == 0)
                 _userFriendlyLogger.LogInformation($"A i = {i}");
 
-            var vecA = Temp_WordBitIndices_Collection_RU[i];
+            var vecA = Temp_WordPrimaryBitIndices_Collection_RU[i];
 
             for (int idxB = 0; idxB < VectorLength; idxB += 1)
             {
@@ -283,7 +283,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
                 }
 
                 // Подкрепляем также все пары в 16 ближайших
-                foreach (var nearB in nearestB[idxB].Items)
+                foreach (var nearB in primaryBitsNearestB[idxB].Items)
                 {
                     for (int idxA2 = 0; idxA2 < vecA.Length; idxA2 += 1)
                     {
@@ -355,32 +355,32 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         return result;
     }
 
-    public int[] GetFinalMapping()
+    public int[] GetFinalClustersMapping()
     {
         var result = new int[VectorLength];
 
-        for (int i = 0; i < VectorLength; i++)
-        {
-            // Ищем позицию B с максимальным весом среди неиспользованных
-            float max = float.MinValue;
-            int selected = -1;
-            for (int j = 0; j < VectorLength; j++)
-            {
-                if (Temp_HypothesisSupport[i, j] > max)
-                {
-                    max = Temp_HypothesisSupport[i, j];
-                    selected = j;
-                }
-            }
-            if (selected != -1)
-            {
-                result[i] = selected;
-            }
-        }
+        //for (int i = 0; i < VectorLength; i++)
+        //{
+        //    // Ищем позицию B с максимальным весом среди неиспользованных
+        //    float max = float.MinValue;
+        //    int selected = -1;
+        //    for (int j = 0; j < VectorLength; j++)
+        //    {
+        //        if (Temp_HypothesisSupport[i, j] > max)
+        //        {
+        //            max = Temp_HypothesisSupport[i, j];
+        //            selected = j;
+        //        }
+        //    }
+        //    if (selected != -1)
+        //    {
+        //        result[i] = selected;
+        //    }
+        //}
         return result;
     }
 
-    public class Nearest : IOwnedDataSerializable
+    public class PrimaryBitsNearest : IOwnedDataSerializable
     {
         public FastList<int>[] Array = null!;
 
