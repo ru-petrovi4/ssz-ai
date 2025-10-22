@@ -115,28 +115,22 @@ public partial class Model03
         bool calculate = true;
         if (calculate)
         {
-            clustersOneToOneMatcher_Hypothesis.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+            clustersOneToOneMatcher_Hypothesis.GenerateOwnedData();
 
             clustersOneToOneMatcher_Hypothesis.Prepare();
-            clustersOneToOneMatcher_Hypothesis.SupportHypotheses_V1();
+            clustersOneToOneMatcher_Hypothesis.SupportHypotheses_V2();
             //Helpers.SerializationHelper.SaveToFile(FileName_HypothesisSupport, matcher.HypothesisSupport, null, _loggersSet.UserFriendlyLogger);
         }
         else
         {
             //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_HypothesisSupport, matcher, null, _loggersSet.UserFriendlyLogger);
-        }
-
-        //var resultMapping = matcher.GetFinalMapping();
-
-        //// Выводим часть соответствий
-        //_loggersSet.UserFriendlyLogger.LogInformation("Top 10 соответствий:");
-        //foreach (var pair in resultMapping.Take(10))
-        //{
-        //    _loggersSet.UserFriendlyLogger.LogInformation($"{pair.Key} -> {pair.Value}");
-        //}
-
-        //var clustersMapping = matcher.GetFinalMappingForcedExclusive();
-        var clustersMapping = clustersOneToOneMatcher_Hypothesis.GetFinalClustersMapping();
+        }        
+        
+        var clustersMapping = ModelHelper.GetClustersMapping(
+            clustersOneToOneMatcher_Hypothesis.GetFinalPrimaryBitsMapping(),
+            languageDiscreteEmbeddings_RU.ClusterInfos,
+            languageDiscreteEmbeddings_EN.ClusterInfos
+            );
 
         ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger);
     }

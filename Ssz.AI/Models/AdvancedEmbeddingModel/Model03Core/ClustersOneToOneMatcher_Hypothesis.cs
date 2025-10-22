@@ -27,24 +27,15 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_EN;
     public int VectorLength;
 
-    /// <summary>
-    ///     Primary Bit Index RU -> Primary Bit Index EN
-    /// </summary>
-    public int[] PrimaryBitsMapping_RU_EN = null!;
-    /// <summary>
-    ///     Primary Bit Index EN -> Primary Bit Index RU
-    /// </summary>
-    public int[] PrimaryBitsMapping_EN_RU = null!;    
-
     //public torch.Tensor Temp_EnergyBits_Tensor_RU = null!;
     public MatrixFloat Temp_PrimaryBitsEnergy_Matrix_RU = null!;    
 
     //public torch.Tensor Temp_EnergyBits_Tensor_EN = null!;
     public MatrixFloat Temp_PrimaryBitsEnergy_Matrix_EN = null!;
 
-    public PrimaryBitsNearest Temp_PrimaryBitsNearestA = null!;
+    public PrimaryBitsNearest Temp_PrimaryBitsNearest_RU = null!;
 
-    public PrimaryBitsNearest Temp_PrimaryBitsNearestB = null!;
+    public PrimaryBitsNearest Temp_PrimaryBitsNearest_EN = null!;
 
     /// <summary>
     ///     [Word.Index, [Bit Index]]
@@ -61,12 +52,12 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// </summary>
     public MatrixFloat Temp_HypothesisSupport = null!;
 
-    public const int WordsCount = 10000;
+    public int WordsCount = 10000;
 
     /// <summary>
     /// Количество ближайших для подкрепления
     /// </summary>
-    public const int NearestCount = 32;
+    public int NearestCount = 64;
 
     public ClustersOneToOneMatcher_Hypothesis(
         IUserFriendlyLogger userFriendlyLogger, 
@@ -77,42 +68,24 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         _device = cuda.is_available() ? CUDA : CPU;
         LanguageDiscreteEmbeddings_RU = languageDiscreteEmbeddings_RU;
         LanguageDiscreteEmbeddings_EN = languageDiscreteEmbeddings_EN;
-        VectorLength = Model01.Constants.DiscreteVectorLength;        
+        VectorLength = languageDiscreteEmbeddings_RU.ClusterInfos.Count;        
     }
 
-    public void GenerateOwnedData(int clustersCount)
-    {
-        PrimaryBitsMapping_RU_EN = new int[clustersCount];
-        PrimaryBitsMapping_EN_RU = new int[clustersCount];
-        bool[] isMapped_RU_EN = new bool[clustersCount];
-
-        var r = new Random(1);
-        
-        for (int bitIndex_RU = 0; bitIndex_RU < clustersCount; bitIndex_RU += 1)
-        {
-            for (; ; )
-            {
-                int bitIndex_EN = r.Next(clustersCount);                
-                if (isMapped_RU_EN[bitIndex_EN])
-                    continue;
-
-                PrimaryBitsMapping_RU_EN[bitIndex_RU] = bitIndex_EN;
-                PrimaryBitsMapping_EN_RU[bitIndex_EN] = bitIndex_RU;
-                isMapped_RU_EN[bitIndex_EN] = true;
-                break;
-            }
-        }
+    public void GenerateOwnedData()
+    {        
     }
 
     public void Prepare()
-    {        
+    {
+        WordsCount = Math.Min(Math.Min(WordsCount, LanguageDiscreteEmbeddings_RU.Words.Count), LanguageDiscreteEmbeddings_RU.Words.Count);
+
         Temp_PrimaryBitsEnergy_Matrix_RU = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_RU);
         Temp_PrimaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_EN);
 
         Temp_HypothesisSupport = new MatrixFloat(VectorLength, VectorLength);
 
-        Temp_PrimaryBitsNearestA = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_RU);
-        Temp_PrimaryBitsNearestB = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_EN);
+        Temp_PrimaryBitsNearest_RU = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_RU);
+        Temp_PrimaryBitsNearest_EN = BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_EN);
 
         Temp_WordPrimaryBitIndices_Collection_RU = BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings_RU);
         Temp_WordPrimaryBitIndices_Collection_EN = BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings_EN);        
@@ -166,9 +139,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
-        {
-            writer.WriteArray(PrimaryBitsMapping_RU_EN);
-            writer.WriteArray(PrimaryBitsMapping_EN_RU);
+        {            
         }
     }
 
@@ -178,9 +149,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         {
             switch (block.Version)
             {
-                case 1:
-                    PrimaryBitsMapping_RU_EN = reader.ReadArray<int>()!;
-                    PrimaryBitsMapping_EN_RU = reader.ReadArray<int>()!;
+                case 1:                    
                     break;
             }
         }
@@ -193,30 +162,30 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// <param name="setB"></param>
     public void SupportHypotheses_V1()
     {
-        var primaryBitsNearestB = Temp_PrimaryBitsNearestB.Array;
+        var primaryBitsNearest_EN = Temp_PrimaryBitsNearest_EN.Array;
         
-        for (int i = 0; i < WordsCount; i += 1)
+        for (int wordIndex = 0; wordIndex < WordsCount; wordIndex += 1)
         {
-            if (i % 100 == 0)
-                _userFriendlyLogger.LogInformation($"A i = {i}");
+            if (wordIndex % 100 == 0)
+                _userFriendlyLogger.LogInformation($"A i = {wordIndex}");
 
-            var vecA = Temp_WordPrimaryBitIndices_Collection_RU[i];
+            var wordPrimaryBitIndices_RU = Temp_WordPrimaryBitIndices_Collection_RU[wordIndex];
             // Индексы позиций с единицей
-            for (int idxA = 0; idxA < vecA.Length; idxA += 1)
+            for (int idx_RU = 0; idx_RU < wordPrimaryBitIndices_RU.Length; idx_RU += 1)
             {
-                for (int idxB = 0; idxB < VectorLength; idxB += 1)
+                for (int idx_EN = 0; idx_EN < VectorLength; idx_EN += 1)
                 {
                     // Гипотеза: idxA → idxB
-                    //Temp_HypothesisSupport[vecA[idxA], idxB] += 1.0f;
+                    //Temp_HypothesisSupport[wordPrimaryBitIndices_RU[idx_RU], idx_EN] += 1.0f;
 
                     // Подкрепляем также все пары ближайших
-                    foreach (var nearB in primaryBitsNearestB[idxB].Items)
+                    foreach (var nearPrimaryBitIndex_EN in primaryBitsNearest_EN[idx_EN].Items)
                     {
-                        for (int idxA2 = 0; idxA2 < vecA.Length; idxA2 += 1)
+                        for (int idx2_RU = 0; idx2_RU < wordPrimaryBitIndices_RU.Length; idx2_RU += 1)
                         {
-                            if (idxA2 != idxA)
+                            if (idx2_RU != idx_RU)
                             {
-                                Temp_HypothesisSupport[vecA[idxA2], nearB] += 1.0f;
+                                Temp_HypothesisSupport[wordPrimaryBitIndices_RU[idx2_RU], nearPrimaryBitIndex_EN] += 1.0f;
                             }
                         }
                     }
@@ -265,29 +234,29 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// <param name="setB"></param>
     public void SupportHypotheses_V2()
     {
-        var primaryBitsNearestA = Temp_PrimaryBitsNearestA.Array;
-        var primaryBitsNearestB = Temp_PrimaryBitsNearestB.Array;
+        var primaryBitsNearest_RU = Temp_PrimaryBitsNearest_RU.Array;
+        var primaryBitsNearest_EN = Temp_PrimaryBitsNearest_EN.Array;
         
-        for (int i = 0; i < WordsCount; i += 1)
+        for (int wordIndex = 0; wordIndex < WordsCount; wordIndex += 1)
         {
-            if (i % 100 == 0)
-                _userFriendlyLogger.LogInformation($"A i = {i}");
+            if (wordIndex % 100 == 0)
+                _userFriendlyLogger.LogInformation($"WordIndex: {wordIndex}");
 
-            var vecA = Temp_WordPrimaryBitIndices_Collection_RU[i];
+            var wordPrimaryBitIndices_RU = Temp_WordPrimaryBitIndices_Collection_RU[wordIndex];
 
-            for (int idxB = 0; idxB < VectorLength; idxB += 1)
+            for (int primaryBitIndex_EN = 0; primaryBitIndex_EN < VectorLength; primaryBitIndex_EN += 1)
             {
-                for (int idxA2 = 0; idxA2 < vecA.Length; idxA2 += 1)
+                for (int idx_RU = 0; idx_RU < wordPrimaryBitIndices_RU.Length; idx_RU += 1)
                 {
-                    Temp_HypothesisSupport[vecA[idxA2], idxB] += 1.0f;
+                    Temp_HypothesisSupport[wordPrimaryBitIndices_RU[idx_RU], primaryBitIndex_EN] += 1.0f;
                 }
 
                 // Подкрепляем также все пары в 16 ближайших
-                foreach (var nearB in primaryBitsNearestB[idxB].Items)
+                foreach (var nearPrimaryBitIndex_EN in primaryBitsNearest_EN[primaryBitIndex_EN].Items)
                 {
-                    for (int idxA2 = 0; idxA2 < vecA.Length; idxA2 += 1)
+                    for (int idx_RU = 0; idx_RU < wordPrimaryBitIndices_RU.Length; idx_RU += 1)
                     {
-                        Temp_HypothesisSupport[vecA[idxA2], nearB] += 1.0f;
+                        Temp_HypothesisSupport[wordPrimaryBitIndices_RU[idx_RU], nearPrimaryBitIndex_EN] += 1.0f;
                     }
                 }
             }
@@ -328,7 +297,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     }
 
     // Получить итоговое соответствие
-    public int[] GetFinalMappingForcedExclusive()
+    public int[] GetFinalPrimaryBitsMapping_ForcedExclusive()
     {
         var result = new int[VectorLength];
         var usedB = new HashSet<int>();
@@ -337,46 +306,47 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         {
             // Ищем позицию B с максимальным весом среди неиспользованных
             float max = float.MinValue;
-            int selected = -1;
+            int selectedJ = -1;
             for (int j = 0; j < VectorLength; j++)
             {
                 if (!usedB.Contains(j) && Temp_HypothesisSupport[i, j] > max)
                 {
                     max = Temp_HypothesisSupport[i, j];
-                    selected = j;
+                    selectedJ = j;
                 }
             }
-            if (selected != -1)
+            if (selectedJ != -1)
             {
-                result[i] = selected;
-                usedB.Add(selected);
+                result[i] = selectedJ;
+                usedB.Add(selectedJ);
             }
         }
         return result;
     }
 
-    public int[] GetFinalClustersMapping()
+    public int[] GetFinalPrimaryBitsMapping()
     {
         var result = new int[VectorLength];
 
-        //for (int i = 0; i < VectorLength; i++)
-        //{
-        //    // Ищем позицию B с максимальным весом среди неиспользованных
-        //    float max = float.MinValue;
-        //    int selected = -1;
-        //    for (int j = 0; j < VectorLength; j++)
-        //    {
-        //        if (Temp_HypothesisSupport[i, j] > max)
-        //        {
-        //            max = Temp_HypothesisSupport[i, j];
-        //            selected = j;
-        //        }
-        //    }
-        //    if (selected != -1)
-        //    {
-        //        result[i] = selected;
-        //    }
-        //}
+        for (int i = 0; i < VectorLength; i++)
+        {
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float max = float.MinValue;
+            int selectedJ = -1;
+            for (int j = 0; j < VectorLength; j++)
+            {
+                if (Temp_HypothesisSupport[i, j] > max)
+                {
+                    max = Temp_HypothesisSupport[i, j];
+                    selectedJ = j;
+                }
+            }
+            if (selectedJ != -1)
+            {
+                result[i] = selectedJ;
+            }
+        }
+
         return result;
     }
 
