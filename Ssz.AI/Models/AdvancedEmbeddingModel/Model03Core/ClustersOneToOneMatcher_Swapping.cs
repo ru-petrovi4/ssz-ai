@@ -275,9 +275,10 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
         int[][] wordPrimaryBitIndices_Collection_A,
         int[][] wordMappedPrimaryBitIndices_Collection_A,
         int[] primaryBitsMapping_B_A)
-    { 
-        float minError = float.MaxValue;
+    {
+        int original_ToOptimize_PrimaryBitIndex_B = primaryBitsMapping_A_B[toOptimize_PrimaryBitIndex_A];
 
+        float minError = float.MaxValue;
         int minEnergyTest_PrimaryBitIndex_B = 0;
         for (int test_PrimaryBitIndex_B = 0; test_PrimaryBitIndex_B < primaryBitsMapping_A_B.Length; test_PrimaryBitIndex_B += 1)
         {
@@ -343,7 +344,8 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
             primaryBitsMapping_B_A[old_ToOptimize_PrimaryBitIndex_B] = toOptimize_PrimaryBitIndex_A;
         }
 
-        if (minError < prevError)
+        //if (minError < prevError)
+        if (minEnergyTest_PrimaryBitIndex_B != original_ToOptimize_PrimaryBitIndex_B)
         {
             int old_Test_PrimaryBitIndex_A = primaryBitsMapping_B_A[minEnergyTest_PrimaryBitIndex_B];
             int old_ToOptimize_PrimaryBitIndex_B = primaryBitsMapping_A_B[toOptimize_PrimaryBitIndex_A];
