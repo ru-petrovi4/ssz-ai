@@ -57,7 +57,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     /// <summary>
     /// Количество ближайших для подкрепления
     /// </summary>
-    public int NearestCount = 64;
+    public int NearestCount = 7;
 
     public ClustersOneToOneMatcher_Hypothesis(
         IUserFriendlyLogger userFriendlyLogger, 

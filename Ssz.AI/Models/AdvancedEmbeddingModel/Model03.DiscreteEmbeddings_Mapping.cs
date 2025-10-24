@@ -158,7 +158,8 @@ public partial class Model03
         bool calculateFromBeginning = true;
         if (calculateFromBeginning)
         {
-            clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+            //clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
+            clustersOneToOneMatcher_Swapping.GenerateOwnedData2(idealPrimaryBitsMapping_A_B);
 
             clustersOneToOneMatcher_Swapping.Prepare();
             clustersOneToOneMatcher_Swapping.CalculateMapping(idealPrimaryBitsMapping_A_B);
@@ -176,7 +177,7 @@ public partial class Model03
         }
 
         var clustersMapping = ModelHelper.GetClustersMapping(
-            clustersOneToOneMatcher_Swapping.PrimaryBitsMapping_RU_EN,
+            clustersOneToOneMatcher_Swapping.PrimaryBitsMapping_A_B,
             languageDiscreteEmbeddings_RU.ClusterInfos,
             languageDiscreteEmbeddings_EN.ClusterInfos
             );
@@ -190,7 +191,7 @@ public partial class Model03
         //    languageDiscreteEmbeddings_RU.ClusterInfos,
         //    languageDiscreteEmbeddings_EN.ClusterInfos);
 
-        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger);
+        ModelHelper.ShowWords(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, clustersMapping, _loggersSet.UserFriendlyLogger, clustersOneToOneMatcher_MappingLinear.ClustersMapping);
     }    
 
     /// <summary>

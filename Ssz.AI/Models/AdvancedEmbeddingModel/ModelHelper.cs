@@ -96,11 +96,23 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return energy;
         }
 
-        public static void ShowWords(LanguageDiscreteEmbeddings source, LanguageDiscreteEmbeddings target, int[] clustersMapping, ILogger logger)
+        public static void ShowWords(
+            LanguageDiscreteEmbeddings source, 
+            LanguageDiscreteEmbeddings target, 
+            int[] clustersMapping, 
+            ILogger logger,
+            int[]? ideal_ClustersMapping = null)
         {
             var clustersMappingFiltered = clustersMapping.Where(m => m != -1).ToArray();
             var hs = clustersMappingFiltered.ToHashSet();
             logger.LogInformation($"Количество уникальных сопоставлений: {hs.Count}/{clustersMappingFiltered.Length}");
+
+            if (ideal_ClustersMapping is not null)
+            {
+                Debug.Assert(ideal_ClustersMapping.ToHashSet().Count == ideal_ClustersMapping.Length);
+                logger.LogInformation($"Совпадений с идеалом: {clustersMapping.Select((cm, i) => cm == ideal_ClustersMapping[i] ? 1 : 0).Sum()}/{clustersMappingFiltered.Length}");
+            }
+
             var counts = new Dictionary<int, int>(clustersMappingFiltered.Length);            
             foreach (int number in clustersMappingFiltered)
             {                
@@ -246,6 +258,8 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                     clusterInfos_B[clustersMapping_A_B[clusterIndexA]].HashProjectionIndex;
             }
 
+            Debug.Assert(primaryBitsMapping_A_B.ToHashSet().Count == primaryBitsMapping_A_B.Length);
+
             return primaryBitsMapping_A_B;
         }
 
@@ -258,7 +272,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
                 clustersMapping_A_B[clusterInfos_A.FindIndex(ci => ci.HashProjectionIndex == bitIndexA)] =
                     clusterInfos_B.FindIndex(ci => ci.HashProjectionIndex == primaryBitsMapping_A_B[bitIndexA]);
             }
-            
+
+            Debug.Assert(clustersMapping_A_B.ToHashSet().Count == clustersMapping_A_B.Length);
+
             return clustersMapping_A_B;
         }
     }
