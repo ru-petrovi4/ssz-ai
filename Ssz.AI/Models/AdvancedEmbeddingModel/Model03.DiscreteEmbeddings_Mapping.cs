@@ -406,20 +406,62 @@ public partial class Model03
         //}
         //energy = energy / wordsCount;
 
-        int n = 500;
+        int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 5000.0f;
+        dataToDisplayHolder.DistributionMax = 150.0f;
 
-        int wordsCount = 10000;
+        int wordsCount = languageDiscreteEmbeddings_EN.Words.Count;
         foreach (var wordIndex in Enumerable.Range(0, wordsCount))
         {
-            var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordIndex], primaryBitsEnergy_Matrix);
+            var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordIndex].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix);
             dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
         }
 
-        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V4() Done.");
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_WordsEnergy() Done.");
+    }
+
+    /// <summary>
+    /// Показывает распредление распредление энергий слов после линейного преобразования
+    /// </summary>
+    public void VisualizeData_WordsEnergy_MappingLinear()
+    {
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);        
+
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, null);
+        int[] idealPrimaryBitsMapping_A_B = ModelHelper.GetPrimaryBitsMapping(
+            clustersOneToOneMatcher_MappingLinear.ClustersMapping,
+            languageDiscreteEmbeddings_RU.ClusterInfos,
+            languageDiscreteEmbeddings_EN.ClusterInfos);
+
+        var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_EN);
+
+        int n = 1000;
+        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        dataToDisplayHolder.Distribution = new ulong[n];
+        dataToDisplayHolder.DistributionMin = 0.0f;
+        dataToDisplayHolder.DistributionMax = 150.0f;
+
+        int wordsCount = languageDiscreteEmbeddings_RU.Words.Count;
+        foreach (var wordIndex in Enumerable.Range(0, wordsCount))
+        {
+            var discreteVector_PrimaryBitsOnly_Mapped = ModelHelper.GetDiscreteVector_PrimaryBitsOnly_Mapped(
+                languageDiscreteEmbeddings_RU.Words[wordIndex].DiscreteVector_PrimaryBitsOnly,
+                idealPrimaryBitsMapping_A_B);
+
+            var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(
+                discreteVector_PrimaryBitsOnly_Mapped,
+                primaryBitsEnergy_Matrix_EN);
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+        }
+
+        _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_WordsEnergy_MappingLinear() Done.");
     }
 
     /// <summary>
@@ -450,8 +492,8 @@ public partial class Model03
             var wordTranslation = wordTranslationsCollection.WordTranslations[index];
             var name_RU = languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA].Name; // For Assert
             var name_EN = languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB].Name; // For Assert
-            var energy_RU = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA], primaryBitsEnergy_Matrix_RU);
-            var energy_EN = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB], primaryBitsEnergy_Matrix_EN);
+            var energy_RU = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix_RU);
+            var energy_EN = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix_EN);
             float v = energy_EN - energy_RU;
             dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
         }

@@ -58,26 +58,24 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return v;
         }
 
-        public static float GetWord_PrimaryBitsOnly_Energy(Word word, MatrixFloat energyMatrix)
+        public static float GetWord_PrimaryBitsOnly_Energy(float[] discreteVector_PrimaryBitsOnly, MatrixFloat energyMatrix)
         {
-            var vector = word.DiscreteVector_PrimaryBitsOnly;
-
             // Список индексов, где vector[i] == 1 для быстрого перебора (около 8 элементов)
-            Span<int> activeIndices = stackalloc int[8];
+            Span<int> primaryBitsOnly_Indices = stackalloc int[8];
             int count = 0;
-            for (int i = 0; i < vector.Length; i += 1)
+            for (int i = 0; i < discreteVector_PrimaryBitsOnly.Length; i += 1)
             {
-                if (vector[i] > 0.5f)
+                if (discreteVector_PrimaryBitsOnly[i] > 0.5f)
                 {
                     // Обычно у вас мало единичных элементов, stackalloc более производителен для малых массивов
-                    activeIndices[count] = i;
+                    primaryBitsOnly_Indices[count] = i;
                     count += 1;
                 }
             }
 
             Debug.Assert(count == Model01.Constants.DiscreteVector_PrimaryBitsCount);
 
-            return GetEnergy(activeIndices, energyMatrix);
+            return GetEnergy(primaryBitsOnly_Indices, energyMatrix);
         }
 
         public static float GetEnergy(ReadOnlySpan<int> primaryBitsOnly_Indices, MatrixFloat energyMatrix)
@@ -276,6 +274,26 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             Debug.Assert(clustersMapping_A_B.ToHashSet().Count == clustersMapping_A_B.Length);
 
             return clustersMapping_A_B;
+        }
+
+        public static float[] GetDiscreteVector_PrimaryBitsOnly_Mapped(float[] discreteVector_PrimaryBitsOnly_A, int[] primaryBitsMapping_A_B)
+        {
+            var discreteVector_PrimaryBitsOnly_Mapped = new float[discreteVector_PrimaryBitsOnly_A.Length];
+
+            int count = 0;
+            for (int i = 0; i < discreteVector_PrimaryBitsOnly_A.Length; i += 1)
+            {
+                if (discreteVector_PrimaryBitsOnly_A[i] > 0.5f)
+                {
+                    // Обычно у вас мало единичных элементов, stackalloc более производителен для малых массивов
+                    discreteVector_PrimaryBitsOnly_Mapped[primaryBitsMapping_A_B[i]] = 1.0f;
+                    count += 1;
+                }
+            }
+
+            Debug.Assert(count == Model01.Constants.DiscreteVector_PrimaryBitsCount);
+
+            return discreteVector_PrimaryBitsOnly_Mapped;
         }
     }
 }
