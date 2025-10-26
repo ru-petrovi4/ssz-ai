@@ -155,7 +155,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
             float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
             TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
-            sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
+            sourceClusterInfo.CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
 
             // Ищем позицию B с максимальным весом среди неиспользованных
             float minEnergy = float.MaxValue;
@@ -166,7 +166,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
                 if (targetClusterInfo is null)
                     continue;
 
-                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)
                 {
                     minEnergy = energy;
@@ -204,7 +204,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
                 if (sourceClusterInfo is null)
                     continue;
 
-                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)
                 {
                     minEnergy = energy;
@@ -293,7 +293,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             float[] mappedOldVectorNormalized = mappedOldVectorTensor.data<float>().ToArray();
             float norm = TensorPrimitives.Norm(mappedOldVectorNormalized);
             TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
-            sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
+            sourceClusterInfo.CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
 
             // Ищем позицию B с максимальным весом среди неиспользованных
             float minEnergy = float.MaxValue;
@@ -304,7 +304,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
                 if (targetClusterInfo is null)
                     continue;
 
-                float energy = ModelHelper.GetEnergy(sourceClusterInfo.Temp_CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)
                 {
                     minEnergy = energy;

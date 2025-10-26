@@ -38,6 +38,14 @@ namespace Ssz.AI.Models
             set => Data[indices[0] + indices[1] * Dimensions[0]] = value;
         }
 
+        public void CreateElementInstances(Func<T> f)
+        {
+            for (int i = 0; i < Data.Length; i += 1)
+            {
+                Data[i] = f();
+            }
+        }
+
         public DenseMatrix<T> Clone()
         {
             var clone = new DenseMatrix<T>(Dimensions);

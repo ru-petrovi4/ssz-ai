@@ -10,19 +10,32 @@ public class ClusterInfo : IOwnedDataSerializable
 
     public int WordsCount;
 
-    public float[] Temp_CentroidOldVectorNormalized_Mapped = null!;
+    public float[]? CentroidOldVectorNormalized_Mapped;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
-        writer.WriteArray(CentroidOldVectorNormalized);
-        writer.Write(HashProjectionIndex);
-        writer.Write(WordsCount);
+        using (writer.EnterBlock(1))
+        {
+            writer.WriteArray(CentroidOldVectorNormalized);
+            writer.Write(HashProjectionIndex);
+            writer.Write(WordsCount);
+            writer.WriteArray(CentroidOldVectorNormalized_Mapped);
+        }
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        CentroidOldVectorNormalized = reader.ReadArray<float>()!;
-        HashProjectionIndex = reader.ReadInt32();
-        WordsCount = reader.ReadInt32();
+        using (Block block = reader.EnterBlock())
+        {
+            switch (block.Version)
+            {
+                case 1:
+                    CentroidOldVectorNormalized = reader.ReadArray<float>()!;
+                    HashProjectionIndex = reader.ReadInt32();
+                    WordsCount = reader.ReadInt32();
+                    CentroidOldVectorNormalized_Mapped = reader.ReadArray<float>()!;
+                    break;
+            }
+        }
     }
 }

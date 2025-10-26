@@ -107,8 +107,8 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
     {
         WordsCount = Math.Min(Math.Min(WordsCount, LanguageDiscreteEmbeddings_A.Words.Count), LanguageDiscreteEmbeddings_A.Words.Count);
 
-        Temp_PrimaryBitsEnergy_Matrix_A = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_A);
-        Temp_PrimaryBitsEnergy_Matrix_B = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_B);        
+        Temp_PrimaryBitsEnergy_Matrix_A = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_A.ClusterInfos);
+        Temp_PrimaryBitsEnergy_Matrix_B = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_B.ClusterInfos);        
 
         Temp_WordPrimaryBitIndices_Collection_A = new int[WordsCount][];
         Temp_WordMappedPrimaryBitIndices_Collection_A = new int[WordsCount][];
@@ -293,7 +293,36 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
 
         stopwatch.Stop();
         _loggersSet.UserFriendlyLogger.LogInformation("CalculateMapping totally done. Elapsed Milliseconds = " + stopwatch.ElapsedMilliseconds);
-    }    
+    }
+
+    public void CalculateMapping_Test(int[]? idealPrimaryBitsMapping_A_B)
+    {
+        for (int sourceClusterIndex = 0; sourceClusterIndex < LanguageDiscreteEmbeddings_A.ClusterInfos.Count; sourceClusterIndex += 1)
+        {
+            var sourceClusterInfo = LanguageDiscreteEmbeddings_A.ClusterInfos[sourceClusterIndex];            
+
+            // Ищем позицию B с максимальным весом среди неиспользованных
+            float minEnergy = float.MaxValue;
+            int selected = -1;
+            for (int targetClusterIndex = 0; targetClusterIndex < LanguageDiscreteEmbeddings_B.ClusterInfos.Count; targetClusterIndex += 1)
+            {
+                var targetClusterInfo = LanguageDiscreteEmbeddings_B.ClusterInfos[targetClusterIndex];
+                if (targetClusterInfo is null)
+                    continue;
+
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped!, targetClusterInfo.CentroidOldVectorNormalized);
+                if (energy < minEnergy)
+                {
+                    minEnergy = energy;
+                    selected = targetClusterIndex;
+                }
+            }
+            if (selected != -1)
+            {
+                PrimaryBitsMapping_A_B[sourceClusterInfo.HashProjectionIndex] = LanguageDiscreteEmbeddings_B.ClusterInfos[selected].HashProjectionIndex;
+            }
+        }
+    }
 
     private static int Optimize_WordsBatch_OnePrimaryBitIndex_A(
         int toOptimize_PrimaryBitIndex_A,                
@@ -340,8 +369,8 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
                         wordMappedPrimaryBitIndices[i] = primaryBitsMapping_A_B[bitIndex];
                     }
 
-                    float wordEnergy = ModelHelper.GetEnergy(wordPrimaryBitIndices, primaryBitsEnergy_Matrix_A) - batch_AverageWordEnergy_A;
-                    float mappedWordEnergy = ModelHelper.GetEnergy(wordMappedPrimaryBitIndices, primaryBitsEnergy_Matrix_B) - batch_AverageWordEnergy_B;
+                    float wordEnergy = ModelHelper.GetEnergy(wordPrimaryBitIndices, primaryBitsEnergy_Matrix_A);
+                    float mappedWordEnergy = ModelHelper.GetEnergy(wordMappedPrimaryBitIndices, primaryBitsEnergy_Matrix_B);
 
                     float e = (wordEnergy - mappedWordEnergy);
                     e = e * e;

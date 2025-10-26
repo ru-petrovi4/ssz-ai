@@ -53,8 +53,8 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
     {
         using (writer.EnterBlock(2))
         {
-            writer.WriteListOfOwnedDataSerializable(Words, null);
-            writer.WriteListOfOwnedDataSerializable(ClusterInfos, null);
+            writer.WriteListOfOwnedDataSerializable(Words, context);
+            writer.WriteListOfOwnedDataSerializable(ClusterInfos, context);
 
             TorchSharpHelper.WriteTensor(MeanDirections, writer);
             TorchSharpHelper.WriteTensor(Concentrations, writer);
@@ -69,12 +69,12 @@ public class LanguageDiscreteEmbeddings : IOwnedDataSerializable
             switch (block.Version)
             {
                 case 1:
-                    Words = reader.ReadListOfOwnedDataSerializable(() => new Word(), null);
-                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), null);
+                    Words = reader.ReadListOfOwnedDataSerializable(() => new Word(), context);
+                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), context);
                     break;
                 case 2:
-                    Words = reader.ReadListOfOwnedDataSerializable(() => new Word(), null);
-                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), null);
+                    Words = reader.ReadListOfOwnedDataSerializable(() => new Word(), context);
+                    ClusterInfos = reader.ReadListOfOwnedDataSerializable(() => new Model01Core.ClusterInfo(), context);
 
                     MeanDirections = TorchSharpHelper.ReadTensor(reader);
                     Concentrations = TorchSharpHelper.ReadTensor(reader);
