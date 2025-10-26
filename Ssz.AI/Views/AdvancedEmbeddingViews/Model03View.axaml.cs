@@ -30,7 +30,7 @@ public partial class Model03View : UserControl
         Model = new Model03();
         Task.Run(() =>
         {
-            Model.Find_ClustersOneToOneMatcher_Swapping();                     
+            Model.VisualizeData_ÑlustersLocalSimilarity();                     
         });
     }
 

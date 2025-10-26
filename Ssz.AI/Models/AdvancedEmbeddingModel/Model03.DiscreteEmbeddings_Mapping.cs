@@ -519,10 +519,10 @@ public partial class Model03
     public void VisualizeData_СlustersLocalSimilarity()
     {
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);        
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);        
 
         ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, null);
@@ -530,8 +530,14 @@ public partial class Model03
             clustersOneToOneMatcher_MappingLinear.ClustersMapping,
             languageDiscreteEmbeddings_RU.ClusterInfos,
             languageDiscreteEmbeddings_EN.ClusterInfos);
+        
+        //for (int clusterIndex = 0; clusterIndex < languageDiscreteEmbeddings_RU.ClusterInfos.Count; clusterIndex += 1)
+        //{
+        //    languageDiscreteEmbeddings_RU.ClusterInfos[clusterIndex].CentroidOldVectorNormalized =
+        //        languageDiscreteEmbeddings_EN.ClusterInfos[clustersOneToOneMatcher_MappingLinear.ClustersMapping[clusterIndex]].CentroidOldVectorNormalized;
+        //}
 
-        var primaryBitsEnergy_Matrix_RU = ModelHelper.GetMappedPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_RU.ClusterInfos); // TEMPCODE
+        var primaryBitsEnergy_Matrix_RU = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_RU.ClusterInfos);
         var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_EN.ClusterInfos);
 
         const int nearestCount = 70;
