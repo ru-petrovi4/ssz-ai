@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model02Core.Evaluation;
 using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
@@ -42,6 +41,31 @@ public static partial class ModelHelper
                     clusterI.CentroidOldVectorNormalized,
                     clusterJ.CentroidOldVectorNormalized);                    
                 matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;                    
+            }
+        }
+        return matrixFloat;
+    }
+
+    /// <summary>
+    ///     1-cos
+    ///     Индексы соотвествуют индексам главных бит в слове.
+    /// </summary>
+    /// <param name="languageDiscreteEmbeddings"></param>
+    /// <returns></returns>
+    public static MatrixFloat GetPrimaryBitsEnergy_Matrix_Cos(List<ClusterInfo> clusterInfos)
+    {
+        int dimension = clusterInfos.Count;
+        var matrixFloat = new MatrixFloat(dimension, dimension);
+        foreach (var i in Enumerable.Range(0, dimension))
+        {
+            foreach (var j in Enumerable.Range(0, dimension))
+            {
+                var clusterI = clusterInfos[i];
+                var clusterJ = clusterInfos[j];
+                float v = GetEnergy_Cos(
+                    clusterI.CentroidOldVectorNormalized,
+                    clusterJ.CentroidOldVectorNormalized);
+                matrixFloat[clusterI.HashProjectionIndex, clusterJ.HashProjectionIndex] = v;
             }
         }
         return matrixFloat;
@@ -105,7 +129,19 @@ public static partial class ModelHelper
         float v = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
                     oldVectorNormalizedA,
                     oldVectorNormalizedB);
-        v = MathF.Exp((1 - v) * 2.0f) - 1;            
+        v = MathF.Exp((1.0f - v) * 2.0f) - 1;            
+        return v;
+    }
+
+    /// <summary>
+    ///     1-cos, экспонента 
+    /// </summary>        
+    public static float GetEnergy_Cos(float[] oldVectorNormalizedA, float[] oldVectorNormalizedB)
+    {
+        float v = System.Numerics.Tensors.TensorPrimitives.CosineSimilarity(
+                    oldVectorNormalizedA,
+                    oldVectorNormalizedB);
+        v = 1.0f - v;
         return v;
     }
 
@@ -191,7 +227,7 @@ public static partial class ModelHelper
         if (clusterInfo is null)
             return;
 
-        logger.LogInformation($"Кластер: {clusterIndex}; Слов в кластере: {clusterInfo.WordsCount}");            
+        logger.LogInformation($"Кластер: {clusterIndex}; Слов в кластере: {clusterInfo.WordsCount}; AverageWordsNorm: {clusterInfo.AverageWordsNorm}; AverageWordsNormTop10: {clusterInfo.AverageWordsNormTop10}; Concentration: {clusterInfo.Concentration}; MixingCoefficient: {clusterInfo.MixingCoefficient}");            
 
         foreach (var word in embeddings.Words
             .Where(w => w.ClusterIndex == clusterIndex)
@@ -294,7 +330,7 @@ public static partial class ModelHelper
     }
 
     [return:NotNullIfNotNull(nameof(clustersMapping_A_B))]
-    public static int[]? GetPrimaryBitsMapping(int[]? clustersMapping_A_B, List<Model01Core.ClusterInfo> clusterInfos_A, List<Model01Core.ClusterInfo> clusterInfos_B)
+    public static int[]? GetPrimaryBitsMapping(int[]? clustersMapping_A_B, List<ClusterInfo> clusterInfos_A, List<ClusterInfo> clusterInfos_B)
     {
         if (clustersMapping_A_B is null)
             return null;

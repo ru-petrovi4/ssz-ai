@@ -49,7 +49,7 @@ public class VonMisesFisherClusterer
     /// μ_k - направления средних для каждого кластера [K x D]
     /// </summary>
     /// <remarks>device: CPU</remarks>
-    public Tensor MeanDirections { get; private set; } = null!;
+    public Tensor MeanDirections { get; private set; } = null!;    
 
     /// <summary>
     /// κ_k - параметры концентрации для каждого кластера [K]
@@ -163,7 +163,10 @@ public class VonMisesFisherClusterer
                 Concentrations[k].item<float>() * cosineSimilarities +
                 torch.log(MixingCoefficients[k]);
 
-            MeanDirections.select(dim: 0, index: k).data<float>().CopyTo(clusterization_AlgorithmData.ClusterInfos[k].CentroidOldVectorNormalized);
+            var clusterInfo = clusterization_AlgorithmData.ClusterInfos[k];
+            MeanDirections.select(dim: 0, index: k).data<float>().CopyTo(clusterInfo.CentroidOldVectorNormalized);
+            clusterInfo.MixingCoefficient = MixingCoefficients[k].item<float>();
+            clusterInfo.Concentration = Concentrations[k].item<float>();
         }
 
         // Жёсткое назначение: назначаем каждую точку кластеру с максимальной вероятностью
@@ -539,7 +542,7 @@ public class VonMisesFisherClusterer
 
         // Ограничиваем κ положительными разумными значениями
         // ORIG: return MathF.Max(0.01f, MathF.Min(1000.0f, kappa));
-        return MathF.Max(0.01f, MathF.Min(500.0f, kappa)); 
+        return MathF.Max(0.01f, MathF.Min(1000.0f, kappa)); 
     }        
 
     /// <summary>

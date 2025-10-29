@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Helpers;
+using Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 using Ssz.Utils.Serialization;
 using System.Collections.Generic;
 using System.Linq;

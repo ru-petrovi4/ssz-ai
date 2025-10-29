@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
-using Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 using Ssz.Utils;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
@@ -157,6 +157,9 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             TensorPrimitives.Divide(mappedOldVectorNormalized, norm, mappedOldVectorNormalized);
             sourceClusterInfo.CentroidOldVectorNormalized_Mapped = mappedOldVectorNormalized;
 
+            sourceClusterInfo.Concentration = source.Concentrations[sourceClusterIndex].item<float>();
+            sourceClusterInfo.MixingCoefficient = source.MixingCoefficients[sourceClusterIndex].item<float>();
+
             // Ищем позицию B с максимальным весом среди неиспользованных
             float minEnergy = float.MaxValue;
             int selected = -1;
@@ -176,6 +179,10 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             if (selected != -1)
             {
                 clustersMapping[sourceClusterIndex] = selected;
+
+                var selectedTarget = target.ClusterInfos[selected];
+                selectedTarget.Concentration = target.Concentrations[selected].item<float>();
+                selectedTarget.MixingCoefficient = target.MixingCoefficients[selected].item<float>();
             }
         }
         var targetClusterIndices = clustersMapping.ToHashSet();
@@ -204,7 +211,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
                 if (sourceClusterInfo is null)
                     continue;
 
-                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped, targetClusterInfo.CentroidOldVectorNormalized);
+                float energy = ModelHelper.GetEnergy(sourceClusterInfo.CentroidOldVectorNormalized_Mapped!, targetClusterInfo.CentroidOldVectorNormalized);
                 if (energy < minEnergy)
                 {
                     minEnergy = energy;
@@ -228,33 +235,91 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
     }
 
-    public void FilterOptimized(LanguageDiscreteEmbeddings embeddings)
+    public void FilterOptimized(LanguageDiscreteEmbeddings embeddings_A, LanguageDiscreteEmbeddings embeddings_B, Random r)
     {
-        int[] newClusterIndices = new int[embeddings.ClusterInfos.Count];
-        Array.Fill(newClusterIndices, -1);
-        List<ClusterInfo> newClusters = new List<ClusterInfo>(embeddings.ClusterInfos.Count);
-        foreach (int i in Enumerable.Range(0, embeddings.ClusterInfos.Count))
+        int[] newClusterIndices_A = new int[embeddings_A.ClusterInfos.Count];
+        Array.Fill(newClusterIndices_A, -1);
+        List<ClusterInfo> newClusters_A = new List<ClusterInfo>(embeddings_A.ClusterInfos.Count);
+        foreach (int i in Enumerable.Range(0, embeddings_A.ClusterInfos.Count))
         {
-            var clusterInfo = embeddings.ClusterInfos[i];
+            var clusterInfo = embeddings_A.ClusterInfos[i];
             if (clusterInfo is null)
                 continue;
 
-            newClusterIndices[i] = newClusters.Count;
-            newClusters.Add(clusterInfo);
+            clusterInfo.Temp_ClusterIndex = i;
+            newClusterIndices_A[i] = newClusters_A.Count;
+            newClusters_A.Add(clusterInfo);
         }
-        embeddings.ClusterInfos = newClusters.ToList();
-        embeddings.Words = embeddings.Words.Where(w => newClusterIndices[w.ClusterIndex] != -1)
+        embeddings_A.ClusterInfos = newClusters_A.ToList();
+        embeddings_A.Words = embeddings_A.Words.Where(w => newClusterIndices_A[w.ClusterIndex] != -1)
             .Select(w =>
             {
-                w.ClusterIndex = newClusterIndices[w.ClusterIndex];
+                w.ClusterIndex = newClusterIndices_A[w.ClusterIndex];
                 return w;
             }
             ).ToList();
-
-        for (int i = 0; i < embeddings.Words.Count; i += 1)
+        for (int i = 0; i < embeddings_A.Words.Count; i += 1)
         {
-            Model03Core.Word word = embeddings.Words[i];
+            Model03Core.Word word = embeddings_A.Words[i];
             word.Index = i;
+        }
+        foreach (int i in Enumerable.Range(0, embeddings_A.ClusterInfos.Count))
+        {
+            SetClusterStatistics(embeddings_A.ClusterInfos[i], embeddings_A.Words.Where(w => w.ClusterIndex == i).ToArray());            
+        }
+        SetHashProjectionIndices(embeddings_A.ClusterInfos, r);        
+
+        foreach (int i in Enumerable.Range(0, embeddings_B.ClusterInfos.Count))
+        {
+            var clusterInfo = embeddings_B.ClusterInfos[i];
+            if (clusterInfo is null)
+                continue;
+            clusterInfo.Temp_ClusterIndex = i;
+        }
+        var newClusterIndices_B = new int[embeddings_B.ClusterInfos.Count];
+        Array.Fill(newClusterIndices_B, -1);
+        var newClusters_B = new List<ClusterInfo>(embeddings_B.ClusterInfos.Count);        
+        foreach (int i in Enumerable.Range(0, embeddings_A.ClusterInfos.Count))
+        {
+            var clusterInfo_A = embeddings_A.ClusterInfos[i];
+            int mappedClusterIndex_B = ClustersMapping[clusterInfo_A.Temp_ClusterIndex];
+            var clusterInfo_B = embeddings_B.ClusterInfos[mappedClusterIndex_B];
+
+            Debug.Assert(clusterInfo_B is not null);
+            newClusterIndices_B[clusterInfo_B.Temp_ClusterIndex] = newClusters_B.Count;            
+            newClusters_B.Add(clusterInfo_B);
+        }
+        embeddings_B.ClusterInfos = newClusters_B.ToList();
+        embeddings_B.Words = embeddings_B.Words.Where(w => newClusterIndices_B[w.ClusterIndex] != -1)
+            .Select(w =>
+            {
+                w.ClusterIndex = newClusterIndices_B[w.ClusterIndex];
+                return w;
+            }
+            ).ToList();
+        for (int i = 0; i < embeddings_B.Words.Count; i += 1)
+        {
+            Model03Core.Word word = embeddings_B.Words[i];
+            word.Index = i;
+        }
+        foreach (int i in Enumerable.Range(0, embeddings_B.ClusterInfos.Count))
+        {
+            SetClusterStatistics(embeddings_B.ClusterInfos[i], embeddings_B.Words.Where(w => w.ClusterIndex == i).ToArray());            
+        }
+        SetHashProjectionIndices(embeddings_B.ClusterInfos, r);
+    }
+
+    public static void SetHashProjectionIndices(List<ClusterInfo> clusterInfos, Random r)
+    {
+        int[] hashProjectionIndices = new int[clusterInfos.Count];
+        foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Count))
+        {
+            hashProjectionIndices[clusterIndex] = clusterIndex;
+        }
+        r.Shuffle(hashProjectionIndices);
+        foreach (int clusterIndex in Enumerable.Range(0, clusterInfos.Count))
+        {
+            clusterInfos[clusterIndex].HashProjectionIndex = hashProjectionIndices[clusterIndex];
         }
     }
 
@@ -417,7 +482,26 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
         ClustersMapping = reader.ReadArray<int>()!;
-    }    
+    }
+
+    private static void SetClusterStatistics(ClusterInfo clusterInfo, Word[] clusterWords)
+    {
+        clusterInfo.WordsCount = clusterWords.Length;
+        float sum = 0.0f;
+        for (int i = 0; i < clusterWords.Length; i += 1)
+        {
+            sum += TensorPrimitives.Norm(clusterWords[i].OldVector);
+        }
+        clusterInfo.AverageWordsNorm = sum / clusterWords.Length;
+
+        var clustersWordsTop10 = clusterWords.Take(10).ToArray();
+        sum = 0.0f;
+        for (int i = 0; i < clustersWordsTop10.Length; i += 1)
+        {
+            sum += TensorPrimitives.Norm(clustersWordsTop10[i].OldVector);
+        }
+        clusterInfo.AverageWordsNormTop10 = sum / clustersWordsTop10.Length;
+    }
 
     #region private fields
 
@@ -454,3 +538,4 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 
 //        _userFriendlyLogger.LogInformation($"------------------------");
 //    }
+

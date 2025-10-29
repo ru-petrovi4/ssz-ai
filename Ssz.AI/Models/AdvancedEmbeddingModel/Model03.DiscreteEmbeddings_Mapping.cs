@@ -55,6 +55,8 @@ public partial class Model03
 
     public void OptimizeClusters()
     {
+        Random r = new Random(41);
+
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
 
@@ -64,11 +66,14 @@ public partial class Model03
         ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
         clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-        //clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
-        //clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.OptimizeClusters(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.CalculateClustersMapping_EnergyMatrix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN);
 
-        clustersOneToOneMatcher_MappingLinear.FilterOptimized(languageDiscreteEmbeddings_RU);
-        clustersOneToOneMatcher_MappingLinear.FilterOptimized(languageDiscreteEmbeddings_EN);
+        clustersOneToOneMatcher_MappingLinear.FilterOptimized(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, r);        
 
         Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
         Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
@@ -537,8 +542,8 @@ public partial class Model03
         //        languageDiscreteEmbeddings_EN.ClusterInfos[clustersOneToOneMatcher_MappingLinear.ClustersMapping[clusterIndex]].CentroidOldVectorNormalized;
         //}
 
-        var primaryBitsEnergy_Matrix_RU = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_RU.ClusterInfos);
-        var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_EN.ClusterInfos);
+        var primaryBitsEnergy_Matrix_RU = ModelHelper.GetPrimaryBitsEnergy_Matrix_Cos(languageDiscreteEmbeddings_RU.ClusterInfos);
+        var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix_Cos(languageDiscreteEmbeddings_EN.ClusterInfos);
 
         const int nearestCount = 70;
 

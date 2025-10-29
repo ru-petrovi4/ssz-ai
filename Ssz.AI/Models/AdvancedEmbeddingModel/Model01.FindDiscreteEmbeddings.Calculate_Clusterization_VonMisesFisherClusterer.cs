@@ -48,7 +48,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation("=== von Mises-Fisher Кластеризация ===");
 
             // Устанавливаем случайное семя для воспроизводимости
-            torch.manual_seed(43);
+            torch.manual_seed(41);
 
             loggersSet.UserFriendlyLogger.LogInformation($"Сгенерированы тестовые данные: {oldVectorsTensor.shape[0]} точек, размерность {oldVectorsTensor.shape[1]}");
 

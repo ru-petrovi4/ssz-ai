@@ -87,7 +87,7 @@ public partial class Model01
         WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: WordsCount, _loggersSet);
         WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: WordsCount, _loggersSet);
 
-        bool calculate = false;
+        bool calculate = true;
         if (calculate)
         {
             LanguageInfo_RU.Temp_WordsDistancesOldMatrix = WordsDistancesOldMatrix_Calculate(LanguageInfo_RU.Words, _loggersSet);
@@ -185,46 +185,6 @@ public partial class Model01
             Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DiscreteVectors_EN, LanguageInfo_EN.Temp_DiscreteVectorsAndMatrices, null, null);
         }
 
-        //CurrentDiscreteVectorsAndMatrices_ToDisplay = discreteVectorsAndMatrices_RU;
-
-        //CurrentClusterization_AlgorithmData_ToDisplay = Clusterization_AlgorithmData_KMeans;
-        //CurrentProjectionOptimization_AlgorithmData_ToDisplay = ProjectionOptimization_AlgorithmData_Variant3;
-
-        //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_AlgorithmData_KMeans, _loggersSet);
-        //ProxWordsDiscreteMatrix_Calculate(Clusterization_AlgorithmData_KMeans, _loggersSet);
-
-        //DiscreteVectorsAndMatrices discreteVectorsAndMatrices = Calculate_DiscreteVectors(Clusterization_AlgorithmData_Classes, ProjectionOptimization_AlgorithmData_Random, _loggersSet);
-        //CurrentDiscreteVectorsAndMatrices_ToDisplay = discreteVectorsAndMatrices;
-        //SaveToFile_DiscreteVectorsAndMatrices(AlgorithmData_Classes, _loggersSet);
-        //LoadFromFile_DiscreteVectorsAndMatrices(Clusterization_AlgorithmData_Classes, _loggersSet);
-        //ProxWordsDiscreteMatrix_Calculate(Clusterization_AlgorithmData_Classes, _loggersSet);
-
-        //CurrentWordsNewEmbeddings = Calculate_WordsNewEmbeddings(_loggersSet);
-        //SaveToFile_WordsNewEmbeddings(CurrentWordsNewEmbeddings, "NewWordsEmbeddings.csv", _loggersSet);
-
-        //CompareOldAndNewPhraseEmbeddings(_loggersSet);           
-    }
-
-    public void GenerateAndSave_LanguageDiscreteEmbeddings_Object()
-    {
-        WordsHelper.InitializeWords_RU(LanguageInfo_RU, wordsMaxCount: WordsCount, _loggersSet, loadOldVectors: true);
-        WordsHelper.InitializeWords_EN(LanguageInfo_EN, wordsMaxCount: WordsCount, _loggersSet, loadOldVectors: true);
-
-        LanguageInfo_RU.Temp_Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_RU, name: "VonMisesFisherClusterer");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_RU, LanguageInfo_RU.Temp_Clusterization_AlgorithmData, null, null);
-        LanguageInfo_EN.Temp_Clusterization_AlgorithmData = new Clusterization_AlgorithmData(LanguageInfo_EN, name: "VonMisesFisherClusterer");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_Clusterization_AlgorithmData_EN, LanguageInfo_EN.Temp_Clusterization_AlgorithmData, null, null);
-
-        LanguageInfo_RU.Temp_ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant4");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_RU, LanguageInfo_RU.Temp_ProjectionOptimization_AlgorithmData, null, null);
-        LanguageInfo_EN.Temp_ProjectionOptimization_AlgorithmData = new ProjectionOptimization_AlgorithmData(name: "Variant4");
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ProjectionOptimization_AlgorithmData_EN, LanguageInfo_EN.Temp_ProjectionOptimization_AlgorithmData, null, null);
-
-        LanguageInfo_RU.Temp_DiscreteVectorsAndMatrices = new DiscreteVectorsAndMatrices();
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DiscreteVectors_RU, LanguageInfo_RU.Temp_DiscreteVectorsAndMatrices, null, null);
-        LanguageInfo_EN.Temp_DiscreteVectorsAndMatrices = new DiscreteVectorsAndMatrices();
-        Helpers.SerializationHelper.LoadFromFileIfExists(FileName_DiscreteVectors_EN, LanguageInfo_EN.Temp_DiscreteVectorsAndMatrices, null, null);
-
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new()
         {
             Words = new(),
@@ -236,7 +196,7 @@ public partial class Model01
         for (int i = 0; i < LanguageInfo_RU.Words.Count; i += 1)
         {
             Model03Core.Word word = LanguageInfo_RU.Words[i];
-            Model03Core.Word Word = new()
+            Model03Core.Word wordClone = new()
             {
                 Name = word.Name,
                 Index = i,
@@ -248,10 +208,10 @@ public partial class Model01
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_RU.Temp_DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
 #if DEBUG
-            var primaryBitsSum = TensorPrimitives.Sum(Word.DiscreteVector_PrimaryBitsOnly);
+            var primaryBitsSum = TensorPrimitives.Sum(wordClone.DiscreteVector_PrimaryBitsOnly);
             Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
-            languageDiscreteEmbeddings_RU.Words.Add(Word);            
+            languageDiscreteEmbeddings_RU.Words.Add(wordClone);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
 
@@ -266,7 +226,7 @@ public partial class Model01
         for (int i = 0; i < LanguageInfo_EN.Words.Count; i += 1)
         {
             Model03Core.Word word = LanguageInfo_EN.Words[i];
-            Model03Core.Word Word = new()
+            Model03Core.Word wordClone = new()
             {
                 Name = word.Name,
                 Index = i,
@@ -278,10 +238,10 @@ public partial class Model01
                 DiscreteVector_SecondaryBitsOnly = LanguageInfo_EN.Temp_DiscreteVectorsAndMatrices.DiscreteVectors_SecondaryBitsOnly[i],
             };
 #if DEBUG
-            var primaryBitsSum = TensorPrimitives.Sum(Word.DiscreteVector_PrimaryBitsOnly);
+            var primaryBitsSum = TensorPrimitives.Sum(wordClone.DiscreteVector_PrimaryBitsOnly);
             Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
-            languageDiscreteEmbeddings_EN.Words.Add(Word);            
+            languageDiscreteEmbeddings_EN.Words.Add(wordClone);            
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
     }
