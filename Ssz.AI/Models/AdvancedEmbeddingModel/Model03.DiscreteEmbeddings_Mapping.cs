@@ -42,7 +42,7 @@ public partial class Model03
     public const string FileName_NearestB = "AdvancedEmbedding_NearestB.bin";
     public const string FileName_PrimaryWordsOneToOneMatcher_Ideal = "PrimaryWordsOneToOneMatcher_Ideal.bin";
 
-    public const string FileName_PrimaryWordsOneToOneMatcher_V2 = "AdvancedEmbedding_PrimaryWordsOneToOneMatcher_V2.bin";
+    public const string FileName_ClustersOneToOneMatcher_Swapping = "AdvancedEmbedding_ClustersOneToOneMatcher_Swapping.bin";
 
     #region construction and destruction
 
@@ -52,6 +52,25 @@ public partial class Model03
     }
 
     #endregion
+
+    public void FixClusters()
+    {
+        Random r = new Random(41);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_RU = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, null);
+
+        LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
+
+        ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
+        
+
+        clustersOneToOneMatcher_MappingLinear.Fix(languageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_EN, r);
+
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
+    }
 
     public void OptimizeClusters()
     {
@@ -163,7 +182,6 @@ public partial class Model03
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new();
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, null);
 
-
         ClustersOneToOneMatcher_MappingLinear clustersOneToOneMatcher_MappingLinear = new(_loggersSet.UserFriendlyLogger);
         Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_Ideal, clustersOneToOneMatcher_MappingLinear, null, null);
         int[] idealPrimaryBitsMapping_A_B = ModelHelper.GetPrimaryBitsMapping(
@@ -175,22 +193,22 @@ public partial class Model03
         bool calculateFromBeginning = true;
         if (calculateFromBeginning)
         {
-            //clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count);
-            clustersOneToOneMatcher_Swapping.GenerateOwnedData2(idealPrimaryBitsMapping_A_B);
-
-            clustersOneToOneMatcher_Swapping.Prepare();
-            clustersOneToOneMatcher_Swapping.CalculateMapping_Test(idealPrimaryBitsMapping_A_B);
-
-            //Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
-        }
-        else
-        {
-            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
+            clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count, (clusterIndexA: 98, clusterIndexB: 112));
+            //clustersOneToOneMatcher_Swapping.GenerateOwnedData2(idealPrimaryBitsMapping_A_B);
 
             clustersOneToOneMatcher_Swapping.Prepare();
             clustersOneToOneMatcher_Swapping.CalculateMapping(idealPrimaryBitsMapping_A_B);
 
-            Helpers.SerializationHelper.SaveToFile(FileName_PrimaryWordsOneToOneMatcher_V2, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
+            Helpers.SerializationHelper.SaveToFile(FileName_ClustersOneToOneMatcher_Swapping, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
+        }
+        else
+        {
+            Helpers.SerializationHelper.LoadFromFileIfExists(FileName_ClustersOneToOneMatcher_Swapping, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
+
+            clustersOneToOneMatcher_Swapping.Prepare();
+            clustersOneToOneMatcher_Swapping.CalculateMapping(idealPrimaryBitsMapping_A_B);
+
+            Helpers.SerializationHelper.SaveToFile(FileName_ClustersOneToOneMatcher_Swapping, clustersOneToOneMatcher_Swapping, null, _loggersSet.UserFriendlyLogger);
         }
 
         var clustersMapping = ModelHelper.GetClustersMapping(

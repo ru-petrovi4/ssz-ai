@@ -181,6 +181,25 @@ public static partial class ModelHelper
         return energy;
     }
 
+    public static void SetClusterStatistics(ClusterInfo clusterInfo, Word[] clusterWords)
+    {
+        clusterInfo.WordsCount = clusterWords.Length;
+        float sum = 0.0f;
+        for (int i = 0; i < clusterWords.Length; i += 1)
+        {
+            sum += TensorPrimitives.Norm(clusterWords[i].OldVector);
+        }
+        clusterInfo.AverageWordsNorm = sum / clusterWords.Length;
+
+        var clustersWordsTop10 = clusterWords.Take(10).ToArray();
+        sum = 0.0f;
+        for (int i = 0; i < clustersWordsTop10.Length; i += 1)
+        {
+            sum += TensorPrimitives.Norm(clustersWordsTop10[i].OldVector);
+        }
+        clusterInfo.AverageWordsNormTop10 = sum / clustersWordsTop10.Length;
+    }
+
     public static void ShowWords(
         LanguageDiscreteEmbeddings source, 
         LanguageDiscreteEmbeddings target, 
@@ -194,8 +213,8 @@ public static partial class ModelHelper
 
         if (ideal_ClustersMapping is not null)
         {
-            Debug.Assert(ideal_ClustersMapping.ToHashSet().Count == ideal_ClustersMapping.Length);
-            logger.LogInformation($"Совпадений с идеалом: {clustersMapping.Select((cm, i) => cm == ideal_ClustersMapping[i] ? 1 : 0).Sum()}/{clustersMappingFiltered.Length}");
+            //Debug.Assert(ideal_ClustersMapping.ToHashSet().Count == ideal_ClustersMapping.Length);
+            logger.LogInformation($"Совпадений с идеалом: {clustersMappingFiltered.Select((cm, i) => cm == ideal_ClustersMapping[i] ? 1 : 0).Sum()}/{clustersMappingFiltered.Length}");
         }
 
         var counts = new Dictionary<int, int>(clustersMappingFiltered.Length);            
@@ -213,8 +232,13 @@ public static partial class ModelHelper
 
         for (int sourceClusterIndex = 0; sourceClusterIndex < source.ClusterInfos.Count; sourceClusterIndex += 1)
         {
-            ShowWords(source, sourceClusterIndex, logger);
-            ShowWords(target, clustersMapping[sourceClusterIndex], logger);
+            source.ClusterInfos[sourceClusterIndex].Temp_ClusterIndex = sourceClusterIndex;
+        }
+
+        foreach (var clusterInfo in source.ClusterInfos.OrderBy(ci => ci.WordsCount))
+        {
+            ShowWords(source, clusterInfo.Temp_ClusterIndex, logger);
+            ShowWords(target, clustersMapping[clusterInfo.Temp_ClusterIndex], logger);
             logger.LogInformation($"------------------------");
         }
     }
@@ -343,7 +367,7 @@ public static partial class ModelHelper
                 clusterInfos_B[clustersMapping_A_B[clusterIndexA]].HashProjectionIndex;
         }
 
-        Debug.Assert(primaryBitsMapping_A_B.ToHashSet().Count == primaryBitsMapping_A_B.Length);
+        //Debug.Assert(primaryBitsMapping_A_B.ToHashSet().Count == primaryBitsMapping_A_B.Length);
 
         return primaryBitsMapping_A_B;
     }

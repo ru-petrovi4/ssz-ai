@@ -235,6 +235,19 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
     }
 
+    public void Fix(LanguageDiscreteEmbeddings embeddings_A, LanguageDiscreteEmbeddings embeddings_B, Random r)
+    {        
+        foreach (int i in Enumerable.Range(0, embeddings_A.ClusterInfos.Count))
+        {
+            ModelHelper.SetClusterStatistics(embeddings_A.ClusterInfos[i], embeddings_A.Words.Where(w => w.ClusterIndex == i).ToArray());
+        }
+        
+        foreach (int i in Enumerable.Range(0, embeddings_B.ClusterInfos.Count))
+        {
+            ModelHelper.SetClusterStatistics(embeddings_B.ClusterInfos[i], embeddings_B.Words.Where(w => w.ClusterIndex == i).ToArray());
+        }
+    }
+
     public void FilterOptimized(LanguageDiscreteEmbeddings embeddings_A, LanguageDiscreteEmbeddings embeddings_B, Random r)
     {
         int[] newClusterIndices_A = new int[embeddings_A.ClusterInfos.Count];
@@ -265,7 +278,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         }
         foreach (int i in Enumerable.Range(0, embeddings_A.ClusterInfos.Count))
         {
-            SetClusterStatistics(embeddings_A.ClusterInfos[i], embeddings_A.Words.Where(w => w.ClusterIndex == i).ToArray());            
+            ModelHelper.SetClusterStatistics(embeddings_A.ClusterInfos[i], embeddings_A.Words.Where(w => w.ClusterIndex == i).ToArray());            
         }
         SetHashProjectionIndices(embeddings_A.ClusterInfos, r);        
 
@@ -304,7 +317,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         }
         foreach (int i in Enumerable.Range(0, embeddings_B.ClusterInfos.Count))
         {
-            SetClusterStatistics(embeddings_B.ClusterInfos[i], embeddings_B.Words.Where(w => w.ClusterIndex == i).ToArray());            
+            ModelHelper.SetClusterStatistics(embeddings_B.ClusterInfos[i], embeddings_B.Words.Where(w => w.ClusterIndex == i).ToArray());            
         }
         SetHashProjectionIndices(embeddings_B.ClusterInfos, r);
     }
@@ -482,26 +495,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
         ClustersMapping = reader.ReadArray<int>()!;
-    }
-
-    private static void SetClusterStatistics(ClusterInfo clusterInfo, Word[] clusterWords)
-    {
-        clusterInfo.WordsCount = clusterWords.Length;
-        float sum = 0.0f;
-        for (int i = 0; i < clusterWords.Length; i += 1)
-        {
-            sum += TensorPrimitives.Norm(clusterWords[i].OldVector);
-        }
-        clusterInfo.AverageWordsNorm = sum / clusterWords.Length;
-
-        var clustersWordsTop10 = clusterWords.Take(10).ToArray();
-        sum = 0.0f;
-        for (int i = 0; i < clustersWordsTop10.Length; i += 1)
-        {
-            sum += TensorPrimitives.Norm(clustersWordsTop10[i].OldVector);
-        }
-        clusterInfo.AverageWordsNormTop10 = sum / clustersWordsTop10.Length;
-    }
+    }    
 
     #region private fields
 

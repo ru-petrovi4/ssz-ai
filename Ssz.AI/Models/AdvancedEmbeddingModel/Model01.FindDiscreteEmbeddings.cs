@@ -213,6 +213,10 @@ public partial class Model01
 #endif
             languageDiscreteEmbeddings_RU.Words.Add(wordClone);            
         }
+        foreach (int i in Enumerable.Range(0, languageDiscreteEmbeddings_RU.ClusterInfos.Count))
+        {
+            ModelHelper.SetClusterStatistics(languageDiscreteEmbeddings_RU.ClusterInfos[i], languageDiscreteEmbeddings_RU.Words.Where(w => w.ClusterIndex == i).ToArray());
+        }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_RU, languageDiscreteEmbeddings_RU, null, _loggersSet.UserFriendlyLogger);
 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_EN = new()
@@ -242,6 +246,10 @@ public partial class Model01
             Debug.Assert(primaryBitsSum > Constants.DiscreteVector_PrimaryBitsCount - 0.00001f && primaryBitsSum < Constants.DiscreteVector_PrimaryBitsCount + 0.00001f);
 #endif
             languageDiscreteEmbeddings_EN.Words.Add(wordClone);            
+        }
+        foreach (int i in Enumerable.Range(0, languageDiscreteEmbeddings_EN.ClusterInfos.Count))
+        {
+            ModelHelper.SetClusterStatistics(languageDiscreteEmbeddings_EN.ClusterInfos[i], languageDiscreteEmbeddings_EN.Words.Where(w => w.ClusterIndex == i).ToArray());
         }
         Helpers.SerializationHelper.SaveToFile(FileName_LanguageDiscreteEmbeddings_EN, languageDiscreteEmbeddings_EN, null, _loggersSet.UserFriendlyLogger);
     }
