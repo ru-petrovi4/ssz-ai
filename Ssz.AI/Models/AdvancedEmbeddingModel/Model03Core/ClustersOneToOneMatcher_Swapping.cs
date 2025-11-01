@@ -25,9 +25,9 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_A;
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_B;
 
-    public const int BatchSize = 10000;
+    public const int BatchSize = 5000;
 
-    public int WordsCount = 10000;
+    public int WordsCount = 20000;
 
     /// <summary>
     ///     Primary Bit Index A -> Primary Bit Index B
@@ -204,17 +204,18 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
         var stopwatch = Stopwatch.StartNew();
         var r = new Random(5);        
 
-        float globalMinEnergy = float.MaxValue;
+        float globalMinEnergy_A = float.MaxValue;
+        float globalMinEnergy_B = float.MaxValue;
 
         int batchesCount = WordsCount / BatchSize + 1;
-        for (int epoch = 0; epoch < 15; epoch += 1)
+        for (int epoch = 0; epoch < 30; epoch += 1)
         {
             var random_Words_A = LanguageDiscreteEmbeddings_A.Words.Take(WordsCount).ToArray();
             r.Shuffle(random_Words_A);
             var random_Words_B = LanguageDiscreteEmbeddings_B.Words.Take(WordsCount).ToArray();
             r.Shuffle(random_Words_B);
 
-            bool changed = false;
+            bool epochChanged = false;
 
             for (int batchN = 0; batchN < batchesCount; batchN += 1)
             {
@@ -245,11 +246,10 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
                 //            Temp_PrimaryBitsEnergy_Matrix_A,
                 //            Temp_PrimaryBitsEnergy_Matrix_B
                 //            );
-
-                int batchTotalSwapsCount = 0;
-                for (; ; )
+                
+                for (int subBatchN = 0; subBatchN < 50; subBatchN += 1)
                 {
-                    batchTotalSwapsCount = 0;
+                    int allBitsTest_TotalSwapsCount = 0;
 
                     int[] toOptimize_PrimaryBitIndices_A = new int[PrimaryBitsMapping_B_A.Length];        
                     for (int i = 0; i < PrimaryBitsMapping_B_A.Length; i += 1)
@@ -258,38 +258,65 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
                     }
                     r.Shuffle(toOptimize_PrimaryBitIndices_A);
 
-                    for (int i = 0; i < PrimaryBitsMapping_B_A.Length; i += 1)
+                    int[] toOptimize_PrimaryBitIndices_B = new int[PrimaryBitsMapping_A_B.Length];
+                    for (int i = 0; i < PrimaryBitsMapping_A_B.Length; i += 1)
                     {
-                        int swapsCount = Optimize_WordsBatch_OnePrimaryBitIndex_A(
-                            toOptimize_PrimaryBitIndices_A[i],                            
-                            batchWords_A,
-                            PrimaryBitsMapping_A_B,
-                            PrimaryBitsMapping_Strength_A_B,
-                            PrimaryBitsMapping_B_A,
-                            PrimaryBitsMapping_Strength_B_A,
-                            Temp_WordPrimaryBitIndices_Collection_A,
-                            Temp_WordMappedPrimaryBitIndices_Collection_A,                            
-                            batch_AverageWordEnergy_A,
-                            batch_AverageWordEnergy_B,
-                            Temp_PrimaryBitsEnergy_Matrix_A,
-                            Temp_PrimaryBitsEnergy_Matrix_B,
-                            ref globalMinEnergy
-                            );
-
-                        if (swapsCount > 0)
-                            changed = true;
-
-                        batchTotalSwapsCount += swapsCount;
-
-                        //OptimizeWordsBatch(
-                        //    r.Next(Mapping_B_A.Length),
-                        //    batchWords_B,
-                        //    Mapping_B_A,
-                        //    Temp_WordBitIndices_Collection_B,
-                        //    Temp_WordMappedBitIndices_Collection_B,
-                        //    Mapping_A_B
-                        //    );
+                        toOptimize_PrimaryBitIndices_B[i] = i;
                     }
+                    r.Shuffle(toOptimize_PrimaryBitIndices_B);
+
+                    if (batchN % 2 == 0)
+                    {
+                        for (int i = 0; i < toOptimize_PrimaryBitIndices_A.Length; i += 1)
+                        {
+                            int swapsCount = Optimize_WordsBatch_OnePrimaryBitIndex(
+                                toOptimize_PrimaryBitIndices_A[i],
+                                batchWords_A,
+                                PrimaryBitsMapping_A_B,
+                                PrimaryBitsMapping_Strength_A_B,
+                                PrimaryBitsMapping_B_A,
+                                PrimaryBitsMapping_Strength_B_A,
+                                Temp_WordPrimaryBitIndices_Collection_A,
+                                Temp_WordMappedPrimaryBitIndices_Collection_A,
+                                batch_AverageWordEnergy_A,
+                                batch_AverageWordEnergy_B,
+                                Temp_PrimaryBitsEnergy_Matrix_A,
+                                Temp_PrimaryBitsEnergy_Matrix_B,
+                                ref globalMinEnergy_B
+                                );
+
+                            if (swapsCount > 0)
+                                epochChanged = true;
+
+                            allBitsTest_TotalSwapsCount += swapsCount;
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < toOptimize_PrimaryBitIndices_B.Length; i += 1)
+                        {
+                            int swapsCount = Optimize_WordsBatch_OnePrimaryBitIndex(
+                                toOptimize_PrimaryBitIndices_B[i],
+                                batchWords_B,
+                                PrimaryBitsMapping_B_A,
+                                PrimaryBitsMapping_Strength_B_A,
+                                PrimaryBitsMapping_A_B,
+                                PrimaryBitsMapping_Strength_A_B,
+                                Temp_WordPrimaryBitIndices_Collection_B,
+                                Temp_WordMappedPrimaryBitIndices_Collection_B,
+                                batch_AverageWordEnergy_B,
+                                batch_AverageWordEnergy_A,
+                                Temp_PrimaryBitsEnergy_Matrix_B,
+                                Temp_PrimaryBitsEnergy_Matrix_A,
+                                ref globalMinEnergy_A
+                                );
+
+                            if (swapsCount > 0)
+                                epochChanged = true;
+
+                            allBitsTest_TotalSwapsCount += swapsCount;
+                        }
+                    }                        
 
                     float mappedAverageWordEnergy = GetMappedAverageWordEnergy(
                             batchWords_A,
@@ -301,9 +328,9 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
                             );
 
                     _loggersSet.UserFriendlyLogger.LogInformation(
-                        $"CalculateMapping. AverageMappedWordEnergy: {mappedAverageWordEnergy} (ideal: {batch_AverageWordEnergy_B}); Количество перестановок: {batchTotalSwapsCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
+                        $"CalculateMapping. AverageMappedWordEnergy: {mappedAverageWordEnergy} (ideal: {batch_AverageWordEnergy_B}); Количество перестановок за 1 проход по всем битам: {allBitsTest_TotalSwapsCount}; Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
 
-                    if (batchTotalSwapsCount == 0)
+                    if (allBitsTest_TotalSwapsCount == 0)
                         break;
                 }                
 
@@ -314,7 +341,7 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
             }
 
             _loggersSet.UserFriendlyLogger.LogInformation($"Epoch done: {epoch}. Elapsed Milliseconds: " + stopwatch.ElapsedMilliseconds);
-            if (!changed)
+            if (!epochChanged)
                 break;
         }
 
@@ -351,7 +378,7 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
         }
     }
 
-    private static int Optimize_WordsBatch_OnePrimaryBitIndex_A(
+    private static int Optimize_WordsBatch_OnePrimaryBitIndex(
         int toOptimize_PrimaryBitIndex_A,                
         Memory<Word> batchWords_A,
         int[] primaryBitsMapping_A_B,

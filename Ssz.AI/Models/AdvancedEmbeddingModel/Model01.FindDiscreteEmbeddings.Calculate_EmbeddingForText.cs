@@ -63,7 +63,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
 
             string programDataDirectoryFullName = Directory.GetCurrentDirectory();
 
-            CaseInsensitiveDictionary<Word> wordsDictionary = new();
+            CaseInsensitiveOrderedDictionary<Word> wordsDictionary = new();
             foreach (var word in languageInfo.Words)
             {
                 wordsDictionary[word.Name] = word;
@@ -109,7 +109,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             return embeddingForText;
         }
 
-        private Word? FindWord(CaseInsensitiveDictionary<Word> wordsDictionary, string v0, string v1)
+        private Word? FindWord(CaseInsensitiveOrderedDictionary<Word> wordsDictionary, string v0, string v1)
         {
             string postfixedWord = @"";
             if (v1.StartsWith(@"ADJF"))

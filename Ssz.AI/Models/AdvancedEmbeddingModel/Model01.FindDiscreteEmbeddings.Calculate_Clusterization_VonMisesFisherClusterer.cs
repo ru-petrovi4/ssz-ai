@@ -53,7 +53,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             loggersSet.UserFriendlyLogger.LogInformation($"Сгенерированы тестовые данные: {oldVectorsTensor.shape[0]} точек, размерность {oldVectorsTensor.shape[1]}");
 
             // Создаём и обучаем кластеризатор
-            var clusterer = new VonMisesFisherClusterer(
+            var clusterer = new VonMisesFisherClusterer_EqualSize(
                 device,
                 loggersSet.UserFriendlyLogger,
                 numClusters: Constants.ClustersCount,
@@ -75,14 +75,14 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel
             // Демонстрируем предсказание
             loggersSet.UserFriendlyLogger.LogInformation("\n=== Тестирование предсказаний ===");
             var predictions = clusterer.Predict();
-            var probabilities = clusterer.PredictProba();
+            //var probabilities = clusterer.PredictProba();
 
             loggersSet.UserFriendlyLogger.LogInformation("Предсказания для первых 10 точек:");
             for (int i = 0; i < 10; i++)
             {
                 var pred = predictions[i].item<long>();
-                var prob = probabilities[i, pred].item<float>();
-                loggersSet.UserFriendlyLogger.LogInformation($"Точка {i}: Кластер {pred} (вероятность: {prob:F3})");
+                //var prob = probabilities[i, pred].item<float>();
+                loggersSet.UserFriendlyLogger.LogInformation($"Точка {i}: Кластер {pred}");
             }
 
             totalStopwatch.Stop();

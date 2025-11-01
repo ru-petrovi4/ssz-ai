@@ -514,7 +514,7 @@ public class WordsNewEmbeddings
     /// <summary>
     ///     [Словоформа, DiscreteVector Index]
     /// </summary>
-    public CaseInsensitiveDictionary<int> Words = new();
+    public CaseInsensitiveOrderedDictionary<int> Words = new();
 }
 
 

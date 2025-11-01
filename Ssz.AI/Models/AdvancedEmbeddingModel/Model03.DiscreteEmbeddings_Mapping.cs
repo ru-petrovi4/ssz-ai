@@ -193,7 +193,7 @@ public partial class Model03
         bool calculateFromBeginning = true;
         if (calculateFromBeginning)
         {
-            clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count, (clusterIndexA: 98, clusterIndexB: 112));
+            clustersOneToOneMatcher_Swapping.GenerateOwnedData(languageDiscreteEmbeddings_RU.ClusterInfos.Count, (clusterIndexA: 132, clusterIndexB: 7));
             //clustersOneToOneMatcher_Swapping.GenerateOwnedData2(idealPrimaryBitsMapping_A_B);
 
             clustersOneToOneMatcher_Swapping.Prepare();

@@ -80,7 +80,7 @@ public partial class Model01
     public const string FileName_LanguageDiscreteEmbeddings_RU = "AdvancedEmbedding_LanguageDiscreteEmbeddings_RU.bin";
     public const string FileName_LanguageDiscreteEmbeddings_EN = "AdvancedEmbedding_LanguageDiscreteEmbeddings_EN.bin";
 
-    public const int WordsCount = 20000;
+    public const int WordsCount = 19800;
 
     public void FindDiscreteEmbeddings()
     {

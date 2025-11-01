@@ -220,7 +220,7 @@ namespace Ssz.AI.Grafana
         [HttpPost(@"tag-values")]
         public IActionResult TagValues([FromBody] TagValuesRequest tagValuesRequest)
         {
-            return new ObjectResult(new CaseInsensitiveDictionary<string>());
+            return new ObjectResult(new CaseInsensitiveOrderedDictionary<string>());
         }
 
         #endregion

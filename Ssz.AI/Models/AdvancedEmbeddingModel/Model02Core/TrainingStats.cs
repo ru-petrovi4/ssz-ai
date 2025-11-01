@@ -34,5 +34,5 @@ public sealed record TrainingStats
     /// </summary>
     public TimeSpan ElapsedTime { get; set; }
 
-    public CaseInsensitiveDictionary<float> ToLog { get; init; } = new();
+    public CaseInsensitiveOrderedDictionary<float> ToLog { get; init; } = new();
 }
