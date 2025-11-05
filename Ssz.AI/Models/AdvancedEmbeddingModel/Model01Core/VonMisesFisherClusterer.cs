@@ -557,12 +557,8 @@ public class VonMisesFisherClusterer
 
         //using (var disposeScope = torch.NewDisposeScope())
         {
-            var oldVectorsTensor_device = oldVectorsTensor; //.to(_device);
-            // [K x D]
-            var meanDirectionsr_device = MeanDirections; //.to(_device);
-
             // Вычисляем cosine similarity
-            var cosineSimilarity = torch.mm(oldVectorsTensor_device, meanDirectionsr_device.t());
+            var cosineSimilarity = torch.mm(oldVectorsTensor, MeanDirections.t());
 
             for (long i = 0; i < numSamples; i += 1)
             {

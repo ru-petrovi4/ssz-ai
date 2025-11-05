@@ -122,33 +122,34 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         {
             var initialLink = Temp_Links[it.i, it.j];
             initialHypothesisNum += 1;
-            initialLink.Chain += ModelHelper.NumToSymbol(initialHypothesisNum);
-            initialLink.Strength = 1.0f;
+            initialLink.HypothesisList.Add(new Hypothesis()
+            {
+                IdString = ModelHelper.NumToSymbol(initialHypothesisNum).ToString(),
+                Strength = 1.0f
+            });
         }
 
-        //// Индексы позиций
-        //Parallel.For(
-        //    0, // начальный индекс (включительно)
-        //    VectorLength, // конечный индекс (не включительно)                    
-        //    bitIndex_A => // Основной делегат, исполняемый в параллельном потоке
-        //    {
-        //        var primaryBitsNearest_A = Temp_PrimaryBitsNearest_A.Array[bitIndex_A];
+        // Индексы позиций
+        Parallel.For(
+            0, // начальный индекс (включительно)
+            VectorLength, // конечный индекс (не включительно)                    
+            bitIndex_A => // Основной делегат, исполняемый в параллельном потоке
+            {
+                var primaryBitsNearest_A = Temp_PrimaryBitsNearest_A.Array[bitIndex_A];
 
-        //        int hypothesisNum = -1;
-        //        for (int bitIndex_B = 0; bitIndex_B < VectorLength; bitIndex_B += 1)
-        //        {
-        //            var primaryBitsNearest_B = Temp_PrimaryBitsNearest_B.Array[bitIndex_B];
+                //int hypothesisNum = -1;
+                for (int bitIndex_B = 0; bitIndex_B < VectorLength; bitIndex_B += 1)
+                {
+                    var primaryBitsNearest_B = Temp_PrimaryBitsNearest_B.Array[bitIndex_B];
 
-        //            float strength = 0.0f;
-        //            for (int n = 0; n < primaryBitsNearest_A.Count; n += 1)
-        //            {
-        //                var linkN = Temp_Links[primaryBitsNearest_A[n], primaryBitsNearest_B[n]];
-        //                if (linkN == @"")
-        //                    continue;
-        //                ComputeNeighborWeight(n);
-        //            }
-        //        } 
-        //    });        
+                    Temp_Links[bitIndex_A, bitIndex_B].Temp_HypothesisList.Add(GetHypothesis(
+                        bitIndex_A,
+                        bitIndex_B,
+                        primaryBitsNearest_A,
+                        primaryBitsNearest_B,
+                        Temp_Links));                    
+                }
+            });
     }    
 
     //// Получить итоговое соответствие
@@ -184,28 +185,28 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         var result = new int[VectorLength];
         Array.Fill(result, -1);
 
-        for (int i = 0; i < VectorLength; i++)
-        {            
-            //float max = float.MinValue;
-            int selectedJ = -1;
-            for (int j = 0; j < VectorLength; j++)
-            {
-                if (!String.IsNullOrEmpty(Temp_Links[i, j].Chain))
-                {
-                    //max = Temp_HypothesisSupport[i, j];
-                    selectedJ = j;
-                    break;
-                }
-            }
-            if (selectedJ != -1)
-            {
-                result[i] = selectedJ;
-            }
-        }
+        //for (int i = 0; i < VectorLength; i++)
+        //{            
+        //    //float max = float.MinValue;
+        //    int selectedJ = -1;
+        //    for (int j = 0; j < VectorLength; j++)
+        //    {
+        //        if (!String.IsNullOrEmpty(Temp_Links[i, j].Chain))
+        //        {
+        //            //max = Temp_HypothesisSupport[i, j];
+        //            selectedJ = j;
+        //            break;
+        //        }
+        //    }
+        //    if (selectedJ != -1)
+        //    {
+        //        result[i] = selectedJ;
+        //    }
+        //}
 
         return result;
     }
-    
+
     //private int[][] BuildWordPrimaryBitIndices_Collection(LanguageDiscreteEmbeddings languageDiscreteEmbeddings)
     //{
     //    var wordPrimaryBitIndices_Collection = new int[WordsCount][];
@@ -226,24 +227,68 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     //    return wordPrimaryBitIndices_Collection;
     //}    
 
+    private static Hypothesis GetHypothesis(
+        int bitIndex_A,
+        int bitIndex_B,
+        FastList<int> primaryBitsNearest_A,
+        FastList<int> primaryBitsNearest_B,
+        DenseMatrix<Link> links)
+    {
+        //float strength = 0.0f;
+        for (int idx_A = 0; idx_A < primaryBitsNearest_A.Count; idx_A += 1)
+            for (int idx_B = 0; idx_B < primaryBitsNearest_B.Count; idx_B += 1)
+            {
+                var link = links[primaryBitsNearest_A[idx_A], primaryBitsNearest_B[idx_B]];
+                for (int idx_H = 0; idx_H < link.HypothesisList.Count; idx_H += 1)
+                {
+                    //link.HypothesisList[idx_H];
+                }                    
+            }
+
+        return new Hypothesis
+        {
+            IdString = @"",
+        };
+    }
+
     /// <summary>
     ///     Primry bit to bit link.
     /// </summary>
     public class Link : IOwnedDataSerializable
     {
-        public string Chain = "";
+        public List<Hypothesis> HypothesisList = new();
+
+        public List<Hypothesis> Temp_HypothesisList = new();
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            writer.WriteListOfOwnedDataSerializable(HypothesisList, context);            
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            HypothesisList = reader.ReadListOfOwnedDataSerializable(() => new Hypothesis(), context);        
+        }
+    }
+
+    public struct Hypothesis : IOwnedDataSerializable
+    {
+        /// <summary>
+        /// Hypothesis ID 
+        /// </summary>
+        public string IdString;
 
         public float Strength;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            writer.Write(Chain);
+            writer.Write(IdString);
             writer.Write(Strength);
         }
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            Chain = reader.ReadString();
+            IdString = reader.ReadString();
             Strength = reader.ReadSingle();
         }
     }

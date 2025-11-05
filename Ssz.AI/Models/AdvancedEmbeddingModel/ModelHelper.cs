@@ -407,6 +407,11 @@ public static partial class ModelHelper
         return discreteVector_PrimaryBitsOnly_Mapped;
     }
 
+    /// <summary>
+    /// n = 0..
+    /// </summary>
+    /// <param name="n"></param>
+    /// <returns></returns>
     public static char NumToSymbol(int n)
     {
         return (char)('A' + n);

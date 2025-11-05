@@ -30,7 +30,8 @@ public static class WordsHelper
     {
         languageInfo_RU.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
-        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\RU\cc.ru.300.vec";
+        //string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\RU\cc.ru.300.vec";
+        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\RU\model_RU_20000.csv";
         if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
         {
             Regex regex = new("^[а-яА-ЯёЁ]+$");
@@ -45,7 +46,7 @@ public static class WordsHelper
         }
         else
         {
-            foreach (var line in File.ReadAllLines(@"Data\Ssz.AI.AdvancedEmbedding\RU\model_20000.csv"))
+            foreach (var line in File.ReadAllLines(fileFullName))
             {
                 var parts = CsvHelper.ParseCsvLine(",", line);
                 if (parts.Length < 300 || string.IsNullOrEmpty(parts[0]))
@@ -92,7 +93,8 @@ public static class WordsHelper
     {
         languageInfo_EN.Words = new(wordsMaxCount); // Initial reserved capacity                        
 
-        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\EN\cc.en.300.vec";
+        //string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\EN\cc.en.300.vec";
+        string fileFullName = @"Data\Ssz.AI.AdvancedEmbedding\EN\glove.42B.300d_20000.txt";
         if (String.Equals(Path.GetExtension(fileFullName), @".vec"))
         {
             Regex regex = new("^[a-zA-Z]+$");

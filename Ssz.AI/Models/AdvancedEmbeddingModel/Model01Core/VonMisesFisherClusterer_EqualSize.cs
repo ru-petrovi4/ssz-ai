@@ -345,25 +345,6 @@ public class VonMisesFisherClusterer_EqualSize
 
         using (var disposeScope = torch.NewDisposeScope())
         {
-            // Обновляем коэффициенты смешивания (при сбалансированном назначении они равны)
-            // α_k = targetClusterSize / N
-            for (int k = 0; k < _numClusters; k += 1)
-            {
-                // Подсчитываем реальный размер кластера
-                var mask = assignments.eq(k); // Булева маска [N]: True, где assignments[i] == k
-                var clusterSize = torch.sum(mask).item<long>();
-
-                if (clusterSize < 1) // Кластер пуст
-                {
-                    emptyClusters.Add(k);
-                    MixingCoefficients[k] = 0.0f;
-                }
-                else
-                {
-                    MixingCoefficients[k] = (float)clusterSize / _numSamples;
-                }
-            }
-
             // Обновляем направления средних μ_k и концентрации κ_k
             for (int k = 0; k < _numClusters; k += 1)
             {
@@ -406,11 +387,6 @@ public class VonMisesFisherClusterer_EqualSize
             {
                 SplitLargestCluster(emptyClusters, assignments);
             }
-
-            // Нормализуем коэффициенты смешивания
-            float epsilon = 1e-8f;
-            MixingCoefficients = torch.clamp(MixingCoefficients, min: epsilon);
-            MixingCoefficients = MixingCoefficients / torch.sum(MixingCoefficients);
         }
     }
 
@@ -446,9 +422,7 @@ public class VonMisesFisherClusterer_EqualSize
 
                 // Переинициализировать пустой кластер этой точкой
                 MeanDirections[emptyCluster] = clusterPoints[farthestInCluster].clone();
-                Concentrations[emptyCluster] = Concentrations[largestClusterIndex] * 0.5f;
-                MixingCoefficients[emptyCluster] = MixingCoefficients[largestClusterIndex] * 0.5f;
-                MixingCoefficients[largestClusterIndex] *= 0.5f;
+                Concentrations[emptyCluster] = Concentrations[largestClusterIndex] * 0.5f;                
             }
         }
     }
@@ -478,8 +452,8 @@ public class VonMisesFisherClusterer_EqualSize
         // Назначаем каждое слово его кластеру
         for (int i = 0; i < _numSamples; i += 1)
         {
-            var assignedCluster = assignments[i].item<int>();
-            words[i].ClusterIndex = assignedCluster;
+            var assignedCluster = assignments[i].item<long>();
+            words[i].ClusterIndex = (int)assignedCluster;
         }
 
         clusterization_AlgorithmData.MeanDirections = MeanDirections;
@@ -490,7 +464,7 @@ public class VonMisesFisherClusterer_EqualSize
         var clusterSizes = new long[_numClusters];
         for (int i = 0; i < _numSamples; i += 1)
         {
-            var cluster = assignments[i].item<int>();
+            var cluster = assignments[i].item<long>();
             clusterSizes[cluster] += 1;
         }
 
@@ -680,11 +654,8 @@ public class VonMisesFisherClusterer_EqualSize
         var numSamples = oldVectorsTensor.shape[0];
         var totalLogLikelihood = 0.0f;
 
-        var oldVectorsTensor_device = oldVectorsTensor;
-        var meanDirections_device = MeanDirections;
-
         // Вычисляем cosine similarity [N x K]
-        var cosineSimilarity = torch.mm(oldVectorsTensor_device, meanDirections_device.t());
+        var cosineSimilarity = torch.mm(oldVectorsTensor, MeanDirections.t());
 
         for (long i = 0; i < numSamples; i += 1)
         {
@@ -698,7 +669,7 @@ public class VonMisesFisherClusterer_EqualSize
                     oldVectorsTensor.shape[1]
                 );
 
-                var logComponent = // MathF.Log(MixingCoefficients[k].item<float>())
+                var logComponent = MathF.Log(MixingCoefficients[k].item<float>()) +
                     logNormalizingConstant +
                     Concentrations[k].item<float>() * cosineSimilarity[i, k].item<float>();
 
