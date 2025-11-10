@@ -595,7 +595,7 @@ namespace Ssz.AI.Models
             {
                 mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Constants);
 
-                float a = mc.Temp_Activity.Item3;
+                float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
                 if (a > activitiyMaxInfo.MaxActivity)
                 {
                     activitiyMaxInfo.MaxActivity = a;

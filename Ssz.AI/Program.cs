@@ -9,6 +9,8 @@ using Ssz.AI.Grafana;
 using Avalonia.Rendering.Composition.Animations;
 using System.Threading.Tasks;
 using System.IO;
+using Ssz.Utils;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Ssz.AI
 {
@@ -17,6 +19,8 @@ namespace Ssz.AI
         #region public functions 
 
         public static IHost Host { get; private set; } = null!;
+
+        public static string EnvironmentName { get; private set; } = null!;
 
         #endregion
 
@@ -27,6 +31,9 @@ namespace Ssz.AI
         public static void Main(string[] args)
         {
             Host = CreateHostBuilder(args).Build();
+
+            var logger = Host.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogInformation($"App starting with args: \"{String.Join(" ", args)}\"; Environment: {EnvironmentName}; Working Directory: \"{Directory.GetCurrentDirectory()}\"");
 
             var t = Host.RunAsync();
 
@@ -39,7 +46,10 @@ namespace Ssz.AI
             return Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
+                    EnvironmentName = ConfigurationHelper.GetEnvironmentName(hostingContext.HostingEnvironment);
+
                     config.Sources.Clear();
+
                     config.AddEncryptedAppSettings(hostingContext.HostingEnvironment, crypter =>
                     {
                         crypter.CertificatePath = "appsettings.pfx";                        
@@ -49,6 +59,7 @@ namespace Ssz.AI
                     builder =>
                         builder.ClearProviders()
                            .AddSszLogger()
+                           .AddDebug()
                     )                
                 .ConfigureWebHostDefaults(
                     webBuilder =>

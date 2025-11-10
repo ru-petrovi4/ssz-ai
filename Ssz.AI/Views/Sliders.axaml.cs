@@ -45,7 +45,7 @@ public class SlidersViewModel : ViewModelBase
 {
     public SlidersViewModel()
     {
-        foreach (int i in Enumerable.Range(0, 22))
+        foreach (int i in Enumerable.Range(0, 12))
         {
             SlidersItems.Add(new SlidersItem()
             {

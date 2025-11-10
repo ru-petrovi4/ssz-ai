@@ -30,14 +30,14 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         SetDataToControls(constants);
 
-        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar30.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar31.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        //LevelScrollBar32.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
-        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(Model.Constants);
+        LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar30.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar31.ValueChanged += (s, e) => GetDataFromControls(constants);
+        //LevelScrollBar32.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(constants);
 
         Reset();        
 
@@ -114,9 +114,9 @@ public partial class Model05View : UserControl
 
     private void Back1Button_OnClick(object? sender, RoutedEventArgs args)
     {
-        var lastAddedMemory = Model.Temp_ActivitiyMaxInfo?.Temp_WinnerMiniColumn?.Temp_Memory;
+        var lastAddedMemory = Model.Temp_ActivitiyMaxInfo?.SelectedSuperActivityMax_MiniColumn?.Temp_Memory;
         if (lastAddedMemory is not null)
-            Model.Temp_ActivitiyMaxInfo!.Temp_WinnerMiniColumn!.Memories.Remove(lastAddedMemory);
+            Model.Temp_ActivitiyMaxInfo!.SelectedSuperActivityMax_MiniColumn!.Memories.Remove(lastAddedMemory);
 
         Model.CurrentInputIndex -= 1;
     }

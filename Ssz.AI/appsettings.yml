@@ -21,6 +21,10 @@
     LogFilesWarningSizeInBytes: "150000000"
     # максимальный размер всех фалов журналов. Если размер превышает этот предел самые старые лог-файлы автоматически удаляются      
     LogFilesMaxSizeInBytes: "200000000"
+  Debug:
+    LogLevel:
+      Default: "Critical"
+      Ssz.AI.Program: "Information"
 Kestrel: 
   EndpointDefaults: 
     # Http1 нужен для TLS
