@@ -117,8 +117,9 @@ namespace Ssz.AI.Models
             //    }                
             //}            
 
-            MatrixFloat_ColumnMajor detectorDensities_Accumulative = new MatrixFloat_ColumnMajor(detectorDensities.Dimensions[0], detectorDensities.Dimensions[1]);
-            detectorDensities_Accumulative.Data = DistributionHelper.GetAccumulativeDistribution(detectorDensities.Data);
+            MatrixFloat_ColumnMajor detectorDensities_Accumulative = new MatrixFloat_ColumnMajor(
+                DistributionHelper.GetAccumulativeDistribution(detectorDensities.Data),
+                [ detectorDensities.Dimensions[0], detectorDensities.Dimensions[1] ]);            
 
             //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
             //dataToDisplayHolder.Distribution = new ulong[360];

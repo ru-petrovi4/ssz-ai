@@ -81,7 +81,7 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
         Temp_PrimaryBitsEnergy_Matrix_B = ModelHelper.GetPrimaryBitsEnergy_Matrix(LanguageDiscreteEmbeddings_B.ClusterInfos);
 
         Temp_Links = new DenseMatrix<Link>(VectorLength, VectorLength);
-        Temp_Links.CreateElementInstances(() => new Link());
+        Temp_Links.CreateElementInstances((mcx, mcy) => new Link());
 
         Temp_PrimaryBitsNearest_A = ModelHelper.BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_A, NearestCount);
         Temp_PrimaryBitsNearest_B = ModelHelper.BuildPrimaryBitsNearest(Temp_PrimaryBitsEnergy_Matrix_B, NearestCount);

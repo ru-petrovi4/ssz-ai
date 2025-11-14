@@ -1,7 +1,17 @@
-﻿using Ssz.Utils.Serialization;
+﻿using Microsoft.Extensions.Logging;
+using Ssz.AI.Helpers;
+using Ssz.AI.Models.AdvancedEmbeddingModel2.EmbeddingsEvaluation;
+using Ssz.Utils;
+using Ssz.Utils.Serialization;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Numerics.Tensors;
+using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
@@ -14,70 +24,300 @@ public partial class Cortex : ISerializableModelObject
     public Cortex(
         Model01.ModelConstants constants)
     {
-        Constants = constants;
+        Constants = constants;        
+    }
 
-        MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth_MiniColumns, constants.CortexHeight_MiniColumns);
+    #region public functions
 
-        // Создаем только миниколонки для подобласти            
-        foreach (int mcy in Enumerable.Range(0, constants.CortexHeight_MiniColumns))
-            foreach (int mcx in Enumerable.Range(0, constants.CortexWidth_MiniColumns))
+    public readonly Model01.ModelConstants Constants;
+
+    public List<Word> Words { get; private set; } = null!;
+
+    public DenseMatrix<MiniColumn> MiniColumns { get; private set; } = null!;
+
+    public readonly ActivitiyMaxInfo Temp_ActivitiyMaxInfo = new();
+
+    public void GenerateOwnedData(List<Word> words)
+    {
+        Words = words;
+        MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
+
+        foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
+            foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
             {
                 MiniColumn miniColumn = new MiniColumn(
-                    constants,
+                    Constants,
                     mcx,
                     mcy);
+
+                miniColumn.GenerateOwnedData();
 
                 MiniColumns[mcx, mcy] = miniColumn;
             }
     }
 
-    #region public functions
-
-    public Model01.ModelConstants Constants { get; }
-
-    public DenseMatrix<MiniColumn> MiniColumns { get; }
-
-    public ActivitiyMaxInfo Temp_ActivitiyMaxInfo { get; } = new();
-
-    public void GenerateOwnedData()
-    {
-        
-    }
-
     public void Prepare()
-    {        
+    {
+        // Находим ближайшие миниколонки для каждой миниколонки
+        Parallel.For(
+            fromInclusive: 0,
+            toExclusive: MiniColumns.Data.Length,
+            mci =>
+            {
+                MiniColumn mc = MiniColumns.Data[mci];
+                mc.Prepare();
+                mc.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], mc));
+
+                for (int mcy = mc.MCY - (int)Constants.SuperActivityRadius_MiniColumns - 1; mcy <= mc.MCY + (int)Constants.SuperActivityRadius_MiniColumns + 1; mcy += 1)
+                    for (int mcx = mc.MCX - (int)Constants.SuperActivityRadius_MiniColumns - 1; mcx <= mc.MCX + (int)Constants.SuperActivityRadius_MiniColumns + 1; mcx += 1)
+                    {
+                        if (mcx < 0 ||
+                                mcx >= MiniColumns.Dimensions[0] ||
+                                mcy < 0 ||
+                                mcy >= MiniColumns.Dimensions[1] ||
+                                (mcx == mc.MCX && mcy == mc.MCY))
+                            continue;
+
+                        MiniColumn nearestMc = MiniColumns[mcx, mcy];
+                        if (nearestMc is null)
+                            continue;
+                        float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
+                        if (r < Constants.SuperActivityRadius_MiniColumns + 0.00001f)
+                        {
+                            float k0 = MathHelper.GetInterpolatedValue(Constants.PositiveK, r);
+                            float k1 = MathHelper.GetInterpolatedValue(Constants.NegativeK, r);
+                            mc.Temp_K_ForNearestMiniColumns.Add((k0, k1, nearestMc));
+                        }
+                    }
+
+                //for (int mcy = mc.MCY - (int)constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns - 1; mcy <= mc.MCY + (int)constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns + 1; mcy += 1)
+                //    for (int mcx = mc.MCX - (int)constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns - 1; mcx <= mc.MCX + (int)constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns + 1; mcx += 1)
+                //    {
+                //        if (mcx < 0 ||
+                //                mcx >= constants.CortexWidth_MiniColumns ||
+                //                mcy < 0 ||
+                //                mcy >= constants.CortexHeight_MiniColumns)
+                //            continue;
+
+                //        MiniColumn nearestMc = MiniColumns[mcx, mcy];
+                //        if (nearestMc is null)
+                //            continue;
+                //        float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
+                //        if (r < constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns + 0.00001f)
+                //            mc.NearestMiniColumnsAndSelf_ForMemorySaving.Add(nearestMc);
+                //    }
+            });
     }
 
-    public void CalculateCortexMemories(InputCorpusData inputCorpusData, Random r)
+    /// <summary>
+    ///     Returns true when finished.
+    /// </summary>
+    /// <param name="inputCorpusData"></param>
+    /// <param name="cortexMemoriesCount"></param>
+    /// <param name="random"></param>
+    /// <returns></returns>
+    public bool CalculateCortexMemories(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random)
     {
-        for (int cortexMemoryIndex = 0; cortexMemoryIndex < inputCorpusData.CortexMemories.Count; cortexMemoryIndex += 1)
+        for (int i = 0; i < cortexMemoriesCount; i += 1)
         {
-            var cortexMemory = inputCorpusData.CortexMemories[cortexMemoryIndex];
+            if (inputCorpusData.CurrentCortexMemoryIndex >= inputCorpusData.CortexMemories.Count - 1)
+                return true;
 
-            CalculateActivityAndSuperActivity(cortexMemory, Temp_ActivitiyMaxInfo);
+            inputCorpusData.CurrentCortexMemoryIndex += 1;
+
+            var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];            
+
+            CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
 
             MiniColumn? winnerMiniColumn;
             // Сохраняем воспоминание в миниколонке-победителе.
             //if (randomInitialization)
             //{
-            //    var winnerIndex = random.Next(Cortex.SubArea_MiniColumns.Length);
-            //    winnerMiniColumn = Cortex.SubArea_MiniColumns[winnerIndex];
+            //    var winnerIndex = random.Next(MiniColumns.Length);
+            //    winnerMiniColumn = MiniColumns[winnerIndex];
             //}
             //else
             {
-                winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(r);
+                winnerMiniColumn = MiniColumnsActivityHelper.GetSuperActivityMax_MiniColumn(Temp_ActivitiyMaxInfo, random);
             }            
             if (winnerMiniColumn is not null)
             {
                 winnerMiniColumn.AddCortexMemory(cortexMemory);
             }
         }
+        return false;
+    }
+
+    public async Task ReorderMemoriesAsync(int epochCount, Random random, ILogger logger, Func<Task>? refreshAction = null)
+    {
+        ActivitiyMaxInfo activitiyMaxInfo = new();        
+        int min_EpochChangesCount = Int32.MaxValue;
+
+        Stopwatch sw = new();
+        for (int epochIndex = 0; epochIndex < epochCount; epochIndex += 1)
+        {
+            sw.Restart();
+
+            int epochChangesCount = 0;
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumn mc = MiniColumns.Data[mci];
+
+                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
+                {
+                    Memory? cortexMemory = mc.CortexMemories[mi];
+                    if (cortexMemory is null)
+                        continue;
+
+                    mc.CortexMemories[mi] = null;
+
+                    CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, activitiyMaxInfo);
+
+                    // Сохраняем воспоминание в миниколонке-победителе.
+                    MiniColumn? winnerMiniColumn = MiniColumnsActivityHelper.GetSuperActivityMax_MiniColumn(activitiyMaxInfo, random);
+                    if (winnerMiniColumn is not null)
+                    {
+                        if (!ReferenceEquals(winnerMiniColumn, mc))
+                        {                            
+                            winnerMiniColumn.AddCortexMemory(cortexMemory);
+                            epochChangesCount += 1;
+                        }
+                        else
+                        {
+                            mc.CortexMemories[mi] = cortexMemory;
+                        }
+                    }                    
+                }
+            }
+
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumn mc = MiniColumns.Data[mci];
+                mc.Temp_CortexMemories.Clear();
+
+                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
+                {
+                    Memory? memory = mc.CortexMemories[mi];
+                    if (memory is null)
+                        continue;
+
+                    mc.Temp_CortexMemories.Add(memory);
+                }
+
+                mc.CortexMemories.Swap(mc.Temp_CortexMemories);
+                mc.Temp_CortexMemories.Clear();
+            }
+
+            sw.Stop();
+
+            logger.LogInformation($"ReorderMemories() epoch finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+
+            if (epochChangesCount < min_EpochChangesCount)
+            {                
+                min_EpochChangesCount = epochChangesCount;
+            }            
+
+            if (epochChangesCount < 10)
+            {
+                break;
+            }
+            else
+            {
+                if (refreshAction is not null)
+                    await refreshAction();
+            }
+        }
+    }
+
+    public void CalculateWords(InputCorpusData inputCorpusData, int wordsCount, Random random)
+    {
+        for (int i = 0; i < wordsCount; i += 1)
+        {
+            if (inputCorpusData.CurrentWordIndex >= inputCorpusData.Words.Count - 1)
+                break;
+
+            inputCorpusData.CurrentWordIndex += 1;
+
+            var word = inputCorpusData.Words[inputCorpusData.CurrentWordIndex];
+
+            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+        }
+    }
+
+    public void CalculateWords_DiscreteOptimizedVectors(Random random)
+    {
+        if (MiniColumns.Data.Length <= Constants.DiscreteVectorLength)
+        {
+            int[] discreteOptimizedVectorIndices = new int[Constants.DiscreteVectorLength];
+            for (int i = 0; i < discreteOptimizedVectorIndices.Length; i += 1)
+            {
+                discreteOptimizedVectorIndices[i] = i;
+            }
+            random.Shuffle(discreteOptimizedVectorIndices);
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumn mc = MiniColumns.Data[mci];
+                mc.DiscreteVectorProjectionIndex = discreteOptimizedVectorIndices[mci];
+            }
+        }
+        else
+        {
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumn mc = MiniColumns.Data[mci];
+                mc.DiscreteVectorProjectionIndex = random.Next(Constants.DiscreteVectorLength);
+            }
+        }
+
+        for (int wordIndex = 0; wordIndex < Words.Count; wordIndex += 1)
+        {
+            var word = Words[wordIndex];
+
+            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, null);
+
+            Array.Clear(word.DiscreteOptimizedVector);
+            foreach (var mc in MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7))
+            {
+                word.DiscreteOptimizedVector[mc.DiscreteVectorProjectionIndex] = 1.0f;
+            }
+        }
+    }
+
+    public void CalculateWords_DiscreteOptimizedVectors_Metrics(Random random, ILogger logger)
+    {
+        var wordPairs = DatasetLoader.LoadDataset(Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"ru_simlex965_tagged.tsv"),
+            tagsMappingFilePath: Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"TagsMapping.csv"));
+
+        List<WordPair> filteredWordPairs = new List<WordPair>(wordPairs.Count);
+        var wordsDicitionary = Words.ToFrozenDictionary(w => w.Name);
+        
+        foreach (var wordPair in wordPairs)
+        {
+            var word1 = wordsDicitionary.GetValueOrDefault(wordPair.Word1);
+            if (word1 is null)
+                continue;
+
+            var word2 = wordsDicitionary.GetValueOrDefault(wordPair.Word2);
+            if (word2 is null)
+                continue;
+
+            wordPair.CosineSimilarity = TensorPrimitives.CosineSimilarity(word1.DiscreteOptimizedVector, word2.DiscreteOptimizedVector);
+            filteredWordPairs.Add(wordPair);
+        }
+
+        EmbeddingUtilities.EvaluateCorrelation(filteredWordPairs, logger);
+        EmbeddingUtilities.SaveResults(
+            filteredWordPairs,
+            Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"EvaluationResults.csv"),
+            logger);
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
         {
+            writer.WriteListOfOwnedDataSerializable(Words, context);
+            Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(MiniColumns, writer, context);            
         }
     }
 
@@ -88,6 +328,8 @@ public partial class Cortex : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:
+                    Words = reader.ReadListOfOwnedDataSerializable(() => new Word(), context);
+                    MiniColumns = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (mcx, mcy) => new MiniColumn(Constants, mcx, mcy));
                     break;
             }
         }
@@ -102,10 +344,6 @@ public partial class Cortex : ISerializableModelObject
             Constants = constants;            
             MCX = mcx;
             MCY = mcy;
-            CortexMemories = new(1000);
-            Temp_CortexMemories = new(1000);            
-
-            K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
         }
 
         public readonly Model01.ModelConstants Constants;
@@ -122,24 +360,22 @@ public partial class Cortex : ISerializableModelObject
 
         /// <summary>
         ///     K для расчета суперактивности.
-        ///     (K для позитива, K для негатива, MiniColumn)
+        ///     <para>(K для позитива, K для негатива, MiniColumn)</para>
+        ///     <para>Нулевой элемент, это коэффициент для самой колонки.</para>
         /// </summary>
-        public readonly List<(float, float, MiniColumn)> K_ForNearestMiniColumns;
-
-        /// <summary>
-        ///     K0 для расчета суперактивности.
-        /// </summary>
-        public (float, float) K0;        
+        public List<(float, float, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;                
 
         /// <summary>
         ///     Сохраненные хэш-коды
         /// </summary>
-        public List<Memory?> CortexMemories;
+        public FastList<Memory?> CortexMemories = null!;
+
+        public int DiscreteVectorProjectionIndex;
 
         /// <summary>
         ///     Временный список для сохраненных хэш-кодов
         /// </summary>
-        public List<Memory> Temp_CortexMemories;
+        public FastList<Memory?> Temp_CortexMemories = null!;
 
         /// <summary>
         ///     Последнее добавленное воспомининие            
@@ -163,10 +399,24 @@ public partial class Cortex : ISerializableModelObject
             CortexMemories.Add(cortexMemory);
         }
 
+        public void GenerateOwnedData()
+        {
+            CortexMemories = new(1000);
+        }
+
+        public void Prepare()
+        {
+            Temp_CortexMemories = new(1000);
+
+            Temp_K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * Constants.SuperActivityRadius_MiniColumns * Constants.SuperActivityRadius_MiniColumns) + 10);
+        }
+
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(1))
+            using (writer.EnterBlock(2))
             {
+                Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_FastList(CortexMemories, writer, context);
+                writer.WriteOptimized(DiscreteVectorProjectionIndex);
             }
         }
 
@@ -177,22 +427,49 @@ public partial class Cortex : ISerializableModelObject
                 switch (block.Version)
                 {
                     case 1:
+                        CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
+                        break;
+                    case 2:
+                        CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
+                        DiscreteVectorProjectionIndex = reader.ReadOptimizedInt32();
                         break;
                 }
             }
         }
     }
 
-    public class Memory
-    {
-        public Memory(Model01.ModelConstants constants)
-        {
-            DiscreteRandomVector = new float[constants.DiscreteVectorLength];
-        }
-
+    public class Memory : IOwnedDataSerializable
+    {        
         public float[] DiscreteRandomVector = null!;
 
-        public Word[] Words = null!;
+        public Color DiscreteRandomVector_Color;
+
+        public int[] WordIndices = null!;
+
+        public void SerializeOwnedData(SerializationWriter writer, object? context)
+        {
+            using (writer.EnterBlock(1))
+            {
+                writer.WriteArray(DiscreteRandomVector);
+                writer.Write(DiscreteRandomVector_Color);
+                writer.WriteArray(WordIndices);
+            }
+        }
+
+        public void DeserializeOwnedData(SerializationReader reader, object? context)
+        {
+            using (Block block = reader.EnterBlock())
+            {
+                switch (block.Version)
+                {
+                    case 1:
+                        DiscreteRandomVector = reader.ReadArray<float>()!;
+                        DiscreteRandomVector_Color = reader.ReadColor();
+                        WordIndices = reader.ReadArray<int>()!;                        
+                        break;
+                }
+            }
+        }
     }
 
     public class ActivitiyMaxInfo
@@ -203,22 +480,6 @@ public partial class Cortex : ISerializableModelObject
         public readonly List<MiniColumn> ActivityMax_MiniColumns = new();
 
         public float MaxSuperActivity = float.MinValue;
-        public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();
-        public MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
-        {
-            if (SuperActivityMax_MiniColumns.Count == 0)
-            {
-                SelectedSuperActivityMax_MiniColumn = null;
-            }
-            else if (SuperActivityMax_MiniColumns.Count == 1)
-            {
-                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[0];
-            }
-            else
-            {
-                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[random.Next(SuperActivityMax_MiniColumns.Count)];
-            }
-            return SelectedSuperActivityMax_MiniColumn;
-        }
+        public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();        
     }
 }

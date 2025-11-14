@@ -56,13 +56,15 @@ public static class MiniColumnsActivityHelper
     {            
         float superActivity;
 
+        var k0 = miniColumn.Temp_K_ForNearestMiniColumns[0];
         if (miniColumn.Temp_Activity.MemoriesCount > 0)
-            superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.PositiveActivity + miniColumn.K0.Item2 * miniColumn.Temp_Activity.NegativeActivity;
+            superActivity = k0.Item1 * miniColumn.Temp_Activity.PositiveActivity + k0.Item2 * miniColumn.Temp_Activity.NegativeActivity;
         else
-            superActivity = miniColumn.K0.Item1 * (constants.K2 - constants.K0); // Best proximity
+            superActivity = k0.Item1 * (constants.K2 - constants.K0); // Best proximity
 
-        foreach (var it in miniColumn.K_ForNearestMiniColumns)
+        for (int i = 1; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
         {
+            var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
             var nearestMiniColumn = it.Item3;                
 
             if (nearestMiniColumn.Temp_Activity.MemoriesCount > 0)
@@ -73,5 +75,22 @@ public static class MiniColumnsActivityHelper
         }
 
         return superActivity;
+    }
+
+    public static Cortex.MiniColumn? GetSuperActivityMax_MiniColumn(Cortex.ActivitiyMaxInfo activitiyMaxInfo, Random random)
+    {
+        if (activitiyMaxInfo.SuperActivityMax_MiniColumns.Count == 0)
+        {
+            activitiyMaxInfo.SelectedSuperActivityMax_MiniColumn = null;
+        }
+        else if (activitiyMaxInfo.SuperActivityMax_MiniColumns.Count == 1)
+        {
+            activitiyMaxInfo.SelectedSuperActivityMax_MiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumns[0];
+        }
+        else
+        {
+            activitiyMaxInfo.SelectedSuperActivityMax_MiniColumn = activitiyMaxInfo.SuperActivityMax_MiniColumns[random.Next(activitiyMaxInfo.SuperActivityMax_MiniColumns.Count)];
+        }
+        return activitiyMaxInfo.SelectedSuperActivityMax_MiniColumn;
     }
 }

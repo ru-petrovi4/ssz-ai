@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Ssz.AI.Models
 {
-    public class DenseMatrix<T> : IOwnedDataSerializable
+    public class DenseMatrix<T> : IOwnedDataSerializable        
     {
         #region construction and destruction
 
@@ -15,7 +15,17 @@ namespace Ssz.AI.Models
 
             Dimensions = (int[])dimensions.Clone();
             Data = new T[dimensions[0] * dimensions[1]];
-        }        
+        }
+
+        public DenseMatrix(T[] data, int[] dimensions)
+        {
+            if (dimensions.Length != 2)
+                throw new ArgumentException("Размерности матрица неверны.");            
+            if (data.Length != dimensions[0] * dimensions[1])
+                throw new InvalidOperationException("data.Length != dimensions product");
+            Dimensions = dimensions;
+            Data = data;
+        }
 
         /// <summary>
         ///     Используется только для десериализации.
@@ -38,12 +48,13 @@ namespace Ssz.AI.Models
             set => Data[indices[0] + indices[1] * Dimensions[0]] = value;
         }
 
-        public void CreateElementInstances(Func<T> f)
+        public void CreateElementInstances(Func<int, int, T> func)
         {
-            for (int i = 0; i < Data.Length; i += 1)
-            {
-                Data[i] = f();
-            }
+            for (int mcy = 0; mcy < Dimensions[1]; mcy += 1)
+                for (int mcx = 0; mcx < Dimensions[1]; mcx += 1)
+                {                    
+                    this[mcx, mcy] = func(mcx, mcy);
+                }
         }
 
         public DenseMatrix<T> Clone()
@@ -76,7 +87,7 @@ namespace Ssz.AI.Models
                     case 1:
                         Dimensions = reader.ReadArray<int>()!;
                         Data = reader.ReadArray<T>()!;
-                        break;
+                        break;                    
                 }
             }
         }

@@ -17,9 +17,17 @@ namespace Ssz.AI.Models
             Data = new T[GetTotalSize(dimensions)];
         }        
 
-        public DenseTensor(T[] data)
+        public DenseTensor(T[] data, int[] dimensions)
         {
-            Dimensions = [ data.Length ];
+            long product = 1;  // Используем long для избежания переполнения
+            for (int i = 0; i < dimensions.Length; i += 1)
+            {
+                product *= dimensions[i];
+            }
+            if (data.Length != product)
+                throw new InvalidOperationException("data.Length != dimensions product");
+
+            Dimensions = (int[])dimensions.Clone();
             Data = data;
         }
 

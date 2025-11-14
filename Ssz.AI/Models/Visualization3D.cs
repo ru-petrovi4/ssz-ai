@@ -22,6 +22,58 @@ namespace Ssz.AI.Models
         //    window.Show();
         //}
 
+        public static Model3DScene Get_MiniColumnsMemories_Model3DScene(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+        {
+            List<Point3DWithColor> point3DWithColorList = new();
+
+            int mcxMin = Int32.MaxValue;
+            int mcxMax = Int32.MinValue;
+            int mcyMin = Int32.MaxValue;
+            int mcyMax = Int32.MinValue;
+
+            foreach (var mci in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
+            {
+                var mc = cortex.MiniColumns.Data[mci];
+                if (mc.MCX > mcxMax)
+                    mcxMax = mc.MCX;
+                if (mc.MCX < mcxMin)
+                    mcxMin = mc.MCX;
+                if (mc.MCY > mcyMax)
+                    mcyMax = mc.MCY;
+                if (mc.MCY < mcyMin)
+                    mcyMin = mc.MCY;
+
+                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
+                {
+                    var cortexMemory = mc.CortexMemories[mi];
+                    if (cortexMemory is null)
+                        continue;
+                    
+                    System.Drawing.Color color = cortexMemory.DiscreteRandomVector_Color;
+
+                    point3DWithColorList.Add(new Point3DWithColor
+                    {
+                        Position = new System.Numerics.Vector3(
+                            mc.MCX,
+                            mc.MCY,
+                            color.GetHue() / 360.0f - 0.5f),
+                        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                    });
+                }
+            }
+
+            // Normalize
+            foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
+            {
+                point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
+                point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
+            }
+
+            Model3DScene model3DScene = new();
+            model3DScene.Point3DWithColorArray = point3DWithColorList.ToArray();
+            return model3DScene;
+        }
+
         public static Model3DScene GetSubArea_MiniColumnsMemories_Model3DScene(Cortex_Simplified cortex)
         {
             List<Point3DWithColor> point3DWithColorList = new();

@@ -3,16 +3,10 @@
 namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
 public class Word : IOwnedDataSerializable
-{
-    public Word()
-    {
-        DiscreteRandomVector = new float[Model01.Constants.DiscreteVectorLength];
-        DiscreteOptimizedVector = new float[Model01.Constants.DiscreteVectorLength];
-        DiscreteOptimizedVector_PrimaryBitsOnly = new float[Model01.Constants.DiscreteVectorLength];
-        DiscreteOptimizedVector_SecondaryBitsOnly = new float[Model01.Constants.DiscreteVectorLength];
-    }
-
+{   
     public string Name = null!;
+
+    public int Index;
 
     public float CorpusFreq;
 
@@ -37,21 +31,34 @@ public class Word : IOwnedDataSerializable
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
-        writer.Write(Name);
-        writer.Write(CorpusFreq);
-        writer.WriteArray(DiscreteRandomVector);        
-        writer.WriteArray(DiscreteOptimizedVector);
-        writer.WriteArray(DiscreteOptimizedVector_PrimaryBitsOnly);
-        writer.WriteArray(DiscreteOptimizedVector_SecondaryBitsOnly);
+        using (writer.EnterBlock(1))
+        {
+            writer.Write(Name);
+            writer.WriteOptimized(Index);
+            writer.Write(CorpusFreq);
+            writer.WriteArray(DiscreteRandomVector);
+            writer.WriteArray(DiscreteOptimizedVector);
+            writer.WriteArray(DiscreteOptimizedVector_PrimaryBitsOnly);
+            writer.WriteArray(DiscreteOptimizedVector_SecondaryBitsOnly);
+        }
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        Name = reader.ReadString();
-        CorpusFreq = reader.ReadSingle();
-        DiscreteRandomVector = reader.ReadArray<float>()!;
-        DiscreteOptimizedVector = reader.ReadArray<float>()!;
-        DiscreteOptimizedVector_PrimaryBitsOnly = reader.ReadArray<float>()!;
-        DiscreteOptimizedVector_SecondaryBitsOnly = reader.ReadArray<float>()!;
+        using (Block block = reader.EnterBlock())
+        {
+            switch (block.Version)
+            {
+                case 1:
+                    Name = reader.ReadString();
+                    Index = reader.ReadOptimizedInt32();
+                    CorpusFreq = reader.ReadSingle();
+                    DiscreteRandomVector = reader.ReadArray<float>()!;
+                    DiscreteOptimizedVector = reader.ReadArray<float>()!;
+                    DiscreteOptimizedVector_PrimaryBitsOnly = reader.ReadArray<float>()!;
+                    DiscreteOptimizedVector_SecondaryBitsOnly = reader.ReadArray<float>()!;
+                    break;
+            }
+        }        
     }
 }

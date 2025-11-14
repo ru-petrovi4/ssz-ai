@@ -18,6 +18,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Ssz.AI.Core;
+using Ssz.AI.Helpers;
+using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
 using Ssz.Utils.Logging;
@@ -33,14 +35,20 @@ public class Model01
 
     public Model01()
     {
-        _loggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
+        LoggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
     }
 
     #endregion
 
     #region public functions       
 
+    public ILoggersSet LoggersSet { get; }
+
     public static readonly ModelConstants Constants = new();
+
+    public InputCorpusData InputCorpusData = null!;    
+
+    public Cortex Cortex = null!;    
 
     public void StemInputText()
     {
@@ -66,15 +74,15 @@ public class Model01
 
             // Получение кода выхода (0 обычно значит успех)
             int exitCode = process.ExitCode;
-            _loggersSet.UserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
+            LoggersSet.UserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
 
             // Если захватывали вывод
             string output = process.StandardOutput.ReadToEnd();
             string error = process.StandardError.ReadToEnd();
             if (!string.IsNullOrEmpty(output))
-                _loggersSet.UserFriendlyLogger.LogInformation($"Вывод: {output}");
+                LoggersSet.UserFriendlyLogger.LogInformation($"Вывод: {output}");
             if (!string.IsNullOrEmpty(error))
-                _loggersSet.UserFriendlyLogger.LogInformation($"Ошибка: {error}");
+                LoggersSet.UserFriendlyLogger.LogInformation($"Ошибка: {error}");
         }
     }
 
@@ -84,31 +92,75 @@ public class Model01
         MorphologicalTextParser.WriteToFile(
             sequences,
             Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_sequences.txt"),
-            _loggersSet.UserFriendlyLogger);
+            LoggersSet.UserFriendlyLogger);
     }
 
-    public void Calculate()
+    public void PrepareCalculate(Random random)
     {
-        Random r = new(41);
+        InputCorpusData = GetInputCorpusData(random);
 
-        InputCorpusData inputCorpusData = GetInputCorpusData(r);
-
-        Cortex cortex = new Cortex(Constants);
-        cortex.GenerateOwnedData();
-        cortex.Prepare();
-
-        cortex.CalculateCortexMemories(inputCorpusData, r);        
+        Cortex = new Cortex(Constants);
+        Cortex.GenerateOwnedData(InputCorpusData.Words);
+        Cortex.Prepare();
     }
+
+    public bool CalculateCortexMemories(int cortexMemoriesCount, Random random)
+    {
+        return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random);
+    }
+
+    public async void ReorderMemories(int epochCount, Random random, Func<Task>? refreshAction = null)
+    {
+        await Cortex.ReorderMemoriesAsync(epochCount, random, LoggersSet.UserFriendlyLogger, refreshAction);
+    }
+
+    public void CalculateWords(int wordsCount, Random random)
+    {
+        Cortex.CalculateWords(InputCorpusData, wordsCount, random);
+    }
+    
+    public string GetCurrentDesc()
+    {
+        var s = @"";
+        if (InputCorpusData.CurrentCortexMemoryIndex >= 0)
+            s += String.Join(@" ", InputCorpusData.CortexMemories[InputCorpusData.CurrentCortexMemoryIndex].WordIndices.Select(i => Cortex.Words[i].Name)) + @"\n";
+        if (InputCorpusData.CurrentWordIndex >= 0)
+            s += InputCorpusData.Words[InputCorpusData.CurrentWordIndex].Name + @"\n";
+        return s;
+    }
+
+    public VisualizationWithDesc[] GetImageWithDescs1()
+    {
+        if (InputCorpusData.CurrentCortexMemoryIndex < 0)
+            return [];
+
+        return [                      
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex)),
+                    Desc = @"Активность миниколонок (белый - максимум)" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null)),
+                    Desc = @"Суперактивность миниколонок (белый - максимум)" },
+                new Model3DWithDesc { Data = Visualization3D.Get_MiniColumnsMemories_Model3DScene(Cortex),
+                    Desc = $"Накопленные воспоминания в миниколонках." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
+                    Desc = @"Средний цвет накопленных воспоминаний в миниколонках" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesCount(Cortex)),
+                    Desc = @"Количество воспоминаний в миниколонках" }
+            ];
+    }
+
+    #endregion
+
+    #region private functions    
 
     private InputCorpusData GetInputCorpusData(Random r)
-    {        
-
+    {
         var sequences = MorphologicalTextParser.LoadFromFile(
             Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_sequences.txt"),
-            _loggersSet.UserFriendlyLogger
+            LoggersSet.UserFriendlyLogger
             );
         InputCorpusData inputCorpusData = new();
         Dictionary<string, Word> dictionary = inputCorpusData.Dictionary;
+        var words = inputCorpusData.Words;
         int[] indices = new int[Constants.DiscreteVectorLength];
         List<Word> sequenceWords = new();
         List<Cortex.Memory> cortexMemories = inputCorpusData.CortexMemories;
@@ -124,6 +176,11 @@ public class Model01
                     word = new()
                     {
                         Name = wordName,
+                        Index = words.Count,
+                        DiscreteRandomVector = new float[Constants.DiscreteVectorLength],
+                        DiscreteOptimizedVector = new float[Constants.DiscreteVectorLength],
+                        DiscreteOptimizedVector_PrimaryBitsOnly = new float[Constants.DiscreteVectorLength],
+                        DiscreteOptimizedVector_SecondaryBitsOnly = new float[Constants.DiscreteVectorLength],
                     };
                     for (int i = 0; i < Constants.DiscreteVectorLength; i += 1)
                     {
@@ -134,36 +191,38 @@ public class Model01
                     {
                         word.DiscreteRandomVector[indices[i]] = 1.0f;                        
                     }
+                    dictionary.Add(wordName, word);
+                    words.Add(word);
                 }
                 word.Temp_InCorpusCount += 1;
                 sequenceWords.Add(word);
             }
             if (sequenceWords.Count > 2)
             {
-                Cortex.Memory cortexMemory = new Cortex.Memory(Constants)
+                Cortex.Memory cortexMemory = new Cortex.Memory()
                 {
-                    Words = sequenceWords.ToArray()
+                    DiscreteRandomVector = new float[Constants.DiscreteVectorLength],
+                    WordIndices = sequenceWords.Select(w => w.Index).ToArray()
                 };
                 for (int i = 0; i < sequenceWords.Count; i += 1)
                 {
                     TensorPrimitives.Add(cortexMemory.DiscreteRandomVector, sequenceWords[i].DiscreteRandomVector, cortexMemory.DiscreteRandomVector);
                 }
                 TensorPrimitives.Min(cortexMemory.DiscreteRandomVector, 1.0f, cortexMemory.DiscreteRandomVector);
+                cortexMemory.DiscreteRandomVector_Color = Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
                 cortexMemories.Add(cortexMemory);
             }
         }
         foreach (var kvp in dictionary)
         {
             kvp.Value.CorpusFreq = (float)kvp.Value.Temp_InCorpusCount / corpus_WordsCount;
-        }
+        }        
         return inputCorpusData;
-    }
+    }    
 
     #endregion
 
-    #region private fields
-
-    private readonly ILoggersSet _loggersSet;
+    #region private fields    
 
     #endregion    
 
@@ -181,17 +240,17 @@ public class Model01
         /// </summary>
         public int CortexHeight_MiniColumns => 17;
 
-        public double SuperActivityRadius_MiniColumns => 5;
+        public double SuperActivityRadius_MiniColumns => 3;
 
         /// <summary>
-        ///     Нулевой уровень косинусного расстояния
+        ///     Нулевой уровень косинусного подобия
         /// </summary>
         public float K0 { get; set; } = 0.2f;
 
         public float K1 { get; set; } = 0.2f;
 
         /// <summary>
-        ///     Косинусное расстояние для пустой колонки
+        ///     Косинусное подобие с пустой миниколонкой
         /// </summary>
         public float K2 { get; set; } = 0.96f;
 
@@ -203,12 +262,4 @@ public class Model01
 
         public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
     }
-}
-
-
-public class InputCorpusData
-{
-    public Dictionary<string, Word> Dictionary = new(10000);
-
-    public List<Cortex.Memory> CortexMemories = new(10000);
 }

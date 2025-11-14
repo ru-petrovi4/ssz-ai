@@ -17,7 +17,17 @@ public class MatrixFloat : IOwnedDataSerializable
 
         Dimensions = (int[])dimensions.Clone();
         Data = new float[dimensions[0] * dimensions[1]];
-    }        
+    }
+
+    public MatrixFloat(float[] data, int[] dimensions)
+    {
+        if (dimensions.Length != 2)
+            throw new ArgumentException("Размерности матрица неверны.");
+        if (data.Length != dimensions[0] * dimensions[1])
+            throw new InvalidOperationException("data.Length != dimensions product");
+        Dimensions = dimensions;
+        Data = data;
+    }
 
     /// <summary>
     ///     Используется только для десериализации.
@@ -32,7 +42,7 @@ public class MatrixFloat : IOwnedDataSerializable
 
     public int[] Dimensions { get; private set; } = null!;
 
-    public float[] Data { get; set; } = null!;
+    public float[] Data { get; private set; } = null!;
 
     public void Fill(float value)
     {
@@ -137,6 +147,11 @@ public class MatrixFloat_ColumnMajor : MatrixFloat
     public MatrixFloat_ColumnMajor(params int[] dimensions) :
         base(dimensions)
     {
+    }
+
+    public MatrixFloat_ColumnMajor(float[] data, int[] dimensions) :
+        base(data, dimensions)
+    { 
     }
 
     /// <summary>

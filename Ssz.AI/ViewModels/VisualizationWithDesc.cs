@@ -12,7 +12,7 @@ namespace Ssz.AI.ViewModels
 
     public class ImageWithDesc : VisualizationWithDesc
     {
-        public Avalonia.Media.Imaging.Bitmap Image { get; set;} = null!;
+        public Avalonia.Media.Imaging.Bitmap? Image { get; set;}
     }
 
     public class Model3DWithDesc : VisualizationWithDesc
