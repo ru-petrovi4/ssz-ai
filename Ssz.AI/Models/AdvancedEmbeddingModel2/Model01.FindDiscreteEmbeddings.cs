@@ -221,7 +221,7 @@ public class Model01
 
     #endregion    
 
-    public class ModelConstants
+    public class ModelConstants : IMiniColumnsActivityConstants
     {
         public int DiscreteVectorLength => 300;
 
@@ -251,10 +251,18 @@ public class Model01
 
         public float K3 { get; set; } = 0.2f;
 
+        /// <summary>
+        ///     Порог суперактивности
+        /// </summary>
         public float K4 { get; set; } = 0.2f;
 
         public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.065f, 0.00f];
 
         public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
+
+        /// <summary>
+        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        /// </summary>
+        public bool SuperactivityThreshold { get; set; }
     }
 }

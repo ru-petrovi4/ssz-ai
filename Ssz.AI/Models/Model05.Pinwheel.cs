@@ -781,8 +781,7 @@ namespace Ssz.AI.Models
                     mc.Temp_Memories.Add(memory);
                 }
 
-                mc.Memories.Clear();
-                mc.Memories.AddRange(mc.Temp_Memories);
+                mc.Memories.Swap(mc.Temp_Memories);                
                 mc.Temp_Memories.Clear();
             }
         }
@@ -871,8 +870,7 @@ namespace Ssz.AI.Models
                         mc.Temp_Memories.Add(memory);
                     }
 
-                    mc.Memories.Clear();
-                    mc.Memories.AddRange(mc.Temp_Memories);
+                    mc.Memories.Swap(mc.Temp_Memories);                    
                     mc.Temp_Memories.Clear();
                 }
 

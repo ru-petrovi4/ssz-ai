@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Helpers;
+using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
@@ -110,8 +111,8 @@ public class Cortex_Simplified : ISerializableModelObject
 
                 //float k00 = GetNormalDistributionValue(sigma0, 0.0f);
                 //float k01 = GetNormalDistributionValue(sigma1, 0.0f);
-                //mc.K0 = (k00, k01);
-                mc.K0 = (constants.PositiveK[0], constants.NegativeK[0]);
+                //mc.K0 = (k00, k01);                
+                mc.K_ForNearestMiniColumns.Add((constants.PositiveK[0], constants.NegativeK[0], mc));
 
                 for (int mcy = mc.MCY - (int)constants.SuperActivityRadius_MiniColumns - 1; mcy <= mc.MCY + (int)constants.SuperActivityRadius_MiniColumns + 1; mcy += 1)
                     for (int mcx = mc.MCX - (int)constants.SuperActivityRadius_MiniColumns - 1; mcx <= mc.MCX + (int)constants.SuperActivityRadius_MiniColumns + 1; mcx += 1)
@@ -249,7 +250,7 @@ public class Cortex_Simplified : ISerializableModelObject
         }
     }        
 
-    public class MiniColumn : ISerializableModelObject
+    public class MiniColumn : IMiniColumn, ISerializableModelObject
     {
         public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
         {
@@ -264,7 +265,7 @@ public class Cortex_Simplified : ISerializableModelObject
             Temp_Memories = new(constants.MemoriesMaxCount);                       
             Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
-            K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
+            K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
         }
 
         public readonly IConstants Constants;
@@ -285,12 +286,7 @@ public class Cortex_Simplified : ISerializableModelObject
         ///     K для расчета суперактивности.
         ///     (K для позитива, K для негатива, MiniColumn)
         /// </summary>
-        public readonly List<(float, float, MiniColumn)> K_ForNearestMiniColumns;
-
-        /// <summary>
-        ///     K0 для расчета суперактивности.
-        /// </summary>
-        public (float, float) K0;
+        public readonly FastList<(float, float, IMiniColumn)> K_ForNearestMiniColumns;        
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -305,12 +301,12 @@ public class Cortex_Simplified : ISerializableModelObject
         /// <summary>
         ///     Сохраненные хэш-коды
         /// </summary>
-        public List<Memory?> Memories;
+        public FastList<Memory?> Memories;
 
         /// <summary>
         ///     Временный список для сохраненных хэш-кодов
         /// </summary>
-        public List<Memory> Temp_Memories;
+        public FastList<Memory?> Temp_Memories;
 
         /// <summary>
         ///     Последнее добавленное воспомининие            
@@ -330,7 +326,7 @@ public class Cortex_Simplified : ISerializableModelObject
         ///     Текущая активность миниколонки при подаче примера.
         ///     (Позитивная активность, Негативная активность, Количество воспоминаний)
         /// </summary>
-        public (float, float, int) Temp_Activity;
+        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
 
         /// <summary>
         ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -516,9 +512,15 @@ public class Cortex_Simplified : ISerializableModelObject
                 }
             }
         }
+
+        IFastList<ICortexMemory?> IMiniColumn.CortexMemories => Memories;
+
+        IFastList<(float, float, IMiniColumn)> IMiniColumn.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
+
+        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumn.Activity => Temp_Activity;
     }
 
-    public class Memory
+    public class Memory : ICortexMemory
     {
         public float[] Hash = null!;
 
@@ -528,6 +530,8 @@ public class Cortex_Simplified : ISerializableModelObject
         ///     Input image index for this memory.
         /// </summary>
         public int PictureInputIndex;
+
+        float[] ICortexMemory.DiscreteVector => Hash;
     }
 
     public class ActivitiyMaxInfo

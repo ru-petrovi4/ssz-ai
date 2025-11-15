@@ -141,7 +141,7 @@ public partial class Cortex : ISerializableModelObject
             //}
             //else
             {
-                winnerMiniColumn = MiniColumnsActivityHelper.GetSuperActivityMax_MiniColumn(Temp_ActivitiyMaxInfo, random);
+                winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
             }            
             if (winnerMiniColumn is not null)
             {
@@ -178,7 +178,7 @@ public partial class Cortex : ISerializableModelObject
                     CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, activitiyMaxInfo);
 
                     // Сохраняем воспоминание в миниколонке-победителе.
-                    MiniColumn? winnerMiniColumn = MiniColumnsActivityHelper.GetSuperActivityMax_MiniColumn(activitiyMaxInfo, random);
+                    MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
                     if (winnerMiniColumn is not null)
                     {
                         if (!ReferenceEquals(winnerMiniColumn, mc))
@@ -348,7 +348,7 @@ public partial class Cortex : ISerializableModelObject
         return String.Join(@" ", cortexMemory.WordIndices.Select(i => Words[i].Name));
     }
 
-    public class MiniColumn : ISerializableModelObject
+    public class MiniColumn : IMiniColumn, ISerializableModelObject
     {
         public MiniColumn(Model01.ModelConstants constants, int mcx, int mcy)
         {
@@ -374,7 +374,7 @@ public partial class Cortex : ISerializableModelObject
         ///     <para>(K для позитива, K для негатива, MiniColumn)</para>
         ///     <para>Нулевой элемент, это коэффициент для самой колонки.</para>
         /// </summary>
-        public List<(float, float, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;                
+        public FastList<(float, float, IMiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
         ///     Сохраненные хэш-коды
@@ -397,7 +397,7 @@ public partial class Cortex : ISerializableModelObject
         ///     Текущая активность миниколонки при подаче примера.
         ///     (Позитивная активность, Негативная активность, Количество воспоминаний)
         /// </summary>
-        public (float PositiveActivity, float NegativeActivity, int MemoriesCount) Temp_Activity;
+        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
 
         /// <summary>
         ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -419,7 +419,7 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_CortexMemories = new(1000);
 
-            Temp_K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * Constants.SuperActivityRadius_MiniColumns * Constants.SuperActivityRadius_MiniColumns) + 10);
+            Temp_K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * Constants.SuperActivityRadius_MiniColumns * Constants.SuperActivityRadius_MiniColumns) + 10);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -447,9 +447,15 @@ public partial class Cortex : ISerializableModelObject
                 }
             }
         }
+
+        IFastList<ICortexMemory?> IMiniColumn.CortexMemories => CortexMemories;
+
+        IFastList<(float, float, IMiniColumn)> IMiniColumn.K_ForNearestMiniColumns => Temp_K_ForNearestMiniColumns;
+
+        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumn.Activity => Temp_Activity;
     }
 
-    public class Memory : IOwnedDataSerializable
+    public class Memory : ICortexMemory, IOwnedDataSerializable
     {        
         public float[] DiscreteRandomVector = null!;
 
@@ -480,7 +486,9 @@ public partial class Cortex : ISerializableModelObject
                         break;
                 }
             }
-        }        
+        }
+
+        float[] ICortexMemory.DiscreteVector => DiscreteRandomVector;
     }
 
     public class ActivitiyMaxInfo
@@ -491,6 +499,17 @@ public partial class Cortex : ISerializableModelObject
         public readonly List<MiniColumn> ActivityMax_MiniColumns = new();
 
         public float MaxSuperActivity = float.MinValue;
-        public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();        
+        public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();
+
+        public MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
+        {
+            if (SuperActivityMax_MiniColumns.Count == 0)
+                SelectedSuperActivityMax_MiniColumn = null;
+            else if (SuperActivityMax_MiniColumns.Count == 1)
+                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[0];
+            else
+                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[random.Next(SuperActivityMax_MiniColumns.Count)];
+            return SelectedSuperActivityMax_MiniColumn;
+        }
     }
 }

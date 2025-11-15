@@ -3,7 +3,7 @@ using System;
 
 namespace Ssz.AI.Models
 {
-    public interface IConstants
+    public interface IConstants : IMiniColumnsActivityConstants
     {
         PixelSize RetinaImagePixelSize { get; set; }
 
@@ -108,45 +108,21 @@ namespace Ssz.AI.Models
 
         int Angle_BigPoints_Count { get; }
 
-        float Angle_BigPoints_Radius { get; }
-
-        /// <summary>
-        ///     Нулевой уровень косинусного расстояния
-        /// </summary>
-        float K0 { get; set; }
+        float Angle_BigPoints_Radius { get; }        
 
         /// <summary>
         ///     Порог косинусного расстояния для учета 
         /// </summary>
-        float K1 { get; set; }
-
-        /// <summary>
-        ///     Косинусное расстояние для пустой колонки
-        /// </summary>
-        float K2 { get; set; }
+        float K1 { get; set; }        
 
         /// <summary>
         ///     Сигмы значимости соседей
         /// </summary>
-        float[] K3 { get; set; }
-
-        /// <summary>
-        ///     Порог суперактивности
-        /// </summary>
-        float K4 { get; set; }
+        float[] K3 { get; set; }        
 
         /// <summary>
         ///     Коэффициент для расчета диапазона угла чувствительности детектора
         /// </summary>
-        float K5 { get; set; }
-
-        /// <summary>
-        ///     Включен ли порог на суперактивность при накоплении воспоминаний
-        /// </summary>
-        bool SuperactivityThreshold { get; set; }
-
-        float[] PositiveK { get; set; }
-
-        float[] NegativeK { get; set; }
+        float K5 { get; set; }        
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Helpers;
+using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
@@ -362,7 +363,7 @@ namespace Ssz.AI.Models
             public MatrixFloat_ColumnMajor CorrelationMatrix;
         }
 
-        public class MiniColumn : ISerializableModelObject
+        public class MiniColumn : IMiniColumn, ISerializableModelObject
         {
             public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerXPixels, double centerYPixels)
             {
@@ -377,7 +378,7 @@ namespace Ssz.AI.Models
                 Temp_Memories = new(constants.MemoriesMaxCount);
                 Temp_ShortHashConverted = new float[constants.ShortHashLength];
 
-                K_ForNearestMiniColumns = new List<(float, float, MiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
+                K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
                 NearestMiniColumnsAndSelf_ForMemorySaving = new List<MiniColumn>((int)(Math.PI * constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns * 
                     constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns) + 10);
             }
@@ -400,7 +401,7 @@ namespace Ssz.AI.Models
             ///     K для расчета суперактивности.
             ///     (K для позитива, K для негатива, MiniColumn)
             /// </summary>
-            public readonly List<(float, float, MiniColumn)> K_ForNearestMiniColumns;
+            public readonly FastList<(float, float, IMiniColumn)> K_ForNearestMiniColumns;
 
             /// <summary>
             ///     Minicolums in field of radius of <see cref="IConstants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns"/>
@@ -425,12 +426,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Сохраненные хэш-коды
             /// </summary>
-            public List<Memory?> Memories;
+            public FastList<Memory?> Memories;
 
             /// <summary>
             ///     Временный список для сохраненных хэш-кодов
             /// </summary>
-            public List<Memory?> Temp_Memories;
+            public FastList<Memory?> Temp_Memories;
 
             /// <summary>
             ///     Последнее добавленное воспомининие            
@@ -451,7 +452,7 @@ namespace Ssz.AI.Models
             ///     (Позитивная активность, Негативная активность, Количество воспоминаний)
             ///     Всегда не NaN.
             /// </summary>
-            public (float, float, int) Temp_Activity;
+            public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
 
             /// <summary>
             ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
@@ -465,7 +466,6 @@ namespace Ssz.AI.Models
             public readonly float[] Temp_Hash;
 
             public bool Temp_MemoryCanBeStored;
-
 
             public float Temp_ShortHashConverted_SyncQuality;
 
@@ -635,9 +635,15 @@ namespace Ssz.AI.Models
                     }
                 }
             }
+
+            IFastList<ICortexMemory?> IMiniColumn.CortexMemories => Memories;
+
+            IFastList<(float, float, IMiniColumn)> IMiniColumn.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
+
+            (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumn.Activity => Temp_Activity;
         }
 
-        public class Memory
+        public class Memory : ICortexMemory
         {
             public float[] Hash = null!;
 
@@ -647,6 +653,8 @@ namespace Ssz.AI.Models
             ///     Input image index for this memory.
             /// </summary>
             public int PictureInputIndex;
+
+            float[] ICortexMemory.DiscreteVector => Hash;
         }
 
         public class ActivitiyMaxInfo
@@ -667,7 +675,7 @@ namespace Ssz.AI.Models
                 var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
                 Temp_WinnerMiniColumn = SuperActivityMax_MiniColumns[winnerIndex];
                 return Temp_WinnerMiniColumn;
-            }
+            }            
         }
     }    
 }

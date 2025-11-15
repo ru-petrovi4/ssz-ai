@@ -1,36 +1,77 @@
-﻿using System;
+﻿using Ssz.Utils;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics.Tensors;
 
 namespace Ssz.AI.Models
 {
+    public interface IMiniColumnsActivityConstants
+    {
+        /// <summary>
+        ///     Нулевой уровень косинусного подобия
+        /// </summary>
+        float K0 { get; set; }
+
+        /// <summary>
+        ///     Косинусное подобие с пустой миниколонкой
+        /// </summary>
+        float K2 { get; set; }
+
+        /// <summary>
+        ///     Порог суперактивности
+        /// </summary>
+        float K4 { get; set; }
+
+        float[] PositiveK { get; set; }
+
+        float[] NegativeK { get; set; }
+
+        /// <summary>
+        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        /// </summary>
+        public bool SuperactivityThreshold { get; set; }
+    }
+
+    public interface IMiniColumn
+    {
+        IFastList<ICortexMemory?> CortexMemories { get; }
+
+        IFastList<(float, float, IMiniColumn)> K_ForNearestMiniColumns { get; }
+
+        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Activity { get; }
+    }
+
+    public interface ICortexMemory
+    {
+        float[] DiscreteVector { get; }
+    }
+
     public static class MiniColumnsActivityHelper
     {
         /// <summary>
         ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), количество воспоминаний
-        ///     Всегда не NaN
-        ///     Implementation #0
+        ///     Всегда не NaN        
         /// </summary>
-        /// <param name="hash"></param>
+        /// <param name="discreteVector"></param>
         /// <returns></returns>
-        public static (float, float, int) GetActivity(Cortex.MiniColumn miniColumn, float[] hash, IConstants constants)
+        public static (float, float, int) GetActivity(IMiniColumn miniColumn, float[] discreteVector, IMiniColumnsActivityConstants constants)
         {
             float positiveActivity = 0.0f;
             int positiveMemoriesCount = 0;
             float negativeActivity = 0.0f;
             int negativeMemoriesCount = 0;
 
-            foreach (var mi in Enumerable.Range(0, miniColumn.Memories.Count))
+            foreach (var mi in Enumerable.Range(0, miniColumn.CortexMemories.Count))
             {
-                var memory = miniColumn.Memories[mi];
-                if (memory is null)
+                var cortexMemories = miniColumn.CortexMemories[mi];
+                if (cortexMemories is null)
                     continue;
 
-                float memoryCosineSimilarity = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
+                float cosineSimilarity = TensorPrimitives.CosineSimilarity(discreteVector, cortexMemories.DiscreteVector);
                 //if (memoryCosineSimilarity > constants.K1)
                 {
-                    float activity = memoryCosineSimilarity - constants.K0;
+                    float activity = cosineSimilarity - constants.K0;
                     if (activity >= 0)
                     {
                         positiveActivity += activity;
@@ -59,120 +100,30 @@ namespace Ssz.AI.Models
         /// <param name="miniColumn"></param>
         /// <param name="constants"></param>
         /// <returns></returns>
-        public static float GetSuperActivity(Cortex.MiniColumn miniColumn, IConstants constants)
-        {            
+        public static float GetSuperActivity(IMiniColumn miniColumn, IMiniColumnsActivityConstants constants)
+        {
             float superActivity;
 
-            if (miniColumn.Temp_Activity.Item3 > 0)
-                superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.Item1 + miniColumn.K0.Item2 * miniColumn.Temp_Activity.Item2;
+            var k0 = miniColumn.K_ForNearestMiniColumns[0];
+            if (miniColumn.Activity.CortexMemoriesCount > 0)
+                superActivity = k0.Item1 * miniColumn.Activity.PositiveActivity + k0.Item2 * miniColumn.Activity.NegativeActivity;
             else
-                superActivity = miniColumn.K0.Item1 * (constants.K2 - constants.K0); // Best proximity
+                superActivity = k0.Item1 * (constants.K2 - constants.K0); // Best proximity
 
-            foreach (var it in miniColumn.K_ForNearestMiniColumns)
+            for (int i = 1; i < miniColumn.K_ForNearestMiniColumns.Count; i += 1)
             {
-                var nearestMiniColumn = it.Item3;                
-
-                if (nearestMiniColumn.Temp_Activity.Item3 > 0)
-                    superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item1 +
-                        it.Item2 * nearestMiniColumn.Temp_Activity.Item2;
-                //else
-                //    superActivity += it.Item1 * (constants.K2 - constants.K0); // Best proximity
-            }
-
-            return superActivity;
-        }
-
-        // ================================================================
-
-        /// <summary>
-        ///     Implementation #1
-        /// </summary>
-        /// <param name="miniColumn"></param>
-        /// <param name="hash"></param>
-        /// <param name="constants"></param>
-        /// <returns></returns>
-        /// <exception cref="Exception"></exception>
-        public static (float, float, int) GetActivity(Cortex_Simplified.MiniColumn miniColumn, float[] hash, IConstants constants)
-        {
-            if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
-                return (float.NaN, float.NaN, 0);
-
-            float positiveActivity = 0.0f;
-            int positiveMemoriesCount = 0;
-            float negativeActivity = 0.0f;
-            int negativeMemoriesCount = 0;
-
-            foreach (var mi in Enumerable.Range(0, miniColumn.Memories.Count))
-            {
-                var memory = miniColumn.Memories[mi];
-                if (memory is null)
-                    continue;
-
-                float memoryCosineSimilarity = TensorPrimitives.CosineSimilarity(hash, memory.Hash);
-                if (float.IsNaN(memoryCosineSimilarity))
-                    throw new Exception();
-
-                //memoryCosineSimilarity = memoryCosineSimilarity * memoryCosineSimilarity;                
-                if (memoryCosineSimilarity > constants.K1)
-                {
-                    float activity = memoryCosineSimilarity - constants.K0;
-                    if (activity >= 0)
-                    {
-                        positiveActivity += activity;
-                        positiveMemoriesCount += 1;
-                    }
-                    else
-                    {
-                        negativeActivity += activity;
-                        negativeMemoriesCount += 1;
-                    }
-                }
-            }
-
-            if (positiveMemoriesCount > 0)
-                positiveActivity /= positiveMemoriesCount;
-
-            if (negativeMemoriesCount > 0)
-                negativeActivity /= negativeMemoriesCount;
-
-            return (positiveActivity, negativeActivity, positiveMemoriesCount + negativeMemoriesCount);
-        }
-
-        /// <summary>
-        ///     Implementation #1
-        /// </summary>
-        /// <param name="miniColumn"></param>
-        /// <param name="constants"></param>
-        /// <returns></returns>
-        public static float GetSuperActivity(Cortex_Simplified.MiniColumn miniColumn, IConstants constants)
-        {
-            if (float.IsNaN(miniColumn.Temp_Activity.Item3))
-                return float.NaN;
-
-            float superActivity;
-
-            if (miniColumn.Temp_Activity.Item3 > 0)
-                superActivity = miniColumn.K0.Item1 * miniColumn.Temp_Activity.Item1 + miniColumn.K0.Item2 * miniColumn.Temp_Activity.Item2;
-            else
-                superActivity = miniColumn.K0.Item1 * (constants.K2 - constants.K0); // Best proximity
-
-            foreach (var it in miniColumn.K_ForNearestMiniColumns)
-            {
+                var it = miniColumn.K_ForNearestMiniColumns[i];
                 var nearestMiniColumn = it.Item3;
 
-                if (float.IsNaN(nearestMiniColumn.Temp_Activity.Item1) ||
-                        float.IsNaN(nearestMiniColumn.Temp_Activity.Item2))
-                    continue;
-
-                if (nearestMiniColumn.Temp_Activity.Item3 > 0)
-                    superActivity += it.Item1 * nearestMiniColumn.Temp_Activity.Item1 +
-                        it.Item2 * nearestMiniColumn.Temp_Activity.Item2;
+                if (nearestMiniColumn.Activity.CortexMemoriesCount > 0)
+                    superActivity += it.Item1 * nearestMiniColumn.Activity.PositiveActivity +
+                        it.Item2 * nearestMiniColumn.Activity.NegativeActivity;
                 //else
                 //    superActivity += it.Item1 * (constants.K2 - constants.K0); // Best proximity
             }
 
             return superActivity;
-        }
+        }        
     }        
 }
 
