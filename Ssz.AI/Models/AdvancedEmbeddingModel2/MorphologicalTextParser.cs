@@ -249,7 +249,7 @@ public class MorphologicalTextParser
             string? l;
             while ((l = reader.ReadLine()) is not null)
             {
-                if (String.IsNullOrWhiteSpace(l))
+                if (String.IsNullOrWhiteSpace(l) || l.StartsWith(@"#"))
                     continue;
                 var words = l.Split(' ');
                 sequences.Add(words);

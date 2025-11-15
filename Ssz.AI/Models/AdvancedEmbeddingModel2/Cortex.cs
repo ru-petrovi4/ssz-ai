@@ -37,6 +37,8 @@ public partial class Cortex : ISerializableModelObject
 
     public readonly ActivitiyMaxInfo Temp_ActivitiyMaxInfo = new();
 
+    public string Temp_InputCurrentDesc = null!;
+
     public void GenerateOwnedData(List<Word> words)
     {
         Words = words;
@@ -125,8 +127,9 @@ public partial class Cortex : ISerializableModelObject
 
             inputCorpusData.CurrentCortexMemoryIndex += 1;
 
-            var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];            
+            var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
 
+            Temp_InputCurrentDesc = GetDesc(cortexMemory);
             CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
 
             MiniColumn? winnerMiniColumn;
@@ -148,7 +151,7 @@ public partial class Cortex : ISerializableModelObject
         return false;
     }
 
-    public async Task ReorderMemoriesAsync(int epochCount, Random random, ILogger logger, Func<Task>? refreshAction = null)
+    public async Task ReorderMemoriesAsync(int epochCount, Random random, ILogger logger, Func<Task>? epochRefreshAction = null)
     {
         ActivitiyMaxInfo activitiyMaxInfo = new();        
         int min_EpochChangesCount = Int32.MaxValue;
@@ -171,6 +174,7 @@ public partial class Cortex : ISerializableModelObject
 
                     mc.CortexMemories[mi] = null;
 
+                    Temp_InputCurrentDesc = GetDesc(cortexMemory);
                     CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, activitiyMaxInfo);
 
                     // Сохраняем воспоминание в миниколонке-победителе.
@@ -223,8 +227,8 @@ public partial class Cortex : ISerializableModelObject
             }
             else
             {
-                if (refreshAction is not null)
-                    await refreshAction();
+                if (epochRefreshAction is not null)
+                    await epochRefreshAction();
             }
         }
     }
@@ -240,7 +244,24 @@ public partial class Cortex : ISerializableModelObject
 
             var word = inputCorpusData.Words[inputCorpusData.CurrentWordIndex];
 
+            Temp_InputCurrentDesc = word.Name;
             CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+        }
+    }
+
+    public void CalculateCurrentWord(InputCorpusData inputCorpusData, Random random)
+    {
+        if (inputCorpusData.CurrentWordIndex > 0 && inputCorpusData.CurrentWordIndex < inputCorpusData.Words.Count)
+        {
+            var word = inputCorpusData.Words[inputCorpusData.CurrentWordIndex];
+
+            Temp_InputCurrentDesc = word.Name;
+            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+        }
+        else
+        {
+            Temp_InputCurrentDesc = @"";
+            ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
         }
     }
 
@@ -273,6 +294,7 @@ public partial class Cortex : ISerializableModelObject
         {
             var word = Words[wordIndex];
 
+            Temp_InputCurrentDesc = word.Name;
             CalculateActivityAndSuperActivity(word.DiscreteRandomVector, null);
 
             Array.Clear(word.DiscreteOptimizedVector);
@@ -336,6 +358,11 @@ public partial class Cortex : ISerializableModelObject
     }
 
     #endregion    
+
+    private string GetDesc(Memory cortexMemory)
+    {
+        return String.Join(@" ", cortexMemory.WordIndices.Select(i => Words[i].Name));
+    }
 
     public class MiniColumn : ISerializableModelObject
     {
@@ -469,7 +496,7 @@ public partial class Cortex : ISerializableModelObject
                         break;
                 }
             }
-        }
+        }        
     }
 
     public class ActivitiyMaxInfo

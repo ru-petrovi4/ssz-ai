@@ -75,6 +75,24 @@ public static class Visualisation
         return bitmap;
     }
 
+    public static Bitmap GetBitmapFromMiniColums_ActivityColor_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+    {
+        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
+
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            // Устанавливаем черный фон
+            g.Clear(Color.Black);
+        }
+
+        foreach (var mc in cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7))
+        {
+            bitmap.SetPixel(mc.MCX, mc.MCY, Color.White);
+        }
+
+        return bitmap;
+    }
+
     public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex, Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex.ActivitiyMaxInfo? activitiyMaxInfo)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
@@ -140,6 +158,24 @@ public static class Visualisation
         //    if (maxSuperActivityMiniColumn is not null)
         //        bitmap.SetPixel(maxSuperActivityMiniColumn.MCX, maxSuperActivityMiniColumn.MCY, Color.FromArgb(255, 255, 255));
         //}
+
+        return bitmap;
+    }
+
+    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+    {
+        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
+
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            // Устанавливаем черный фон
+            g.Clear(Color.Black);
+        }
+
+        foreach (var mc in cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_SuperActivity).Take(7))
+        {
+            bitmap.SetPixel(mc.MCX, mc.MCY, Color.White);
+        }
 
         return bitmap;
     }

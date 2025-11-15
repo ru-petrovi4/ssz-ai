@@ -17,8 +17,9 @@
       <RowDefinition Height="auto" />
       <RowDefinition Height="*" />
       <RowDefinition Height="auto" />
-      <RowDefinition Height="auto" />
-      <RowDefinition Height="*" />      
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />      
+      <RowDefinition Height="auto" />   
     </Grid.RowDefinitions>
     
     <StackPanel Orientation="Horizontal">      
@@ -28,7 +29,7 @@
       <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
       <Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />      
       <Button Content="Reorder Memories (Sleep, 1 epoch)" Click="ReorderMemories1EpochButton_OnClick" />
-      <Button Content="Reorder Memories (Sleep)" Click="ReorderMemoriesButton_OnClick" />
+      <Button Content="Reorder Memories (Sleep long)" Click="ReorderMemoriesButton_OnClick" Background="Red" />
       <Button Content="Process Word" Click="ProcessWordButton_OnClick" />      
       <Button Content="Do Script 0" Click="DoScriptButton0_OnClick" /> 
       <Button Content="Do Script 1" Click="DoScriptButton1_OnClick" /> 
@@ -36,12 +37,16 @@
     </StackPanel>
 
     <Grid Grid.Row="1">      
-      <TextBlock x:Name="ImagesSet1_TextBlock" />
+      <TextBlock x:Name="ImagesSet1_TextBlock" FontSize="16" />
     </Grid>
-
     <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
 
-    <Grid Grid.Row="3">
+    <Grid Grid.Row="3">      
+      <TextBlock x:Name="ImagesSet2_TextBlock" FontSize="16" />
+    </Grid>
+    <localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />
+
+    <Grid Grid.Row="5">
       <Grid.Styles>
         <Style Selector="TextBlock">
           <Setter Property="TextWrapping" Value="Wrap"/>
@@ -63,7 +68,7 @@
       <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
     </Grid>
     
-    <Grid Grid.Row="4">
+    <Grid Grid.Row="6">
       <Grid.Styles>
         <Style Selector="TextBlock">
           <Setter Property="TextWrapping" Value="Wrap"/>
@@ -103,9 +108,7 @@
       <TextBlock Text="" Grid.Row="7" />
       <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="7" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />      
-    </Grid>
-
-    <localViews:ImagesSet Grid.Row="5" Name="ImagesSet2" />
+    </Grid>    
   </Grid>  
 </UserControl>
 

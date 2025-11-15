@@ -31,6 +31,8 @@ public class Model01
 {
     public const string AdvancedEmbedding2_Directory = "Ssz.AI.AdvancedEmbedding2";
 
+    public const string FileName_Cortex = "AdvancedEmbedding2_Cortex.bin";
+
     #region construction and destruction
 
     public Model01()
@@ -109,36 +111,38 @@ public class Model01
         return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random);
     }
 
-    public async void ReorderMemories(int epochCount, Random random, Func<Task>? refreshAction = null)
+    public async void ReorderMemories(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
     {
-        await Cortex.ReorderMemoriesAsync(epochCount, random, LoggersSet.UserFriendlyLogger, refreshAction);
+        await Cortex.ReorderMemoriesAsync(epochCount, random, LoggersSet.UserFriendlyLogger, epochRefreshAction);
     }
 
     public void CalculateWords(int wordsCount, Random random)
     {
         Cortex.CalculateWords(InputCorpusData, wordsCount, random);
     }
-    
-    public string GetCurrentDesc()
+
+    public void CalculateCurrentWord(Random random)
     {
-        var s = @"";
-        if (InputCorpusData.CurrentCortexMemoryIndex >= 0)
-            s += String.Join(@" ", InputCorpusData.CortexMemories[InputCorpusData.CurrentCortexMemoryIndex].WordIndices.Select(i => Cortex.Words[i].Name)) + @"\n";
-        if (InputCorpusData.CurrentWordIndex >= 0)
-            s += InputCorpusData.Words[InputCorpusData.CurrentWordIndex].Name + @"\n";
-        return s;
+        Cortex.CalculateCurrentWord(InputCorpusData, random);
     }
 
-    public VisualizationWithDesc[] GetImageWithDescs1()
+    public VisualizationWithDesc[] GetImageWithDescs()
     {
-        if (InputCorpusData.CurrentCortexMemoryIndex < 0)
-            return [];
+        var bitmapFromMiniColums_ActivityColor = Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex);
+        var bitmapFromMiniColums_SuperActivityColor = Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null);
+        
+        var bitmapFromMiniColums_ActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_ActivityColor_Code(Cortex);
+        var bitmapFromMiniColums_SuperActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_SuperActivityColor_Code(Cortex);
 
         return [                      
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(bitmapFromMiniColums_ActivityColor),
                     Desc = @"Активность миниколонок (белый - максимум)" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(bitmapFromMiniColums_ActivityColor_WordCode),
+                    Desc = @"Активность миниколонок, код слова" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(bitmapFromMiniColums_SuperActivityColor),
                     Desc = @"Суперактивность миниколонок (белый - максимум)" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(bitmapFromMiniColums_SuperActivityColor_WordCode),
+                    Desc = @"Суперактивность миниколонок, код слова" },
                 new Model3DWithDesc { Data = Visualization3D.Get_MiniColumnsMemories_Model3DScene(Cortex),
                     Desc = $"Накопленные воспоминания в миниколонках." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
@@ -147,7 +151,7 @@ public class Model01
                     Desc = @"Количество воспоминаний в миниколонках" }
             ];
     }
-
+    
     #endregion
 
     #region private functions    

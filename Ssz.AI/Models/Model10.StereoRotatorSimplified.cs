@@ -582,7 +582,7 @@ namespace Ssz.AI.Models
                     var mc = Cortex.SubArea_MiniColumns[mci];
                     mc.GetHash(mc.Temp_Hash);
                     MonoInput.AddValueHash(angleNormalized, mc.Temp_Hash);
-                    mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Constants);
+                    mc.Temp_Activity = MiniColumnsActivityHelper.GetActivity(mc, mc.Temp_Hash, Constants);
                 });
 
             activitiyMaxInfo.MaxActivity = float.MinValue;
@@ -593,7 +593,7 @@ namespace Ssz.AI.Models
 
             foreach (var mc in Cortex.SubArea_MiniColumns)
             {
-                mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Constants);
+                mc.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(mc, Constants);
 
                 float a = mc.Temp_Activity.Item1 + mc.Temp_Activity.Item2;
                 if (a > activitiyMaxInfo.MaxActivity)

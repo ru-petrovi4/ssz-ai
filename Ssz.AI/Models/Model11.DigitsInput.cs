@@ -772,12 +772,12 @@ namespace Ssz.AI.Models
 
                         foreach (MiniColumn nearestMiniColumnOrSelf in mc.NearestMiniColumnsAndSelf_ForMemorySaving)
                         {
-                            nearestMiniColumnOrSelf.Temp_Activity = MiniColumnsActivity.GetActivity(nearestMiniColumnOrSelf, memory.Hash, Constants);
+                            nearestMiniColumnOrSelf.Temp_Activity = MiniColumnsActivityHelper.GetActivity(nearestMiniColumnOrSelf, memory.Hash, Constants);
                         }
 
                         foreach (MiniColumn nearestMiniColumnOrSelf in mc.NearestMiniColumnsAndSelf_ForMemorySaving)
                         {
-                            nearestMiniColumnOrSelf.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(nearestMiniColumnOrSelf, Constants);
+                            nearestMiniColumnOrSelf.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(nearestMiniColumnOrSelf, Constants);
                         }
 
                         // Сбрасываем активность для последующих вычислений.
@@ -910,7 +910,7 @@ namespace Ssz.AI.Models
                     mc.GetHash(mc.Temp_Hash);
                     mc.Temp_MemoryCanBeStored = TensorPrimitives.Sum(mc.Temp_Hash) >= Constants.MinBitsInHashForMemory;
                     if (mc.Temp_MemoryCanBeStored)
-                        mc.Temp_Activity = MiniColumnsActivity.GetActivity(mc, mc.Temp_Hash, Constants);
+                        mc.Temp_Activity = MiniColumnsActivityHelper.GetActivity(mc, mc.Temp_Hash, Constants);
                     else
                         mc.Temp_Activity = (0.0f, 0.0f, 0);
 
@@ -928,7 +928,7 @@ namespace Ssz.AI.Models
                 {
                     var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
                     if (mc.Temp_MemoryCanBeStored)
-                        mc.Temp_SuperActivity = MiniColumnsActivity.GetSuperActivity(mc, Constants);
+                        mc.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(mc, Constants);
                     else
                         mc.Temp_SuperActivity = float.NaN;
                 });

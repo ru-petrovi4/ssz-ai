@@ -10,6 +10,7 @@ public static class MiniColumnsActivityHelper
     /// <summary>
     ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), количество воспоминаний
     ///     Всегда не NaN
+    ///     Implementation #2
     /// </summary>
     /// <param name="discreteRandomVector"></param>
     /// <returns></returns>
@@ -52,6 +53,12 @@ public static class MiniColumnsActivityHelper
         return (positiveActivity, negativeActivity, positiveMemoriesCount + negativeMemoriesCount);
     }
 
+    /// <summary>
+    ///    Implementation #2
+    /// </summary>
+    /// <param name="miniColumn"></param>
+    /// <param name="constants"></param>
+    /// <returns></returns>
     public static float GetSuperActivity(Cortex.MiniColumn miniColumn, Model01.ModelConstants constants)
     {            
         float superActivity;

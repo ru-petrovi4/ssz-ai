@@ -5,11 +5,12 @@ using System.Numerics.Tensors;
 
 namespace Ssz.AI.Models
 {
-    public static class MiniColumnsActivity
+    public static class MiniColumnsActivityHelper
     {
         /// <summary>
         ///     Возвращает активность по похожести (положительная величина), активность по непохожести (отрицательная величина), количество воспоминаний
         ///     Всегда не NaN
+        ///     Implementation #0
         /// </summary>
         /// <param name="hash"></param>
         /// <returns></returns>
@@ -52,6 +53,12 @@ namespace Ssz.AI.Models
             return (positiveActivity, negativeActivity, positiveMemoriesCount + negativeMemoriesCount);
         }
 
+        /// <summary>
+        ///     Implementation #0
+        /// </summary>
+        /// <param name="miniColumn"></param>
+        /// <param name="constants"></param>
+        /// <returns></returns>
         public static float GetSuperActivity(Cortex.MiniColumn miniColumn, IConstants constants)
         {            
             float superActivity;
@@ -77,6 +84,14 @@ namespace Ssz.AI.Models
 
         // ================================================================
 
+        /// <summary>
+        ///     Implementation #1
+        /// </summary>
+        /// <param name="miniColumn"></param>
+        /// <param name="hash"></param>
+        /// <param name="constants"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
         public static (float, float, int) GetActivity(Cortex_Simplified.MiniColumn miniColumn, float[] hash, IConstants constants)
         {
             if (TensorPrimitives.Sum(hash) < miniColumn.Constants.MinBitsInHashForMemory)
@@ -123,6 +138,12 @@ namespace Ssz.AI.Models
             return (positiveActivity, negativeActivity, positiveMemoriesCount + negativeMemoriesCount);
         }
 
+        /// <summary>
+        ///     Implementation #1
+        /// </summary>
+        /// <param name="miniColumn"></param>
+        /// <param name="constants"></param>
+        /// <returns></returns>
         public static float GetSuperActivity(Cortex_Simplified.MiniColumn miniColumn, IConstants constants)
         {
             if (float.IsNaN(miniColumn.Temp_Activity.Item3))
