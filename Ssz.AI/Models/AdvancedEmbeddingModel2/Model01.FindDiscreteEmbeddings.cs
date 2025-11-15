@@ -111,20 +111,10 @@ public class Model01
         return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random);
     }
 
-    public async void ReorderMemories(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
+    public async Task ReorderMemoriesAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
     {
         await Cortex.ReorderMemoriesAsync(epochCount, random, LoggersSet.UserFriendlyLogger, epochRefreshAction);
-    }
-
-    public void CalculateWords(int wordsCount, Random random)
-    {
-        Cortex.CalculateWords(InputCorpusData, wordsCount, random);
-    }
-
-    public void CalculateCurrentWord(Random random)
-    {
-        Cortex.CalculateCurrentWord(InputCorpusData, random);
-    }
+    }        
 
     public VisualizationWithDesc[] GetImageWithDescs()
     {
@@ -220,7 +210,8 @@ public class Model01
         foreach (var kvp in dictionary)
         {
             kvp.Value.CorpusFreq = (float)kvp.Value.Temp_InCorpusCount / corpus_WordsCount;
-        }        
+        }
+        inputCorpusData.OrderedWords = words.OrderByDescending(w => w.CorpusFreq).ToList();
         return inputCorpusData;
     }    
 
@@ -249,7 +240,7 @@ public class Model01
         /// <summary>
         ///     Нулевой уровень косинусного подобия
         /// </summary>
-        public float K0 { get; set; } = 0.2f;
+        public float K0 { get; set; } = 0.11f; // 0.12
 
         public float K1 { get; set; } = 0.2f;
 

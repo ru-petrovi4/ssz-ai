@@ -30,6 +30,7 @@
       <Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />      
       <Button Content="Reorder Memories (Sleep, 1 epoch)" Click="ReorderMemories1EpochButton_OnClick" />
       <Button Content="Reorder Memories (Sleep long)" Click="ReorderMemoriesButton_OnClick" Background="Red" />
+      <Button Content="Reset Words Iterator" Click="ResetWordsIterator_OnClick" />
       <Button Content="Process Word" Click="ProcessWordButton_OnClick" />      
       <Button Content="Do Script 0" Click="DoScriptButton0_OnClick" /> 
       <Button Content="Do Script 1" Click="DoScriptButton1_OnClick" /> 

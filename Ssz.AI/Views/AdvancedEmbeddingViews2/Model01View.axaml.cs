@@ -116,9 +116,9 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
-    private void ReorderMemories1EpochButton_OnClick(object? sender, RoutedEventArgs args)
+    private async void ReorderMemories1EpochButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.ReorderMemories(1, _random, async () =>
+        await Model.ReorderMemoriesAsync(1, _random, async () =>
         {
             Refresh_ImagesSet();
             await Task.Delay(50);
@@ -127,20 +127,32 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
-    private void ReorderMemoriesButton_OnClick(object? sender, RoutedEventArgs args)
+    private async void ReorderMemoriesButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.ReorderMemories(100, _random, async () =>
+        await Model.ReorderMemoriesAsync(100, _random, async () =>
         {
             Refresh_ImagesSet();
             await Task.Delay(50);
         });
+
+        Refresh_ImagesSet();
+    }
+    
+    private void ResetWordsIterator_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.InputCorpusData.Current_OrderedWords_Index = -1;
 
         Refresh_ImagesSet();
     }
 
     private void ProcessWordButton_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.CalculateWords(1, _random);
+        if (Model.InputCorpusData.Current_OrderedWords_Index >= Model.InputCorpusData.Words.Count - 1)
+            return;
+
+        Model.InputCorpusData.Current_OrderedWords_Index += 1;
+
+        Model.Cortex.CalculateCurrentWord(Model.InputCorpusData, _random);
 
         Refresh_ImagesSet();
     }
@@ -153,7 +165,7 @@ public partial class Model01View : UserControl
         {
             bool finished = Model.CalculateCortexMemories(2000, _random);
 
-            Model.ReorderMemories(3, _random, async () =>
+            await Model.ReorderMemoriesAsync(7, _random, async () =>
             {
                 Refresh_ImagesSet();
                 await Task.Delay(50);
@@ -163,11 +175,11 @@ public partial class Model01View : UserControl
                 break;
         }
 
-        Model.ReorderMemories(30, _random, async () =>
-        {
-            Refresh_ImagesSet();
-            await Task.Delay(50);
-        });
+        //await Model.ReorderMemoriesAsync(5, _random, async () =>
+        //{
+        //    Refresh_ImagesSet();
+        //    await Task.Delay(50);
+        //});
         Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
 
         Refresh_ImagesSet();
@@ -211,7 +223,7 @@ public partial class Model01View : UserControl
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
 
-        Model.CalculateCurrentWord(_random);
+        Model.Cortex.CalculateCurrentWord(Model.InputCorpusData, _random);
 
         ImagesSet2_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs();

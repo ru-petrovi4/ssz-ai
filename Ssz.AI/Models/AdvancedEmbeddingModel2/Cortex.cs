@@ -214,7 +214,7 @@ public partial class Cortex : ISerializableModelObject
 
             sw.Stop();
 
-            logger.LogInformation($"ReorderMemories() epoch finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+            logger.LogInformation($"ReorderMemories() epoch {epochIndex + 1}/{epochCount} finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
 
             if (epochChangesCount < min_EpochChangesCount)
             {                
@@ -231,29 +231,13 @@ public partial class Cortex : ISerializableModelObject
                     await epochRefreshAction();
             }
         }
-    }
-
-    public void CalculateWords(InputCorpusData inputCorpusData, int wordsCount, Random random)
-    {
-        for (int i = 0; i < wordsCount; i += 1)
-        {
-            if (inputCorpusData.CurrentWordIndex >= inputCorpusData.Words.Count - 1)
-                break;
-
-            inputCorpusData.CurrentWordIndex += 1;
-
-            var word = inputCorpusData.Words[inputCorpusData.CurrentWordIndex];
-
-            Temp_InputCurrentDesc = word.Name;
-            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
-        }
-    }
+    }    
 
     public void CalculateCurrentWord(InputCorpusData inputCorpusData, Random random)
     {
-        if (inputCorpusData.CurrentWordIndex > 0 && inputCorpusData.CurrentWordIndex < inputCorpusData.Words.Count)
+        if (inputCorpusData.Current_OrderedWords_Index > 0 && inputCorpusData.Current_OrderedWords_Index < inputCorpusData.Words.Count)
         {
-            var word = inputCorpusData.Words[inputCorpusData.CurrentWordIndex];
+            var word = inputCorpusData.OrderedWords[inputCorpusData.Current_OrderedWords_Index];
 
             Temp_InputCurrentDesc = word.Name;
             CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
