@@ -131,6 +131,8 @@ namespace Ssz.AI.Models
         public double Generated_Angle { get; set; }
 
         public Memory[,] PinwheelIndexConstantMemories { get; set; } = new Memory[5, 5];
+        public static (int, int)[] FirstCircleCoordinates = [ (1, 1), (2, 1), (3, 1), (3, 2), (3, 3), (2, 3), (1, 3), (1, 2) ];
+        public static (int, int)[] SecondCircleCoordinates = [ (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4), (3, 4), (2, 4), (1, 4), (0, 4), (0, 3), (0, 2), (0, 1)];
 
         public void ResetMemories()
         {
@@ -182,27 +184,27 @@ namespace Ssz.AI.Models
             //                maxMemoryMiniColumn = mc;
             //        }
             //    }
-            float pinwheelIndex = 0.0f;
-            MiniColumn? maxMemoryMiniColumn = null;
+            float maxPinwheelIndex = 0.0f;
+            MiniColumn? maxPinwheelIndex_MiniColumn = null;
             foreach (var mc in pinwheelCenterCandidates)
             {
-                float localPinwheelIndex = GetPinwheelIndex(mc);
-                if (localPinwheelIndex > pinwheelIndex)
+                float pinwheelIndex = GetPinwheelIndex(mc);
+                if (pinwheelIndex > maxPinwheelIndex)
                 {
-                    pinwheelIndex = localPinwheelIndex;
-                    maxMemoryMiniColumn = mc;
+                    maxPinwheelIndex = pinwheelIndex;
+                    maxPinwheelIndex_MiniColumn = mc;
                 }
             }
 
-            if (maxMemoryMiniColumn is not null)
+            if (maxPinwheelIndex_MiniColumn is not null)
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_MiniColumns.Length,
                     mci =>
                     {
                         var mc = Cortex.SubArea_MiniColumns[mci];
-                        float r = MathF.Sqrt((mc.MCX - maxMemoryMiniColumn.MCX) * (mc.MCX - maxMemoryMiniColumn.MCX) +
-                            (mc.MCY - maxMemoryMiniColumn.MCY) * (mc.MCY - maxMemoryMiniColumn.MCY));
+                        float r = MathF.Sqrt((mc.MCX - maxPinwheelIndex_MiniColumn.MCX) * (mc.MCX - maxPinwheelIndex_MiniColumn.MCX) +
+                            (mc.MCY - maxPinwheelIndex_MiniColumn.MCY) * (mc.MCY - maxPinwheelIndex_MiniColumn.MCY));
                         if (r > floodRadius)
                             mc.Memories.Clear();
                     });
@@ -225,21 +227,23 @@ namespace Ssz.AI.Models
             //    }
 
             var pinwheelCenterCandidates = GetPinwheelCenterCandidates();
-            float pinwheelIndex = 0.0f;
+            float maxPinwheelIndex = 0.0f;
 
             foreach (var mc in pinwheelCenterCandidates)
             {
-                float localPinwheelIndex = GetPinwheelIndex(mc);
-                if (localPinwheelIndex > pinwheelIndex)
-                    pinwheelIndex = localPinwheelIndex;
+                float pinwheelIndex = GetPinwheelIndex(mc);
+                if (pinwheelIndex > maxPinwheelIndex)
+                    maxPinwheelIndex = pinwheelIndex;
             }            
 
-            return pinwheelIndex;
+            return maxPinwheelIndex;
         }
 
         private List<MiniColumn> GetPinwheelCenterCandidates()
         {
-            var ordered_MiniColumns = Cortex.SubArea_MiniColumns.OrderByDescending(mc => mc.Memories.Count).Take(5).ToList();
+            var ordered_MiniColumns = Cortex.SubArea_MiniColumns
+                .Where(mc => mc.MCX >= 2 && mc.MCY >= 2 && mc.MCX < Cortex.MiniColumns.Dimensions[0] - 2 && mc.MCY < Cortex.MiniColumns.Dimensions[1] - 2)
+                .OrderByDescending(mc => mc.Memories.Count).Take(5).ToList();
             int mcx_Min = ordered_MiniColumns.Min(mc => mc.MCX);
             int mcy_Min = ordered_MiniColumns.Min(mc => mc.MCY);
             int mcx_Max = ordered_MiniColumns.Max(mc => mc.MCX);
@@ -1181,42 +1185,73 @@ namespace Ssz.AI.Models
 
         private float GetPinwheelIndex(Cortex_Simplified.MiniColumn centerMiniColumn)
         {
-            float pinwheelIndex = 0.0f;
-            for (int dx = -2; dx <= 2; dx += 1)
-                for (int dy = -2; dy <= 2; dy += 1)
+            float maxPinwheelIndex = 0.0f;
+
+            for (int startIndex = 0; startIndex < 8; startIndex += 1)
+            {
+                float pinwheelIndex = 0.0f;
+
+                // First circle
+                for (int index = 0; index < FirstCircleCoordinates.Length; index += 1)
                 {
-                    if (dx == 0 && dy == 0)
-                        continue;
-                    int mcx = centerMiniColumn.MCX + dx;
-                    int mcy = centerMiniColumn.MCY + dy;
-                    if (mcx < 0 || mcx >= Cortex.MiniColumns.Dimensions[0] ||
-                            mcy < 0 || mcy >= Cortex.MiniColumns.Dimensions[1])
-                        continue;
-                    var mc = Cortex.MiniColumns[mcx, mcy];
+                    var it0 = FirstCircleCoordinates[index];
+                    var pinwheelIndexConstantMemoryHash = PinwheelIndexConstantMemories[it0.Item1, it0.Item2].Hash;
+
+                    var index1 = index + startIndex;
+                    if (index1 >= FirstCircleCoordinates.Length)
+                        index1 -= FirstCircleCoordinates.Length;
+                    var it1 = FirstCircleCoordinates[index1];                    
+                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX - it1.Item1 - 2, centerMiniColumn.MCY - it1.Item2 - 2];
                     if (mc is null)
-                        continue;
+                        return 0.0f;
 
                     float maxCosineSimilarity = 0.0f;
-                    for (int mdx = 0; mdx <= 4; mdx += 1)
-                        for (int mdy = 0; mdy <= 4; mdy += 1)
-                        {
-                            if (mdx == 2 && mdy == 2)
-                                continue;
-                            var pinwheelIndexConstantMemoryHash = PinwheelIndexConstantMemories[mdx, mdy].Hash;
-                            foreach (var memory in mc.Memories)
-                            {
-                                if (memory is null)
-                                    continue;
-                                float cosineSimilarity = TensorPrimitives.CosineSimilarity(pinwheelIndexConstantMemoryHash, memory.Hash);
-                                if (cosineSimilarity > maxCosineSimilarity)
-                                    maxCosineSimilarity = cosineSimilarity;
-                            }
-                        }
+
+                    foreach (var memory in mc.Memories)
+                    {
+                        if (memory is null)
+                            continue;
+                        float cosineSimilarity = TensorPrimitives.CosineSimilarity(pinwheelIndexConstantMemoryHash, memory.Hash);
+                        if (cosineSimilarity > maxCosineSimilarity)
+                            maxCosineSimilarity = cosineSimilarity;
+                    }
 
                     pinwheelIndex += maxCosineSimilarity;
                 }
 
-            return pinwheelIndex;
+                // Second circle
+                for (int index = 0; index < SecondCircleCoordinates.Length; index += 1)
+                {
+                    var it0 = SecondCircleCoordinates[index];
+                    var pinwheelIndexConstantMemoryHash = PinwheelIndexConstantMemories[it0.Item1, it0.Item2].Hash;
+
+                    var index1 = index + startIndex * 2;
+                    if (index1 >= SecondCircleCoordinates.Length)
+                        index1 -= SecondCircleCoordinates.Length;
+                    var it1 = SecondCircleCoordinates[index1];
+                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX - it1.Item1 - 2, centerMiniColumn.MCY - it1.Item2 - 2];
+                    if (mc is null)
+                        return 0.0f;
+
+                    float maxCosineSimilarity = 0.0f;
+
+                    foreach (var memory in mc.Memories)
+                    {
+                        if (memory is null)
+                            continue;
+                        float cosineSimilarity = TensorPrimitives.CosineSimilarity(pinwheelIndexConstantMemoryHash, memory.Hash);
+                        if (cosineSimilarity > maxCosineSimilarity)
+                            maxCosineSimilarity = cosineSimilarity;
+                    }
+
+                    pinwheelIndex += maxCosineSimilarity;
+                }
+
+                if (pinwheelIndex > maxPinwheelIndex)
+                    maxPinwheelIndex = pinwheelIndex;
+            }
+
+            return maxPinwheelIndex;
         }
 
         public static readonly Color[] DefaultColors =
