@@ -173,7 +173,7 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn mc = MiniColumns.Data[mci];
 
-                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
+                for (int mi = mc.CortexMemories.Count - 1; mi >= Math.Max(0, mc.CortexMemories.Count - 6000); mi -= 1)
                 {
                     Memory? cortexMemory = mc.CortexMemories[mi];
                     if (cortexMemory is null)
