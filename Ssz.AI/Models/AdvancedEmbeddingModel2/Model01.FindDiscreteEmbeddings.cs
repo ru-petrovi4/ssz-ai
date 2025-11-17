@@ -31,6 +31,8 @@ public class Model01
 {
     public const string AdvancedEmbedding2_Directory = "Ssz.AI.AdvancedEmbedding2";
 
+    public const string Input_Directory = "input";
+
     public const string FileName_Cortex = "AdvancedEmbedding2_Cortex.bin";
 
     #region construction and destruction
@@ -54,48 +56,58 @@ public class Model01
 
     public void StemInputText()
     {
-        // Настройка информации о процессе
-        ProcessStartInfo startInfo = new ProcessStartInfo
+        List<List<string>> allSequences = new(10000);
+
+        int i = 0;
+        foreach (var fb2FileFullName in Directory.GetFiles(Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, Input_Directory), @"*.fb2"))
         {
-            WorkingDirectory = Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory),
-            FileName = Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "mystem.exe"),  // Или путь к исполняемому файлу, например, @"C:\path\to\program.exe"
-            Arguments = "-c -d -i input.fb2 input_stemmed.txt",  // Аргументы, если нужны, например, "file.txt"
-            UseShellExecute = false,  // Не использовать shell для запуска (рекомендуется для контроля)
-            RedirectStandardOutput = true,  // Перенаправить вывод, если нужно захватывать
-            RedirectStandardError = true,
-            CreateNoWindow = true  // Не создавать окно (для консольных приложений)
-        };
+            i += 1;            
+            var fb2FileNewFullName = Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, Input_Directory, $"{i}.fb2");
+            File.Copy(fb2FileFullName, fb2FileNewFullName, true);
+            var fb2FileName = Path.GetFileName(fb2FileNewFullName);
+            var fb2_Stemmed_FileName = fb2FileName + "_stemmed.txt";
+            // Настройка информации о процессе
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                WorkingDirectory = Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, Input_Directory),
+                FileName = Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "mystem.exe"),  // Или путь к исполняемому файлу, например, @"C:\path\to\program.exe"
+                Arguments = $"-c -d -i {fb2FileName} {fb2_Stemmed_FileName}",  // Аргументы, если нужны, например, "file.txt"
+                UseShellExecute = false,  // Не использовать shell для запуска (рекомендуется для контроля)
+                RedirectStandardOutput = true,  // Перенаправить вывод, если нужно захватывать
+                RedirectStandardError = true,
+                CreateNoWindow = true  // Не создавать окно (для консольных приложений)
+            };
 
-        using (Process process = new Process())
-        {
-            process.StartInfo = startInfo;
-            process.Start();  // Запуск процесса
+            using (Process process = new Process())
+            {
+                process.StartInfo = startInfo;
+                process.Start();  // Запуск процесса
 
-            // Ожидание завершения (блокирует поток)
-            process.WaitForExit();  // Или process.WaitForExit(timeoutInMs) с таймаутом
+                // Ожидание завершения (блокирует поток)
+                process.WaitForExit();  // Или process.WaitForExit(timeoutInMs) с таймаутом
 
-            // Получение кода выхода (0 обычно значит успех)
-            int exitCode = process.ExitCode;
-            LoggersSet.UserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
+                // Получение кода выхода (0 обычно значит успех)
+                int exitCode = process.ExitCode;
+                LoggersSet.UserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
 
-            // Если захватывали вывод
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            if (!string.IsNullOrEmpty(output))
-                LoggersSet.UserFriendlyLogger.LogInformation($"Вывод: {output}");
-            if (!string.IsNullOrEmpty(error))
-                LoggersSet.UserFriendlyLogger.LogInformation($"Ошибка: {error}");
+                // Если захватывали вывод
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                if (!string.IsNullOrEmpty(output))
+                    LoggersSet.UserFriendlyLogger.LogInformation($"Вывод: {output}");
+                if (!string.IsNullOrEmpty(error))
+                    LoggersSet.UserFriendlyLogger.LogInformation($"Ошибка: {error}");
+            }
+
+            var sequences = MorphologicalTextParser.ParseTextToSequences(Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, Input_Directory, fb2_Stemmed_FileName));
+            allSequences.AddRange(sequences);
         }
-    }
 
-    public void ExportSequences()
-    {
-        var sequences = MorphologicalTextParser.ParseTextToSequences(Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_stemmed_extended.txt"));
         MorphologicalTextParser.WriteToFile(
-            sequences,
+            allSequences,
             Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_sequences.txt"),
             LoggersSet.UserFriendlyLogger);
-    }
+    }    
 
     public void PrepareCalculate(Random random)
     {
@@ -108,7 +120,7 @@ public class Model01
 
     public bool CalculateCortexMemories(int cortexMemoriesCount, Random random)
     {
-        return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random);
+        return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random, LoggersSet.UserFriendlyLogger);
     }
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)

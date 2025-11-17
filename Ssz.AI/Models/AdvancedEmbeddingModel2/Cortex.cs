@@ -118,37 +118,44 @@ public partial class Cortex : ISerializableModelObject
     /// <param name="cortexMemoriesCount"></param>
     /// <param name="random"></param>
     /// <returns></returns>
-    public bool CalculateCortexMemories(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random)
+    public bool CalculateCortexMemories(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random, ILogger logger)
     {
-        for (int i = 0; i < cortexMemoriesCount; i += 1)
+        try
         {
-            if (inputCorpusData.CurrentCortexMemoryIndex >= inputCorpusData.CortexMemories.Count - 1)
-                return true;
-
-            inputCorpusData.CurrentCortexMemoryIndex += 1;
-
-            var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
-
-            Temp_InputCurrentDesc = GetDesc(cortexMemory);
-            CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
-
-            MiniColumn? winnerMiniColumn;
-            // Сохраняем воспоминание в миниколонке-победителе.
-            //if (randomInitialization)
-            //{
-            //    var winnerIndex = random.Next(MiniColumns.Length);
-            //    winnerMiniColumn = MiniColumns[winnerIndex];
-            //}
-            //else
+            for (int i = 0; i < cortexMemoriesCount; i += 1)
             {
-                winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
-            }            
-            if (winnerMiniColumn is not null)
-            {
-                winnerMiniColumn.AddCortexMemory(cortexMemory);
+                if (inputCorpusData.CurrentCortexMemoryIndex >= inputCorpusData.CortexMemories.Count - 1)
+                    return true;
+
+                inputCorpusData.CurrentCortexMemoryIndex += 1;
+
+                var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
+
+                Temp_InputCurrentDesc = GetDesc(cortexMemory);
+                CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+
+                MiniColumn? winnerMiniColumn;
+                // Сохраняем воспоминание в миниколонке-победителе.
+                //if (randomInitialization)
+                //{
+                //    var winnerIndex = random.Next(MiniColumns.Length);
+                //    winnerMiniColumn = MiniColumns[winnerIndex];
+                //}
+                //else
+                {
+                    winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                }
+                if (winnerMiniColumn is not null)
+                {
+                    winnerMiniColumn.AddCortexMemory(cortexMemory);
+                }
             }
+            return false;
         }
-        return false;
+        finally
+        {
+            logger.LogInformation($"CalculateCortexMemories() {inputCorpusData.CurrentCortexMemoryIndex}/{inputCorpusData.CortexMemories.Count} finished.");
+        }
     }
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, ILogger logger, Func<Task>? epochRefreshAction = null)

@@ -347,7 +347,7 @@ public partial class Model05View : UserControl
 
                                 await Model.DoSteps_MNISTAsync(5000, _random, randomInitialization: false, reorderMemoriesPeriodically: true);
 
-                                await Model.ReorderMemoriesAsync(Int32.MaxValue, _random, async () =>
+                                await Model.ReorderMemoriesAsync(10, _random, async () =>
                                 {
                                 });
 

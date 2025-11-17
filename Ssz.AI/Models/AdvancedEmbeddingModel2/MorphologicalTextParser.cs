@@ -214,10 +214,10 @@ public class MorphologicalTextParser
     {            
         // Создаем StreamWriter для записи в файл с кодировкой UTF-8.
         // using обеспечивает автоматическое закрытие и освобождение ресурсов.
-        using (StreamWriter writer = new StreamWriter(outputFilePath, false, Encoding.UTF8))
+        using (StreamWriter writer = new StreamWriter(outputFilePath, false, new UTF8Encoding(true)))
         {
             // Записываем заголовок с общим количеством последовательностей.
-            writer.WriteLine($"Всего последовательностей: {sequences.Count}");
+            writer.WriteLine($"# Всего последовательностей: {sequences.Count}");
             writer.WriteLine();
 
             // Цикл по всем последовательностям для записи в файл.

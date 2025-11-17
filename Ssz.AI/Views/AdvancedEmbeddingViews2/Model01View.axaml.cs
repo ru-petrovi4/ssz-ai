@@ -37,8 +37,13 @@ public partial class Model01View : UserControl
         LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(constants);
 
         Reset();
-
         Refresh_ImagesSet();
+
+        //Model = new Model01();
+        //Task.Run(() =>
+        //{
+        //    Model.StemInputText();
+        //});
     }
 
     public Model01 Model = null!;

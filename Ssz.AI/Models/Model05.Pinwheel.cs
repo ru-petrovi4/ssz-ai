@@ -424,12 +424,12 @@ namespace Ssz.AI.Models
                 if (inputIndex >= MonoInput.MonoInputItems.Length)
                     continue;
 
-                MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[mci];
+                MiniColumn currentMiniColumn = Cortex.SubArea_MiniColumns[mci];
 
-                winnerMiniColumn.Temp_Memories.Clear();
+                currentMiniColumn.Temp_Memories.Clear();
 
-                var dx = winnerMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
-                var dy = winnerMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
+                var dx = currentMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
+                var dy = currentMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
 
                 double magnitude = Constants.GeneratedMinGradientMagnitude +
                     (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
@@ -468,10 +468,10 @@ namespace Ssz.AI.Models
                 monoInputItem.GradientMatrix = generatedGradientMatrix;
                 MonoInput.MonoInputItems[inputIndex] = monoInputItem;
 
-                var sum = TensorPrimitives.Sum(winnerMiniColumn.Temp_Hash);
+                var sum = TensorPrimitives.Sum(currentMiniColumn.Temp_Hash);
                 if (sum >= Constants.MinBitsInHashForMemory)
                 {
-                    var g = winnerMiniColumn.GetPictureAverageGradientInPoint();
+                    var g = currentMiniColumn.GetPictureAverageGradientInPoint();
 
                     int generatedMemoriesCount = 1;// random.Next(10) + 3;
 
@@ -484,7 +484,7 @@ namespace Ssz.AI.Models
                         {
                             PinwheelIndexConstantMemories[dx + 2, dy + 2] = new Memory
                             {
-                                Hash = (float[])winnerMiniColumn.Temp_Hash.Clone(),
+                                Hash = (float[])currentMiniColumn.Temp_Hash.Clone(),
                                 PictureAverageGradientInPoint = g.Item3,
                                 PictureInputIndex = inputIndex
                             };
@@ -786,7 +786,7 @@ namespace Ssz.AI.Models
             }
         }
 
-        public async Task ReorderMemoriesAsync(int iterationsCount, Random random, Func<Task>? refreshAction = null)
+        public async Task ReorderMemoriesAsync(int epochCount, Random random, Func<Task>? refreshAction = null)
         {
             ActivitiyMaxInfo activitiyMaxInfo = new();
             //List<int> changesCounts = new();
@@ -794,7 +794,7 @@ namespace Ssz.AI.Models
             int minChangesCount_UnchangedCount = 0;
 
             Stopwatch sw = new();
-            for (int iterationN = 0; iterationN < iterationsCount; iterationN += 1)
+            for (int epochN = 0; epochN < epochCount; epochN += 1)
             {
                 sw.Restart();
 
@@ -1187,15 +1187,22 @@ namespace Ssz.AI.Models
                 {
                     if (dx == 0 && dy == 0)
                         continue;
-                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX + dx, centerMiniColumn.MCY + dy];
+                    int mcx = centerMiniColumn.MCX + dx;
+                    int mcy = centerMiniColumn.MCY + dy;
+                    if (mcx < 0 || mcx >= Cortex.MiniColumns.Dimensions[0] ||
+                            mcy < 0 || mcy >= Cortex.MiniColumns.Dimensions[1])
+                        continue;
+                    var mc = Cortex.MiniColumns[mcx, mcy];
                     if (mc is null)
                         continue;
 
                     float maxCosineSimilarity = 0.0f;
-                    for (int mdx = -2; mdx <= 2; mdx += 1)
-                        for (int mdy = -2; mdy <= 2; mdy += 1)
+                    for (int mdx = 0; mdx <= 4; mdx += 1)
+                        for (int mdy = 0; mdy <= 4; mdy += 1)
                         {
-                            var pinwheelIndexConstantMemoryHash = PinwheelIndexConstantMemories[mdx + 2, mdy + 2].Hash;
+                            if (mdx == 2 && mdy == 2)
+                                continue;
+                            var pinwheelIndexConstantMemoryHash = PinwheelIndexConstantMemories[mdx, mdy].Hash;
                             foreach (var memory in mc.Memories)
                             {
                                 if (memory is null)
@@ -1351,7 +1358,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.2f;
+            public float K0 { get; set; } = 0.11f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
