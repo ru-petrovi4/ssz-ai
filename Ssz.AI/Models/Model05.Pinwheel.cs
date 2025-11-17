@@ -1201,7 +1201,7 @@ namespace Ssz.AI.Models
                     if (index1 >= FirstCircleCoordinates.Length)
                         index1 -= FirstCircleCoordinates.Length;
                     var it1 = FirstCircleCoordinates[index1];                    
-                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX - it1.Item1 - 2, centerMiniColumn.MCY - it1.Item2 - 2];
+                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX + it1.Item1 - 2, centerMiniColumn.MCY + it1.Item2 - 2];
                     if (mc is null)
                         return 0.0f;
 
@@ -1229,7 +1229,7 @@ namespace Ssz.AI.Models
                     if (index1 >= SecondCircleCoordinates.Length)
                         index1 -= SecondCircleCoordinates.Length;
                     var it1 = SecondCircleCoordinates[index1];
-                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX - it1.Item1 - 2, centerMiniColumn.MCY - it1.Item2 - 2];
+                    var mc = Cortex.MiniColumns[centerMiniColumn.MCX + it1.Item1 - 2, centerMiniColumn.MCY + it1.Item2 - 2];
                     if (mc is null)
                         return 0.0f;
 
