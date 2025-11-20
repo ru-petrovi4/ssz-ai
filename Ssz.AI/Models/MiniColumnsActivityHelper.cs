@@ -48,10 +48,15 @@ namespace Ssz.AI.Models
     public interface IMiniColumn
     {
         IFastList<ICortexMemory?> CortexMemories { get; }
+    }
 
-        IFastList<(float, float, IMiniColumn)> K_ForNearestMiniColumns { get; }
+    public interface IMiniColumnActivity
+    {
+        IMiniColumn MiniColumn { get; }
 
         (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Activity { get; }
+
+        IFastList<(float, float, IMiniColumnActivity)> K_ForNearestMiniColumns { get; }
     }
 
     public interface ICortexMemory
@@ -109,22 +114,22 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Implementation #0
         /// </summary>
-        /// <param name="miniColumn"></param>
+        /// <param name="miniColumnActivity"></param>
         /// <param name="constants"></param>
         /// <returns></returns>
-        public static float GetSuperActivity(IMiniColumn miniColumn, IMiniColumnsActivityConstants constants)
+        public static float GetSuperActivity(IMiniColumnActivity miniColumnActivity, IMiniColumnsActivityConstants constants)
         {
             float superActivity;
 
-            var k0 = miniColumn.K_ForNearestMiniColumns[0];
-            if (miniColumn.Activity.CortexMemoriesCount > 0)
-                superActivity = k0.Item1 * miniColumn.Activity.PositiveActivity + k0.Item2 * miniColumn.Activity.NegativeActivity;
+            var k0 = miniColumnActivity.K_ForNearestMiniColumns[0];
+            if (miniColumnActivity.Activity.CortexMemoriesCount > 0)
+                superActivity = k0.Item1 * miniColumnActivity.Activity.PositiveActivity + k0.Item2 * miniColumnActivity.Activity.NegativeActivity;
             else
                 superActivity = k0.Item1 * (constants.K2 - constants.K0); // Best proximity
 
-            for (int i = 1; i < miniColumn.K_ForNearestMiniColumns.Count; i += 1)
+            for (int i = 1; i < miniColumnActivity.K_ForNearestMiniColumns.Count; i += 1)
             {
-                var it = miniColumn.K_ForNearestMiniColumns[i];
+                var it = miniColumnActivity.K_ForNearestMiniColumns[i];
                 var nearestMiniColumn = it.Item3;
 
                 if (nearestMiniColumn.Activity.CortexMemoriesCount > 0)
@@ -137,22 +142,22 @@ namespace Ssz.AI.Models
             return superActivity;
         }
 
-        public static void GetSuperActivity(IMiniColumn[] miniColumns, int bitsCount, IMiniColumnsActivityConstants constants, float[] result)
-        {
-            Array.Clear(result);
+        //public static void GetSuperActivity(IMiniColumn[] miniColumns, int bitsCount, IMiniColumnsActivityConstants constants, float[] result)
+        //{
+        //    Array.Clear(result);
 
-            for (int i = 0; i < miniColumns.Length; i += 1)
-            {
-                var miniColumn = miniColumns[i];
+        //    for (int i = 0; i < miniColumns.Length; i += 1)
+        //    {
+        //        var miniColumn = miniColumns[i];
 
-                for (int j = 0; j < miniColumn.CortexMemories.Count; j += 1)
-                {
-                    var cortexMemory = miniColumn.CortexMemories[j];
-                    if (cortexMemory is not null)
-                        TensorPrimitives.Add(result, cortexMemory.DiscreteVector, result);
-                }
-            }
-        }
+        //        for (int j = 0; j < miniColumn.CortexMemories.Count; j += 1)
+        //        {
+        //            var cortexMemory = miniColumn.CortexMemories[j];
+        //            if (cortexMemory is not null)
+        //                TensorPrimitives.Add(result, cortexMemory.DiscreteVector, result);
+        //        }
+        //    }
+        //}
     }        
 }
 

@@ -250,7 +250,7 @@ public class Cortex_Simplified : ISerializableModelObject
         }
     }        
 
-    public class MiniColumn : IMiniColumn, ISerializableModelObject
+    public class MiniColumn : IMiniColumn, IMiniColumnActivity, ISerializableModelObject
     {
         public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
         {
@@ -265,7 +265,7 @@ public class Cortex_Simplified : ISerializableModelObject
             Temp_Memories = new(constants.MemoriesMaxCount);                       
             Temp_ShortHashConverted = new float[constants.ShortHashLength];                
 
-            K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
+            K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
         }
 
         public readonly IConstants Constants;
@@ -286,7 +286,7 @@ public class Cortex_Simplified : ISerializableModelObject
         ///     K для расчета суперактивности.
         ///     (K для позитива, K для негатива, MiniColumn)
         /// </summary>
-        public readonly FastList<(float, float, IMiniColumn)> K_ForNearestMiniColumns;        
+        public readonly FastList<(float, float, IMiniColumnActivity)> K_ForNearestMiniColumns;        
 
         /// <summary>
         ///     [0..MNISTImageWidth]
@@ -515,9 +515,11 @@ public class Cortex_Simplified : ISerializableModelObject
 
         IFastList<ICortexMemory?> IMiniColumn.CortexMemories => Memories;
 
-        IFastList<(float, float, IMiniColumn)> IMiniColumn.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
+        IMiniColumn IMiniColumnActivity.MiniColumn => this;
 
-        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumn.Activity => Temp_Activity;
+        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumnActivity.Activity => Temp_Activity;
+
+        IFastList<(float, float, IMiniColumnActivity)> IMiniColumnActivity.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
     }
 
     public class Memory : ICortexMemory
