@@ -1,4 +1,5 @@
-﻿using Ssz.Utils.Serialization;
+﻿using Ssz.Utils.Logging;
+using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
 public partial class Cortex : ISerializableModelObject
-{   
+{    
     #region private functions
 
     private void CalculateActivityAndSuperActivity(float[] discreteVector, ActivitiyMaxInfo? activitiyMaxInfo)

@@ -22,28 +22,46 @@
       <RowDefinition Height="auto" />   
     </Grid.RowDefinitions>
     
-    <StackPanel Orientation="Horizontal">      
-      <Button Content="Reset" Click="ResetButton_OnClick" />      
-      <Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />        
-      <Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
-      <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
-      <Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />      
-      <Button Content="Reorder Memories (Sleep, 1 epoch)" Click="ReorderMemories1EpochButton_OnClick" />
-      <Button Content="Reorder Memories (Sleep long)" Click="ReorderMemoriesButton_OnClick" Background="Red" />
-      <Button Content="Reset Words Iterator" Click="ResetWordsIterator_OnClick" />
-      <Button Content="Process Word" Click="ProcessWordButton_OnClick" />      
-      <Button Content="Do Script 0" Click="DoScriptButton0_OnClick" /> 
-      <Button Content="Do Script 1" Click="DoScriptButton1_OnClick" /> 
-      <Button Content="Do Script 2" Click="DoScriptButton2_OnClick" /> 
-    </StackPanel>
+    <Grid>
+		  <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />              
+          </Grid.RowDefinitions>
+          <StackPanel Orientation="Horizontal">  
+              <Button Content="Reset" Click="Reset_OnClick" />                  
+              <Button Content="Stop Long Operation" Click="StopLongOperation_OnClick" /> 
+              <Button Content="Reset Phrases Iterator" Click="ResetPhrasesIterator_OnClick" />
+              <Button Content="Show Next Phrase" Click="ShowNextPhrase_OnClick" />              
+              <Button Content="Reset Words Iterator" Click="ResetWordsIterator_OnClick" />
+              <Button Content="Show Next Word" Click="ShowNextWord_OnClick" />  
+          </StackPanel>
+          <StackPanel Grid.Row="1" Orientation="Horizontal"> 
+              <TextBlock Text="Based on SuperActivity:" VerticalAlignment="Center" />               
+              <Button Content="Put Phrase" Click="PutPhrase_BasedOnSuperActivity_OnClick" />        
+              <Button Content="Put Phrases 2000" Click="PutPhrases2000_BasedOnSuperActivity_OnClick" />
+              <Button Content="Put Phrases 5K" Click="PutPhrases5K_BasedOnSuperActivity_OnClick" />
+              <Button Content="Put Phrases 10K" Click="PutPhrases10K_BasedOnSuperActivity_OnClick" />      
+              <Button Content="Reorder Phrases (Sleep, 1 epoch)" Click="ReorderPhrases1Epoch_BasedOnSuperActivity_OnClick" />
+              <Button Content="Reorder Phrases (Sleep long)" Click="ReorderPhrasesAll_BasedOnSuperActivity_OnClick" Background="Red" />                  
+              <Button Content="Do Script 0" Click="DoScript0_OnClick" /> 
+              <Button Content="Do Script 1" Click="DoScript1_OnClick" /> 
+              <Button Content="Do Script 2" Click="DoScript2_OnClick" /> 
+          </StackPanel>
+          <StackPanel Grid.Row="2" Orientation="Horizontal">        
+              <TextBlock Text="Based on Coding/Decoding Quality:" VerticalAlignment="Center" />
+              <Button Content="Put all phrases randomly" Click="PutPhrasesAll_Randomly_OnClick" /> 
+              <Button Content="Start Reoder Phrases" Click="StartReoderPhrases_BasedOnCodingDecoding_OnClick" />               
+          </StackPanel>
+    </Grid>    
 
     <Grid Grid.Row="1">      
-      <TextBlock x:Name="ImagesSet1_TextBlock" FontSize="16" />
+      <TextBlock Margin="5" x:Name="ImagesSet1_TextBlock" FontSize="16" FontWeight="Bold" />
     </Grid>
     <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
 
     <Grid Grid.Row="3">      
-      <TextBlock x:Name="ImagesSet2_TextBlock" FontSize="16" />
+      <TextBlock Margin="5" x:Name="ImagesSet2_TextBlock" FontSize="16" FontWeight="Bold" />
     </Grid>
     <localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />
 

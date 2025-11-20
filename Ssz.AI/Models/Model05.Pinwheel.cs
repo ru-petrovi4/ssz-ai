@@ -1429,9 +1429,9 @@ namespace Ssz.AI.Models
 
             //public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.07f, 0.00f];
 
-            public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.065f, 0.00f];
+            public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f, 0.00f];
 
-            public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
+            public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f, 0.00f];
         }        
     }
 }

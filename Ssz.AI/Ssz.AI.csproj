@@ -16,6 +16,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AvaloniaXaml Remove="Views\AdvancedEmbeddingViews2\Model02View.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="11.3.8" />
     <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.8" />
@@ -50,6 +54,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Views\AdvancedEmbeddingViews2\Model02View.axaml.cs">
+      <DependentUpon>Model02View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\AdvancedEmbeddingViews\Model03View.axaml.cs">
       <DependentUpon>Model03View.axaml</DependentUpon>
     </Compile>

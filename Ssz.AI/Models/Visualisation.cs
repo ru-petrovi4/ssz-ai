@@ -75,7 +75,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmapFromMiniColums_ActivityColor_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+    public static Bitmap GetBitmapFromMiniColums_Activity_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -85,7 +85,8 @@ public static class Visualisation
             g.Clear(Color.Black);
         }
 
-        foreach (var mc in cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7))
+        var miniColumns = cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7).ToArray();
+        foreach (var mc in miniColumns)
         {
             bitmap.SetPixel(mc.MCX, mc.MCY, Color.White);
         }
@@ -162,7 +163,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+    public static Bitmap GetBitmapFromMiniColums_SuperActivity_Code(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -172,7 +173,8 @@ public static class Visualisation
             g.Clear(Color.Black);
         }
 
-        foreach (var mc in cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_SuperActivity).Take(7))
+        var miniColumns = cortex.MiniColumns.Data.OrderByDescending(mc => mc.Temp_SuperActivity).Take(7).ToArray();
+        foreach (var mc in miniColumns)
         {
             bitmap.SetPixel(mc.MCX, mc.MCY, Color.White);
         }

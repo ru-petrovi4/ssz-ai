@@ -240,7 +240,7 @@ public class MorphologicalTextParser
         logger.LogInformation($"Результаты сохранены в файл: {outputFilePath}");
     }
 
-    public static List<string[]> LoadFromFile(string inputFilePath, ILogger logger)
+    public static List<string[]> LoadFromFile(string inputFilePath)
     {
         List<string[]> sequences = new(1000);
 

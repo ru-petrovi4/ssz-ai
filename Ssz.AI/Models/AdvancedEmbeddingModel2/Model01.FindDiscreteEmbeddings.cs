@@ -111,30 +111,35 @@ public class Model01
 
     public void PrepareCalculate(Random random)
     {
-        InputCorpusData = GetInputCorpusData(random);
+        InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(random, Constants.DiscreteVectorLength);
 
-        Cortex = new Cortex(Constants);
+        Cortex = new Cortex(Constants, LoggersSet.UserFriendlyLogger);
         Cortex.GenerateOwnedData(InputCorpusData.Words);
         Cortex.Prepare();
     }
 
-    public bool CalculateCortexMemories(int cortexMemoriesCount, Random random)
+    public bool Calculate_PutPhrases_BasedOnSuperActivity(int cortexMemoriesCount, Random random)
     {
-        return Cortex.CalculateCortexMemories(InputCorpusData, cortexMemoriesCount, random, LoggersSet.UserFriendlyLogger);
+        return Cortex.Calculate_PutPhrases_BasedOnSuperActivity(InputCorpusData, cortexMemoriesCount, random);
     }
 
-    public async Task ReorderMemoriesAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
+    public async Task ReorderPhrases1Epoch_BasedOnSuperActivityAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
     {
-        await Cortex.ReorderMemoriesAsync(epochCount, random, LoggersSet.UserFriendlyLogger, epochRefreshAction);
-    }        
+        await Cortex.Calculate_ReorderCortexMemories_BasedOnSuperActivityAsync(epochCount, random, epochRefreshAction);
+    }
+
+    public bool Calculate_PutPhrases_Randomly(int cortexMemoriesCount, Random random)
+    {
+        return Cortex.Calculate_PutPhrases_Randomly(InputCorpusData, cortexMemoriesCount, random);
+    }    
 
     public VisualizationWithDesc[] GetImageWithDescs()
     {
         var bitmapFromMiniColums_ActivityColor = Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex);
         var bitmapFromMiniColums_SuperActivityColor = Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null);
         
-        var bitmapFromMiniColums_ActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_ActivityColor_Code(Cortex);
-        var bitmapFromMiniColums_SuperActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_SuperActivityColor_Code(Cortex);
+        var bitmapFromMiniColums_ActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_Activity_Code(Cortex);
+        var bitmapFromMiniColums_SuperActivityColor_WordCode = Visualisation.GetBitmapFromMiniColums_SuperActivity_Code(Cortex);
 
         return [                      
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(bitmapFromMiniColums_ActivityColor),
@@ -153,85 +158,18 @@ public class Model01
                     Desc = @"Количество воспоминаний в миниколонках" }
             ];
     }
-    
+
     #endregion
 
     #region private functions    
 
-    private InputCorpusData GetInputCorpusData(Random r)
-    {
-        var sequences = MorphologicalTextParser.LoadFromFile(
-            Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_sequences.txt"),
-            LoggersSet.UserFriendlyLogger
-            );
-        InputCorpusData inputCorpusData = new();
-        Dictionary<string, Word> dictionary = inputCorpusData.Dictionary;
-        var words = inputCorpusData.Words;
-        int[] indices = new int[Constants.DiscreteVectorLength];
-        List<Word> sequenceWords = new();
-        List<Cortex.Memory> cortexMemories = inputCorpusData.CortexMemories;
-        int corpus_WordsCount = 0;
-        foreach (var s in sequences)
-        {
-            sequenceWords.Clear();
-            foreach (var wordName in s)
-            {
-                corpus_WordsCount += 1;
-                if (!dictionary.TryGetValue(wordName, out Word? word))
-                {
-                    word = new()
-                    {
-                        Name = wordName,
-                        Index = words.Count,
-                        DiscreteRandomVector = new float[Constants.DiscreteVectorLength],
-                        DiscreteOptimizedVector = new float[Constants.DiscreteVectorLength],
-                        DiscreteOptimizedVector_PrimaryBitsOnly = new float[Constants.DiscreteVectorLength],
-                        DiscreteOptimizedVector_SecondaryBitsOnly = new float[Constants.DiscreteVectorLength],
-                    };
-                    for (int i = 0; i < Constants.DiscreteVectorLength; i += 1)
-                    {
-                        indices[i] = i;
-                    }
-                    r.Shuffle(indices);
-                    for (int i = 0; i < 7; i += 1)
-                    {
-                        word.DiscreteRandomVector[indices[i]] = 1.0f;                        
-                    }
-                    dictionary.Add(wordName, word);
-                    words.Add(word);
-                }
-                word.Temp_InCorpusCount += 1;
-                sequenceWords.Add(word);
-            }
-            if (sequenceWords.Count > 2)
-            {
-                Cortex.Memory cortexMemory = new Cortex.Memory()
-                {
-                    DiscreteRandomVector = new float[Constants.DiscreteVectorLength],
-                    WordIndices = sequenceWords.Select(w => w.Index).ToArray()
-                };
-                for (int i = 0; i < sequenceWords.Count; i += 1)
-                {
-                    TensorPrimitives.Add(cortexMemory.DiscreteRandomVector, sequenceWords[i].DiscreteRandomVector, cortexMemory.DiscreteRandomVector);
-                }
-                TensorPrimitives.Min(cortexMemory.DiscreteRandomVector, 1.0f, cortexMemory.DiscreteRandomVector);
-                cortexMemory.DiscreteRandomVector_Color = Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
-                cortexMemories.Add(cortexMemory);
-            }
-        }
-        foreach (var kvp in dictionary)
-        {
-            kvp.Value.CorpusFreq = (float)kvp.Value.Temp_InCorpusCount / corpus_WordsCount;
-        }
-        inputCorpusData.OrderedWords = words.OrderByDescending(w => w.CorpusFreq).ToList();
-        return inputCorpusData;
-    }    
+
 
     #endregion
 
     #region private fields    
 
-    #endregion    
+    #endregion
 
     public class ModelConstants : IMiniColumnsActivityConstants
     {

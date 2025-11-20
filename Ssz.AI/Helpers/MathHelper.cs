@@ -1,159 +1,253 @@
 ﻿using Ssz.AI.Models;
 using System;
+using System.Collections.Generic;
 
-namespace Ssz.AI.Helpers
+namespace Ssz.AI.Helpers;
+
+public static class MathHelper
 {
-    public static class MathHelper
+    /// <summary>
+    ///     Radians to Degrees [0..360)
+    /// </summary>
+    /// <param name="radians"></param>
+    /// <returns></returns>
+    public static float RadiansToDegrees(float radians)
     {
-        /// <summary>
-        ///     Radians to Degrees [0..360)
-        /// </summary>
-        /// <param name="radians"></param>
-        /// <returns></returns>
-        public static float RadiansToDegrees(float radians)
+        float degrees = 180 * radians / MathF.PI;                        
+        return NormalizeAngleDegrees(degrees);
+    }
+
+    /// <summary>
+    ///     Degrees [0..360)
+    /// </summary>
+    /// <param name="degrees"></param>
+    /// <returns></returns>
+    public static float NormalizeAngleDegrees(float degrees)
+    {
+        degrees = degrees % 360.0f;
+        if (degrees < 0.000001f)
         {
-            float degrees = 180 * radians / MathF.PI;                        
-            return NormalizeAngleDegrees(degrees);
+            if (degrees < -0.000001f)
+                degrees += 360.0f;
+            else
+                degrees = 0.0f;
+        }
+        return degrees;
+    }
+
+    /// <summary>
+    ///     Degrees to Radians [-pi, pi)
+    /// </summary>
+    /// <param name="degrees"></param>
+    /// <returns></returns>
+    public static float DegreesToRadians(float degrees)
+    {
+        float radians = MathF.PI * degrees / 180.0f;            
+        return NormalizeAngle(radians);
+    }
+
+    /// <summary>
+    ///     Returns Radians [-pi, pi)
+    /// </summary>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public static float NormalizeAngle(float radians)
+    {
+        radians = radians % (2.0f * MathF.PI);
+        if (radians > MathF.PI - 0.00001f)
+        {
+            if (radians > MathF.PI + 0.00001f)
+                radians -= 2 * MathF.PI;
+            else
+                radians = -MathF.PI;
+        }
+        else if (radians < -MathF.PI + 0.00001f)
+        {
+            if (radians < -MathF.PI - 0.00001f)
+                radians += 2 * MathF.PI;
+            else
+                radians = -MathF.PI;
+        }
+        return radians;
+    }
+
+    public static float GetInterpolatedValue(float[] points, float x)
+    {   
+        if (x < 0.00001f)
+            return points[0];
+        int xi = (int)x;
+        if (xi + 1 >= points.Length)
+            return points[points.Length - 1];
+        return points[xi] + (points[xi + 1] - points[xi]) * (x - (float)xi);
+    }
+
+    public static GradientInPoint GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
+    {   
+        int x = (int)centerX;
+        int y = (int)centerY;
+        if (x < 0 ||
+                y < 0 ||
+                x + 1 >= gradientMatrix.Dimensions[0] ||
+                y + 1 >= gradientMatrix.Dimensions[1])
+            return new();
+
+        double tx = centerX - x;
+        double ty = centerY - y;
+        double gradX = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradX +
+            tx * (1 - ty) * gradientMatrix[x + 1, y].GradX +
+            (1 - tx) * ty * gradientMatrix[x, y + 1].GradX +
+            tx * ty * gradientMatrix[x + 1, y + 1].GradX;
+        double gradY = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradY +
+            tx * (1 - ty) * gradientMatrix[x + 1, y].GradY +
+            (1 - tx) * ty * gradientMatrix[x, y + 1].GradY +
+            tx * ty * gradientMatrix[x + 1, y + 1].GradY;
+
+        double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+
+        double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+        if (angle > Math.PI - 0.000001)
+            angle = -Math.PI;
+
+        return new GradientInPoint
+        {
+            GradX = gradX,
+            GradY = gradY,
+            Angle = angle,
+            Magnitude = magnitude
+        };
+    }
+
+    /// <summary>
+    ///     Returns [-pi, pi)
+    /// </summary>
+    /// <param name="centerX"></param>
+    /// <param name="centerY"></param>
+    /// <param name="gradientMatrix"></param>
+    /// <returns></returns>
+    public static (double magnitude, double angle) GetInterpolatedGradient_Obsolete(double centerX, double centerY, GradientInPoint[,] gradientMatrix)
+    {
+        int x = (int)centerX;
+        int y = (int)centerY;
+        if (x < 0 ||
+                y < 0 ||
+                x + 1 >= gradientMatrix.GetLength(0) ||
+                y + 1 >= gradientMatrix.GetLength(1))
+            return (0.0, 0.0);
+
+        double tx = centerX - x;
+        double ty = centerY - y;
+        double gradX = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradX +
+            tx * (1 - ty) * gradientMatrix[x + 1, y].GradX +
+            (1 - tx) * ty * gradientMatrix[x, y + 1].GradX +
+            tx * ty * gradientMatrix[x + 1, y + 1].GradX;
+        double gradY = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradY +
+            tx * (1 - ty) * gradientMatrix[x + 1, y].GradY +
+            (1 - tx) * ty * gradientMatrix[x, y + 1].GradY +
+            tx * ty * gradientMatrix[x + 1, y + 1].GradY;
+
+        double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+
+        double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+        if (angle > Math.PI - 0.000001)
+            angle = -Math.PI;
+
+        return (magnitude, angle);
+    }
+
+    /// <summary>
+    /// Метод для выбора 30 максимальных значений в массиве float длиной 300
+    /// и модификации массива: устанавливает выбранные в 1.0f, остальные в 0.0f.
+    /// Работает in-place; использует reusable PriorityQueue для zero-allocation после init.
+    /// minHeap = new PriorityQueue<int, float>(k + 1);
+    /// minHeap Должен быть пуст. На выходе он пуст.
+    /// </summary>
+    /// <param name="data">
+    /// Входной/выходной Span<float>.
+    /// - n=300: длина, фиксирована.
+    /// - data[i]: исходное значение на позиции i (0 <= i < n); после: 1.0f для топ-30 max, иначе 0.0f.
+    /// </param>
+    /// <param name="k">Количество топ-элементов для выбора</param>
+    /// <remarks>
+    /// Сложность: O(n log k + k log k) на операцию, где 
+    /// - n=300: сканирование массива;
+    /// - k=30: размер heap; log k ≈ 4.9 (log₂(30));
+    /// - + k log k: на очистку/извлечение.
+    /// Общее ≈ 300*4.9 + 30*4.9 ≈ 1650 операций — оптимально.
+    /// Reuse: очищает heap via Dequeue (O(k log k)); для 1000+ операций аллокации только init (200 байт).
+    /// Если thread-multi: используйте lock или ThreadLocal<PriorityQueue<int, float>>.
+    /// Формула очистки: while (heap.Count > 0) { Dequeue(); } — log k per Dequeue, k раз.
+    /// </remarks>
+    /// <exception cref="ArgumentException">Если data.Length != 300.</exception>
+    public static void SelectTopKMaxAndSetToOne(Span<float> data, int k, PriorityQueue<int, float> minHeap)
+    {
+        int n = data.Length; // n — длина массива                
+
+        // Шаг 1: Заполняем heap начальными k+1 элементами (i=0..30).
+        // Enqueue: O(log (k+1)) per вставка; всего O((k+1) log k).
+        int initialCount = 0;
+        while (initialCount < k + 1 && initialCount < n)
+        {
+            int currentIndex = initialCount;
+            float currentValue = data[currentIndex];
+            minHeap.Enqueue(currentIndex, currentValue); // Элемент=индекс, приоритет=значение
+            initialCount += 1;
         }
 
-        /// <summary>
-        ///     Degrees [0..360)
-        /// </summary>
-        /// <param name="degrees"></param>
-        /// <returns></returns>
-        public static float NormalizeAngleDegrees(float degrees)
+        // Шаг 2: Оставшиеся элементы (i=31..299).
+        // Для каждого: если data[i] >= min в heap, заменяем (2 * O(log k)).
+        int remainingStart = k + 1;
+        while (remainingStart < n)
         {
-            degrees = degrees % 360.0f;
-            if (degrees < 0.000001f)
+            int currentIndex = remainingStart;
+            float currentValue = data[currentIndex];
+
+            bool hasMin = minHeap.TryDequeue(out int minIndex, out float minValue);
+            if (!hasMin)
             {
-                if (degrees < -0.000001f)
-                    degrees += 360.0f;
-                else
-                    degrees = 0.0f;
+                break;
             }
-            return degrees;
-        }
 
-        /// <summary>
-        ///     Degrees to Radians [-pi, pi)
-        /// </summary>
-        /// <param name="degrees"></param>
-        /// <returns></returns>
-        public static float DegreesToRadians(float degrees)
-        {
-            float radians = MathF.PI * degrees / 180.0f;            
-            return NormalizeAngle(radians);
-        }
-
-        /// <summary>
-        ///     Returns Radians [-pi, pi)
-        /// </summary>
-        /// <param name="v"></param>
-        /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public static float NormalizeAngle(float radians)
-        {
-            radians = radians % (2.0f * MathF.PI);
-            if (radians > MathF.PI - 0.00001f)
+            if (currentValue >= minValue)
             {
-                if (radians > MathF.PI + 0.00001f)
-                    radians -= 2 * MathF.PI;
-                else
-                    radians = -MathF.PI;
+                minHeap.Enqueue(currentIndex, currentValue);
             }
-            else if (radians < -MathF.PI + 0.00001f)
+            else
             {
-                if (radians < -MathF.PI - 0.00001f)
-                    radians += 2 * MathF.PI;
-                else
-                    radians = -MathF.PI;
+                minHeap.Enqueue(minIndex, minValue);
             }
-            return radians;
+
+            remainingStart += 1;
         }
 
-        public static float GetInterpolatedValue(float[] points, float x)
-        {   
-            if (x < 0.00001f)
-                return points[0];
-            int xi = (int)x;
-            if (xi + 1 >= points.Length)
-                return points[points.Length - 1];
-            return points[xi] + (points[xi + 1] - points[xi]) * (x - (float)xi);
-        }
-
-        public static GradientInPoint GetInterpolatedGradient(double centerX, double centerY, DenseMatrix<GradientInPoint> gradientMatrix)
-        {   
-            int x = (int)centerX;
-            int y = (int)centerY;
-            if (x < 0 ||
-                    y < 0 ||
-                    x + 1 >= gradientMatrix.Dimensions[0] ||
-                    y + 1 >= gradientMatrix.Dimensions[1])
-                return new();
-
-            double tx = centerX - x;
-            double ty = centerY - y;
-            double gradX = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradX +
-                tx * (1 - ty) * gradientMatrix[x + 1, y].GradX +
-                (1 - tx) * ty * gradientMatrix[x, y + 1].GradX +
-                tx * ty * gradientMatrix[x + 1, y + 1].GradX;
-            double gradY = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradY +
-                tx * (1 - ty) * gradientMatrix[x + 1, y].GradY +
-                (1 - tx) * ty * gradientMatrix[x, y + 1].GradY +
-                tx * ty * gradientMatrix[x + 1, y + 1].GradY;
-
-            double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
-
-            double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
-
-            if (angle > Math.PI - 0.000001)
-                angle = -Math.PI;
-
-            return new GradientInPoint
-            {
-                GradX = gradX,
-                GradY = gradY,
-                Angle = angle,
-                Magnitude = magnitude
-            };
-        }
-
-        /// <summary>
-        ///     Returns [-pi, pi)
-        /// </summary>
-        /// <param name="centerX"></param>
-        /// <param name="centerY"></param>
-        /// <param name="gradientMatrix"></param>
-        /// <returns></returns>
-        public static (double magnitude, double angle) GetInterpolatedGradient_Obsolete(double centerX, double centerY, GradientInPoint[,] gradientMatrix)
+        // Шаг 3: Обнуляем весь массив.
+        // Формула: для i=0..n-1: data[i] = 0.0f; O(n) времени.
+        int zeroIndex = 0;
+        while (zeroIndex < n)
         {
-            int x = (int)centerX;
-            int y = (int)centerY;
-            if (x < 0 ||
-                    y < 0 ||
-                    x + 1 >= gradientMatrix.GetLength(0) ||
-                    y + 1 >= gradientMatrix.GetLength(1))
-                return (0.0, 0.0);
+            data[zeroIndex] = 0.0f;
+            zeroIndex += 1;
+        }
 
-            double tx = centerX - x;
-            double ty = centerY - y;
-            double gradX = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradX +
-                tx * (1 - ty) * gradientMatrix[x + 1, y].GradX +
-                (1 - tx) * ty * gradientMatrix[x, y + 1].GradX +
-                tx * ty * gradientMatrix[x + 1, y + 1].GradX;
-            double gradY = (1 - tx) * (1 - ty) * gradientMatrix[x, y].GradY +
-                tx * (1 - ty) * gradientMatrix[x + 1, y].GradY +
-                (1 - tx) * ty * gradientMatrix[x, y + 1].GradY +
-                tx * ty * gradientMatrix[x + 1, y + 1].GradY;
-
-            double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
-
-            double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
-
-            if (angle > Math.PI - 0.000001)
-                angle = -Math.PI;
-
-            return (magnitude, angle);
-        }        
+        // Шаг 4: Извлекаем k=30 топ-индексов и устанавливаем 1.0f.
+        // Пропускаем первый Dequeue (31-й max), затем 30 топ.
+        // Dequeue уже очищает; O(k log k).
+        int extractCount = 0;
+        while (extractCount < k && minHeap.Count > 0)
+        {
+            bool success = minHeap.TryDequeue(out int topIndex, out _);
+            if (success)
+            {
+                data[topIndex] = 1.0f;
+                extractCount += 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+        // Heap теперь пуст для следующей операции.
     }
 }

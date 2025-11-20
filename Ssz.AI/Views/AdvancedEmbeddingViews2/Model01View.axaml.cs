@@ -15,6 +15,8 @@ using System.Linq;
 using System.Numerics.Tensors;
 using System.Threading.Tasks;
 using Ssz.AI.Models.AdvancedEmbeddingModel2;
+using Avalonia.Threading;
+using System.Threading;
 
 namespace Ssz.AI.Views.AdvancedEmbeddingViews2;
 
@@ -86,63 +88,39 @@ public partial class Model01View : UserControl
         constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value;
     }
 
-    private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
+    #region BUttons Handlers
+
+    private void Reset_OnClick(object? sender, RoutedEventArgs args)
     {
         Reset();
 
         Refresh_ImagesSet();
     }
 
-    private void ProcessSampleButton_OnClick(object? sender, RoutedEventArgs args)
+    private void StopLongOperation_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.CalculateCortexMemories(1, _random);
+        _cancellationTokenSource?.Cancel();
+    }
+
+    private void ResetPhrasesIterator_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.InputCorpusData.CurrentCortexMemoryIndex = -1;
 
         Refresh_ImagesSet();
     }
 
-    private void ProcessSamples2000Button_OnClick(object? sender, RoutedEventArgs args)
+    private void ShowNextPhrase_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.CalculateCortexMemories(2000, _random);
+        if (Model.InputCorpusData.CurrentCortexMemoryIndex >= Model.InputCorpusData.CortexMemories.Count - 1)
+            return;
+
+        Model.InputCorpusData.CurrentCortexMemoryIndex += 1;
+
+        Model.Cortex.Calculate_CurrentCortexMemory(Model.InputCorpusData, _random);
 
         Refresh_ImagesSet();
     }
 
-    private void ProcessSamples5KButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        Model.CalculateCortexMemories(5000, _random);
-
-        Refresh_ImagesSet();
-    }
-
-    private void ProcessSamples10KButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        Model.CalculateCortexMemories(10000, _random);
-
-        Refresh_ImagesSet();
-    }
-
-    private async void ReorderMemories1EpochButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        await Model.ReorderMemoriesAsync(1, _random, async () =>
-        {
-            Refresh_ImagesSet();
-            await Task.Delay(50);
-        });
-
-        Refresh_ImagesSet();
-    }
-
-    private async void ReorderMemoriesButton_OnClick(object? sender, RoutedEventArgs args)
-    {
-        await Model.ReorderMemoriesAsync(100, _random, async () =>
-        {
-            Refresh_ImagesSet();
-            await Task.Delay(50);
-        });
-
-        Refresh_ImagesSet();
-    }
-    
     private void ResetWordsIterator_OnClick(object? sender, RoutedEventArgs args)
     {
         Model.InputCorpusData.Current_OrderedWords_Index = -1;
@@ -150,35 +128,89 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
-    private void ProcessWordButton_OnClick(object? sender, RoutedEventArgs args)
+    private void ShowNextWord_OnClick(object? sender, RoutedEventArgs args)
     {
         if (Model.InputCorpusData.Current_OrderedWords_Index >= Model.InputCorpusData.Words.Count - 1)
             return;
 
         Model.InputCorpusData.Current_OrderedWords_Index += 1;
 
-        Model.Cortex.CalculateCurrentWord(Model.InputCorpusData, _random);
+        Model.Cortex.Calculate_CurrentWord(Model.InputCorpusData, _random);
 
         Refresh_ImagesSet();
     }
 
-    private async void DoScriptButton0_OnClick(object? sender, RoutedEventArgs args)
+    private void PutPhrase_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Task.Delay(50);
+        Model.Calculate_PutPhrases_BasedOnSuperActivity(1, _random);
 
-        for (; ; )
+        Refresh_ImagesSet();
+    }
+
+    private void PutPhrases2000_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.Calculate_PutPhrases_BasedOnSuperActivity(2000, _random);
+
+        Refresh_ImagesSet();
+    }
+
+    private void PutPhrases5K_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.Calculate_PutPhrases_BasedOnSuperActivity(5000, _random);
+
+        Refresh_ImagesSet();
+    }
+
+    private void PutPhrases10K_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.Calculate_PutPhrases_BasedOnSuperActivity(10000, _random);
+
+        Refresh_ImagesSet();
+    }
+
+    private async void ReorderPhrases1Epoch_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(1, _random, async () =>
         {
-            bool finished = Model.CalculateCortexMemories(2000, _random);
+            Refresh_ImagesSet();
+            await Task.Delay(50);
+        });
 
-            await Model.ReorderMemoriesAsync(7, _random, async () =>
+        Refresh_ImagesSet();
+    }
+
+    private async void ReorderPhrasesAll_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(100, _random, async () =>
+        {
+            Refresh_ImagesSet();
+            await Task.Delay(50);
+        });
+
+        Refresh_ImagesSet();
+    }
+
+    private async void DoScript0_OnClick(object? sender, RoutedEventArgs args)
+    {        
+        await Task.Run(async () =>
+        {
+            for (; ; )
             {
-                Refresh_ImagesSet();
-                await Task.Delay(50);
-            });
+                bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(2000, _random);
 
-            if (finished)
-                break;
-        }
+                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+
+                if (finished)
+                    break;
+            }
+        });
 
         //await Model.ReorderMemoriesAsync(5, _random, async () =>
         //{
@@ -190,27 +222,62 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
-    private async void DoScriptButton1_OnClick(object? sender, RoutedEventArgs args)
+    private async void DoScript1_OnClick(object? sender, RoutedEventArgs args)
     {
         await Task.Delay(50);
         
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
         Model.Cortex.Prepare();
 
-        Model.Cortex.CalculateWords_DiscreteOptimizedVectors(_random);
+        Model.Cortex.Calculate_Words_DiscreteOptimizedVectors(_random);
         Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
 
         Refresh_ImagesSet();
     }
 
-    private async void DoScriptButton2_OnClick(object? sender, RoutedEventArgs args)
+    private async void DoScript2_OnClick(object? sender, RoutedEventArgs args)
     {
         await Task.Delay(50);
 
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
 
-        Model.Cortex.CalculateWords_DiscreteOptimizedVectors_Metrics(_random, Model.LoggersSet.UserFriendlyLogger);
+        Model.Cortex.Calculate_Words_DiscreteOptimizedVectors_Metrics(_random, Model.LoggersSet.UserFriendlyLogger);
     }
+
+    private async void PutPhrasesAll_Randomly_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Task.Delay(50);        
+
+        Model.Calculate_PutPhrases_Randomly(Int32.MaxValue, _random);
+    }
+
+    private async void StartReoderPhrases_BasedOnCodingDecoding_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+        await Task.Run(async () =>
+        {
+            try
+            {
+                await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                    _random, 
+                    cancellationToken, 
+                    () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    });                
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+    }    
+
+    #endregion
 
     private void Reset()
     {
@@ -228,11 +295,13 @@ public partial class Model01View : UserControl
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
 
-        Model.Cortex.CalculateCurrentWord(Model.InputCorpusData, _random);
+        Model.Cortex.Calculate_CurrentWord(Model.InputCorpusData, _random);
 
         ImagesSet2_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
     }
 
     private Random _random = null!;
+
+    private CancellationTokenSource? _cancellationTokenSource;
 }

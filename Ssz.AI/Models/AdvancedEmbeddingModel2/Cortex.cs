@@ -2,6 +2,7 @@
 using Ssz.AI.Helpers;
 using Ssz.AI.Models.AdvancedEmbeddingModel2.EmbeddingsEvaluation;
 using Ssz.Utils;
+using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using System;
 using System.Collections.Frozen;
@@ -22,14 +23,18 @@ public partial class Cortex : ISerializableModelObject
     /// </summary>
     /// <param name="constants"></param>        
     public Cortex(
-        Model01.ModelConstants constants)
+        IMiniColumnsActivityConstants constants, 
+        ILogger logger)
     {
-        Constants = constants;        
+        Constants = constants;
+        Logger = logger;
     }
 
     #region public functions
 
-    public readonly Model01.ModelConstants Constants;
+    public readonly IMiniColumnsActivityConstants Constants;
+
+    public readonly ILogger Logger;
 
     public List<Word> Words { get; private set; } = null!;
 
@@ -70,8 +75,8 @@ public partial class Cortex : ISerializableModelObject
                 mc.Prepare();
                 mc.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], mc));
 
-                for (int mcy = mc.MCY - (int)Constants.SuperActivityRadius_MiniColumns - 1; mcy <= mc.MCY + (int)Constants.SuperActivityRadius_MiniColumns + 1; mcy += 1)
-                    for (int mcx = mc.MCX - (int)Constants.SuperActivityRadius_MiniColumns - 1; mcx <= mc.MCX + (int)Constants.SuperActivityRadius_MiniColumns + 1; mcx += 1)
+                for (int mcy = mc.MCY - (int)Constants.PositiveK.Length - 1; mcy <= mc.MCY + (int)Constants.PositiveK.Length + 1; mcy += 1)
+                    for (int mcx = mc.MCX - (int)Constants.PositiveK.Length - 1; mcx <= mc.MCX + (int)Constants.PositiveK.Length + 1; mcx += 1)
                     {
                         if (mcx < 0 ||
                                 mcx >= MiniColumns.Dimensions[0] ||
@@ -84,7 +89,7 @@ public partial class Cortex : ISerializableModelObject
                         if (nearestMc is null)
                             continue;
                         float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
-                        if (r < Constants.SuperActivityRadius_MiniColumns + 0.00001f)
+                        if (r < Constants.PositiveK.Length + 0.00001f)
                         {
                             float k0 = MathHelper.GetInterpolatedValue(Constants.PositiveK, r);
                             float k1 = MathHelper.GetInterpolatedValue(Constants.NegativeK, r);
@@ -109,7 +114,7 @@ public partial class Cortex : ISerializableModelObject
                 //            mc.NearestMiniColumnsAndSelf_ForMemorySaving.Add(nearestMc);
                 //    }
             });
-    }
+    }    
 
     /// <summary>
     ///     Returns true when finished.
@@ -118,8 +123,10 @@ public partial class Cortex : ISerializableModelObject
     /// <param name="cortexMemoriesCount"></param>
     /// <param name="random"></param>
     /// <returns></returns>
-    public bool CalculateCortexMemories(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random, ILogger logger)
+    public bool Calculate_PutPhrases_Randomly(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random)
     {
+        ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
+
         try
         {
             for (int i = 0; i < cortexMemoriesCount; i += 1)
@@ -131,8 +138,7 @@ public partial class Cortex : ISerializableModelObject
 
                 var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
 
-                Temp_InputCurrentDesc = GetDesc(cortexMemory);
-                CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+                Temp_InputCurrentDesc = GetDesc(cortexMemory);                
 
                 MiniColumn? winnerMiniColumn;
                 // Сохраняем воспоминание в миниколонке-победителе.
@@ -154,93 +160,11 @@ public partial class Cortex : ISerializableModelObject
         }
         finally
         {
-            logger.LogInformation($"CalculateCortexMemories() {inputCorpusData.CurrentCortexMemoryIndex}/{inputCorpusData.CortexMemories.Count} finished.");
+            Logger.LogInformation($"CalculateCortexMemories() {inputCorpusData.CurrentCortexMemoryIndex}/{inputCorpusData.CortexMemories.Count} finished.");
         }
-    }
+    }       
 
-    public async Task ReorderMemoriesAsync(int epochCount, Random random, ILogger logger, Func<Task>? epochRefreshAction = null)
-    {
-        ActivitiyMaxInfo activitiyMaxInfo = new();        
-        int min_EpochChangesCount = Int32.MaxValue;
-
-        Stopwatch sw = new();
-        for (int epochIndex = 0; epochIndex < epochCount; epochIndex += 1)
-        {
-            sw.Restart();
-
-            int epochChangesCount = 0;
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
-            {
-                MiniColumn mc = MiniColumns.Data[mci];
-
-                for (int mi = mc.CortexMemories.Count - 1; mi >= Math.Max(0, mc.CortexMemories.Count - 6000); mi -= 1)
-                {
-                    Memory? cortexMemory = mc.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
-
-                    mc.CortexMemories[mi] = null;
-
-                    Temp_InputCurrentDesc = GetDesc(cortexMemory);
-                    CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, activitiyMaxInfo);
-
-                    // Сохраняем воспоминание в миниколонке-победителе.
-                    MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
-                    if (winnerMiniColumn is not null)
-                    {
-                        if (!ReferenceEquals(winnerMiniColumn, mc))
-                        {                            
-                            winnerMiniColumn.AddCortexMemory(cortexMemory);
-                            epochChangesCount += 1;
-                        }
-                        else
-                        {
-                            mc.CortexMemories[mi] = cortexMemory;
-                        }
-                    }                    
-                }
-            }
-
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
-            {
-                MiniColumn mc = MiniColumns.Data[mci];
-                mc.Temp_CortexMemories.Clear();
-
-                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
-                {
-                    Memory? memory = mc.CortexMemories[mi];
-                    if (memory is null)
-                        continue;
-
-                    mc.Temp_CortexMemories.Add(memory);
-                }
-
-                mc.CortexMemories.Swap(mc.Temp_CortexMemories);
-                mc.Temp_CortexMemories.Clear();
-            }
-
-            sw.Stop();
-
-            logger.LogInformation($"ReorderMemories() epoch {epochIndex + 1}/{epochCount} finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
-
-            if (epochChangesCount < min_EpochChangesCount)
-            {                
-                min_EpochChangesCount = epochChangesCount;
-            }            
-
-            if (epochChangesCount < 10)
-            {
-                break;
-            }
-            else
-            {
-                if (epochRefreshAction is not null)
-                    await epochRefreshAction();
-            }
-        }
-    }    
-
-    public void CalculateCurrentWord(InputCorpusData inputCorpusData, Random random)
+    public void Calculate_CurrentWord(InputCorpusData inputCorpusData, Random random)
     {
         if (inputCorpusData.Current_OrderedWords_Index > 0 && inputCorpusData.Current_OrderedWords_Index < inputCorpusData.Words.Count)
         {
@@ -256,7 +180,23 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    public void CalculateWords_DiscreteOptimizedVectors(Random random)
+    public void Calculate_CurrentCortexMemory(InputCorpusData inputCorpusData, Random random)
+    {
+        if (inputCorpusData.CurrentCortexMemoryIndex > 0 && inputCorpusData.CurrentCortexMemoryIndex < inputCorpusData.CortexMemories.Count)
+        {
+            var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
+
+            Temp_InputCurrentDesc = GetDesc(cortexMemory);
+            CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+        }
+        else
+        {
+            Temp_InputCurrentDesc = @"";
+            ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
+        }
+    }
+
+    public void Calculate_Words_DiscreteOptimizedVectors(Random random)
     {
         if (MiniColumns.Data.Length <= Constants.DiscreteVectorLength)
         {
@@ -296,7 +236,7 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    public void CalculateWords_DiscreteOptimizedVectors_Metrics(Random random, ILogger logger)
+    public void Calculate_Words_DiscreteOptimizedVectors_Metrics(Random random, ILogger logger)
     {
         var wordPairs = DatasetLoader.LoadDataset(Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"ru_simlex965_tagged.tsv"),
             tagsMappingFilePath: Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"TagsMapping.csv"));
@@ -323,7 +263,7 @@ public partial class Cortex : ISerializableModelObject
             filteredWordPairs,
             Path.Combine(@"Data", @"Ssz.AI.AdvancedEmbedding2", @"EmbeddingsEvaluation", @"EvaluationResults.csv"),
             logger);
-    }
+    }    
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -357,14 +297,14 @@ public partial class Cortex : ISerializableModelObject
 
     public class MiniColumn : IMiniColumn, ISerializableModelObject
     {
-        public MiniColumn(Model01.ModelConstants constants, int mcx, int mcy)
+        public MiniColumn(IMiniColumnsActivityConstants constants, int mcx, int mcy)
         {
             Constants = constants;            
             MCX = mcx;
             MCY = mcy;
         }
 
-        public readonly Model01.ModelConstants Constants;
+        public readonly IMiniColumnsActivityConstants Constants;
 
         /// <summary>
         ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
@@ -426,7 +366,7 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_CortexMemories = new(1000);
 
-            Temp_K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * Constants.SuperActivityRadius_MiniColumns * Constants.SuperActivityRadius_MiniColumns) + 10);
+            Temp_K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumn)>((int)(Math.PI * Constants.PositiveK.Length * Constants.PositiveK.Length) + 10);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)

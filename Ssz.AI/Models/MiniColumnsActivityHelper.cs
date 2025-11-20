@@ -8,6 +8,18 @@ namespace Ssz.AI.Models
 {
     public interface IMiniColumnsActivityConstants
     {
+        public int DiscreteVectorLength => 300;
+
+        /// <summary>
+        ///     Количество миниколонок в зоне коры по оси X
+        /// </summary>
+        int CortexWidth_MiniColumns { get; }
+
+        /// <summary>
+        ///     Количество миниколонок в зоне коры по оси Y
+        /// </summary>
+        int CortexHeight_MiniColumns { get; }
+
         /// <summary>
         ///     Нулевой уровень косинусного подобия
         /// </summary>
@@ -123,7 +135,24 @@ namespace Ssz.AI.Models
             }
 
             return superActivity;
-        }        
+        }
+
+        public static void GetSuperActivity(IMiniColumn[] miniColumns, int bitsCount, IMiniColumnsActivityConstants constants, float[] result)
+        {
+            Array.Clear(result);
+
+            for (int i = 0; i < miniColumns.Length; i += 1)
+            {
+                var miniColumn = miniColumns[i];
+
+                for (int j = 0; j < miniColumn.CortexMemories.Count; j += 1)
+                {
+                    var cortexMemory = miniColumn.CortexMemories[j];
+                    if (cortexMemory is not null)
+                        TensorPrimitives.Add(result, cortexMemory.DiscreteVector, result);
+                }
+            }
+        }
     }        
 }
 
