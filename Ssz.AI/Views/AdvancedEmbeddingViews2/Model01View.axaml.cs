@@ -259,7 +259,7 @@ public partial class Model01View : UserControl
         {
             try
             {
-                await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(                    
                     _random, 
                     cancellationToken, 
                     () =>

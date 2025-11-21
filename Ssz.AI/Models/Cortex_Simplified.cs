@@ -519,6 +519,8 @@ public class Cortex_Simplified : ISerializableModelObject
 
         (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumnActivity.Activity => Temp_Activity;
 
+        float IMiniColumnActivity.SuperActivity => Temp_SuperActivity;
+
         IFastList<(float, float, IMiniColumnActivity)> IMiniColumnActivity.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
     }
 

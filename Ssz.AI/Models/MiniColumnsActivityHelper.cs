@@ -56,6 +56,8 @@ namespace Ssz.AI.Models
 
         (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Activity { get; }
 
+        float SuperActivity { get; }
+
         IFastList<(float, float, IMiniColumnActivity)> K_ForNearestMiniColumns { get; }
     }
 

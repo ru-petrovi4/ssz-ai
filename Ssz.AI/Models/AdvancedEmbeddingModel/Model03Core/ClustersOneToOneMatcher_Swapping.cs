@@ -207,12 +207,13 @@ public class ClustersOneToOneMatcher_Swapping : ISerializableModelObject
         float globalMinEnergy_A = float.MaxValue;
         float globalMinEnergy_B = float.MaxValue;
 
+        var random_Words_A = LanguageDiscreteEmbeddings_A.Words.Take(WordsCount).ToArray();
+        var random_Words_B = LanguageDiscreteEmbeddings_B.Words.Take(WordsCount).ToArray();
+
         int batchesCount = WordsCount / BatchSize + 1;
         for (int epoch = 0; epoch < 30; epoch += 1)
-        {
-            var random_Words_A = LanguageDiscreteEmbeddings_A.Words.Take(WordsCount).ToArray();
-            r.Shuffle(random_Words_A);
-            var random_Words_B = LanguageDiscreteEmbeddings_B.Words.Take(WordsCount).ToArray();
+        {   
+            r.Shuffle(random_Words_A);            
             r.Shuffle(random_Words_B);
 
             bool epochChanged = false;

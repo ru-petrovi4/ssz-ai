@@ -38,19 +38,23 @@ public partial class Cortex : ISerializableModelObject
 
     public List<Word> Words { get; private set; } = null!;
 
+    public List<Memory> CortexMemories { get; private set; } = null!;
+
     public DenseMatrix<MiniColumn> MiniColumns { get; private set; } = null!;
 
     public readonly ActivitiyMaxInfo Temp_ActivitiyMaxInfo = new();
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(List<Word> words)
+    public void GenerateOwnedData(List<Word> words, List<Memory> cortexMemories)
     {
         Words = words;
+        CortexMemories = cortexMemories;
+
         MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
 
-        foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
-            foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
+        for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
+            for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
             {
                 MiniColumn miniColumn = new MiniColumn(
                     Constants,
@@ -71,29 +75,29 @@ public partial class Cortex : ISerializableModelObject
             toExclusive: MiniColumns.Data.Length,
             mci =>
             {
-                MiniColumn mc = MiniColumns.Data[mci];
-                mc.Prepare();
-                mc.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], mc));
+                MiniColumn miniColumn = MiniColumns.Data[mci];
+                miniColumn.Prepare();
+                miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));
 
-                for (int mcy = mc.MCY - (int)Constants.PositiveK.Length - 1; mcy <= mc.MCY + (int)Constants.PositiveK.Length + 1; mcy += 1)
-                    for (int mcx = mc.MCX - (int)Constants.PositiveK.Length - 1; mcx <= mc.MCX + (int)Constants.PositiveK.Length + 1; mcx += 1)
+                for (int mcy = miniColumn.MCY - (int)Constants.PositiveK.Length - 1; mcy <= miniColumn.MCY + (int)Constants.PositiveK.Length + 1; mcy += 1)
+                    for (int mcx = miniColumn.MCX - (int)Constants.PositiveK.Length - 1; mcx <= miniColumn.MCX + (int)Constants.PositiveK.Length + 1; mcx += 1)
                     {
                         if (mcx < 0 ||
                                 mcx >= MiniColumns.Dimensions[0] ||
                                 mcy < 0 ||
                                 mcy >= MiniColumns.Dimensions[1] ||
-                                (mcx == mc.MCX && mcy == mc.MCY))
+                                (mcx == miniColumn.MCX && mcy == miniColumn.MCY))
                             continue;
 
                         MiniColumn nearestMc = MiniColumns[mcx, mcy];
                         if (nearestMc is null)
                             continue;
-                        float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
+                        float r = MathF.Sqrt((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY));
                         if (r < Constants.PositiveK.Length + 0.00001f)
                         {
                             float k0 = MathHelper.GetInterpolatedValue(Constants.PositiveK, r);
                             float k1 = MathHelper.GetInterpolatedValue(Constants.NegativeK, r);
-                            mc.Temp_K_ForNearestMiniColumns.Add((k0, k1, nearestMc));
+                            miniColumn.Temp_K_ForNearestMiniColumns.Add((k0, k1, nearestMc));
                         }
                     }
 
@@ -401,7 +405,37 @@ public partial class Cortex : ISerializableModelObject
 
         (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumnActivity.Activity => Temp_Activity;
 
+        float IMiniColumnActivity.SuperActivity => Temp_SuperActivity;
+
         IFastList<(float, float, IMiniColumnActivity)> IMiniColumnActivity.K_ForNearestMiniColumns => Temp_K_ForNearestMiniColumns;        
+    }
+
+    public class MiniColumnActivity : IMiniColumnActivity
+    {
+        public MiniColumnActivity(IMiniColumn miniColumn) 
+        {
+            MiniColumn = miniColumn;
+        }
+
+        public IMiniColumn MiniColumn { get; }
+
+        /// <summary>
+        ///     K для расчета суперактивности.
+        ///     <para>(K для позитива, K для негатива, MiniColumn)</para>
+        ///     <para>Нулевой элемент, это коэффициент для самой колонки.</para>
+        /// </summary>
+        public IFastList<(float, float, IMiniColumnActivity)> K_ForNearestMiniColumns { get; set; } = null!;        
+
+        /// <summary>
+        ///     Текущая активность миниколонки при подаче примера.
+        ///     (Позитивная активность, Негативная активность, Количество воспоминаний)
+        /// </summary>
+        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Activity { get; set; }
+
+        /// <summary>
+        ///     Текущая суммарная активность миниколонки с учетом активностей соседей при подаче примера
+        /// </summary>
+        public float SuperActivity { get; set; }
     }
 
     public class Memory : ICortexMemory, IOwnedDataSerializable
@@ -411,6 +445,8 @@ public partial class Cortex : ISerializableModelObject
         public Color DiscreteRandomVector_Color;
 
         public int[] WordIndices = null!;
+
+        public DenseMatrix<MiniColumnActivity> Temp_MiniColumnActivities { get; set; } = null!;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {

@@ -66,10 +66,10 @@ public partial class Cortex : ISerializableModelObject
         ActivitiyMaxInfo activitiyMaxInfo = new();
         int min_EpochChangesCount = Int32.MaxValue;
 
-        int maxMemoriesCount = 10000 / MiniColumns.Data.Length;
+        int inMiniColumn_MaxMemoriesCount = 10000 / MiniColumns.Data.Length;
 
         Stopwatch sw = new();
-        for (int epochIndex = 0; epochIndex < epochCount; epochIndex += 1)
+        for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
             sw.Restart();
 
@@ -78,7 +78,7 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns.Data[mci];
 
-                for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - maxMemoriesCount); mi -= 1)
+                for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_MaxMemoriesCount); mi -= 1)
                 {
                     Memory? cortexMemory = miniColumn.CortexMemories[mi];
                     if (cortexMemory is null)
@@ -126,7 +126,7 @@ public partial class Cortex : ISerializableModelObject
 
             sw.Stop();
 
-            Logger.LogInformation($"ReorderMemories() epoch {epochIndex + 1}/{epochCount} finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+            Logger.LogInformation($"ReorderMemories() epoch {epoch + 1}/{epochCount} finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
 
             if (epochChangesCount < min_EpochChangesCount)
             {

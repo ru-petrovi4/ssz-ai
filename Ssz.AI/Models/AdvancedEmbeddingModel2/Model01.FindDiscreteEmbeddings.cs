@@ -114,7 +114,7 @@ public class Model01
         InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(random, Constants.DiscreteVectorLength);
 
         Cortex = new Cortex(Constants, LoggersSet.UserFriendlyLogger);
-        Cortex.GenerateOwnedData(InputCorpusData.Words);
+        Cortex.GenerateOwnedData(InputCorpusData.Words, InputCorpusData.CortexMemories);
         Cortex.Prepare();
     }
 
@@ -206,9 +206,9 @@ public class Model01
         /// </summary>
         public float K4 { get; set; } = 0.2f;
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.065f, 0.00f];
+        public float[] PositiveK { get; set; } = [1.00f, 0.13f, 0.065f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
+        public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f];
 
         /// <summary>
         ///     Включен ли порог на суперактивность при накоплении воспоминаний
