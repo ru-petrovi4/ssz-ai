@@ -749,7 +749,7 @@ namespace Ssz.AI.Models
                 CalculateDetectorsAndActivityAndSuperActivity(MonoInput.MonoInputItems[memory.PictureInputIndex].GradientMatrix, activitiyMaxInfo);
 
                 // Сохраняем воспоминание в миниколонке-победителе.
-                winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                 if (winnerMiniColumn is not null)
                 {
                     if (!ReferenceEquals(winnerMiniColumn, mc) &&
@@ -818,7 +818,7 @@ namespace Ssz.AI.Models
                         CalculateDetectorsAndActivityAndSuperActivity(MonoInput.MonoInputItems[memory.PictureInputIndex].GradientMatrix, activitiyMaxInfo);
 
                         // Сохраняем воспоминание в миниколонке-победителе.
-                        MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                        MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                         if (winnerMiniColumn is not null)
                         {
                             if (!ReferenceEquals(winnerMiniColumn, mc) &&
@@ -1072,7 +1072,7 @@ namespace Ssz.AI.Models
             }
             else
             {
-                winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
             }            
             Cortex.Temp_SuperActivityMax_MiniColumn = winnerMiniColumn;
             if (winnerMiniColumn is not null)
@@ -1086,9 +1086,9 @@ namespace Ssz.AI.Models
                         PictureAverageGradientInPoint = g.Item3,
                         PictureInputIndex = inputIndex
                     });                    
-                    //Cortex.Temp_WinnerMiniColumn_AverageGradientInPoint_Delta = Math.Sqrt((g.Item1.GradX - g.Item2.GradX) * (g.Item1.GradX - g.Item2.GradX) +
+                    //Cortex.SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Delta = Math.Sqrt((g.Item1.GradX - g.Item2.GradX) * (g.Item1.GradX - g.Item2.GradX) +
                     //    (g.Item1.GradY - g.Item2.GradY) * (g.Item1.GradY - g.Item2.GradY));
-                    //if (Cortex.Temp_WinnerMiniColumn_AverageGradientInPoint_Delta < 1000)
+                    //if (Cortex.SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Delta < 1000)
                     //if (g.Item1.GradX * g.Item2.GradX >= 0 && g.Item1.GradY * g.Item2.GradY >= 0)
                     //{
                     //    winnerMiniColumn.Memories.Add(new Memory
@@ -1102,12 +1102,12 @@ namespace Ssz.AI.Models
                     //{
                     //}
 
-                    Cortex.Temp_WinnerMiniColumn_AverageGradientInPoint_Magnitude = g.Item3.Magnitude;
+                    Cortex.SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Magnitude = g.Item3.Magnitude;
                 }   
                 else
                 {
-                    Cortex.Temp_WinnerMiniColumn_AverageGradientInPoint_Magnitude = Double.NaN;
-                    Cortex.Temp_WinnerMiniColumn_AverageGradientInPoint_Delta = Double.NaN;
+                    Cortex.SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Magnitude = Double.NaN;
+                    Cortex.SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Delta = Double.NaN;
                 }
             }
         }        

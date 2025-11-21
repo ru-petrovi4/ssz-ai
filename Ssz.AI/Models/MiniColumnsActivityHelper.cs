@@ -189,7 +189,7 @@ public static class MiniColumnsActivityHelper
         {
             var miniColumnActivity = miniColumnActivities.Data[mci];
             miniColumnActivity.Activity = GetActivity(miniColumnActivity.MiniColumn, discreteVector, constants);
-        });
+        };
 
         if (activitiyMaxInfo is not null)
         {
@@ -243,7 +243,7 @@ public static class MiniColumnsActivityHelper
             var miniColumnActivity = miniColumnActivities.Data[mci];
             miniColumnActivity.Activity = (0.0f, 0.0f, 0);
             miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
-        });
+        };
 
         if (activitiyMaxInfo is not null)
         {

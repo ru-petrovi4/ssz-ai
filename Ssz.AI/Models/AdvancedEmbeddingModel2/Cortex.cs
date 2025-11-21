@@ -129,7 +129,7 @@ public partial class Cortex : ISerializableModelObject
     /// <returns></returns>
     public bool Calculate_PutPhrases_Randomly(InputCorpusData inputCorpusData, int cortexMemoriesCount, Random random)
     {
-        ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
+        MiniColumnsActivityHelper.ClearActivityAndSuperActivity(MiniColumns, Temp_ActivitiyMaxInfo, Constants);
 
         try
         {
@@ -153,7 +153,7 @@ public partial class Cortex : ISerializableModelObject
                 //}
                 //else
                 {
-                    winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                    winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                 }
                 if (winnerMiniColumn is not null)
                 {
@@ -175,12 +175,12 @@ public partial class Cortex : ISerializableModelObject
             var word = inputCorpusData.OrderedWords[inputCorpusData.Current_OrderedWords_Index];
 
             Temp_InputCurrentDesc = word.Name;
-            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+            MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(word.DiscreteRandomVector, MiniColumns, Temp_ActivitiyMaxInfo, Constants);
         }
         else
         {
             Temp_InputCurrentDesc = @"";
-            ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
+            MiniColumnsActivityHelper.ClearActivityAndSuperActivity(MiniColumns, Temp_ActivitiyMaxInfo, Constants);
         }
     }
 
@@ -191,12 +191,12 @@ public partial class Cortex : ISerializableModelObject
             var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
 
             Temp_InputCurrentDesc = GetDesc(cortexMemory);
-            CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+            MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, MiniColumns, Temp_ActivitiyMaxInfo, Constants);
         }
         else
         {
             Temp_InputCurrentDesc = @"";
-            ClearActivityAndSuperActivity(Temp_ActivitiyMaxInfo);
+            MiniColumnsActivityHelper.ClearActivityAndSuperActivity(MiniColumns, Temp_ActivitiyMaxInfo, Constants);
         }
     }
 
@@ -230,7 +230,7 @@ public partial class Cortex : ISerializableModelObject
             var word = Words[wordIndex];
 
             Temp_InputCurrentDesc = word.Name;
-            CalculateActivityAndSuperActivity(word.DiscreteRandomVector, null);
+            MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(word.DiscreteRandomVector, MiniColumns, null, Constants);
 
             Array.Clear(word.DiscreteOptimizedVector);
             foreach (var mc in MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7))

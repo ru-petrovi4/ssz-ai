@@ -173,8 +173,8 @@ public class Cortex_Simplified : ISerializableModelObject
         set;
     }
 
-    public double Temp_WinnerMiniColumn_AverageGradientInPoint_Delta { get; set; }
-    public double Temp_WinnerMiniColumn_AverageGradientInPoint_Magnitude { get; set; }
+    public double SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Delta { get; set; }
+    public double SelectedSuperActivityMax_MiniColumn_AverageGradientInPoint_Magnitude { get; set; }
 
     public void GenerateOwnedData(Retina retina)
     {
@@ -536,33 +536,6 @@ public class Cortex_Simplified : ISerializableModelObject
         public int PictureInputIndex;
 
         float[] ICortexMemory.DiscreteVector => Hash;
-    }
-
-    public class ActivitiyMaxInfo
-    {
-        public MiniColumn? SelectedSuperActivityMax_MiniColumn;
-
-        public float MaxActivity = float.MinValue;
-        public readonly List<MiniColumn> ActivityMax_MiniColumns = new();
-
-        public float MaxSuperActivity = float.MinValue;
-        public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();
-        public MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
-        {
-            if (SuperActivityMax_MiniColumns.Count == 0)
-            {
-                SelectedSuperActivityMax_MiniColumn = null;                
-            }
-            else if (SuperActivityMax_MiniColumns.Count == 1)
-            {
-                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[0];                
-            }
-            else
-            {
-                SelectedSuperActivityMax_MiniColumn = SuperActivityMax_MiniColumns[random.Next(SuperActivityMax_MiniColumns.Count)];
-            }
-            return SelectedSuperActivityMax_MiniColumn;
-        }
     }
 }    
 

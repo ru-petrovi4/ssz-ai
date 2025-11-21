@@ -114,9 +114,9 @@ public partial class Model11View : UserControl
 
     private void Back1Button_OnClick(object? sender, RoutedEventArgs args)
     {
-        var lastAddedMemory = Model.Temp_ActivitiyMaxInfo?.Temp_WinnerMiniColumn?.Temp_Memory;
+        var lastAddedMemory = (Model.Temp_ActivitiyMaxInfo?.SelectedSuperActivityMax_MiniColumn as MiniColumn)?.Temp_Memory;
         if (lastAddedMemory is not null)
-            Model.Temp_ActivitiyMaxInfo!.Temp_WinnerMiniColumn!.Memories.Remove(lastAddedMemory);
+            ((MiniColumn)Model.Temp_ActivitiyMaxInfo!.SelectedSuperActivityMax_MiniColumn!).Memories.Remove(lastAddedMemory);
 
         Model.CurrentInputIndex -= 1;
     }

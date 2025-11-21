@@ -659,27 +659,6 @@ namespace Ssz.AI.Models
             public int PictureInputIndex;
 
             float[] ICortexMemory.DiscreteVector => Hash;
-        }
-
-        public class ActivitiyMaxInfo
-        {
-            public MiniColumn? Temp_WinnerMiniColumn;
-
-            public float MaxActivity = float.MinValue;
-            public readonly List<MiniColumn> ActivityMax_MiniColumns = new();
-
-            public float MaxSuperActivity = float.MinValue;
-            public readonly List<MiniColumn> SuperActivityMax_MiniColumns = new();
-            public MiniColumn? GetSuperActivityMax_MiniColumn(Random random)
-            {
-                if (SuperActivityMax_MiniColumns.Count == 0)
-                    return null;
-                if (SuperActivityMax_MiniColumns.Count == 1)
-                    return SuperActivityMax_MiniColumns[0];
-                var winnerIndex = random.Next(SuperActivityMax_MiniColumns.Count);
-                Temp_WinnerMiniColumn = SuperActivityMax_MiniColumns[winnerIndex];
-                return Temp_WinnerMiniColumn;
-            }            
-        }
+        }        
     }    
 }

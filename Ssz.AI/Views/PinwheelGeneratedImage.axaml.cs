@@ -49,7 +49,7 @@ public partial class PinwheelGeneratedImage : UserControl
             }
         }
 
-        Cortex_Simplified.ActivitiyMaxInfo activitiyMaxInfo = new();
+        ActivitiyMaxInfo activitiyMaxInfo = new();
 
         model.CalculateDetectorsAndActivityAndSuperActivity(GeneratedGradientMatrix, activitiyMaxInfo);
 

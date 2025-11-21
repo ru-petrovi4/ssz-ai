@@ -548,7 +548,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetMiniColumsActivityBitmap_Obsolete(Cortex_Simplified cortex, Cortex_Simplified.ActivitiyMaxInfo activitiyMaxInfo)
+    public static Bitmap GetMiniColumsActivityBitmap_Obsolete(Cortex_Simplified cortex, ActivitiyMaxInfo activitiyMaxInfo)
     {
         var miniColumns = cortex.MiniColumns;            
 
@@ -601,7 +601,7 @@ public static class Visualisation
             gradientBitmap.SetPixel(maxActivityMiniColumn.MCX, maxActivityMiniColumn.MCY, Color.Blue);
         }
 
-        Cortex_Simplified.MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(new Random());
+        Cortex_Simplified.MiniColumn? maxSuperActivityMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(new Random()) as Cortex_Simplified.MiniColumn;
         if (maxSuperActivityMiniColumn is not null)
             gradientBitmap.SetPixel(maxSuperActivityMiniColumn.MCX, maxSuperActivityMiniColumn.MCY, Color.Red);
 
@@ -809,7 +809,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex, Cortex.ActivitiyMaxInfo? activitiyMaxInfo)
+    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex, ActivitiyMaxInfo? activitiyMaxInfo)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -878,7 +878,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    //public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex, Cortex_Simplified.ActivitiyMaxInfo? activitiyMaxInfo)
+    //public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex cortex, ActivitiyMaxInfo? activitiyMaxInfo)
     //{
     //    Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -947,7 +947,7 @@ public static class Visualisation
     //    return bitmap;
     //}
 
-    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex_Simplified cortex, Cortex_Simplified.ActivitiyMaxInfo? activitiyMaxInfo)
+    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Cortex_Simplified cortex, ActivitiyMaxInfo? activitiyMaxInfo)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 
@@ -1016,7 +1016,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetMiniColumsActivityMaxBitmap(Cortex_Simplified cortex, Cortex_Simplified.ActivitiyMaxInfo activitiyMaxInfo, bool allSuperActivity)
+    public static Bitmap GetMiniColumsActivityMaxBitmap(Cortex_Simplified cortex, ActivitiyMaxInfo activitiyMaxInfo, bool allSuperActivity)
     {
         var miniColumns = cortex.MiniColumns;
 

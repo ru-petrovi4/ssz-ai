@@ -807,7 +807,7 @@ namespace Ssz.AI.Models
                         }
 
                         // Сохраняем воспоминание в миниколонке-победителе.
-                        MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                        MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                         if (winnerMiniColumn is not null)
                         {
                             if (!ReferenceEquals(winnerMiniColumn, mc))
@@ -999,7 +999,7 @@ namespace Ssz.AI.Models
                     }
                 }
 
-                MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
 
                 Cortex.Temp_SuperActivityMax_MiniColumn = winnerMiniColumn;
                 if (winnerMiniColumn is not null)
