@@ -55,6 +55,8 @@ public partial class Cortex : ISerializableModelObject
                 }
 
                 miniColumnActivity.K_ForNearestMiniColumns = k_ForNearestMiniColumns;
+
+                //CalculateActivityAndSuperActivity
             }
 
             random_CortexMemories[cmi].Temp_MiniColumnActivities = miniColumnActivities;

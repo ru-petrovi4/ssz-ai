@@ -94,7 +94,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex, Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex.ActivitiyMaxInfo? activitiyMaxInfo)
+    public static Bitmap GetBitmapFromMiniColums_SuperActivityColor(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex, ActivitiyMaxInfo? activitiyMaxInfo)
     {
         Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
 

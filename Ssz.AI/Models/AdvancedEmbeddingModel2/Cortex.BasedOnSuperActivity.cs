@@ -35,7 +35,7 @@ public partial class Cortex : ISerializableModelObject
                 var cortexMemory = inputCorpusData.CortexMemories[inputCorpusData.CurrentCortexMemoryIndex];
 
                 Temp_InputCurrentDesc = GetDesc(cortexMemory);
-                CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, Temp_ActivitiyMaxInfo);
+                MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, MiniColumns, Temp_ActivitiyMaxInfo, Constants);
 
                 MiniColumn? winnerMiniColumn;
                 // Сохраняем воспоминание в миниколонке-победителе.
@@ -46,7 +46,7 @@ public partial class Cortex : ISerializableModelObject
                 //}
                 //else
                 {
-                    winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                    winnerMiniColumn = Temp_ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                 }
                 if (winnerMiniColumn is not null)
                 {
@@ -87,10 +87,10 @@ public partial class Cortex : ISerializableModelObject
                     miniColumn.CortexMemories[mi] = null;
 
                     Temp_InputCurrentDesc = GetDesc(cortexMemory);
-                    CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, activitiyMaxInfo);
+                    MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, MiniColumns, activitiyMaxInfo, Constants);
 
                     // Сохраняем воспоминание в миниколонке-победителе.
-                    MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+                    MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
                     if (winnerMiniColumn is not null)
                     {
                         if (!ReferenceEquals(winnerMiniColumn, miniColumn))

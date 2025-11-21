@@ -517,9 +517,9 @@ public class Cortex_Simplified : ISerializableModelObject
 
         IMiniColumn IMiniColumnActivity.MiniColumn => this;
 
-        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumnActivity.Activity => Temp_Activity;
+        (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) IMiniColumnActivity.Activity { get => Temp_Activity; set => Temp_Activity = value; }
 
-        float IMiniColumnActivity.SuperActivity => Temp_SuperActivity;
+        float IMiniColumnActivity.SuperActivity { get => Temp_SuperActivity; set => Temp_SuperActivity = value; }
 
         IFastList<(float, float, IMiniColumnActivity)> IMiniColumnActivity.K_ForNearestMiniColumns => K_ForNearestMiniColumns;
     }

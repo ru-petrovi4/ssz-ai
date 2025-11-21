@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Ssz.AI.Models
 {
-    public class DenseMatrix<T> : IOwnedDataSerializable        
+    public class DenseMatrix<T> : IDenseMatrix<T>, IOwnedDataSerializable        
     {
         #region construction and destruction
 
@@ -91,6 +91,19 @@ namespace Ssz.AI.Models
                 }
             }
         }
+
+        #endregion
+    }
+
+    public interface IDenseMatrix<out T>
+    {
+        #region public functions
+
+        int[] Dimensions { get; }
+
+        T[] Data { get; }
+
+        T this[params int[] indices] { get; }
 
         #endregion
     }
