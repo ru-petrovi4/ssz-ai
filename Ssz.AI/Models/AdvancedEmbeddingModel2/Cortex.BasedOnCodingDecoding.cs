@@ -31,6 +31,8 @@ public partial class Cortex : ISerializableModelObject
 
         for (int cmi = 0; cmi < random_CortexMemories.Length; cmi += 1)
         {
+            var cortexMemory = random_CortexMemories[cmi];
+
             var miniColumnActivities = new DenseMatrix<MiniColumnActivity>(MiniColumns.Dimensions);
 
             for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
@@ -54,12 +56,12 @@ public partial class Cortex : ISerializableModelObject
                     k_ForNearestMiniColumns.Add((it.Item1, it.Item2, miniColumnActivities[((MiniColumn)it.Item3).MCX, ((MiniColumn)it.Item3).MCY]));
                 }
 
-                miniColumnActivity.K_ForNearestMiniColumns = k_ForNearestMiniColumns;
-
-                //CalculateActivityAndSuperActivity
+                miniColumnActivity.K_ForNearestMiniColumns = k_ForNearestMiniColumns;                
             }
 
-            random_CortexMemories[cmi].Temp_MiniColumnActivities = miniColumnActivities;
+            cortexMemory.Temp_MiniColumnActivities = miniColumnActivities;
+
+            MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, miniColumnActivities, null, Constants);
         }
 
         Stopwatch sw = new();

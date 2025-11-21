@@ -201,15 +201,12 @@ public static class MiniColumnsActivityHelper
             //else
             activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
-        }
 
-        for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
-        {
-            var miniColumnActivity = miniColumnActivities.Data[mci];
-            miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
-
-            if (activitiyMaxInfo is not null)
+            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
             {
+                var miniColumnActivity = miniColumnActivities.Data[mci];
+                miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
+
                 float a = miniColumnActivity.Activity.PositiveActivity + miniColumnActivity.Activity.NegativeActivity;
                 if (a > activitiyMaxInfo.MaxActivity)
                 {
@@ -234,6 +231,14 @@ public static class MiniColumnsActivityHelper
                 }
             }
         }
+        else
+        {
+            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            {
+                var miniColumnActivity = miniColumnActivities.Data[mci];
+                miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
+            }
+        }   
     }
 
     public static void ClearActivityAndSuperActivity(IDenseMatrix<IMiniColumnActivity> miniColumnActivities, ActivitiyMaxInfo? activitiyMaxInfo, IMiniColumnsActivityConstants constants)
@@ -255,15 +260,12 @@ public static class MiniColumnsActivityHelper
             //else
             activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
-        }
 
-        for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
-        {
-            var miniColumnActivity = miniColumnActivities.Data[mci];
-            miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
-
-            if (activitiyMaxInfo is not null)
+            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
             {
+                var miniColumnActivity = miniColumnActivities.Data[mci];
+                miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
+
                 float a = miniColumnActivity.Activity.PositiveActivity + miniColumnActivity.Activity.NegativeActivity;
                 if (a > activitiyMaxInfo.MaxActivity)
                 {
@@ -286,6 +288,14 @@ public static class MiniColumnsActivityHelper
                 {
                     activitiyMaxInfo.SuperActivityMax_MiniColumns.Add(miniColumnActivity.MiniColumn);
                 }
+            }
+        }
+        else
+        {
+            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            {
+                var miniColumnActivity = miniColumnActivities.Data[mci];
+                miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
             }
         }
     }
