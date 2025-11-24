@@ -21,13 +21,18 @@
 			<RowDefinition Height="*" />      
 		</Grid.RowDefinitions>
 		
-		<StackPanel Orientation="Horizontal">
+		<Grid>
+		  <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />                  
+          </Grid.RowDefinitions>
+          <StackPanel Orientation="Horizontal">
 			<Button Content="Reset" Click="ResetButton_OnClick" />
 			<Button Content="1 Step Back" Click="Back1Button_OnClick" />
 			<Button Content="GeneratePinwheel" Click="GeneratePinwheel_OnClick" />
-      <Button Content="GeneratePinwheel2" Click="GeneratePinwheel2_OnClick" />
+            <Button Content="GeneratePinwheel2" Click="GeneratePinwheel2_OnClick" />
 			<Button Content="Process Samples 10K" Click="ProcessSamples10KButton_OnClick" />
-      <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
+            <Button Content="Process Samples 5K" Click="ProcessSamples5KButton_OnClick" />
 			<Button Content="Process Samples 2000" Click="ProcessSamples2000Button_OnClick" />
 			<Button Content="Reorder Memories (Sleep)" Click="ReorderMemoriesButton_OnClick" />
 			<Button Content="Process Sample" Click="ProcessSampleButton_OnClick" />
@@ -37,7 +42,11 @@
       <CheckBox Name="SuperactivityThreshold" Content="Порог на суперактивность" Click="SuperactivityThreshold_OnClick" />
       <Button Content="Do Script" Click="DoScript_OnClick" />
 		</StackPanel>
-
+          <StackPanel Grid.Row="1" Orientation="Horizontal"> 
+              <TextBlock Text="" VerticalAlignment="Center" />               
+              <Button Content="Visualize K Search" Click="VisualizeKSearch_OnClick" />                      
+          </StackPanel>          
+    </Grid> 
 		<Grid Grid.Row="1">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="200" />

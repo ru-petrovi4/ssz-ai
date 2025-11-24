@@ -1,6 +1,7 @@
 ﻿using Ssz.AI.Models;
 using System;
 using System.Collections.Generic;
+using static TorchSharp.torch;
 
 namespace Ssz.AI.Helpers;
 
@@ -181,43 +182,50 @@ public static class MathHelper
     /// Формула очистки: while (heap.Count > 0) { Dequeue(); } — log k per Dequeue, k раз.
     /// </remarks>
     /// <exception cref="ArgumentException">Если data.Length != 300.</exception>
-    public static void SelectTopKMaxAndSetToOne(Span<float> data, int k, PriorityQueue<int, float> pq)
-    {        
-        // Шаг 1: Заполняем heap начальными k+1 элементами (i=0..30).
-        // Enqueue: O(log (k+1)) per вставка; всего O((k+1) log k).        
-        int currentIndex = 0;
-        for (; currentIndex < k; currentIndex += 1)
+    public static void SelectTopKMaxAndSetToOne(float[] data, int k, PriorityQueue<int, float> pq)
+    {
+        var dataTensor = tensor(data, dtype: ScalarType.Float32, device: CPU);
+        var idxSpan = dataTensor.topk(k, dim: 0, largest: true, sorted: false).indexes.data<long>();
+        Array.Clear(data);
+        for (int i = 0; i < idxSpan.Count; i += 1)
         {
-            float currentValue = data[currentIndex];
-
-            pq.Enqueue(currentIndex, currentValue); // Элемент=индекс, приоритет=значение            
+            data[idxSpan[i]] = 1.0f;
         }
-        // Шаг 2: Оставшиеся элементы (i=31..299).
-        // Для каждого: если data[i] >= min в heap, заменяем (2 * O(log k)).
-        for (; currentIndex < data.Length; currentIndex += 1)
-        {
-            float currentValue = data[currentIndex];
+        //// Шаг 1: Заполняем heap начальными k+1 элементами (i=0..30).
+        //// Enqueue: O(log (k+1)) per вставка; всего O((k+1) log k).        
+        //int currentIndex = 0;
+        //for (; currentIndex < k; currentIndex += 1)
+        //{
+        //    float currentValue = data[currentIndex];
 
-            pq.TryPeek(out var minIndex, out var minValue);
-            if (currentValue > minValue)
-            {
-                pq.Dequeue();
-                pq.Enqueue(currentIndex, currentValue);
-            }
-        }
+        //    pq.Enqueue(currentIndex, currentValue); // Элемент=индекс, приоритет=значение            
+        //}
+        //// Шаг 2: Оставшиеся элементы (i=31..299).
+        //// Для каждого: если data[i] >= min в heap, заменяем (2 * O(log k)).
+        //for (; currentIndex < data.Length; currentIndex += 1)
+        //{
+        //    float currentValue = data[currentIndex];
 
-        // Шаг 3: Обнуляем весь массив.
-        // Формула: для i=0..n-1: data[i] = 0.0f; O(n) времени.
-        data.Clear();
+        //    pq.TryPeek(out var minIndex, out var minValue);
+        //    if (currentValue > minValue)
+        //    {
+        //        pq.Dequeue();
+        //        pq.Enqueue(currentIndex, currentValue);
+        //    }
+        //}
 
-        // Шаг 4: Извлекаем k=30 топ-индексов и устанавливаем 1.0f.
-        // Пропускаем первый Dequeue (31-й max), затем 30 топ.
-        // Dequeue уже очищает; O(k log k).        
-        foreach (var item in pq.UnorderedItems)
-        {
-            data[item.Element] = 1.0f;
-        }
-        pq.Clear();
-        // Heap теперь пуст для следующей операции.
+        //// Шаг 3: Обнуляем весь массив.
+        //// Формула: для i=0..n-1: data[i] = 0.0f; O(n) времени.
+        //data.Clear();
+
+        //// Шаг 4: Извлекаем k=30 топ-индексов и устанавливаем 1.0f.
+        //// Пропускаем первый Dequeue (31-й max), затем 30 топ.
+        //// Dequeue уже очищает; O(k log k).        
+        //foreach (var item in pq.UnorderedItems)
+        //{
+        //    data[item.Element] = 1.0f;
+        //}
+        //pq.Clear();
+        //// Heap теперь пуст для следующей операции.
     }    
 }

@@ -264,9 +264,9 @@ public static class MiniColumnsActivityHelper
         int maxR = constants.PositiveK.Length - 1;        
 
         for (int mcy = Math.Max(0, Math.Min(prevIteratorMiniColumn.MCY, iteratorMiniColumn.MCY) - maxR); 
-                mcy < Math.Min(miniColumnActivities.Dimensions[1], Math.Max(prevIteratorMiniColumn.MCY, iteratorMiniColumn.MCY) + maxR); mcy += 1)
+                mcy < Math.Min(miniColumnActivities.Dimensions[1], Math.Max(prevIteratorMiniColumn.MCY, iteratorMiniColumn.MCY) + maxR + 1); mcy += 1)
             for (int mcx = Math.Max(0, Math.Min(prevIteratorMiniColumn.MCX, iteratorMiniColumn.MCX) - maxR);
-                mcx < Math.Min(miniColumnActivities.Dimensions[0], Math.Max(prevIteratorMiniColumn.MCX, iteratorMiniColumn.MCX) + maxR); mcx += 1)
+                mcx < Math.Min(miniColumnActivities.Dimensions[0], Math.Max(prevIteratorMiniColumn.MCX, iteratorMiniColumn.MCX) + maxR + 1); mcx += 1)
             {
                 miniColumnActivity = miniColumnActivities[mcx, mcy];
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);

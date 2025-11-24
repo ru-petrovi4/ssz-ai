@@ -1397,7 +1397,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Нулевой уровень косинусного расстояния
             /// </summary>
-            public float K0 { get; set; } = 0.11f;
+            public float K0 { get; set; } = 0.13f;
 
             /// <summary>
             ///     Порог косинусного расстояния для учета 
@@ -1433,9 +1433,9 @@ namespace Ssz.AI.Models
 
             //public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.07f, 0.00f];
 
-            public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f, 0.00f];
+            public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f ];
 
-            public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f, 0.00f];
+            public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f ];
         }        
     }
 }

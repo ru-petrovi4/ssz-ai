@@ -41,8 +41,18 @@ public class Model01
     public Model01()
     {
         LoggersSet = new LoggersSet(
-            ActivatorUtilities.CreateInstance<Logger<Model01>>(Program.Host.Services), 
-            new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
+            NullLogger.Instance,
+            new WrapperUserFriendlyLogger(
+                new SszLogger("Ssz.AI.Models.AdvancedEmbeddingModel2.Model01", "Ssz.AI.Models.AdvancedEmbeddingModel2.Model01", new SszLoggerOptions()
+                {
+                    LogsDirectory = "Data",
+#if DEBUG
+                    LogFileName = "AdvancedEmbeddingModel2_Model01_Logs_Debug.txt"
+#else
+                    LogFileName = "AdvancedEmbeddingModel2_Model01_Logs.txt"
+#endif
+                }),
+            new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s))));
     }
 
     #endregion
@@ -195,7 +205,7 @@ public class Model01
         /// <summary>
         ///     Нулевой уровень косинусного подобия
         /// </summary>
-        public float K0 { get; set; } = 0.11f; // 0.12
+        public float K0 { get; set; } = 0.13f; // 0.12
 
         public float K1 { get; set; } = 0.2f;
 

@@ -6,9 +6,11 @@ using Microsoft.Extensions.Logging;
 using MsBox.Avalonia;
 using Ssz.AI.Helpers;
 using Ssz.AI.Models;
+using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -74,13 +76,11 @@ public partial class Model05View : UserControl
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[0];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[1];
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[2];
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value = constants.PositiveK[3];
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[2];        
 
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = constants.NegativeK[0];
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = constants.NegativeK[1];
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = constants.NegativeK[2];
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value = constants.NegativeK[3];
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = constants.NegativeK[2];        
     }
 
     private void GetDataFromControls(IConstants constants)
@@ -96,14 +96,14 @@ public partial class Model05View : UserControl
 
         constants.PositiveK[0] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
-        constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value;
-        constants.PositiveK[3] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value;
+        constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value;        
 
         constants.NegativeK[0] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value;
         constants.NegativeK[1] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value;
-        constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value;
-        constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value;
+        constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value;        
     }
+
+    #region Buttons Handlers
 
     private void ResetButton_OnClick(object? sender, RoutedEventArgs args)
     {
@@ -240,6 +240,53 @@ public partial class Model05View : UserControl
         GetDataFromControls(Model.Constants);
     }
 
+    private void VisualizeKSearch_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Dictionary<float, System.Drawing.Bitmap> info = new();
+
+        int currentWordIndex = 8;
+        foreach (var it in CsvHelper.LoadCsvFile(Path.Combine("Data", @"Model05_Logs.1 - 0.13 full.txt"), false))
+        {
+            if (it.Value.Count == 16)
+            {
+                float key = new Any(it.Value[currentWordIndex + 2]).ValueAsSingle(false);
+                if (!info.TryGetValue(key, out var bitmap))
+                {
+                    bitmap = new (30, 30);
+
+                    using (Graphics g = Graphics.FromImage(bitmap))
+                    {
+                        // Устанавливаем черный фон
+                        g.Clear(Color.Black);
+                    }
+
+                    info.Add(key, bitmap);
+                }
+                float a = new Any(it.Value[currentWordIndex + 1]).ValueAsSingle(false);
+                int brightness = (int)(255 * (a - 9) / (15 - 9));
+                if (brightness < 0)
+                    brightness = 0;
+                if (brightness > 255)
+                    brightness = 255;
+                bitmap.SetPixel(
+                    x: (int)(new Any(it.Value[currentWordIndex + 3]).ValueAsSingle(false) * 200),
+                    y: (int)(new Any(it.Value[currentWordIndex + 6]).ValueAsSingle(false) * 200),
+                    color: Color.FromArgb(brightness, brightness, brightness)
+                    );
+            }
+        }
+       
+        ImagesSet1.MainItemsControl.ItemsSource = info
+            .Select(kvp => new ImageWithDesc
+            {
+                Image = BitmapHelper.ConvertImageToAvaloniaBitmap(kvp.Value),
+                Desc = $"K[1]: {kvp.Key}"
+            })
+            .ToArray();
+    }
+
+    #endregion
+
     private void Refresh_ImagesSet1()
     {
         double position = PositionScrollBar.Value;
@@ -320,26 +367,20 @@ public partial class Model05View : UserControl
         var constants = new Model05.ModelConstants();
         GetDataFromControls(constants);
 
-        Directory.CreateDirectory($"Data\\Script");
-
         BestPinwheelSettings bestPinwheelSettings = new();
 
         int interationN = 0;
-        for (float pk1 = 0.11f; pk1 < 0.15f; pk1 += 0.01f)
-            for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
-                for (float pk3 = 0.000f; pk3 < pk2; pk3 += 1.01f)
-                    for (float nk1 = pk1; nk1 <= pk1; nk1 += 1.01f)
-                        for (float nk2 = pk2 + 0.005f; nk2 < nk1; nk2 += 0.005f)
-                            for (float nk3 = 0.000f; nk3 < nk2; nk3 += 1.01f)
+        for (float pk1 = 0.12f; pk1 < 0.17f; pk1 += 0.01f)
+            for (float pk2 = 0.005f; pk2 < 0.08; pk2 += 0.005f)                
+                    for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
+                        for (float nk2 = pk2; nk2 < nk1; nk2 += 0.005f)                            
                             {
                                 interationN += 1;
 
                                 constants.PositiveK[1] = pk1;
-                                constants.PositiveK[2] = pk2;
-                                constants.PositiveK[3] = pk3;
+                                constants.PositiveK[2] = pk2;                                
                                 constants.NegativeK[1] = nk1;
-                                constants.NegativeK[2] = nk2;
-                                constants.NegativeK[3] = nk3;
+                                constants.NegativeK[2] = nk2;                                
 
                                 Model = new Model05(constants);
                                 InitializePseudoRandom();
@@ -356,11 +397,9 @@ public partial class Model05View : UserControl
                                 {
                                     bestPinwheelSettings.MaxPinwheelIndex = pinwheellIndex;
                                     bestPinwheelSettings.Pk1 = pk1;
-                                    bestPinwheelSettings.Pk2 = pk2;
-                                    bestPinwheelSettings.Pk3 = pk3;
+                                    bestPinwheelSettings.Pk2 = pk2;                                    
                                     bestPinwheelSettings.Nk1 = nk1;
-                                    bestPinwheelSettings.Nk2 = nk2;
-                                    bestPinwheelSettings.Nk3 = nk3;
+                                    bestPinwheelSettings.Nk2 = nk2;                                    
                                 }
 
                                 Model.UserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
@@ -369,18 +408,18 @@ public partial class Model05View : UserControl
                                     bestPinwheelSettings.MaxPinwheelIndex,
                                     bestPinwheelSettings.Pk1,
                                     bestPinwheelSettings.Pk2,
-                                    bestPinwheelSettings.Pk3,
+                                    0.0f,
                                     bestPinwheelSettings.Nk1,
                                     bestPinwheelSettings.Nk2,
-                                    bestPinwheelSettings.Nk3,
+                                    0.0f,
                                     "Current",
                                     pinwheellIndex,
                                     pk1,
                                     pk2,
-                                    pk3,
+                                    0.0f,
                                     nk1,
                                     nk2,
-                                    nk3 ]));
+                                    0.0f ]));
                             }
 
 
@@ -394,11 +433,9 @@ public partial class Model05View : UserControl
         public float MaxPinwheelIndex = float.MinValue;
 
         public float Pk1;
-        public float Pk2;
-        public float Pk3;
+        public float Pk2;        
         public float Nk1;
-        public float Nk2;
-        public float Nk3;
+        public float Nk2;        
     }
 }
 

@@ -173,6 +173,11 @@ public partial class Cortex : ISerializableModelObject
                                 Constants,
                                 prevIteratorMiniColumn,
                                 iteratorMiniColumn);
+                            //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
+                            //    batch_CortexMemory.DiscreteRandomVector,
+                            //    batch_CortexMemory.Temp_MiniColumnActivities,
+                            //    null,
+                            //    Constants);
                         }
                         current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
                             batch_CortexMemories
@@ -210,10 +215,23 @@ public partial class Cortex : ISerializableModelObject
                                 Constants,
                                 prevIteratorMiniColumn,
                                 max_MiniColumn);
+                            //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
+                            //    batch_CortexMemory.DiscreteRandomVector,
+                            //    batch_CortexMemory.Temp_MiniColumnActivities,
+                            //    null,
+                            //    Constants);
                         }
+#if DEBUG
                         current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
                             batch_CortexMemories
                             );
+                        if (current_CodingDecodingSimilarity != maxCodingDecodingSimilarity)
+                        {
+                            throw new InvalidOperationException();
+                        }
+#else
+                        current_CodingDecodingSimilarity = maxCodingDecodingSimilarity;
+#endif
                     }
 
                     break;
@@ -318,5 +336,5 @@ public partial class Cortex : ISerializableModelObject
         return TensorPrimitives.CosineSimilarity(batch_CortexMemory.DiscreteRandomVector, discreteRandomVector_Restored);
     }
 
-    #endregion
+#endregion
 }

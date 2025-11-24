@@ -11,7 +11,7 @@
         xmlns:v="using:Ssz.AI.Views"
         xmlns:advancedEmbeddingViews2="using:Ssz.AI.Views.AdvancedEmbeddingViews2" 
         Icon="/Assets/avalonia-logo.ico"       
-        Title="Model 01">
+        Title="">
 
     <!--<Design.DataContext>
         --><!-- This only sets the DataContext for the previewer in an IDE,
