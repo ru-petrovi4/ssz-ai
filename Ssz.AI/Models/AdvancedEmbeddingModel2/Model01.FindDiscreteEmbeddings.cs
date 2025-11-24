@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using MathNet.Numerics;
 using MathNet.Numerics.Providers.LinearAlgebra;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -39,7 +40,9 @@ public class Model01
 
     public Model01()
     {
-        LoggersSet = new LoggersSet(NullLogger.Instance, new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
+        LoggersSet = new LoggersSet(
+            ActivatorUtilities.CreateInstance<Logger<Model01>>(Program.Host.Services), 
+            new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
     }
 
     #endregion
@@ -88,15 +91,15 @@ public class Model01
 
                 // Получение кода выхода (0 обычно значит успех)
                 int exitCode = process.ExitCode;
-                LoggersSet.UserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
+                LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Процесс mystem.exe завершён с кодом: {exitCode}");
 
                 // Если захватывали вывод
                 string output = process.StandardOutput.ReadToEnd();
                 string error = process.StandardError.ReadToEnd();
                 if (!string.IsNullOrEmpty(output))
-                    LoggersSet.UserFriendlyLogger.LogInformation($"Вывод: {output}");
+                    LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Вывод: {output}");
                 if (!string.IsNullOrEmpty(error))
-                    LoggersSet.UserFriendlyLogger.LogInformation($"Ошибка: {error}");
+                    LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Ошибка: {error}");
             }
 
             var sequences = MorphologicalTextParser.ParseTextToSequences(Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, Input_Directory, fb2_Stemmed_FileName));
@@ -106,15 +109,15 @@ public class Model01
         MorphologicalTextParser.WriteToFile(
             allSequences,
             Path.Combine(AIConstants.DataDirectory, AdvancedEmbedding2_Directory, "input_sequences.txt"),
-            LoggersSet.UserFriendlyLogger);
+            LoggersSet.LoggerAndUserFriendlyLogger);
     }    
 
     public void PrepareCalculate(Random random)
     {
-        InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(random, Constants.DiscreteVectorLength);
+        InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(random, Constants.DiscreteVectorLength, Constants.DiscreteOptimizedVector_PrimaryBitsCount);
 
-        Cortex = new Cortex(Constants, LoggersSet.UserFriendlyLogger);
-        Cortex.GenerateOwnedData(InputCorpusData.Words, InputCorpusData.CortexMemories);
+        Cortex = new Cortex(Constants, LoggersSet.LoggerAndUserFriendlyLogger);
+        Cortex.GenerateOwnedData(InputCorpusData.Words, InputCorpusData.CortexMemories, random);
         Cortex.Prepare();
     }
 
@@ -174,6 +177,8 @@ public class Model01
     public class ModelConstants : IMiniColumnsActivityConstants
     {
         public int DiscreteVectorLength => 300;
+
+        public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
 
         /// <summary>
         ///     Количество миниколонок в зоне коры по оси X

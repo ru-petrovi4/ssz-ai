@@ -201,7 +201,11 @@ namespace Ssz.AI.Models
         ///     Константы данной модели
         /// </summary>
         public class ModelConstants : IConstants
-        {            
+        {
+            public int DiscreteVectorLength => 300;
+
+            public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
             public double DetectorMinGradientMagnitude => 5;

@@ -21,7 +21,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 /// </summary>
 public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
 {
-    private IUserFriendlyLogger _userFriendlyLogger;   
+    private ILogger _logger;   
     private Device _device;
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_A;
     public LanguageDiscreteEmbeddings LanguageDiscreteEmbeddings_B;
@@ -58,11 +58,11 @@ public class ClustersOneToOneMatcher_Hypothesis : ISerializableModelObject
     public int NearestCount = 7;
 
     public ClustersOneToOneMatcher_Hypothesis(
-        IUserFriendlyLogger userFriendlyLogger, 
+        ILogger logger, 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_A, 
         LanguageDiscreteEmbeddings languageDiscreteEmbeddings_B)
     {
-        _userFriendlyLogger = userFriendlyLogger;
+        _logger = logger;
         _device = cuda.is_available() ? CUDA : CPU;
         LanguageDiscreteEmbeddings_A = languageDiscreteEmbeddings_A;
         LanguageDiscreteEmbeddings_B = languageDiscreteEmbeddings_B;

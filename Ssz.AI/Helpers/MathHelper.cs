@@ -181,73 +181,43 @@ public static class MathHelper
     /// Формула очистки: while (heap.Count > 0) { Dequeue(); } — log k per Dequeue, k раз.
     /// </remarks>
     /// <exception cref="ArgumentException">Если data.Length != 300.</exception>
-    public static void SelectTopKMaxAndSetToOne(Span<float> data, int k, PriorityQueue<int, float> minHeap)
-    {
-        int n = data.Length; // n — длина массива                
-
+    public static void SelectTopKMaxAndSetToOne(Span<float> data, int k, PriorityQueue<int, float> pq)
+    {        
         // Шаг 1: Заполняем heap начальными k+1 элементами (i=0..30).
-        // Enqueue: O(log (k+1)) per вставка; всего O((k+1) log k).
-        int initialCount = 0;
-        while (initialCount < k + 1 && initialCount < n)
+        // Enqueue: O(log (k+1)) per вставка; всего O((k+1) log k).        
+        int currentIndex = 0;
+        for (; currentIndex < k; currentIndex += 1)
         {
-            int currentIndex = initialCount;
             float currentValue = data[currentIndex];
-            minHeap.Enqueue(currentIndex, currentValue); // Элемент=индекс, приоритет=значение
-            initialCount += 1;
-        }
 
+            pq.Enqueue(currentIndex, currentValue); // Элемент=индекс, приоритет=значение            
+        }
         // Шаг 2: Оставшиеся элементы (i=31..299).
         // Для каждого: если data[i] >= min в heap, заменяем (2 * O(log k)).
-        int remainingStart = k + 1;
-        while (remainingStart < n)
+        for (; currentIndex < data.Length; currentIndex += 1)
         {
-            int currentIndex = remainingStart;
             float currentValue = data[currentIndex];
 
-            bool hasMin = minHeap.TryDequeue(out int minIndex, out float minValue);
-            if (!hasMin)
+            pq.TryPeek(out var minIndex, out var minValue);
+            if (currentValue > minValue)
             {
-                break;
+                pq.Dequeue();
+                pq.Enqueue(currentIndex, currentValue);
             }
-
-            if (currentValue >= minValue)
-            {
-                minHeap.Enqueue(currentIndex, currentValue);
-            }
-            else
-            {
-                minHeap.Enqueue(minIndex, minValue);
-            }
-
-            remainingStart += 1;
         }
 
         // Шаг 3: Обнуляем весь массив.
         // Формула: для i=0..n-1: data[i] = 0.0f; O(n) времени.
-        int zeroIndex = 0;
-        while (zeroIndex < n)
-        {
-            data[zeroIndex] = 0.0f;
-            zeroIndex += 1;
-        }
+        data.Clear();
 
         // Шаг 4: Извлекаем k=30 топ-индексов и устанавливаем 1.0f.
         // Пропускаем первый Dequeue (31-й max), затем 30 топ.
-        // Dequeue уже очищает; O(k log k).
-        int extractCount = 0;
-        while (extractCount < k && minHeap.Count > 0)
+        // Dequeue уже очищает; O(k log k).        
+        foreach (var item in pq.UnorderedItems)
         {
-            bool success = minHeap.TryDequeue(out int topIndex, out _);
-            if (success)
-            {
-                data[topIndex] = 1.0f;
-                extractCount += 1;
-            }
-            else
-            {
-                break;
-            }
+            data[item.Element] = 1.0f;
         }
+        pq.Clear();
         // Heap теперь пуст для следующей операции.
-    }
+    }    
 }

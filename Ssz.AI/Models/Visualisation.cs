@@ -228,7 +228,8 @@ public static class Visualisation
                 var mc = cortex.MiniColumns[mcx, mcy];
                 if (mc is not null && mc.CortexMemories.Count > 0)
                 {
-                    Color color = GetAverageLABColor(mc.CortexMemories.Where(cm => cm is not null).Select(cm => cm!.DiscreteRandomVector_Color));
+                    Color color = GetAverageLABColor(mc.CortexMemories
+                        .Where(cm => cm is not null && cm.DiscreteRandomVector_Color != Color.Black).Select(cm => cm!.DiscreteRandomVector_Color));
 
                     bitmap.SetPixel(mcx, mcy, color);
                 }
@@ -1515,11 +1516,6 @@ public static class Visualisation
     /// </remarks>
     public static Color GetAverageLABColor(IEnumerable<Color> colors)
     {
-        if (colors == null || !colors.Any())
-        {
-            throw new ArgumentException("Коллекция цветов не может быть null или пустой.", nameof(colors));
-        }
-
         // Референсная белая точка D65 (2° observer, стандарт для sRGB):
         // Обозначения: X_n, Y_n, Z_n — XYZ-координаты идеального белого (illuminant D65).
         const double Xn = 95.047;   // X-компонента белой точки D65.
@@ -1536,9 +1532,12 @@ public static class Visualisation
         double sumB = 0.0;  // Сумма b* (blue↔yellow): Σ b_i*.
         int n = 0;
 
+        bool any = false;
+
         // Конвертируем каждый цвет в LAB и суммируем компоненты.
         foreach (Color color in colors)
         {
+            any = true;
             // Шаг 1: Нормализация RGB к [0, 1].
             // Обозначения: R', G', B' — нормализованные значения (double в [0, 1]).
             double r01 = color.R / 255.0;
@@ -1585,6 +1584,9 @@ public static class Visualisation
             sumB += bStar;
             n += 1;
         }
+
+        if (!any)
+            return Color.Black;
 
         // Вычисляем средние LAB: avg_L* = Σ L_i* / n, аналогично для a*, b*.
         double avgL = sumL / n;

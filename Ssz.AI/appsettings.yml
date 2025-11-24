@@ -4,6 +4,7 @@
     Default: "Error"    
     Ssz.AI.Models.Model7: "Debug"
     Ssz.AI.Models.Model8: "Debug"
+    Ssz.AI.Models.AdvancedEmbeddingModel2.Model01: "Debug"
     # Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware: "None"
   SszLogger: 
     # путь до директории где будут храниться файлы журналов событий

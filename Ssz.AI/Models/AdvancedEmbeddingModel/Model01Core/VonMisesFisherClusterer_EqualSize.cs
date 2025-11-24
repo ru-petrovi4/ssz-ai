@@ -18,7 +18,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 public class VonMisesFisherClusterer_EqualSize
 {
     private readonly Device _device;
-    private readonly IUserFriendlyLogger _userFriendlyLogger;
+    private readonly ILogger _logger;
 
     // Поля класса для хранения параметров модели
     /// <summary>
@@ -72,19 +72,19 @@ public class VonMisesFisherClusterer_EqualSize
     /// Конструктор кластеризатора vMF со сбалансированным назначением
     /// </summary>
     /// <param name="device">Устройство для вычислений (CPU/CUDA)</param>
-    /// <param name="userFriendlyLogger">Логгер для вывода информации</param>
+    /// <param name="logger">Логгер для вывода информации</param>
     /// <param name="numClusters">Количество кластеров K</param>
     /// <param name="maxIterations">Максимальное количество итераций EM алгоритма</param>
     /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>
     public VonMisesFisherClusterer_EqualSize(
         Device device,
-        IUserFriendlyLogger userFriendlyLogger,
+        ILogger logger,
         int numClusters,
         int maxIterations,
         float tolerance)
     {
         _device = device;
-        _userFriendlyLogger = userFriendlyLogger;
+        _logger = logger;
         _numClusters = numClusters;
         _maxIterations = maxIterations;
         _tolerance = tolerance;
@@ -107,8 +107,8 @@ public class VonMisesFisherClusterer_EqualSize
         // targetClusterSize = floor(N / K)
         _targetClusterSize = _numSamples / _numClusters;
 
-        _userFriendlyLogger.LogInformation($"Целевой размер каждого кластера: {_targetClusterSize}");
-        _userFriendlyLogger.LogInformation($"Количество точек, которые не войдут в кластеры: {_numSamples - _targetClusterSize * _numClusters}");
+        _logger.LogInformation($"Целевой размер каждого кластера: {_targetClusterSize}");
+        _logger.LogInformation($"Количество точек, которые не войдут в кластеры: {_numSamples - _targetClusterSize * _numClusters}");
 
         float prevLogLikelihood = float.NegativeInfinity;
 
@@ -129,16 +129,16 @@ public class VonMisesFisherClusterer_EqualSize
             // Проверяем сходимость
             if (Math.Abs(logLikelihood - prevLogLikelihood) < _tolerance)
             {
-                _userFriendlyLogger.LogInformation($"Сходимость достигнута на итерации {iteration + 1}");
+                _logger.LogInformation($"Сходимость достигнута на итерации {iteration + 1}");
                 break;
             }
 
             prevLogLikelihood = logLikelihood;
 
-            _userFriendlyLogger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
+            _logger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
         }
 
-        _userFriendlyLogger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
+        _logger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
     }
 
     /// <summary>
@@ -278,7 +278,7 @@ public class VonMisesFisherClusterer_EqualSize
             if (assignedCount < numSamples)
             {
                 var remainingCount = numSamples - assignedCount;
-                _userFriendlyLogger.LogWarning($"Осталось {remainingCount} неназначенных точек (N mod K != 0). Распределяем по кластерам с минимальной стоимостью.");
+                _logger.LogWarning($"Осталось {remainingCount} неназначенных точек (N mod K != 0). Распределяем по кластерам с минимальной стоимостью.");
 
                 // ВЕКТОРИЗАЦИЯ: Находим маску неназначенных точек
                 // assignments.eq(-1) создаёт булев тензор [N], где True = точка не назначена
@@ -324,7 +324,7 @@ public class VonMisesFisherClusterer_EqualSize
                 {
                     clusterSizesArray[k] = clusterSizes[k].item<long>();
                 }
-                _userFriendlyLogger.LogInformation($"Финальные размеры кластеров: [{string.Join(", ", clusterSizesArray)}]");
+                _logger.LogInformation($"Финальные размеры кластеров: [{string.Join(", ", clusterSizesArray)}]");
             }
 
             // Возвращаем результат - тензор назначений, перемещённый в основную память
@@ -399,7 +399,7 @@ public class VonMisesFisherClusterer_EqualSize
     {
         foreach (int emptyCluster in emptyClusters)
         {
-            _userFriendlyLogger.LogInformation($"Переинициализация пустого кластера {emptyCluster}.");
+            _logger.LogInformation($"Переинициализация пустого кластера {emptyCluster}.");
 
             // Найти кластер с максимальным числом точек
             var clusterSizes = torch.zeros(_numClusters);
@@ -468,10 +468,10 @@ public class VonMisesFisherClusterer_EqualSize
             clusterSizes[cluster] += 1;
         }
 
-        _userFriendlyLogger.LogInformation("Распределение размеров кластеров:");
+        _logger.LogInformation("Распределение размеров кластеров:");
         for (int k = 0; k < _numClusters; k += 1)
         {
-            _userFriendlyLogger.LogInformation($"  Кластер {k}: {clusterSizes[k]} элементов");
+            _logger.LogInformation($"  Кластер {k}: {clusterSizes[k]} элементов");
         }
     }    
 
@@ -589,7 +589,7 @@ public class VonMisesFisherClusterer_EqualSize
 
                 if ((k + 1) % 10 == 0)
                 {
-                    _userFriendlyLogger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
+                    _logger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
                 }
             }
 
@@ -603,10 +603,10 @@ public class VonMisesFisherClusterer_EqualSize
         // Инициализация коэффициентов смешивания (равномерное распределение)
         MixingCoefficients = torch.ones(_numClusters, dtype: torch.float32) / _numClusters;
 
-        _userFriendlyLogger.LogInformation("Параметры инициализированы:");
-        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
-        _userFriendlyLogger.LogInformation($"Размерность данных: {dimension}");
-        _userFriendlyLogger.LogInformation($"Количество образцов: {numSamples}");
+        _logger.LogInformation("Параметры инициализированы:");
+        _logger.LogInformation($"Количество кластеров: {_numClusters}");
+        _logger.LogInformation($"Размерность данных: {dimension}");
+        _logger.LogInformation($"Количество образцов: {numSamples}");
     }
 
     /// <summary>
@@ -709,23 +709,23 @@ public class VonMisesFisherClusterer_EqualSize
     /// </summary>
     public void PrintModelSummary()
     {
-        _userFriendlyLogger.LogInformation("=== Результаты vMF Кластеризации (СБАЛАНСИРОВАННОЕ назначение) ===");
-        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
-        _userFriendlyLogger.LogInformation($"Целевой размер кластера: {_targetClusterSize}");
-        _userFriendlyLogger.LogInformation("\nПараметры кластеров:");
+        _logger.LogInformation("=== Результаты vMF Кластеризации (СБАЛАНСИРОВАННОЕ назначение) ===");
+        _logger.LogInformation($"Количество кластеров: {_numClusters}");
+        _logger.LogInformation($"Целевой размер кластера: {_targetClusterSize}");
+        _logger.LogInformation("\nПараметры кластеров:");
 
         for (int k = 0; k < _numClusters; k += 1)
         {
-            _userFriendlyLogger.LogInformation($"\nКластер {k}:");
-            _userFriendlyLogger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<float>():F4}");
-            _userFriendlyLogger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<float>():F4}");
-            _userFriendlyLogger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
+            _logger.LogInformation($"\nКластер {k}:");
+            _logger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<float>():F4}");
+            _logger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<float>():F4}");
+            _logger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
         }
 
         if (LogLikelihoodHistory.Any())
         {
-            _userFriendlyLogger.LogInformation($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
-            _userFriendlyLogger.LogInformation($"Количество итераций: {LogLikelihoodHistory.Count}");
+            _logger.LogInformation($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
+            _logger.LogInformation($"Количество итераций: {LogLikelihoodHistory.Count}");
         }
     }
 }

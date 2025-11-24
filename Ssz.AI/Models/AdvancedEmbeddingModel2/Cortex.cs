@@ -46,12 +46,12 @@ public partial class Cortex : ISerializableModelObject
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(List<Word> words, List<Memory> cortexMemories)
+    public void GenerateOwnedData(List<Word> words, List<Memory> cortexMemories, Random random)
     {
         Words = words;
         CortexMemories = cortexMemories;
 
-        MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
+        MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);        
 
         for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
             for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
@@ -65,10 +65,34 @@ public partial class Cortex : ISerializableModelObject
 
                 MiniColumns[mcx, mcy] = miniColumn;
             }
+
+        if (MiniColumns.Data.Length <= Constants.DiscreteVectorLength)
+        {
+            int[] discreteOptimizedVectorIndices = new int[Constants.DiscreteVectorLength];
+            for (int i = 0; i < discreteOptimizedVectorIndices.Length; i += 1)
+            {
+                discreteOptimizedVectorIndices[i] = i;
+            }
+            random.Shuffle(discreteOptimizedVectorIndices);
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumns.Data[mci].DiscreteOptimizedVector_ProjectionIndex = discreteOptimizedVectorIndices[mci];
+            }
+        }
+        else
+        {
+            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            {
+                MiniColumns.Data[mci].DiscreteOptimizedVector_ProjectionIndex = random.Next(Constants.DiscreteVectorLength);
+            }
+        }
     }
 
     public void Prepare()
     {
+        int maxR = Constants.PositiveK.Length - 1;
+        float maxR_Single = maxR + 0.00001f;
+
         // Находим ближайшие миниколонки для каждой миниколонки
         Parallel.For(
             fromInclusive: 0,
@@ -77,10 +101,10 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns.Data[mci];
                 miniColumn.Prepare();
-                miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));
+                miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));                
 
-                for (int mcy = miniColumn.MCY - (int)Constants.PositiveK.Length - 1; mcy <= miniColumn.MCY + (int)Constants.PositiveK.Length + 1; mcy += 1)
-                    for (int mcx = miniColumn.MCX - (int)Constants.PositiveK.Length - 1; mcx <= miniColumn.MCX + (int)Constants.PositiveK.Length + 1; mcx += 1)
+                for (int mcy = miniColumn.MCY - maxR; mcy <= miniColumn.MCY + maxR; mcy += 1)
+                    for (int mcx = miniColumn.MCX - maxR; mcx <= miniColumn.MCX + maxR; mcx += 1)
                     {
                         if (mcx < 0 ||
                                 mcx >= MiniColumns.Dimensions[0] ||
@@ -93,7 +117,7 @@ public partial class Cortex : ISerializableModelObject
                         if (nearestMc is null)
                             continue;
                         float r = MathF.Sqrt((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY));
-                        if (r < Constants.PositiveK.Length + 0.00001f)
+                        if (r < maxR_Single)
                         {
                             float k0 = MathHelper.GetInterpolatedValue(Constants.PositiveK, r);
                             float k1 = MathHelper.GetInterpolatedValue(Constants.NegativeK, r);
@@ -164,7 +188,7 @@ public partial class Cortex : ISerializableModelObject
         }
         finally
         {
-            Logger.LogInformation($"CalculateCortexMemories() {inputCorpusData.CurrentCortexMemoryIndex}/{inputCorpusData.CortexMemories.Count} finished.");
+            Logger.LogInformation($"Calculate_PutPhrases_Randomly() {inputCorpusData.CurrentCortexMemoryIndex + 1}/{inputCorpusData.CortexMemories.Count} finished.");
         }
     }       
 
@@ -202,29 +226,6 @@ public partial class Cortex : ISerializableModelObject
 
     public void Calculate_Words_DiscreteOptimizedVectors(Random random)
     {
-        if (MiniColumns.Data.Length <= Constants.DiscreteVectorLength)
-        {
-            int[] discreteOptimizedVectorIndices = new int[Constants.DiscreteVectorLength];
-            for (int i = 0; i < discreteOptimizedVectorIndices.Length; i += 1)
-            {
-                discreteOptimizedVectorIndices[i] = i;
-            }
-            random.Shuffle(discreteOptimizedVectorIndices);
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
-            {
-                MiniColumn mc = MiniColumns.Data[mci];
-                mc.DiscreteVectorProjectionIndex = discreteOptimizedVectorIndices[mci];
-            }
-        }
-        else
-        {
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
-            {
-                MiniColumn mc = MiniColumns.Data[mci];
-                mc.DiscreteVectorProjectionIndex = random.Next(Constants.DiscreteVectorLength);
-            }
-        }
-
         for (int wordIndex = 0; wordIndex < Words.Count; wordIndex += 1)
         {
             var word = Words[wordIndex];
@@ -235,7 +236,7 @@ public partial class Cortex : ISerializableModelObject
             Array.Clear(word.DiscreteOptimizedVector);
             foreach (var mc in MiniColumns.Data.OrderByDescending(mc => mc.Temp_Activity).Take(7))
             {
-                word.DiscreteOptimizedVector[mc.DiscreteVectorProjectionIndex] = 1.0f;
+                word.DiscreteOptimizedVector[mc.DiscreteOptimizedVector_ProjectionIndex] = 1.0f;
             }
         }
     }
@@ -313,12 +314,12 @@ public partial class Cortex : ISerializableModelObject
         /// <summary>
         ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
         /// </summary>
-        public readonly int MCX;
+        public int MCX { get; }
 
         /// <summary>
         ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
         /// </summary>
-        public readonly int MCY;
+        public int MCY { get; }
 
         /// <summary>
         ///     K для расчета суперактивности.
@@ -332,7 +333,7 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public FastList<Memory?> CortexMemories = null!;
 
-        public int DiscreteVectorProjectionIndex;
+        public int DiscreteOptimizedVector_ProjectionIndex { get; set; }
 
         /// <summary>
         ///     Временный список для сохраненных хэш-кодов
@@ -370,7 +371,8 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_CortexMemories = new(1000);
 
-            Temp_K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * Constants.PositiveK.Length * Constants.PositiveK.Length) + 10);
+            int maxR = Constants.PositiveK.Length - 1;
+            Temp_K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * maxR * maxR) + 1);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -378,7 +380,7 @@ public partial class Cortex : ISerializableModelObject
             using (writer.EnterBlock(2))
             {
                 Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_FastList(CortexMemories, writer, context);
-                writer.WriteOptimized(DiscreteVectorProjectionIndex);
+                writer.WriteOptimized(DiscreteOptimizedVector_ProjectionIndex);
             }
         }
 
@@ -393,7 +395,7 @@ public partial class Cortex : ISerializableModelObject
                         break;
                     case 2:
                         CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
-                        DiscreteVectorProjectionIndex = reader.ReadOptimizedInt32();
+                        DiscreteOptimizedVector_ProjectionIndex = reader.ReadOptimizedInt32();
                         break;
                 }
             }
@@ -446,7 +448,15 @@ public partial class Cortex : ISerializableModelObject
 
         public int[] WordIndices = null!;
 
-        public DenseMatrix<MiniColumnActivity> Temp_MiniColumnActivities { get; set; } = null!;
+        public DenseMatrix<MiniColumnActivity> Temp_MiniColumnActivities = null!;
+
+        public PriorityQueue<MiniColumnActivity, float> Temp_MiniColumnActivities_PriorityQueue = null!;
+
+        public PriorityQueue<int, float> Temp_Int_Single_PriorityQueue = null!;
+
+        public float[] Temp_DiscreteOptimizedVector = null!;
+
+        public float[] Temp_DiscreteRandomVector_Restored = null!;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {

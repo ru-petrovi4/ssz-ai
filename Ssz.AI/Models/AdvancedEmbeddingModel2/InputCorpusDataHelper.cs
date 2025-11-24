@@ -1,4 +1,5 @@
-﻿using Ssz.AI.Core;
+﻿using Avalonia.Media;
+using Ssz.AI.Core;
 using Ssz.Utils.Logging;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
 public static class InputCorpusDataHelper
 {
-    public static InputCorpusData GetInputCorpusData(Random r, int discreteVectorLength)
+    public static InputCorpusData GetInputCorpusData(Random random, int discreteVectorLength, int discreteOptimizedVector_PrimaryBitsCount)
     {        
         var sequences = MorphologicalTextParser.LoadFromFile(
             Path.Combine(AIConstants.DataDirectory, Model01.AdvancedEmbedding2_Directory, "input_sequences.txt")
@@ -43,8 +44,8 @@ public static class InputCorpusDataHelper
                     {
                         indices[i] = i;
                     }
-                    r.Shuffle(indices);
-                    for (int i = 0; i < 7; i += 1)
+                    random.Shuffle(indices);
+                    for (int i = 0; i < discreteOptimizedVector_PrimaryBitsCount; i += 1)
                     {
                         word.DiscreteRandomVector[indices[i]] = 1.0f;
                     }
@@ -66,7 +67,7 @@ public static class InputCorpusDataHelper
                     TensorPrimitives.Add(cortexMemory.DiscreteRandomVector, sequenceWords[i].DiscreteRandomVector, cortexMemory.DiscreteRandomVector);
                 }
                 TensorPrimitives.Min(cortexMemory.DiscreteRandomVector, 1.0f, cortexMemory.DiscreteRandomVector);
-                cortexMemory.DiscreteRandomVector_Color = Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
+                cortexMemory.DiscreteRandomVector_Color = System.Drawing.Color.Black;  //Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
                 cortexMemories.Add(cortexMemory);
             }
         }
@@ -75,6 +76,13 @@ public static class InputCorpusDataHelper
             kvp.Value.CorpusFreq = (float)kvp.Value.Temp_InCorpusCount / corpus_WordsCount;
         }
         inputCorpusData.OrderedWords = words.OrderByDescending(w => w.CorpusFreq).ToList();
+
+        for (int ci = 0; ci < 300; ci += 1)
+        {
+            var cortexMemory = cortexMemories[random.Next(cortexMemories.Count)];
+            cortexMemory.DiscreteRandomVector_Color = Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
+        }
+
         return inputCorpusData;
     }
 }

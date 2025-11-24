@@ -1284,6 +1284,10 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
+            public int DiscreteVectorLength => 300;
+
+            public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+
             public double DetectorMinGradientMagnitude => 5;
 
             public int GeneratedMinGradientMagnitude => 5;

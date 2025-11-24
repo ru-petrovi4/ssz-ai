@@ -101,6 +101,9 @@ public class Cortex_Simplified : ISerializableModelObject
         //float sigma0 = constants.K3[0];
         //float sigma1 = constants.K3[1];
 
+        int maxR = Constants.PositiveK.Length - 1;
+        float maxR_Single = maxR + 0.00001f;
+
         // Находим ближайшие миниколонки для каждой миниколонки
         Parallel.For(
             fromInclusive: 0,
@@ -114,8 +117,8 @@ public class Cortex_Simplified : ISerializableModelObject
                 //mc.K0 = (k00, k01);                
                 mc.K_ForNearestMiniColumns.Add((constants.PositiveK[0], constants.NegativeK[0], mc));
 
-                for (int mcy = mc.MCY - (int)constants.SuperActivityRadius_MiniColumns - 1; mcy <= mc.MCY + (int)constants.SuperActivityRadius_MiniColumns + 1; mcy += 1)
-                    for (int mcx = mc.MCX - (int)constants.SuperActivityRadius_MiniColumns - 1; mcx <= mc.MCX + (int)constants.SuperActivityRadius_MiniColumns + 1; mcx += 1)
+                for (int mcy = mc.MCY - maxR; mcy <= mc.MCY + maxR; mcy += 1)
+                    for (int mcx = mc.MCX - maxR; mcx <= mc.MCX + maxR; mcx += 1)
                     {
                         if (mcx < 0 ||
                                 mcx >= constants.CortexWidth_MiniColumns ||
@@ -128,7 +131,7 @@ public class Cortex_Simplified : ISerializableModelObject
                         if (nearestMc is null)
                             continue;                                   
                         float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));                            
-                        if (r < constants.SuperActivityRadius_MiniColumns + 0.00001f)
+                        if (r < maxR_Single)
                         {
                             //float k0 = GetNormalDistributionValue(sigma0, r);
                             //float k1 = GetNormalDistributionValue(sigma1, r);
@@ -263,9 +266,10 @@ public class Cortex_Simplified : ISerializableModelObject
             Temp_Hash = new float[constants.HashLength];                
             Memories = new(constants.MemoriesMaxCount);
             Temp_Memories = new(constants.MemoriesMaxCount);                       
-            Temp_ShortHashConverted = new float[constants.ShortHashLength];                
+            Temp_ShortHashConverted = new float[constants.ShortHashLength];
 
-            K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
+            int maxR = Constants.PositiveK.Length - 1;
+            K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * maxR * maxR) + 1);
         }
 
         public readonly IConstants Constants;
@@ -275,12 +279,12 @@ public class Cortex_Simplified : ISerializableModelObject
         /// <summary>
         ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
         /// </summary>
-        public readonly int MCX;
+        public int MCX { get; }
 
         /// <summary>
         ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
         /// </summary>
-        public readonly int MCY;
+        public int MCY { get; }
 
         /// <summary>
         ///     K для расчета суперактивности.
@@ -307,6 +311,8 @@ public class Cortex_Simplified : ISerializableModelObject
         ///     Временный список для сохраненных хэш-кодов
         /// </summary>
         public FastList<Memory?> Temp_Memories;
+
+        public int Temp_DiscreteOptimizedVector_ProjectionIndex;
 
         /// <summary>
         ///     Последнее добавленное воспомининие            
@@ -514,6 +520,8 @@ public class Cortex_Simplified : ISerializableModelObject
         }
 
         IFastList<ICortexMemory?> IMiniColumn.CortexMemories => Memories;
+
+        int IMiniColumn.DiscreteOptimizedVector_ProjectionIndex => Temp_DiscreteOptimizedVector_ProjectionIndex;
 
         IMiniColumn IMiniColumnActivity.MiniColumn => this;
 

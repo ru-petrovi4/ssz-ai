@@ -29,16 +29,6 @@ namespace Ssz.AI.Models
         int MagnitudeRangesCount { get; }
 
         /// <summary>
-        ///     Количество миниколонок в зоне коры по оси X
-        /// </summary>
-        int CortexWidth_MiniColumns { get; }
-
-        /// <summary>
-        ///     Количество миниколонок в зоне коры по оси Y
-        /// </summary>
-        int CortexHeight_MiniColumns { get; }        
-
-        /// <summary>
         ///     Количество миниколонок в подобласти
         /// </summary>
         float? CalculationsSubAreaRadius_MiniColumns { get; }
@@ -66,11 +56,6 @@ namespace Ssz.AI.Models
         ///     Количество гиперколнок в рецептивном поле миниколонки.
         /// </summary>
         float DetectorsField_HyperColumns { get; }
-
-        /// <summary>
-        ///     Максимальное расстояние до ближайших миниколонок, при подсчете суперактивности
-        /// </summary>
-        float SuperActivityRadius_MiniColumns { get; }        
 
         /// <summary>
         ///     Длина хэш-вектора

@@ -66,7 +66,7 @@ public partial class Cortex : ISerializableModelObject
         ActivitiyMaxInfo activitiyMaxInfo = new();
         int min_EpochChangesCount = Int32.MaxValue;
 
-        int inMiniColumn_MaxMemoriesCount = 10000 / MiniColumns.Data.Length;
+        int inMiniColumn_TopMemoriesCount = 10000 / MiniColumns.Data.Length;
 
         Stopwatch sw = new();
         for (int epoch = 0; epoch < epochCount; epoch += 1)
@@ -78,7 +78,7 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns.Data[mci];
 
-                for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_MaxMemoriesCount); mi -= 1)
+                for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
                 {
                     Memory? cortexMemory = miniColumn.CortexMemories[mi];
                     if (cortexMemory is null)

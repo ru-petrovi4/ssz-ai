@@ -1183,6 +1183,10 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
+            public int DiscreteVectorLength => 300;
+
+            public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+
             public double DetectorMinGradientMagnitude => 42;
 
             public int GeneratedMinGradientMagnitude => 5;
@@ -1245,12 +1249,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Минимальное число бит в хэше, что бы быть сохраненным в память
             /// </summary>
-            public int MinBitsInHashForMemory => 5; // 11 optimum
-
-            /// <summary>
-            ///     Максимальное расстояние до ближайших миниколонок, для учета суперактивности
-            /// </summary>
-            public float SuperActivityRadius_MiniColumns => 2.5f;
+            public int MinBitsInHashForMemory => 5; // 11 optimum            
 
             /// <summary>
             ///     Верхний предел количества воспоминаний (для кэширования)

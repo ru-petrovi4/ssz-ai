@@ -8,7 +8,9 @@ namespace Ssz.AI.Models;
 
 public interface IMiniColumnsActivityConstants
 {
-    public int DiscreteVectorLength => 300;
+    int DiscreteVectorLength { get; }
+
+    int DiscreteOptimizedVector_PrimaryBitsCount { get; }
 
     /// <summary>
     ///     Количество миниколонок в зоне коры по оси X
@@ -47,7 +49,12 @@ public interface IMiniColumnsActivityConstants
 
 public interface IMiniColumn
 {
+    int MCX { get; }
+    int MCY { get; }
+
     IFastList<ICortexMemory?> CortexMemories { get; }
+
+    int DiscreteOptimizedVector_ProjectionIndex { get; }
 }
 
 public interface IMiniColumnActivity
@@ -136,7 +143,7 @@ public static class MiniColumnsActivityHelper
     }
 
     /// <summary>
-    ///     Implementation #0
+    ///     
     /// </summary>
     /// <param name="miniColumnActivity"></param>
     /// <param name="constants"></param>
@@ -241,6 +248,31 @@ public static class MiniColumnsActivityHelper
         }   
     }
 
+    public static void ReCalculateActivityAndSuperActivity(
+        float[] discreteVector, 
+        IDenseMatrix<IMiniColumnActivity> miniColumnActivities, 
+        IMiniColumnsActivityConstants constants, 
+        IMiniColumn prevIteratorMiniColumn, 
+        IMiniColumn iteratorMiniColumn)
+    {
+        var miniColumnActivity = miniColumnActivities[prevIteratorMiniColumn.MCX, prevIteratorMiniColumn.MCY];
+        miniColumnActivity.Activity = GetActivity(prevIteratorMiniColumn, discreteVector, constants);
+
+        miniColumnActivity = miniColumnActivities[iteratorMiniColumn.MCX, iteratorMiniColumn.MCY];
+        miniColumnActivity.Activity = GetActivity(iteratorMiniColumn, discreteVector, constants);
+
+        int maxR = constants.PositiveK.Length - 1;        
+
+        for (int mcy = Math.Max(0, Math.Min(prevIteratorMiniColumn.MCY, iteratorMiniColumn.MCY) - maxR); 
+                mcy < Math.Min(miniColumnActivities.Dimensions[1], Math.Max(prevIteratorMiniColumn.MCY, iteratorMiniColumn.MCY) + maxR); mcy += 1)
+            for (int mcx = Math.Max(0, Math.Min(prevIteratorMiniColumn.MCX, iteratorMiniColumn.MCX) - maxR);
+                mcx < Math.Min(miniColumnActivities.Dimensions[0], Math.Max(prevIteratorMiniColumn.MCX, iteratorMiniColumn.MCX) + maxR); mcx += 1)
+            {
+                miniColumnActivity = miniColumnActivities[mcx, mcy];
+                miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
+            }        
+    }
+
     public static void ClearActivityAndSuperActivity(IDenseMatrix<IMiniColumnActivity> miniColumnActivities, ActivitiyMaxInfo? activitiyMaxInfo, IMiniColumnsActivityConstants constants)
     {
         for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
@@ -298,7 +330,7 @@ public static class MiniColumnsActivityHelper
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
             }
         }
-    }
+    }    
 }        
 
 

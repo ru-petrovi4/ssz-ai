@@ -132,7 +132,10 @@ namespace Ssz.AI.Models
                 }
             SubAreaOrAll_MiniColumns = subAreaOrAll_MiniColumns.ToArray();
             SubAreaOrAll_Detectors = subAreaOrAll_DetectorsHashSet.ToArray();
-            
+
+            int maxR = Constants.PositiveK.Length - 1;
+            float maxR_Single = maxR + 0.00001f;
+
             // Находим ближайшие миниколонки для каждой миниколонки
             Parallel.For(
                 fromInclusive: 0,
@@ -143,8 +146,8 @@ namespace Ssz.AI.Models
                     
                     mc.K0 = (constants.PositiveK[0], constants.NegativeK[0]);
 
-                    for (int mcy = mc.MCY - (int)constants.SuperActivityRadius_MiniColumns - 1; mcy <= mc.MCY + (int)constants.SuperActivityRadius_MiniColumns + 1; mcy += 1)
-                        for (int mcx = mc.MCX - (int)constants.SuperActivityRadius_MiniColumns - 1; mcx <= mc.MCX + (int)constants.SuperActivityRadius_MiniColumns + 1; mcx += 1)
+                    for (int mcy = mc.MCY - maxR; mcy <= mc.MCY + maxR; mcy += 1)
+                        for (int mcx = mc.MCX - maxR; mcx <= mc.MCX + maxR; mcx += 1)
                         {
                             if (mcx < 0 ||
                                     mcx >= constants.CortexWidth_MiniColumns ||
@@ -157,7 +160,7 @@ namespace Ssz.AI.Models
                             if (nearestMc is null)
                                 continue;
                             float r = MathF.Sqrt((mcx - mc.MCX) * (mcx - mc.MCX) + (mcy - mc.MCY) * (mcy - mc.MCY));
-                            if (r < constants.SuperActivityRadius_MiniColumns + 0.00001f)
+                            if (r < maxR_Single)
                             {                                
                                 float k0 = MathHelper.GetInterpolatedValue(constants.PositiveK, r);
                                 float k1 = MathHelper.GetInterpolatedValue(constants.NegativeK, r);
@@ -378,7 +381,8 @@ namespace Ssz.AI.Models
                 Temp_Memories = new(constants.MemoriesMaxCount);
                 Temp_ShortHashConverted = new float[constants.ShortHashLength];
 
-                K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * constants.SuperActivityRadius_MiniColumns * constants.SuperActivityRadius_MiniColumns) + 10);
+                int maxR = Constants.PositiveK.Length - 1;
+                K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * maxR * maxR) + 1);
                 NearestMiniColumnsAndSelf_ForMemorySaving = new List<MiniColumn>((int)(Math.PI * constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns * 
                     constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns) + 10);
             }
@@ -390,12 +394,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
             /// </summary>
-            public readonly int MCX;
+            public int MCX { get; }
 
             /// <summary>
             ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
             /// </summary>
-            public readonly int MCY;
+            public int MCY { get; }
 
             /// <summary>
             ///     K для расчета суперактивности.
@@ -432,6 +436,8 @@ namespace Ssz.AI.Models
             ///     Временный список для сохраненных хэш-кодов
             /// </summary>
             public FastList<Memory?> Temp_Memories;
+
+            public int Temp_DiscreteOptimizedVector_ProjectionIndex;
 
             /// <summary>
             ///     Последнее добавленное воспомининие            
@@ -637,6 +643,8 @@ namespace Ssz.AI.Models
             }
 
             IFastList<ICortexMemory?> IMiniColumn.CortexMemories => Memories;
+
+            int IMiniColumn.DiscreteOptimizedVector_ProjectionIndex => Temp_DiscreteOptimizedVector_ProjectionIndex;
 
             IMiniColumn IMiniColumnActivity.MiniColumn => this;
 

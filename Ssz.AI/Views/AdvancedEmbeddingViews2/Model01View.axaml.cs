@@ -61,12 +61,12 @@ public partial class Model01View : UserControl
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[0];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[1];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[2];
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value = constants.PositiveK[3];
+        //((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value = constants.PositiveK[3];
 
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = constants.NegativeK[0];
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = constants.NegativeK[1];
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = constants.NegativeK[2];
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value = constants.NegativeK[3];
+        //((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value = constants.NegativeK[3];
     }
 
     private void GetDataFromControls(Model01.ModelConstants constants)
@@ -80,12 +80,12 @@ public partial class Model01View : UserControl
         constants.PositiveK[0] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
         constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value;
-        constants.PositiveK[3] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value;
+        //constants.PositiveK[3] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[3].Value;
 
         constants.NegativeK[0] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value;
         constants.NegativeK[1] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value;
         constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value;
-        constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value;
+        //constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value;
     }
 
     #region BUttons Handlers
@@ -138,6 +138,16 @@ public partial class Model01View : UserControl
         Model.Cortex.Calculate_CurrentWord(Model.InputCorpusData, _random);
 
         Refresh_ImagesSet();
+    }
+
+    private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
+    }
+
+    private void LoadCortex_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
     }
 
     private void PutPhrase_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
@@ -217,7 +227,7 @@ public partial class Model01View : UserControl
         //    Refresh_ImagesSet();
         //    await Task.Delay(50);
         //});
-        Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
 
         Refresh_ImagesSet();
     }
@@ -226,11 +236,11 @@ public partial class Model01View : UserControl
     {
         await Task.Delay(50);
         
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
         Model.Cortex.Prepare();
 
         Model.Cortex.Calculate_Words_DiscreteOptimizedVectors(_random);
-        Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
 
         Refresh_ImagesSet();
     }
@@ -239,9 +249,9 @@ public partial class Model01View : UserControl
     {
         await Task.Delay(50);
 
-        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.UserFriendlyLogger);
+        Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
 
-        Model.Cortex.Calculate_Words_DiscreteOptimizedVectors_Metrics(_random, Model.LoggersSet.UserFriendlyLogger);
+        Model.Cortex.Calculate_Words_DiscreteOptimizedVectors_Metrics(_random, Model.LoggersSet.LoggerAndUserFriendlyLogger);
     }
 
     private async void PutPhrasesAll_Randomly_OnClick(object? sender, RoutedEventArgs args)

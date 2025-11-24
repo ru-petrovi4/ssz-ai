@@ -636,6 +636,10 @@ namespace Ssz.AI.Models
         /// </summary>
         public class ModelConstants : IConstants
         {
+            public int DiscreteVectorLength => 300;
+
+            public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+
             public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;

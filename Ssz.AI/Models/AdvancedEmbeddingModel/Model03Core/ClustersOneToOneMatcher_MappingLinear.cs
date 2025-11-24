@@ -20,9 +20,9 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model03Core;
 /// </summary>
 public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 {
-    public ClustersOneToOneMatcher_MappingLinear(IUserFriendlyLogger userFriendlyLogger)
+    public ClustersOneToOneMatcher_MappingLinear(ILogger logger)
     {
-        _userFriendlyLogger = userFriendlyLogger;        
+        _logger = logger;        
     }
 
     /// <summary>
@@ -232,7 +232,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
             source.ClusterInfos[sourceClusterIndex] = null!;
         }
 
-        //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
+        //_logger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
     }
 
     public void Fix(LanguageDiscreteEmbeddings embeddings_A, LanguageDiscreteEmbeddings embeddings_B, Random r)
@@ -421,7 +421,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
         //    }
         //}
         //var hsB = clustersMapping_Reverse.ToHashSet();
-        //_userFriendlyLogger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
+        //_logger.LogInformation($"Количество уникальных сопоставлений: {hsA.Count}, {hsB.Count}");
     }
 
     /// <summary>
@@ -499,7 +499,7 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 
     #region private fields
 
-    private IUserFriendlyLogger _userFriendlyLogger;    
+    private ILogger _logger;    
 
     #endregion
 }
@@ -511,14 +511,14 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 //        {
 //            ShowWords(source, sourceClusterIndex);
 //            ShowWords(target, ClustersMapping[sourceClusterIndex]);
-//            _userFriendlyLogger.LogInformation($"------------------------");
+//            _logger.LogInformation($"------------------------");
 //        }
 //   }   
 
 
 //private void ShowWords(LanguageDiscreteEmbeddings source, int clusterIndex)
 //    {
-//        _userFriendlyLogger.LogInformation($"Кластер: {clusterIndex}");
+//        _logger.LogInformation($"Кластер: {clusterIndex}");
 
 //        var clusterInfo = source.ClusterInfos[clusterIndex];
 
@@ -527,9 +527,9 @@ public class ClustersOneToOneMatcher_MappingLinear : IOwnedDataSerializable
 //            .OrderByDescending(w => TensorPrimitives.Dot(w.OldVectorNormalized, clusterInfo.CentroidOldVectorNormalized))
 //            .Take(10))
 //        {
-//            _userFriendlyLogger.LogInformation(word.Name);
+//            _logger.LogInformation(word.Name);
 //        }
 
-//        _userFriendlyLogger.LogInformation($"------------------------");
+//        _logger.LogInformation($"------------------------");
 //    }
 

@@ -18,7 +18,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel.Model01Core;
 public class VonMisesFisherClusterer
 {
     private readonly Device _device;
-    private readonly IUserFriendlyLogger _userFriendlyLogger;
+    private readonly ILogger _logger;
 
     // Поля класса для хранения параметров модели
     /// <summary>
@@ -70,19 +70,19 @@ public class VonMisesFisherClusterer
     /// Конструктор кластеризатора vMF
     /// </summary>
     /// <param name="device"></param>
-    /// <param name="userFriendlyLogger"></param>
+    /// <param name="logger"></param>
     /// <param name="numClusters">Количество кластеров K</param>
     /// <param name="maxIterations">Максимальное количество итераций EM алгоритма</param>
     /// <param name="tolerance">Порог сходимости для логарифмической вероятности</param>    
     public VonMisesFisherClusterer(
         Device device,
-        IUserFriendlyLogger userFriendlyLogger,
+        ILogger logger,
         int numClusters, 
         int maxIterations, 
         float tolerance)
     {
         _device = device;
-        _userFriendlyLogger = userFriendlyLogger;
+        _logger = logger;
         _numClusters = numClusters;
         _maxIterations = maxIterations;
         _tolerance = tolerance;        
@@ -119,7 +119,7 @@ public class VonMisesFisherClusterer
             // Проверяем сходимость
             if (Math.Abs(logLikelihood - prevLogLikelihood) < _tolerance)
             {
-                _userFriendlyLogger.LogInformation($"Сходимость достигнута на итерации {iteration + 1}");
+                _logger.LogInformation($"Сходимость достигнута на итерации {iteration + 1}");
                 break;
             }
 
@@ -128,11 +128,11 @@ public class VonMisesFisherClusterer
             // Выводим прогресс каждые 10 итераций
             //if ((iteration + 1) % 10 == 0)
             {
-                _userFriendlyLogger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
+                _logger.LogInformation($"Итерация {iteration + 1}: Log-Likelihood = {logLikelihood:F6}");
             }
         }
 
-        _userFriendlyLogger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
+        _logger.LogInformation($"Обучение завершено. Финальная Log-Likelihood: {prevLogLikelihood:F6}");
     }
 
     /// <summary>
@@ -310,7 +310,7 @@ public class VonMisesFisherClusterer
 
                 if ((k + 1) % 10 == 0)
                 {
-                    _userFriendlyLogger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
+                    _logger.LogInformation($"Инициализирован кластер {k}/{_numClusters}.");
                 }
             }
 
@@ -324,10 +324,10 @@ public class VonMisesFisherClusterer
         // Инициализация коэффициентов смешивания (равномерное распределение)
         MixingCoefficients = torch.ones(_numClusters, dtype: torch.float32) / _numClusters;
 
-        _userFriendlyLogger.LogInformation("Параметры инициализированы:");
-        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
-        _userFriendlyLogger.LogInformation($"Размерность данных: {dimension}");
-        _userFriendlyLogger.LogInformation($"Количество образцов: {numSamples}");
+        _logger.LogInformation("Параметры инициализированы:");
+        _logger.LogInformation($"Количество кластеров: {_numClusters}");
+        _logger.LogInformation($"Размерность данных: {dimension}");
+        _logger.LogInformation($"Количество образцов: {numSamples}");
     }
 
     /// <summary>
@@ -487,7 +487,7 @@ public class VonMisesFisherClusterer
     {   
         foreach (int emptyCluster in emptyClusters)
         {
-            _userFriendlyLogger.LogInformation($"Разбиение кластера {emptyCluster}.");
+            _logger.LogInformation($"Разбиение кластера {emptyCluster}.");
 
             Tensor posteriors;
             using (var posteriors_device = ComputePosteriors_device())
@@ -623,23 +623,23 @@ public class VonMisesFisherClusterer
     /// </summary>
     public void PrintModelSummary()
     {
-        _userFriendlyLogger.LogInformation("=== Результаты vMF Кластеризации ===");
-        _userFriendlyLogger.LogInformation($"Количество кластеров: {_numClusters}");
-        _userFriendlyLogger.LogInformation($"Алгоритм назначения: {(false ? "Hard (жёсткое)" : "Soft (мягкое)")}");
+        _logger.LogInformation("=== Результаты vMF Кластеризации ===");
+        _logger.LogInformation($"Количество кластеров: {_numClusters}");
+        _logger.LogInformation($"Алгоритм назначения: {(false ? "Hard (жёсткое)" : "Soft (мягкое)")}");
             
-        _userFriendlyLogger.LogInformation("\nПараметры кластеров:");
+        _logger.LogInformation("\nПараметры кластеров:");
         for (int k = 0; k < _numClusters; k++)
         {
-            _userFriendlyLogger.LogInformation($"\nКластер {k}:");
-            _userFriendlyLogger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<float>():F4}");
-            _userFriendlyLogger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<float>():F4}");
-            _userFriendlyLogger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
+            _logger.LogInformation($"\nКластер {k}:");
+            _logger.LogInformation($"  Коэффициент смешивания α_{k}: {MixingCoefficients[k].item<float>():F4}");
+            _logger.LogInformation($"  Концентрация κ_{k}: {Concentrations[k].item<float>():F4}");
+            _logger.LogInformation($"  Направление μ_{k}: [{string.Join(", ", MeanDirections[k].data<float>().Take(5).Select(x => x.ToString("F3")))}...]");
         }
             
         if (LogLikelihoodHistory.Any())
         {
-            _userFriendlyLogger.LogInformation($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
-            _userFriendlyLogger.LogInformation($"Количество итераций: {LogLikelihoodHistory.Count}");
+            _logger.LogInformation($"\nФинальная log-likelihood: {LogLikelihoodHistory.Last():F6}");
+            _logger.LogInformation($"Количество итераций: {LogLikelihoodHistory.Count}");
         }
     }
 }
