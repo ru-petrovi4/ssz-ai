@@ -336,5 +336,5 @@ public partial class Cortex : ISerializableModelObject
         return TensorPrimitives.CosineSimilarity(batch_CortexMemory.DiscreteRandomVector, discreteRandomVector_Restored);
     }
 
-#endregion
+    #endregion
 }
