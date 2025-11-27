@@ -61,68 +61,78 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    public async Task Calculate_ReorderCortexMemories_BasedOnSuperActivityAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
+    public async Task Calculate_ReorderCortexMemories_BasedOnSuperActivityAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task>? epochRefreshAction = null)
     {
         ActivitiyMaxInfo activitiyMaxInfo = new();
         int min_EpochChangesCount = Int32.MaxValue;
 
-        int inMiniColumn_TopMemoriesCount = 10000 / MiniColumns.Data.Length;
+        int inMiniColumn_TopMemoriesCount = 1000000 / MiniColumns.Data.Length;
 
         Stopwatch sw = new();
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             sw.Restart();
 
             int epochChangesCount = 0;
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+
+            try
             {
-                MiniColumn miniColumn = MiniColumns.Data[mci];
-
-                for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
+                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
                 {
-                    Memory? cortexMemory = miniColumn.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    miniColumn.CortexMemories[mi] = null;
+                    MiniColumn miniColumn = MiniColumns.Data[mci];
 
-                    Temp_InputCurrentDesc = GetDesc(cortexMemory);
-                    MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, MiniColumns, activitiyMaxInfo, Constants);
-
-                    // Сохраняем воспоминание в миниколонке-победителе.
-                    MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
-                    if (winnerMiniColumn is not null)
+                    for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
                     {
-                        if (!ReferenceEquals(winnerMiniColumn, miniColumn))
+                        Memory? cortexMemory = miniColumn.CortexMemories[mi];
+                        if (cortexMemory is null)
+                            continue;
+
+                        miniColumn.CortexMemories[mi] = null;
+
+                        Temp_InputCurrentDesc = GetDesc(cortexMemory);
+                        MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(cortexMemory.DiscreteRandomVector, MiniColumns, activitiyMaxInfo, Constants);
+
+                        // Сохраняем воспоминание в миниколонке-победителе.
+                        MiniColumn? winnerMiniColumn = activitiyMaxInfo.GetSuperActivityMax_MiniColumn(random) as MiniColumn;
+                        if (winnerMiniColumn is not null)
                         {
-                            winnerMiniColumn.AddCortexMemory(cortexMemory);
-                            epochChangesCount += 1;
-                        }
-                        else
-                        {
-                            miniColumn.CortexMemories[mi] = cortexMemory;
+                            if (!ReferenceEquals(winnerMiniColumn, miniColumn))
+                            {
+                                winnerMiniColumn.AddCortexMemory(cortexMemory);
+                                epochChangesCount += 1;
+                            }
+                            else
+                            {
+                                miniColumn.CortexMemories[mi] = cortexMemory;
+                            }
                         }
                     }
                 }
             }
-
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            finally
             {
-                MiniColumn miniColumn = MiniColumns.Data[mci];
-                miniColumn.Temp_CortexMemories.Clear();
-
-                for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
                 {
-                    Memory? memory = miniColumn.CortexMemories[mi];
-                    if (memory is null)
-                        continue;
+                    MiniColumn miniColumn = MiniColumns.Data[mci];
+                    miniColumn.Temp_CortexMemories.Clear();
 
-                    miniColumn.Temp_CortexMemories.Add(memory);
+                    for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                    {
+                        Memory? memory = miniColumn.CortexMemories[mi];
+                        if (memory is null)
+                            continue;
+
+                        miniColumn.Temp_CortexMemories.Add(memory);
+                    }
+
+                    miniColumn.CortexMemories.Swap(miniColumn.Temp_CortexMemories);
+                    miniColumn.Temp_CortexMemories.Clear();
                 }
-
-                miniColumn.CortexMemories.Swap(miniColumn.Temp_CortexMemories);
-                miniColumn.Temp_CortexMemories.Clear();
-            }
+            }            
 
             sw.Stop();
 

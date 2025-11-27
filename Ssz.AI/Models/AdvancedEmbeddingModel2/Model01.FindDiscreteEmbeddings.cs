@@ -136,9 +136,9 @@ public class Model01
         return Cortex.Calculate_PutPhrases_BasedOnSuperActivity(InputCorpusData, cortexMemoriesCount, random);
     }
 
-    public async Task ReorderPhrases1Epoch_BasedOnSuperActivityAsync(int epochCount, Random random, Func<Task>? epochRefreshAction = null)
+    public async Task ReorderPhrases1Epoch_BasedOnSuperActivityAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task>? epochRefreshAction = null)
     {
-        await Cortex.Calculate_ReorderCortexMemories_BasedOnSuperActivityAsync(epochCount, random, epochRefreshAction);
+        await Cortex.Calculate_ReorderCortexMemories_BasedOnSuperActivityAsync(epochCount, random, cancellationToken, epochRefreshAction);
     }
 
     public bool Calculate_PutPhrases_Randomly(int cortexMemoriesCount, Random random)

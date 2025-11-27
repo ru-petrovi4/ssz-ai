@@ -144,6 +144,8 @@ public partial class Model01View : UserControl
     private void LoadCortex_OnClick(object? sender, RoutedEventArgs args)
     {
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
+
+        Model.Cortex.Prepare();
     }
 
     private void PutPhrase_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
@@ -176,7 +178,7 @@ public partial class Model01View : UserControl
 
     private async void ReorderPhrases1Epoch_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(1, _random, async () =>
+        await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(1, _random, CancellationToken.None, async () =>
         {
             Refresh_ImagesSet();
             await Task.Delay(50);
@@ -185,12 +187,32 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
-    private async void ReorderPhrasesAll_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
+    private async void StartReorderPhrasesAll_BasedOnSuperActivity_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(100, _random, async () =>
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        await Task.Run(async () =>
         {
-            Refresh_ImagesSet();
-            await Task.Delay(50);
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderPhrases1Epoch_BasedOnSuperActivityAsync Started.");
+
+                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(100, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderPhrases1Epoch_BasedOnSuperActivityAsync Cancelled.");
+            }
+
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderPhrases1Epoch_BasedOnSuperActivityAsync Finished.");
         });
 
         Refresh_ImagesSet();
@@ -204,7 +226,7 @@ public partial class Model01View : UserControl
             {
                 bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(5000, _random);
 
-                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, () =>
+                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, CancellationToken.None, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -258,6 +280,8 @@ public partial class Model01View : UserControl
         {
             try
             {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Calculate_ReorderPhrases_BasedOnCodingDecoding Started.");
+
                 await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
                     Model.InputCorpusData.CortexMemories,
                     _random, 
@@ -273,7 +297,9 @@ public partial class Model01View : UserControl
             }
             catch (OperationCanceledException)
             {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Calculate_ReorderPhrases_BasedOnCodingDecoding Cancelled.");
             }
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Calculate_ReorderPhrases_BasedOnCodingDecoding Finished.");
         });
     }    
 

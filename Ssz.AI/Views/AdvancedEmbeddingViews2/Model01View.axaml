@@ -45,7 +45,7 @@
               <Button Content="Put Phrases 5K" Click="PutPhrases5K_BasedOnSuperActivity_OnClick" />
               <Button Content="Put Phrases 10K" Click="PutPhrases10K_BasedOnSuperActivity_OnClick" />      
               <Button Content="Reorder Phrases (Sleep, 1 epoch)" Click="ReorderPhrases1Epoch_BasedOnSuperActivity_OnClick" />
-              <Button Content="Reorder Phrases (Sleep long)" Click="ReorderPhrasesAll_BasedOnSuperActivity_OnClick" Background="Red" />                  
+              <Button Content="Reorder Phrases (Sleep long)" Click="StartReorderPhrasesAll_BasedOnSuperActivity_OnClick" Background="Red" />                  
               <Button Content="Do Script 0" Click="DoScript0_OnClick" /> 
               <Button Content="Do Script 1" Click="DoScript1_OnClick" /> 
               <Button Content="Do Script 2" Click="DoScript2_OnClick" /> 

@@ -131,103 +131,105 @@ public partial class Cortex : ISerializableModelObject
         }
         float current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
                         batch_CortexMemories
-                        );        
+                        );
 
-        var sw = new Stopwatch();
-        for (int miniColumns_Epoch = 0; ; miniColumns_Epoch += 1) // TEMPCODE
+        try
         {
-            Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max started. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity};");
-            await refreshAction();
-
-            sw.Restart();
-
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            var sw = new Stopwatch();
+            for (int miniColumns_Epoch = 0; ; miniColumns_Epoch += 1) // TEMPCODE
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max started. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity};");
+                await refreshAction();
 
-                var miniColumn = MiniColumns.Data[mci];
+                sw.Restart();
 
-                // TEMPCODE
-                //for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
-                // !!! Remove break at the loop end.
-                for (; ; )
+                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
                 {
-                    int mi = random.Next(miniColumn.CortexMemories.Count);
-                    
-                    Memory? cortexMemory = miniColumn.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
+                    cancellationToken.ThrowIfCancellationRequested();
 
-                    miniColumn.CortexMemories[mi] = null;
+                    var miniColumn = MiniColumns.Data[mci];
 
-                    float maxCodingDecodingSimilarity = current_CodingDecodingSimilarity;
-                    MiniColumn max_MiniColumn = miniColumn;
-
-                    MiniColumn? prevIteratorMiniColumn = miniColumn;
-                    MiniColumn? iteratorMiniColumn = null;
-                    for (int i = 1; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
+                    // TEMPCODE
+                    //for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
+                    // !!! Remove break at the loop end.
+                    for (; ; )
                     {
-                        iteratorMiniColumn = (MiniColumn)miniColumn.Temp_K_ForNearestMiniColumns[i].Item3;
-                        iteratorMiniColumn.CortexMemories.Add(cortexMemory);
+                        int mi = random.Next(miniColumn.CortexMemories.Count);
 
-                        var batch_CortexMemories_Span2 = batch_CortexMemories.Span;
-                        for (int cmi = 0; cmi < batch_CortexMemories_Span2.Length; cmi += 1)
+                        Memory? cortexMemory = miniColumn.CortexMemories[mi];
+                        if (cortexMemory is null)
+                            continue;
+
+                        miniColumn.CortexMemories[mi] = null;
+
+                        float maxCodingDecodingSimilarity = current_CodingDecodingSimilarity;
+                        MiniColumn max_MiniColumn = miniColumn;
+
+                        MiniColumn? prevIteratorMiniColumn = miniColumn;
+                        MiniColumn? iteratorMiniColumn = null;
+                        for (int i = 1; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
                         {
-                            var batch_CortexMemory = batch_CortexMemories_Span2[cmi];
-                            MiniColumnsActivityHelper.ReCalculateActivityAndSuperActivity(
-                                batch_CortexMemory.DiscreteRandomVector,
-                                batch_CortexMemory.Temp_MiniColumnActivities,
-                                Constants,
-                                prevIteratorMiniColumn,
-                                iteratorMiniColumn);
-                            //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
-                            //    batch_CortexMemory.DiscreteRandomVector,
-                            //    batch_CortexMemory.Temp_MiniColumnActivities,
-                            //    null,
-                            //    Constants);
-                        }
-                        current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
-                            batch_CortexMemories
-                            );
+                            iteratorMiniColumn = (MiniColumn)miniColumn.Temp_K_ForNearestMiniColumns[i].Item3;
+                            iteratorMiniColumn.CortexMemories.Add(cortexMemory);
 
-                        if (current_CodingDecodingSimilarity > maxCodingDecodingSimilarity)
+                            var batch_CortexMemories_Span2 = batch_CortexMemories.Span;
+                            for (int cmi = 0; cmi < batch_CortexMemories_Span2.Length; cmi += 1)
+                            {
+                                var batch_CortexMemory = batch_CortexMemories_Span2[cmi];
+                                MiniColumnsActivityHelper.ReCalculateActivityAndSuperActivity(
+                                    batch_CortexMemory.DiscreteRandomVector,
+                                    batch_CortexMemory.Temp_MiniColumnActivities,
+                                    Constants,
+                                    prevIteratorMiniColumn,
+                                    iteratorMiniColumn);
+                                //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
+                                //    batch_CortexMemory.DiscreteRandomVector,
+                                //    batch_CortexMemory.Temp_MiniColumnActivities,
+                                //    null,
+                                //    Constants);
+                            }
+                            current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
+                                batch_CortexMemories
+                                );
+
+                            if (current_CodingDecodingSimilarity > maxCodingDecodingSimilarity)
+                            {
+                                maxCodingDecodingSimilarity = current_CodingDecodingSimilarity;
+                                max_MiniColumn = iteratorMiniColumn;
+                            }
+
+                            iteratorMiniColumn.CortexMemories.RemoveAt(iteratorMiniColumn.CortexMemories.Count - 1);
+                            prevIteratorMiniColumn = iteratorMiniColumn;
+                        }
+
+                        if (!ReferenceEquals(max_MiniColumn, miniColumn))
                         {
-                            maxCodingDecodingSimilarity = current_CodingDecodingSimilarity;
-                            max_MiniColumn = iteratorMiniColumn;
+                            max_MiniColumn.AddCortexMemory(cortexMemory);
+                            changesCount += 1;
                         }
-
-                        iteratorMiniColumn.CortexMemories.RemoveAt(iteratorMiniColumn.CortexMemories.Count - 1);
-                        prevIteratorMiniColumn = iteratorMiniColumn;
-                    }
-
-                    if (!ReferenceEquals(max_MiniColumn, miniColumn))
-                    {
-                        max_MiniColumn.AddCortexMemory(cortexMemory);
-                        changesCount += 1;
-                    }
-                    else
-                    {
-                        miniColumn.CortexMemories[mi] = cortexMemory;
-                    }
-
-                    if (!ReferenceEquals(max_MiniColumn, prevIteratorMiniColumn))
-                    {
-                        var batch_CortexMemories_Span3 = batch_CortexMemories.Span;
-                        for (int cmi = 0; cmi < batch_CortexMemories_Span3.Length; cmi += 1)
+                        else
                         {
-                            var batch_CortexMemory = batch_CortexMemories_Span3[cmi];
-                            MiniColumnsActivityHelper.ReCalculateActivityAndSuperActivity(
-                                batch_CortexMemory.DiscreteRandomVector,
-                                batch_CortexMemory.Temp_MiniColumnActivities,
-                                Constants,
-                                prevIteratorMiniColumn,
-                                max_MiniColumn);
-                            //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
-                            //    batch_CortexMemory.DiscreteRandomVector,
-                            //    batch_CortexMemory.Temp_MiniColumnActivities,
-                            //    null,
-                            //    Constants);
+                            miniColumn.CortexMemories[mi] = cortexMemory;
                         }
+
+                        if (!ReferenceEquals(max_MiniColumn, prevIteratorMiniColumn))
+                        {
+                            var batch_CortexMemories_Span3 = batch_CortexMemories.Span;
+                            for (int cmi = 0; cmi < batch_CortexMemories_Span3.Length; cmi += 1)
+                            {
+                                var batch_CortexMemory = batch_CortexMemories_Span3[cmi];
+                                MiniColumnsActivityHelper.ReCalculateActivityAndSuperActivity(
+                                    batch_CortexMemory.DiscreteRandomVector,
+                                    batch_CortexMemory.Temp_MiniColumnActivities,
+                                    Constants,
+                                    prevIteratorMiniColumn,
+                                    max_MiniColumn);
+                                //MiniColumnsActivityHelper.CalculateActivityAndSuperActivity(
+                                //    batch_CortexMemory.DiscreteRandomVector,
+                                //    batch_CortexMemory.Temp_MiniColumnActivities,
+                                //    null,
+                                //    Constants);
+                            }
 #if DEBUG
                         current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
                             batch_CortexMemories
@@ -237,40 +239,61 @@ public partial class Cortex : ISerializableModelObject
                             throw new InvalidOperationException();
                         }
 #else
-                        current_CodingDecodingSimilarity = maxCodingDecodingSimilarity;
+                            current_CodingDecodingSimilarity = maxCodingDecodingSimilarity;
 #endif
+                        }
+
+                        break;
                     }
-
-                    break;
                 }
-            }
 
-            if ((miniColumns_Epoch + 1) % 10 == 0)
-            {
-                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                if ((miniColumns_Epoch + 1) % 10 == 0)
                 {
-                    MiniColumn miniColumn = MiniColumns.Data[mci];
-                    miniColumn.Temp_CortexMemories.Clear();
-
-                    for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                    for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
                     {
-                        Memory? memory = miniColumn.CortexMemories[mi];
-                        if (memory is null)
-                            continue;
+                        MiniColumn miniColumn = MiniColumns.Data[mci];
+                        miniColumn.Temp_CortexMemories.Clear();
 
-                        miniColumn.Temp_CortexMemories.Add(memory);
+                        for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                        {
+                            Memory? memory = miniColumn.CortexMemories[mi];
+                            if (memory is null)
+                                continue;
+
+                            miniColumn.Temp_CortexMemories.Add(memory);
+                        }
+
+                        miniColumn.CortexMemories.Swap(miniColumn.Temp_CortexMemories);
+                        miniColumn.Temp_CortexMemories.Clear();
                     }
-
-                    miniColumn.CortexMemories.Swap(miniColumn.Temp_CortexMemories);
-                    miniColumn.Temp_CortexMemories.Clear();
                 }
+
+                sw.Stop();
+
+                Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max finished. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+                await refreshAction();
             }
+        }
+        finally
+        {
+            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            {
+                MiniColumn miniColumn = MiniColumns.Data[mci];
+                miniColumn.Temp_CortexMemories.Clear();
 
-            sw.Stop();
+                for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                {
+                    Memory? memory = miniColumn.CortexMemories[mi];
+                    if (memory is null)
+                        continue;
 
-            Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max finished. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
-            await refreshAction();
-        }        
+                    miniColumn.Temp_CortexMemories.Add(memory);
+                }
+
+                miniColumn.CortexMemories.Swap(miniColumn.Temp_CortexMemories);
+                miniColumn.Temp_CortexMemories.Clear();
+            }
+        }              
 
         return changesCount;
     }
@@ -303,7 +326,7 @@ public partial class Cortex : ISerializableModelObject
     }
 
     private float GetCodingDecodingSimilarity(Memory batch_CortexMemory)
-    {
+    {        
         var k = Constants.DiscreteOptimizedVector_PrimaryBitsCount;
         var pq = batch_CortexMemory.Temp_MiniColumnActivities_PriorityQueue;
         int i = 0;
