@@ -127,7 +127,7 @@ public class Model01
         InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(random, Constants.DiscreteVectorLength, Constants.DiscreteOptimizedVector_PrimaryBitsCount);
 
         Cortex = new Cortex(Constants, LoggersSet.LoggerAndUserFriendlyLogger);
-        Cortex.GenerateOwnedData(InputCorpusData.Words, InputCorpusData.CortexMemories, random);
+        Cortex.GenerateOwnedData(InputCorpusData.Words, random);
         Cortex.Prepare();
     }
 

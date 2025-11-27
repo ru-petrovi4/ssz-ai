@@ -202,7 +202,7 @@ public partial class Model01View : UserControl
         {
             for (; ; )
             {
-                bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(2000, _random);
+                bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(5000, _random);
 
                 await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, () =>
                 {
@@ -258,7 +258,8 @@ public partial class Model01View : UserControl
         {
             try
             {
-                await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(                    
+                await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                    Model.InputCorpusData.CortexMemories,
                     _random, 
                     cancellationToken, 
                     () =>

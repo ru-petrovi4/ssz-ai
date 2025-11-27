@@ -38,18 +38,15 @@ public partial class Cortex : ISerializableModelObject
 
     public List<Word> Words { get; private set; } = null!;
 
-    public List<Memory> CortexMemories { get; private set; } = null!;
-
     public DenseMatrix<MiniColumn> MiniColumns { get; private set; } = null!;
 
     public readonly ActivitiyMaxInfo Temp_ActivitiyMaxInfo = new();
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(List<Word> words, List<Memory> cortexMemories, Random random)
+    public void GenerateOwnedData(List<Word> words, Random random)
     {
-        Words = words;
-        CortexMemories = cortexMemories;
+        Words = words;        
 
         MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);        
 

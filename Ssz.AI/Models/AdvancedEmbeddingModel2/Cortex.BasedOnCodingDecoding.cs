@@ -20,15 +20,19 @@ public partial class Cortex : ISerializableModelObject
 
     #region public functions
 
-    public async Task Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    public async Task Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+        List<Cortex.Memory> cortexMemories,
+        Random random, 
+        CancellationToken cancellationToken, 
+        Func<Task> refreshAction)
     {
-        int cortexMemories_Count = Math.Min(ReorderPhrases_BasedOnCodingDecoding_CortexMemories_MaxCount, CortexMemories.Count);
+        int cortexMemories_Count = Math.Min(ReorderPhrases_BasedOnCodingDecoding_CortexMemories_MaxCount, cortexMemories.Count);
 
         int cortexMemories_BatchesCount = cortexMemories_Count / ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize + 1;
 
         int inMiniColumn_TopMemoriesCount = 1000000 / MiniColumns.Data.Length;
 
-        var random_CortexMemories = CortexMemories.Take(cortexMemories_Count).ToArray();
+        var random_CortexMemories = cortexMemories.Take(cortexMemories_Count).ToArray();
 
         int maxR = Constants.PositiveK.Length - 1;
 
@@ -127,11 +131,14 @@ public partial class Cortex : ISerializableModelObject
         }
         float current_CodingDecodingSimilarity = GetCodingDecodingSimilarity(
                         batch_CortexMemories
-                        );
+                        );        
 
         var sw = new Stopwatch();
         for (int miniColumns_Epoch = 0; ; miniColumns_Epoch += 1) // TEMPCODE
         {
+            Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max started. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity};");
+            await refreshAction();
+
             sw.Restart();
 
             for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
