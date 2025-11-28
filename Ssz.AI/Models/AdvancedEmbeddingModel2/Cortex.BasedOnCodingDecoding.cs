@@ -18,38 +18,34 @@ public partial class Cortex : ISerializableModelObject
     public const int ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize = 1000000;
     public const int ReorderPhrases_BasedOnCodingDecoding_CortexMemories_MaxCount = Int32.MaxValue;
 
+    public Memory[]? Temp_Random_CortexMemories;
+
     #region public functions
 
-    public async Task Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+    public Task Prepare_Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
         List<Cortex.Memory> cortexMemories,
-        Random random, 
-        CancellationToken cancellationToken, 
-        Func<Task> refreshAction)
+        Random random)
     {
         int cortexMemories_Count = Math.Min(ReorderPhrases_BasedOnCodingDecoding_CortexMemories_MaxCount, cortexMemories.Count);
 
-        int cortexMemories_BatchesCount = cortexMemories_Count / ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize + 1;
-
-        int inMiniColumn_TopMemoriesCount = 1000000 / MiniColumns.Data.Length;
-
-        var random_CortexMemories = cortexMemories.Take(cortexMemories_Count).ToArray();
+        Temp_Random_CortexMemories = cortexMemories.Take(cortexMemories_Count).ToArray();
 
         int maxR = Constants.PositiveK.Length - 1;
 
-        for (int cmi = 0; cmi < random_CortexMemories.Length; cmi += 1)
+        for (int cmi = 0; cmi < Temp_Random_CortexMemories.Length; cmi += 1)
         {
-            var cortexMemory = random_CortexMemories[cmi];
+            var cortexMemory = Temp_Random_CortexMemories[cmi];
 
             var miniColumnActivities = new DenseMatrix<MiniColumnActivity>(MiniColumns.Dimensions);
 
             for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
             {
                 var miniColumn = MiniColumns.Data[mci];
-                MiniColumnActivity miniColumnActivity = new MiniColumnActivity(miniColumn);                
+                MiniColumnActivity miniColumnActivity = new MiniColumnActivity(miniColumn);
                 miniColumnActivities[miniColumn.MCX, miniColumn.MCY] = miniColumnActivity;
             }
 
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)                
+            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
             {
                 var miniColumn = MiniColumns.Data[mci];
                 MiniColumnActivity miniColumnActivity = miniColumnActivities[miniColumn.MCX, miniColumn.MCY];
@@ -63,34 +59,49 @@ public partial class Cortex : ISerializableModelObject
                     k_ForNearestMiniColumns.Add((it.Item1, it.Item2, miniColumnActivities[((MiniColumn)it.Item3).MCX, ((MiniColumn)it.Item3).MCY]));
                 }
 
-                miniColumnActivity.K_ForNearestMiniColumns = k_ForNearestMiniColumns;                
+                miniColumnActivity.K_ForNearestMiniColumns = k_ForNearestMiniColumns;
             }
 
             cortexMemory.Temp_MiniColumnActivities = miniColumnActivities;
             cortexMemory.Temp_MiniColumnActivities_PriorityQueue = new PriorityQueue<MiniColumnActivity, float>(Constants.DiscreteOptimizedVector_PrimaryBitsCount);
             cortexMemory.Temp_Int_Single_PriorityQueue = new PriorityQueue<int, float>(60);
             //cortexMemory.Temp_DiscreteOptimizedVector = new float[Constants.DiscreteVectorLength];
-            cortexMemory.Temp_DiscreteRandomVector_Restored = new float[Constants.DiscreteVectorLength];            
+            cortexMemory.Temp_DiscreteRandomVector_Restored = new float[Constants.DiscreteVectorLength];
         }
 
+        return Task.CompletedTask;
+    }
+
+    public async Task Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(      
+        int cortexMemories_EpochCount,
+        int miniColumns_EpochCount,
+        Random random, 
+        CancellationToken cancellationToken, 
+        Func<Task> refreshAction)
+    {
+        int inMiniColumn_TopMemoriesCount = 1000000 / MiniColumns.Data.Length;
+
+        int cortexMemories_BatchesCount = Temp_Random_CortexMemories!.Length / ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize + 1;
+
         Stopwatch sw = new();
-        for (int epoch = 0; ; epoch += 1)
+        for (int cortexMemories_Epoch = 0; cortexMemories_Epoch < cortexMemories_EpochCount; cortexMemories_Epoch += 1)
         {
             sw.Restart();
             
-            random.Shuffle(random_CortexMemories);
+            random.Shuffle(Temp_Random_CortexMemories!);
 
             int epochChangesCount = 0;
 
             for (int cortexMemories_BatchN = 0; cortexMemories_BatchN < cortexMemories_BatchesCount; cortexMemories_BatchN += 1)
             {
                 int cortexMemories_IndexStart = cortexMemories_BatchN * ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize;
-                if (cortexMemories_IndexStart >= cortexMemories_Count)
+                if (cortexMemories_IndexStart >= Temp_Random_CortexMemories!.Length)
                     break;
-                var batch_CortexMemories = random_CortexMemories.AsMemory(cortexMemories_IndexStart, Math.Min(ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize, random_CortexMemories.Length - cortexMemories_IndexStart));
+                var batch_CortexMemories = Temp_Random_CortexMemories.AsMemory(cortexMemories_IndexStart, Math.Min(ReorderPhrases_BasedOnCodingDecoding_CortexMemories_BatchSize, Temp_Random_CortexMemories.Length - cortexMemories_IndexStart));
 
                 epochChangesCount += await Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
                     batch_CortexMemories,
+                    miniColumns_EpochCount,
                     inMiniColumn_TopMemoriesCount,
                     random, 
                     cancellationToken, 
@@ -99,7 +110,7 @@ public partial class Cortex : ISerializableModelObject
 
             sw.Stop();
 
-            Logger.LogInformation($"ReorderPhrases() epoch {epoch + 1}/Max finished. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+            Logger.LogInformation($"ReorderPhrases() cortexMemories_Epoch {cortexMemories_Epoch + 1}/{cortexMemories_EpochCount}. ChangedCount: {epochChangesCount}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
             
             if (epochChangesCount < 10)
                 break;
@@ -112,6 +123,7 @@ public partial class Cortex : ISerializableModelObject
 
     private async Task<int> Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
         Memory<Cortex.Memory> batch_CortexMemories,
+        int miniColumns_EpochCount,
         int inMiniColumn_TopMemoriesCount,
         Random random, 
         CancellationToken cancellationToken, 
@@ -133,10 +145,12 @@ public partial class Cortex : ISerializableModelObject
                         batch_CortexMemories
                         );
 
+        Logger.LogInformation($"ReorderPhrases() current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity};");
+
         try
         {
             var sw = new Stopwatch();
-            for (int miniColumns_Epoch = 0; ; miniColumns_Epoch += 1) // TEMPCODE
+            for (int miniColumns_Epoch = 0; miniColumns_Epoch < miniColumns_EpochCount; miniColumns_Epoch += 1)
             {
                 Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max started. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity};");
                 await refreshAction();
@@ -148,10 +162,7 @@ public partial class Cortex : ISerializableModelObject
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var miniColumn = MiniColumns.Data[mci];
-
-                    // TEMPCODE
-                    //for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
-                    // !!! Remove break at the loop end.
+                    
                     for (; ; )
                     {
                         int mi = random.Next(miniColumn.CortexMemories.Count);
@@ -270,7 +281,7 @@ public partial class Cortex : ISerializableModelObject
 
                 sw.Stop();
 
-                Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/Max finished. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
+                Logger.LogInformation($"ReorderPhrases() miniColumns_Epoch {miniColumns_Epoch + 1}/{miniColumns_EpochCount} finished. current_CodingDecodingSimilarity: {current_CodingDecodingSimilarity}; ElapsedMilliseconds: {sw.ElapsedMilliseconds}");
                 await refreshAction();
             }
         }

@@ -291,12 +291,17 @@ public partial class Model01View : UserControl
                     Model.Cortex.Words,
                     _random, 
                     Model01.Constants.DiscreteVectorLength, 
-                    Model01.Constants.DiscreteOptimizedVector_PrimaryBitsCount);
+                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount);
+
+                await Model.Cortex.Prepare_Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                    Model.InputCorpusData.CortexMemories,
+                    _random);
 
                 await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
-                    Model.InputCorpusData.CortexMemories,
-                    _random, 
-                    cancellationToken, 
+                    cortexMemories_EpochCount: 1000000,
+                    miniColumns_EpochCount: 1000000,
+                    _random,
+                    cancellationToken,
                     () =>
                     {
                         Dispatcher.UIThread.Invoke(() =>
@@ -304,7 +309,7 @@ public partial class Model01View : UserControl
                             Refresh_ImagesSet();
                         });
                         return Task.CompletedTask;
-                    });                
+                    });
             }
             catch (OperationCanceledException)
             {
@@ -312,7 +317,58 @@ public partial class Model01View : UserControl
             }
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Calculate_ReorderPhrases_BasedOnCodingDecoding Finished.");
         });
-    }    
+    }
+
+    private async void DoScript3_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        await Task.Run(async () =>
+        {
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Script3 Started.");
+
+                Model.InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(
+                    Model.Cortex.Words,
+                    _random,
+                    Model01.Constants.DiscreteVectorLength,
+                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount);
+
+                for (int onesCount = 1; onesCount < 30; onesCount += 1)
+                {
+                    //Model01.Constants.
+
+                    await Model.Cortex.Prepare_Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                        Model.InputCorpusData.CortexMemories,
+                        _random);
+
+                    await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
+                        cortexMemories_EpochCount: 1,
+                        miniColumns_EpochCount: 0,
+                        _random,
+                        cancellationToken,
+                        () =>
+                        {
+                            Dispatcher.UIThread.Invoke(() =>
+                            {
+                                Refresh_ImagesSet();
+                            });
+                            return Task.CompletedTask;
+                        });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Script3 Cancelled.");
+            }
+
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Script3 Finished.");
+        });
+
+        Refresh_ImagesSet();
+    }
 
     #endregion
 

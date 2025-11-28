@@ -179,7 +179,9 @@ public class Model01
     {
         public int DiscreteVectorLength => 300;
 
-        public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+        public int DiscreteRandomVector_PrimaryBitsCount => 7;
+
+        public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
         /// <summary>
         ///     Количество миниколонок в зоне коры по оси X

@@ -10,7 +10,9 @@ public interface IMiniColumnsActivityConstants
 {
     int DiscreteVectorLength { get; }
 
-    int DiscreteOptimizedVector_PrimaryBitsCount { get; }
+    int DiscreteRandomVector_PrimaryBitsCount { get; }
+
+    int DiscreteOptimizedVector_PrimaryBitsCount { get; set; }
 
     /// <summary>
     ///     Количество миниколонок в зоне коры по оси X

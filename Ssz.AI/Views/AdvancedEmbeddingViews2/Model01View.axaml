@@ -55,6 +55,7 @@
               <TextBlock Text="Based on Coding/Decoding Quality:" VerticalAlignment="Center" />
               <Button Content="Put all phrases randomly" Click="PutPhrasesAll_Randomly_OnClick" /> 
               <Button Content="Start Reoder Phrases" Click="StartReoderPhrases_BasedOnCodingDecoding_OnClick" />               
+              <Button Content="Do Script 3" Click="DoScript3_OnClick" />
           </StackPanel>
     </Grid>    
 

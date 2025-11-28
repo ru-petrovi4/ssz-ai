@@ -1286,7 +1286,9 @@ namespace Ssz.AI.Models
         {
             public int DiscreteVectorLength => 300;
 
-            public int DiscreteOptimizedVector_PrimaryBitsCount => 7;
+            public int DiscreteRandomVector_PrimaryBitsCount => 7;
+
+            public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
             public double DetectorMinGradientMagnitude => 5;
 
