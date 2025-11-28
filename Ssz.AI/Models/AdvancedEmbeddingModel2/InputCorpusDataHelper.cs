@@ -1,4 +1,5 @@
 ﻿using Avalonia.Media;
+using Microsoft.Extensions.Logging;
 using Ssz.AI.Core;
 using Ssz.Utils.Logging;
 using System;
@@ -15,11 +16,11 @@ public static class InputCorpusDataHelper
         List<Word> words,
         Random random, 
         int discreteVectorLength, 
-        int discreteOptimizedVector_PrimaryBitsCount)
-    {        
-        var sequences = MorphologicalTextParser.LoadFromFile(
-            Path.Combine(AIConstants.DataDirectory, Model01.AdvancedEmbedding2_Directory, "input_sequences.txt")
-            );
+        int discreteOptimizedVector_PrimaryBitsCount,
+        ILogger logger)
+    {
+        string fileFullName = Path.Combine(AIConstants.DataDirectory, Model01.AdvancedEmbedding2_Directory, "input_sequences.txt");
+        var sequences = MorphologicalTextParser.LoadFromFile(fileFullName);
         InputCorpusData inputCorpusData = new();
         Dictionary<string, Word> wordsDictionary = inputCorpusData.WordsDictionary;   
         foreach (var word in words)
@@ -89,6 +90,8 @@ public static class InputCorpusDataHelper
             var cortexMemory = cortexMemories[random.Next(cortexMemories.Count)];
             cortexMemory.DiscreteRandomVector_Color = Visualisation.GetColorFromDiscreteVector(cortexMemory.DiscreteRandomVector);
         }
+
+        logger.LogInformation($"InputCorpusData loaded from file: {fileFullName}.");
 
         return inputCorpusData;
     }

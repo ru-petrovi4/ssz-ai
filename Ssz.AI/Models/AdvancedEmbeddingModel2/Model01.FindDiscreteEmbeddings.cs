@@ -138,7 +138,7 @@ public class Model01
     }    
 
     public VisualizationWithDesc[] GetImageWithDescs()
-    {
+    {        
         var bitmapFromMiniColums_ActivityColor = Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex);
         var bitmapFromMiniColums_SuperActivityColor = Visualisation.GetBitmapFromMiniColums_SuperActivityColor(Cortex, null);
         

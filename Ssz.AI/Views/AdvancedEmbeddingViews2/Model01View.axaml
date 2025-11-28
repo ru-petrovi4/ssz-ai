@@ -36,6 +36,7 @@
               <Button Content="Reset Words Iterator" Click="ResetWordsIterator_OnClick" />
               <Button Content="Show Next Word" Click="ShowNextWord_OnClick" />  
               <Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />
+              <Button Content="LoadInputCorpusData" Click="LoadInputCorpusData_OnClick" />
               <Button Content="SaveCortex" Click="SaveCortex_OnClick" />   
               <Button Content="LoadCortex" Click="LoadCortex_OnClick" /> 
           </StackPanel>

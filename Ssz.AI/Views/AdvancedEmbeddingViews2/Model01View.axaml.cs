@@ -142,6 +142,16 @@ public partial class Model01View : UserControl
         Model.Cortex.Prepare();
     }
 
+    private void LoadInputCorpusData_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(
+                    Model.Cortex.Words,
+                    _random,
+                    Model01.Constants.DiscreteVectorLength,
+                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount,
+                    Model.LoggersSet.LoggerAndUserFriendlyLogger);        
+    }
+
     private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
     {
         Helpers.SerializationHelper.SaveToFile(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
@@ -291,7 +301,8 @@ public partial class Model01View : UserControl
                     Model.Cortex.Words,
                     _random, 
                     Model01.Constants.DiscreteVectorLength, 
-                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount);
+                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount,
+                    Model.LoggersSet.LoggerAndUserFriendlyLogger);
 
                 await Model.Cortex.Prepare_Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
                     Model.InputCorpusData.CortexMemories,
@@ -334,11 +345,12 @@ public partial class Model01View : UserControl
                     Model.Cortex.Words,
                     _random,
                     Model01.Constants.DiscreteVectorLength,
-                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount);
+                    Model01.Constants.DiscreteRandomVector_PrimaryBitsCount,
+                    Model.LoggersSet.LoggerAndUserFriendlyLogger);
 
                 for (int onesCount = 1; onesCount < 30; onesCount += 1)
                 {
-                    //Model01.Constants.
+                    Model01.Constants.DiscreteOptimizedVector_PrimaryBitsCount = onesCount;
 
                     await Model.Cortex.Prepare_Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
                         Model.InputCorpusData.CortexMemories,
@@ -386,8 +398,14 @@ public partial class Model01View : UserControl
 
     private void Refresh_ImagesSet()
     {
+        if (Model.Cortex.MiniColumns is null)
+            return;
+
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
+
+        if (Model.InputCorpusData is null)
+            return;
 
         Model.Cortex.Calculate_CurrentWord(Model.InputCorpusData, _random);
 
