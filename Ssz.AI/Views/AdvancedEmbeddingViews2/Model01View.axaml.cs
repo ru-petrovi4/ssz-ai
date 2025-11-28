@@ -126,7 +126,7 @@ public partial class Model01View : UserControl
 
     private void ShowNextWord_OnClick(object? sender, RoutedEventArgs args)
     {
-        if (Model.InputCorpusData.Current_OrderedWords_Index >= Model.InputCorpusData.Words.Count - 1)
+        if (Model.InputCorpusData.Current_OrderedWords_Index >= Model.Cortex.Words.Count - 1)
             return;
 
         Model.InputCorpusData.Current_OrderedWords_Index += 1;
@@ -134,6 +134,12 @@ public partial class Model01View : UserControl
         Model.Cortex.Calculate_CurrentWord(Model.InputCorpusData, _random);
 
         Refresh_ImagesSet();
+    }
+
+    private void GenerateCortex_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.Cortex.GenerateOwnedData(_random);
+        Model.Cortex.Prepare();
     }
 
     private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
@@ -144,7 +150,6 @@ public partial class Model01View : UserControl
     private void LoadCortex_OnClick(object? sender, RoutedEventArgs args)
     {
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-
         Model.Cortex.Prepare();
     }
 
@@ -282,6 +287,12 @@ public partial class Model01View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("Calculate_ReorderPhrases_BasedOnCodingDecoding Started.");
 
+                Model.InputCorpusData = InputCorpusDataHelper.GetInputCorpusData(
+                    Model.Cortex.Words,
+                    _random, 
+                    Model01.Constants.DiscreteVectorLength, 
+                    Model01.Constants.DiscreteOptimizedVector_PrimaryBitsCount);
+
                 await Model.Cortex.Calculate_ReorderPhrases_BasedOnCodingDecodingAsync(
                     Model.InputCorpusData.CortexMemories,
                     _random, 
@@ -313,7 +324,8 @@ public partial class Model01View : UserControl
         _random = new Random(41);
 
         Model = new Model01();
-        Model.PrepareCalculate(_random);
+
+        Model.Cortex = new Models.AdvancedEmbeddingModel2.Cortex(Model01.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);        
     }
 
     private void Refresh_ImagesSet()

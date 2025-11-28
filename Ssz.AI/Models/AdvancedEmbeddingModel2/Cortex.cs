@@ -28,6 +28,7 @@ public partial class Cortex : ISerializableModelObject
     {
         Constants = constants;
         Logger = logger;
+        Words = new(10000);
     }
 
     #region public functions
@@ -44,10 +45,8 @@ public partial class Cortex : ISerializableModelObject
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(List<Word> words, Random random)
+    public void GenerateOwnedData(Random random)
     {
-        Words = words;        
-
         MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);        
 
         for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
@@ -191,7 +190,7 @@ public partial class Cortex : ISerializableModelObject
 
     public void Calculate_CurrentWord(InputCorpusData inputCorpusData, Random random)
     {
-        if (inputCorpusData.Current_OrderedWords_Index > 0 && inputCorpusData.Current_OrderedWords_Index < inputCorpusData.Words.Count)
+        if (inputCorpusData.Current_OrderedWords_Index > 0 && inputCorpusData.Current_OrderedWords_Index < Words.Count)
         {
             var word = inputCorpusData.OrderedWords[inputCorpusData.Current_OrderedWords_Index];
 

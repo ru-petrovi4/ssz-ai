@@ -7,9 +7,7 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
 public class InputCorpusData
 {
-    public Dictionary<string, Word> Dictionary = new(10000);
-
-    public List<Word> Words = new(10000);
+    public Dictionary<string, Word> WordsDictionary = new(10000);
 
     public List<Word> OrderedWords = null!;
 

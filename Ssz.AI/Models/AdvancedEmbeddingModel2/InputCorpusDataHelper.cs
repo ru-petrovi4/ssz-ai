@@ -11,25 +11,31 @@ namespace Ssz.AI.Models.AdvancedEmbeddingModel2;
 
 public static class InputCorpusDataHelper
 {
-    public static InputCorpusData GetInputCorpusData(Random random, int discreteVectorLength, int discreteOptimizedVector_PrimaryBitsCount)
+    public static InputCorpusData GetInputCorpusData(
+        List<Word> words,
+        Random random, 
+        int discreteVectorLength, 
+        int discreteOptimizedVector_PrimaryBitsCount)
     {        
         var sequences = MorphologicalTextParser.LoadFromFile(
             Path.Combine(AIConstants.DataDirectory, Model01.AdvancedEmbedding2_Directory, "input_sequences.txt")
             );
         InputCorpusData inputCorpusData = new();
-        Dictionary<string, Word> dictionary = inputCorpusData.Dictionary;
-        var words = inputCorpusData.Words;
+        Dictionary<string, Word> wordsDictionary = inputCorpusData.WordsDictionary;   
+        foreach (var word in words)
+        {
+            wordsDictionary[word.Name] = word;
+        }
         int[] indices = new int[discreteVectorLength];
         List<Word> sequenceWords = new();
-        List<Cortex.Memory> cortexMemories = inputCorpusData.CortexMemories;
-        int corpus_WordsCount = 0;
+        List<Word> sequencesWords = new(10000);
+        List<Cortex.Memory> cortexMemories = inputCorpusData.CortexMemories;        
         foreach (var s in sequences)
         {
             sequenceWords.Clear();
             foreach (var wordName in s)
-            {
-                corpus_WordsCount += 1;
-                if (!dictionary.TryGetValue(wordName, out Word? word))
+            {                
+                if (!wordsDictionary.TryGetValue(wordName, out Word? word))
                 {
                     word = new()
                     {
@@ -49,11 +55,12 @@ public static class InputCorpusDataHelper
                     {
                         word.DiscreteRandomVector[indices[i]] = 1.0f;
                     }
-                    dictionary.Add(wordName, word);
+                    wordsDictionary.Add(wordName, word);
                     words.Add(word);
                 }
                 word.Temp_InCorpusCount += 1;
                 sequenceWords.Add(word);
+                sequencesWords.Add(word);
             }
             if (sequenceWords.Count > 2)
             {
@@ -71,9 +78,9 @@ public static class InputCorpusDataHelper
                 cortexMemories.Add(cortexMemory);
             }
         }
-        foreach (var kvp in dictionary)
+        foreach (var word in sequencesWords)
         {
-            kvp.Value.CorpusFreq = (float)kvp.Value.Temp_InCorpusCount / corpus_WordsCount;
+            word.CorpusFreq = (float)word.Temp_InCorpusCount / sequencesWords.Count;
         }
         inputCorpusData.OrderedWords = words.OrderByDescending(w => w.CorpusFreq).ToList();
 
