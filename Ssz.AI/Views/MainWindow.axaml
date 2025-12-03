@@ -10,6 +10,7 @@
 
         xmlns:v="using:Ssz.AI.Views"
         xmlns:advancedEmbeddingViews2="using:Ssz.AI.Views.AdvancedEmbeddingViews2" 
+        xmlns:cortexVisualisationViews="using:Ssz.AI.Views.CortexVisualisationViews" 
         Icon="/Assets/avalonia-logo.ico"       
         Title="Main Window">
 
@@ -21,7 +22,7 @@
 
 	<dh:DialogHost Identifier="RootDialog">
 		<Grid>
-            <advancedEmbeddingViews2:Model01View />
+            <cortexVisualisationViews:Model01View />
 		</Grid>
 	</dh:DialogHost>
 </Window>

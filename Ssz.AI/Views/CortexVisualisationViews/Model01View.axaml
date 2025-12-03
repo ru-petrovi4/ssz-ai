@@ -1,0 +1,121 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+       xmlns:local="clr-namespace:Ssz.AI"
+       xmlns:localViews="clr-namespace:Ssz.AI.Views"       
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"       
+             x:Class="Ssz.AI.Views.CortexVisualisationViews.Model01View">
+  <Grid>
+    <Grid.Styles>
+      <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="8"/>        
+      </Style>
+    </Grid.Styles>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />      
+      <RowDefinition Height="auto" />   
+    </Grid.RowDefinitions>
+    
+    <Grid>
+		  <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />              
+          </Grid.RowDefinitions>
+          <StackPanel Orientation="Horizontal">  
+              <Button Content="Reset" Click="Reset_OnClick" />                  
+              <Button Content="Stop Long Operation" Click="StopLongOperation_OnClick" />               
+              <Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />              
+              <Button Content="SaveCortex" Click="SaveCortex_OnClick" />   
+              <Button Content="LoadCortex" Click="LoadCortex_OnClick" /> 
+          </StackPanel>          
+          <StackPanel Grid.Row="2" Orientation="Horizontal">        
+              <TextBlock Text="Reorder:" VerticalAlignment="Center" />              
+              <Button Content="Put Initial Memories Pinwheel" Click="PutInitialMemoriesPinwheel_OnClick" />  
+              <Button Content="Put Initial Memories Random" Click="PutInitialMemoriesRandom_OnClick" /> 
+              <Button Content="Start Reoder" Click="StartReorderMemories_OnClick" />                             
+          </StackPanel>
+    </Grid>    
+
+    <Grid Grid.Row="1">      
+      <TextBlock Margin="5" x:Name="ImagesSet1_TextBlock" FontSize="16" FontWeight="Bold" />
+    </Grid>
+    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+
+    <Grid Grid.Row="3">      
+      <TextBlock Margin="5" x:Name="ImagesSet2_TextBlock" FontSize="16" FontWeight="Bold" />
+    </Grid>
+    <localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />
+
+    <Grid Grid.Row="5">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="auto" />        
+        <ColumnDefinition Width="*" />        
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="100" />
+        <RowDefinition Height="100" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Text="Притяжение:" />      
+      <local:Sliders Name="PositiveSliders" Grid.Column="1" />
+      <TextBlock Text="Отталкивание:" Grid.Row="1" Grid.Column="0" />      
+      <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
+    </Grid>
+    
+    <Grid Grid.Row="6">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>        
+        <RowDefinition Height="0" />
+        <RowDefinition Height="0" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />        
+      </Grid.RowDefinitions>
+      
+      <TextBlock Text="Нулевой уровень косинусного подобия:" Grid.Row="2" />
+      <TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <TextBlock Text="" Grid.Row="3" />
+      <TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <TextBlock Text="Косинусное подобие с пустой миниколонкой" Grid.Row="4" />
+      <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />      
+      <TextBlock Text="" Grid.Row="6" />
+      <TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="6" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar3" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
+      <TextBlock Text="" Grid.Row="7" />
+      <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="7" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />      
+    </Grid>    
+  </Grid>  
+</UserControl>
+

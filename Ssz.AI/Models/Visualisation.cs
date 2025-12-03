@@ -1641,6 +1641,35 @@ public static class Visualisation
 
         return Color.FromArgb(finalR, finalG, finalB);
     }
+
+    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex)
+    {
+        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);        
+
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            // Устанавливаем черный фон
+            g.Clear(Color.Black);
+        }
+
+        foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
+            foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+            {
+                var mc = cortex.MiniColumns[mcx, mcy];
+                if (mc is not null && mc.CortexMemories.Count > 0)
+                {
+                    Color color = GetAverageLABColor(mc.CortexMemories
+                        .Where(cm => cm is not null)
+                        .Select(cm => cortex.InputItems[cm!.InputItemIndex])
+                        .Where(ii => ii.Color != Color.Black)
+                        .Select(ii => ii.Color));
+
+                    bitmap.SetPixel(mcx, mcy, color);
+                }
+            }
+
+        return bitmap;
+    }
 }
 
 

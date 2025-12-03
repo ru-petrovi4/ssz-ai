@@ -234,14 +234,34 @@ public partial class Model01View : UserControl
     }
 
     private async void DoScript0_OnClick(object? sender, RoutedEventArgs args)
-    {        
+    {
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
         await Task.Run(async () =>
         {
-            for (; ; )
+            try
             {
-                bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(5000, _random);
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("DoScript0 Started.");
 
-                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, CancellationToken.None, () =>
+                for (; ; )
+                {
+                    bool finished = Model.Calculate_PutPhrases_BasedOnSuperActivity(2000, _random);
+
+                    await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(7, _random, CancellationToken.None, () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    });
+
+                    if (finished)
+                        break;
+                }
+
+                await Model.ReorderPhrases1Epoch_BasedOnSuperActivityAsync(100, _random, CancellationToken.None, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -249,10 +269,13 @@ public partial class Model01View : UserControl
                     });
                     return Task.CompletedTask;
                 });
-
-                if (finished)
-                    break;
             }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("DoScript0 Cancelled.");
+            }
+
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("DoScript0 Finished.");            
         });
 
         Refresh_ImagesSet();
