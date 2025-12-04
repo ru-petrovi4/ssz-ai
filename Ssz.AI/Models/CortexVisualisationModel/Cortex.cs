@@ -80,8 +80,12 @@ public partial class Cortex : ISerializableModelObject
                         MiniColumn nearestMc = MiniColumns[mcx, mcy];
                         if (nearestMc is null)
                             continue;
-                        float k = 1 / ((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY));
-                        miniColumn.Temp_K_ForNearestMiniColumns.Add((k, k, nearestMc));
+
+                        float k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
+                        miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+
+                        if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
+                            miniColumn.Temp_AdjacentMiniColumns.Add(nearestMc);
                     }
             });
     }
@@ -139,11 +143,18 @@ public partial class Cortex : ISerializableModelObject
         public int MCY { get; }
 
         /// <summary>
-        ///     K для расчета суперактивности.
-        ///     <para>(K для позитива, K для негатива, MiniColumn)</para>
-        ///     <para>Нулевой элемент, это коэффициент для самой колонки.</para>
+        ///     Окружающие миниколонки, для которых считается энергия.
+        ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<(float, float, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
+        public FastList<(float, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
+
+        /// <summary>
+        ///     Смежные миниколонки
+        ///     <para>(r^2, MiniColumn)</para>        
+        /// </summary>
+        public FastList<MiniColumn> Temp_AdjacentMiniColumns = null!;
+
+        public float Temp_Energy;
 
         /// <summary>
         ///     Сохраненные хэш-коды
@@ -157,7 +168,8 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare()
         {            
-            Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
+            Temp_K_ForNearestMiniColumns = new FastList<(float, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
+            Temp_AdjacentMiniColumns = new FastList<MiniColumn>(8);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)

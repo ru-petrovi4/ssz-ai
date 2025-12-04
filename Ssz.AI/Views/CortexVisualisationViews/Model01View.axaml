@@ -31,7 +31,7 @@
           <StackPanel Orientation="Horizontal">  
               <Button Content="Reset" Click="Reset_OnClick" />                  
               <Button Content="Stop Long Operation" Click="StopLongOperation_OnClick" />               
-              <Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />              
+              <!--<Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />-->
               <Button Content="SaveCortex" Click="SaveCortex_OnClick" />   
               <Button Content="LoadCortex" Click="LoadCortex_OnClick" /> 
           </StackPanel>          
@@ -40,6 +40,7 @@
               <Button Content="Put Initial Memories Pinwheel" Click="PutInitialMemoriesPinwheel_OnClick" />  
               <Button Content="Put Initial Memories Random" Click="PutInitialMemoriesRandom_OnClick" /> 
               <Button Content="Start Reoder" Click="StartReorderMemories_OnClick" />                             
+              <Button Content="Start Reoder 1" Click="StartReorderMemories1Epoch_OnClick" /> 
           </StackPanel>
     </Grid>    
 

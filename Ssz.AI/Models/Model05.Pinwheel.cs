@@ -798,7 +798,7 @@ namespace Ssz.AI.Models
             int minChangesCount_UnchangedCount = 0;
 
             Stopwatch sw = new();
-            for (int epochN = 0; epochN < epochCount; epochN += 1)
+            for (int epoch = 0; epoch < epochCount; epoch += 1)
             {
                 sw.Restart();
 

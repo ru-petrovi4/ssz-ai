@@ -100,8 +100,7 @@ public partial class Model01View : UserControl
 
     private void GenerateCortex_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.Cortex.GenerateOwnedData(_random);
-        Model.Cortex.Prepare();
+        
     }
 
     private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
@@ -158,20 +157,53 @@ public partial class Model01View : UserControl
         });
 
         Refresh_ImagesSet();
-    }    
+    }
+
+    private async void StartReorderMemories1Epoch_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        await Task.Run(async () =>
+        {
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Started.");
+
+                await Model.ReorderMemoriesAsync(1, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Cancelled.");
+            }
+
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Finished.");
+        });
+
+        Refresh_ImagesSet();
+    }
 
     #endregion
 
     private void Reset()
     {
         var constants = Model01.Constants;
-        GetDataFromControls(constants);
+        GetDataFromControls(constants); 
 
         _random = new Random(41);
 
         Model = new Model01();
 
-        Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model01.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);        
+        Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model01.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
+        Model.Cortex.GenerateOwnedData(_random);
+        Model.Cortex.Prepare();
     }
 
     private void Refresh_ImagesSet()

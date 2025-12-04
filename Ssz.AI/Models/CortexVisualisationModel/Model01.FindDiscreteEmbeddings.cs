@@ -115,14 +115,74 @@ public class Model01
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
-        await Task.Delay(0);
+        for (int epoch = 0; epoch < epochCount; epoch += 1)
+        {
+            var randomMiniColumns = Cortex.MiniColumns.Data.ToArray();
+            random.Shuffle(randomMiniColumns);
+
+            for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
+            {
+                var miniColumn = randomMiniColumns[randomMiniColumns_Index];
+
+                miniColumn.Temp_Energy = GetEnergy(miniColumn);
+                float initialEnergy = miniColumn.Temp_Energy;                
+                for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
+                {
+                    MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
+                    adjacentMiniColumn.Temp_Energy = GetEnergy(adjacentMiniColumn);
+                    initialEnergy += adjacentMiniColumn.Temp_Energy;
+                }
+
+                float minEnergy = 0.0f;
+                MiniColumn minEnergy_MiniColumn = miniColumn;
+
+                for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
+                {
+                    MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
+
+                    miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
+                    float energy = - miniColumn.Temp_Energy - adjacentMiniColumn.Temp_Energy
+                        + GetEnergy(miniColumn) + GetEnergy(adjacentMiniColumn);
+                    miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
+
+                    if (energy < minEnergy)
+                    {
+                        minEnergy = energy;
+                        minEnergy_MiniColumn = adjacentMiniColumn;
+                    }
+                }
+
+                if (minEnergy_MiniColumn != miniColumn)
+                    miniColumn.CortexMemories.Swap(minEnergy_MiniColumn.CortexMemories);
+            }
+
+            LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
+            await refreshAction();
+        }
     }
 
     #endregion
 
     #region private functions    
 
+    private float GetEnergy(MiniColumn miniColumn)
+    {
+        float energy = 0.0f;
+        for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
+        {
+            var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
+            energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
+        }
+        return energy;
+    }
 
+    private float GetSimilarity(Memory memory1, Memory memory2)
+    {
+        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+        return 1.0f / 
+            ((inpitItem1.Magnitude + 1.0f) * (inpitItem2.Magnitude + 1.0f) * (Math.Abs(MathHelper.NormalizeAngle(inpitItem1.Angle - inpitItem2.Angle)) + 1.0f) * (Math.Abs(inpitItem1.Magnitude - inpitItem2.Magnitude) + 1.0f));
+    }
 
     #endregion
 
