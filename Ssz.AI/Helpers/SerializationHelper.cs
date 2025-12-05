@@ -35,8 +35,8 @@ public static class SerializationHelper
         logger?.LogInformation($"Loaded: {fileName}");
     }
 
-    public static void SerializeOwnedData_DenseMatrix<T>(DenseMatrix<T> denseMatrix, SerializationWriter writer, object? context)
-        where T : IOwnedDataSerializable
+    public static void SerializeOwnedData_DenseMatrix<T>(DenseMatrix<T?> denseMatrix, SerializationWriter writer, object? context)
+        where T : class, IOwnedDataSerializable
     {
         using (writer.EnterBlock(1))
         {
@@ -45,13 +45,13 @@ public static class SerializationHelper
                 for (int mcx = 0; mcx < denseMatrix.Dimensions[0]; mcx += 1)
                 {
                     var o = denseMatrix[mcx, mcy];
-                    o.SerializeOwnedData(writer, context);                    
+                    writer.WriteOwnedDataSerializableAndRecreatable(o, context);                                      
                 }
         }
     }
 
-    public static DenseMatrix<T> DeserializeOwnedData_DenseMatrix<T>(SerializationReader reader, object? context, Func<int, int, T> func)
-        where T : IOwnedDataSerializable
+    public static DenseMatrix<T?> DeserializeOwnedData_DenseMatrix<T>(SerializationReader reader, object? context, Func<int, int, T> func)
+        where T : class, IOwnedDataSerializable
     {        
         using (Block block = reader.EnterBlock())
         {
@@ -59,13 +59,11 @@ public static class SerializationHelper
             {
                 case 1:
                     var dimensions = reader.ReadArray<int>()!;
-                    DenseMatrix<T> denseMatrix = new(dimensions);                    
+                    DenseMatrix<T?> denseMatrix = new(dimensions);                    
                     for (int mcy = 0; mcy < dimensions[1]; mcy += 1)
                         for (int mcx = 0; mcx < dimensions[0]; mcx += 1)
-                        {
-                            var o = func(mcx, mcy);
-                            o.DeserializeOwnedData(reader, context);
-                            denseMatrix[mcx, mcy] = o;
+                        {   
+                            denseMatrix[mcx, mcy] = reader.ReadOwnedDataSerializableAndRecreatable<T>(() => func(mcx, mcy), context);
                         }
                     return denseMatrix;
             }

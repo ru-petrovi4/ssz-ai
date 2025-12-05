@@ -38,25 +38,33 @@ public partial class Cortex : ISerializableModelObject
 
     public List<InputItem> InputItems { get; private set; } = null!;
 
-    public DenseMatrix<MiniColumn> MiniColumns { get; private set; } = null!;    
+    public DenseMatrix<MiniColumn?> MiniColumns { get; private set; } = null!;    
 
     public string Temp_InputCurrentDesc = null!;
 
     public void GenerateOwnedData(Random random)
     {
-        MiniColumns = new DenseMatrix<MiniColumn>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);        
+        MiniColumns = new DenseMatrix<MiniColumn?>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
+
+        //int center_MCX = MiniColumns.Dimensions[0] / 2;
+        //int center_MCY = MiniColumns.Dimensions[1] / 2;
+        //float maxRadius = center_MCX;
 
         for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
             for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
             {
-                MiniColumn miniColumn = new MiniColumn(
-                    Constants,
-                    mcx,
-                    mcy);
+                //float radius = MathF.Sqrt((center_MCX - mcx) * (center_MCX - mcx) + (center_MCY - mcy) * (center_MCY - mcy));
+                //if (radius <= maxRadius + 1)
+                {
+                    MiniColumn miniColumn = new MiniColumn(
+                        Constants,
+                        mcx,
+                        mcy);
 
-                miniColumn.GenerateOwnedData();
+                    miniColumn.GenerateOwnedData();
 
-                MiniColumns[mcx, mcy] = miniColumn;
+                    MiniColumns[mcx, mcy] = miniColumn;
+                }
             }        
     }
 
@@ -68,7 +76,9 @@ public partial class Cortex : ISerializableModelObject
             toExclusive: MiniColumns.Data.Length,
             mci =>
             {
-                MiniColumn miniColumn = MiniColumns.Data[mci];
+                MiniColumn? miniColumn = MiniColumns.Data[mci];
+                if (miniColumn is null)
+                    return;
                 miniColumn.Prepare();                                           
 
                 for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
@@ -77,7 +87,7 @@ public partial class Cortex : ISerializableModelObject
                         if (mcx == miniColumn.MCX && mcy == miniColumn.MCY)
                             continue;
 
-                        MiniColumn nearestMc = MiniColumns[mcx, mcy];
+                        MiniColumn? nearestMc = MiniColumns[mcx, mcy];
                         if (nearestMc is null)
                             continue;
 

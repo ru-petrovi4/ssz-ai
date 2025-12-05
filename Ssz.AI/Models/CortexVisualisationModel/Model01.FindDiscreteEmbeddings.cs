@@ -79,13 +79,13 @@ public class Model01
         int center_MCY = Cortex.MiniColumns.Dimensions[1] / 2;
         float maxRadius = MathF.Sqrt(center_MCX * center_MCX + center_MCY * center_MCY);
 
-        var randomMiniColumns = Cortex.MiniColumns.Data.ToArray();        
+        var miniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
+        var randomMiniColumns = (MiniColumn[])miniColumns.Clone();
         random.Shuffle(randomMiniColumns);        
 
-        for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < Cortex.MiniColumns.Data.Length; randomMiniColumns_Index += 1)            
+        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Length; miniColumns_Index += 1)            
         {
-            MiniColumn miniColumn = Cortex.MiniColumns.Data[randomMiniColumns_Index];
-
+            MiniColumn? miniColumn = miniColumns[miniColumns_Index];
             if (miniColumn is null)
                 continue;
 
@@ -102,7 +102,7 @@ public class Model01
 
             if (isRandom)
             {
-                randomMiniColumns[randomMiniColumns_Index].CortexMemories.Add(cortexMemeory);                
+                randomMiniColumns[miniColumns_Index].CortexMemories.Add(cortexMemeory);                
             }
             else
             {
@@ -117,8 +117,10 @@ public class Model01
     {
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
-            var randomMiniColumns = Cortex.MiniColumns.Data.ToArray();
+            var randomMiniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
             random.Shuffle(randomMiniColumns);
+
+            bool changed = false;
 
             for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
             {
@@ -153,11 +155,17 @@ public class Model01
                 }
 
                 if (minEnergy_MiniColumn != miniColumn)
+                {
                     miniColumn.CortexMemories.Swap(minEnergy_MiniColumn.CortexMemories);
+                    changed = true;
+                }
             }
 
             LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
             await refreshAction();
+
+            if (!changed)
+                break;
         }
     }
 
@@ -186,7 +194,8 @@ public class Model01
         float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
         float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
 
-        return - ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        return MathHelper.NormalPdf(d, 0.0f, 5.0f);
     }
 
     #endregion
