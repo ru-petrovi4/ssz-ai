@@ -94,7 +94,7 @@ public partial class Cortex : ISerializableModelObject
                         float k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
                         miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
+                        if (Math.Abs(mcx - miniColumn.MCX) <= 10 && Math.Abs(mcy - miniColumn.MCY) <= 10)
                             miniColumn.Temp_AdjacentMiniColumns.Add(nearestMc);
                     }
             });

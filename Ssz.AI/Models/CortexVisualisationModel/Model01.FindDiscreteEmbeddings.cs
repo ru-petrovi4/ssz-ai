@@ -194,8 +194,8 @@ public class Model01
         float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
         float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
 
-        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return MathHelper.NormalPdf(d, 0.0f, 5.0f);
+        var d = MathF.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        return -d;
     }
 
     #endregion
