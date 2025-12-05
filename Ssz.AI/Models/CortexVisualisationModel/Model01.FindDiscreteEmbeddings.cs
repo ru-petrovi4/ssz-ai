@@ -180,8 +180,13 @@ public class Model01
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
-        return 1.0f / 
-            ((inpitItem1.Magnitude + 1.0f) * (inpitItem2.Magnitude + 1.0f) * (Math.Abs(MathHelper.NormalizeAngle(inpitItem1.Angle - inpitItem2.Angle)) + 1.0f) * (Math.Abs(inpitItem1.Magnitude - inpitItem2.Magnitude) + 1.0f));
+
+        float x1 = inpitItem1.Magnitude * MathF.Cos(inpitItem1.Angle);
+        float y1 = inpitItem1.Magnitude * MathF.Sin(inpitItem1.Angle);
+        float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
+        float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
+
+        return - ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
     }
 
     #endregion
