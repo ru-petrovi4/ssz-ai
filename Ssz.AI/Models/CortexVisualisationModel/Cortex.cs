@@ -92,10 +92,16 @@ public partial class Cortex : ISerializableModelObject
                             continue;
 
                         double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
-                        miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+                        if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
+                            miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
-                            miniColumn.Temp_AdjacentMiniColumns.Add(nearestMc);
+                        miniColumn.Temp_CandidatesForSwapMiniColumns.Add(nearestMc);
+
+                        //double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
+                        //miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+
+                        //if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
+                        //    miniColumn.Temp_CandidatesForSwapMiniColumns.Add(nearestMc);
                     }
             });
     }
@@ -156,7 +162,7 @@ public partial class Cortex : ISerializableModelObject
         ///     Смежные миниколонки
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<MiniColumn> Temp_AdjacentMiniColumns = null!;
+        public FastList<MiniColumn> Temp_CandidatesForSwapMiniColumns = null!;
 
         public double Temp_Energy;
 
@@ -173,7 +179,7 @@ public partial class Cortex : ISerializableModelObject
         public void Prepare()
         {            
             Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
-            Temp_AdjacentMiniColumns = new FastList<MiniColumn>(8);
+            Temp_CandidatesForSwapMiniColumns = new FastList<MiniColumn>(8);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)

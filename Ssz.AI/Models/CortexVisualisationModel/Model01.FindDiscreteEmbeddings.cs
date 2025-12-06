@@ -114,7 +114,7 @@ public class Model01
     }
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
-    {
+    {        
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
             var randomMiniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
@@ -128,9 +128,9 @@ public class Model01
 
                 miniColumn.Temp_Energy = GetEnergy(miniColumn);
                 double initialEnergy = miniColumn.Temp_Energy;                
-                for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
+                for (int i = 0; i < miniColumn.Temp_CandidatesForSwapMiniColumns.Count; i += 1)
                 {
-                    MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
+                    MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[i];
                     adjacentMiniColumn.Temp_Energy = GetEnergy(adjacentMiniColumn);
                     initialEnergy += adjacentMiniColumn.Temp_Energy;
                 }
@@ -138,9 +138,9 @@ public class Model01
                 double minEnergy = 0.0f;
                 MiniColumn minEnergy_MiniColumn = miniColumn;
 
-                for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
+                for (int i = 0; i < miniColumn.Temp_CandidatesForSwapMiniColumns.Count; i += 1)
                 {
-                    MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
+                    MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[i];
 
                     miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
                     double energy = - miniColumn.Temp_Energy - adjacentMiniColumn.Temp_Energy
@@ -179,7 +179,7 @@ public class Model01
         {
             var miniColumn = randomMiniColumns[randomMiniColumns_Index];
 
-            MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[random.Next(miniColumn.Temp_AdjacentMiniColumns.Count)];
+            MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[random.Next(miniColumn.Temp_CandidatesForSwapMiniColumns.Count)];
 
             miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);            
         }
