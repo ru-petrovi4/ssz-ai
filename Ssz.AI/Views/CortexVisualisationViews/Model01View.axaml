@@ -39,6 +39,7 @@
               <TextBlock Text="Reorder:" VerticalAlignment="Center" />              
               <Button Content="Put Initial Memories Pinwheel" Click="PutInitialMemoriesPinwheel_OnClick" />  
               <Button Content="Put Initial Memories Random" Click="PutInitialMemoriesRandom_OnClick" /> 
+              <Button Content="Add Noize 20%" Click="AddNoize_OnClick" /> 
               <Button Content="Start Reoder" Click="StartReorderMemories_OnClick" />                             
               <Button Content="Start Reoder 1" Click="StartReorderMemories1Epoch_OnClick" /> 
           </StackPanel>

@@ -128,6 +128,37 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
+    private async void AddNoize_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        await Task.Run(async () =>
+        {
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Started.");
+
+                await Model.AddNoizeAsync(20, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Cancelled.");
+            }
+
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Finished.");
+        });
+
+        Refresh_ImagesSet();
+    }
+
     private async void StartReorderMemories_OnClick(object? sender, RoutedEventArgs args)
     {
         _cancellationTokenSource = new CancellationTokenSource();
@@ -137,7 +168,7 @@ public partial class Model01View : UserControl
         {
             try
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Started.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
                 await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
                 {
@@ -150,10 +181,10 @@ public partial class Model01View : UserControl
             }
             catch (OperationCanceledException)
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Cancelled.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Cancelled.");
             }
 
-            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Finished.");
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
         });
 
         Refresh_ImagesSet();
@@ -208,7 +239,7 @@ public partial class Model01View : UserControl
 
     private void Refresh_ImagesSet()
     {
-        if (Model.Cortex.MiniColumns is null)
+        if (Model.Cortex.MiniColumns is null || Model.Cortex.InputItems is null)
             return;
 
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;

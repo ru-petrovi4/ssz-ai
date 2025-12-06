@@ -123,13 +123,7 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    #endregion    
-
-    private string GetDesc(Memory cortexMemory)
-    {
-        var inputItem = InputItems[cortexMemory.InputItemIndex];
-        return inputItem.ToString();
-    }
+    #endregion         
 
     public class MiniColumn : ISerializableModelObject
     {

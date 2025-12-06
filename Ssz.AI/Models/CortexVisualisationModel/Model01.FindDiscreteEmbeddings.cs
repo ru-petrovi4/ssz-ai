@@ -66,7 +66,7 @@ public class Model01
     {        
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
-                    Desc = @"Воспоминания в миниколонках" }
+                    Desc = $"Воспоминания в миниколонках: Energy: {GetEnergy()}" }
             ];
     }
 
@@ -169,9 +169,43 @@ public class Model01
         }
     }
 
+    public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    {
+        var randomMiniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();        
+        random.Shuffle(randomMiniColumns);
+        randomMiniColumns = randomMiniColumns.Take(randomMiniColumns.Length * percents / 100).ToArray();
+
+        for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
+        {
+            var miniColumn = randomMiniColumns[randomMiniColumns_Index];
+
+            MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[random.Next(miniColumn.Temp_AdjacentMiniColumns.Count)];
+
+            miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);            
+        }
+
+        await refreshAction();
+    }
+
     #endregion
 
     #region private functions    
+
+    private double GetEnergy()
+    {
+        if (Cortex.InputItems.Count == 0)
+            return Double.NaN;
+
+        double energy = 0.0;
+        for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Data.Length; miniColumns_Index += 1)
+        {
+            MiniColumn? miniColumn = Cortex.MiniColumns.Data[miniColumns_Index];
+            if (miniColumn is null)
+                continue;            
+            energy += GetEnergy(miniColumn);
+        }
+        return energy;
+    }
 
     private double GetEnergy(MiniColumn miniColumn)
     {
@@ -196,7 +230,7 @@ public class Model01
 
         var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
         return -d;
-    }
+    }    
 
     #endregion
 
