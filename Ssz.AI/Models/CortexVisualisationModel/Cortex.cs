@@ -46,15 +46,15 @@ public partial class Cortex : ISerializableModelObject
     {
         MiniColumns = new DenseMatrix<MiniColumn?>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
 
-        //int center_MCX = MiniColumns.Dimensions[0] / 2;
-        //int center_MCY = MiniColumns.Dimensions[1] / 2;
-        //float maxRadius = center_MCX;
+        int center_MCX = MiniColumns.Dimensions[0] / 2;
+        int center_MCY = MiniColumns.Dimensions[1] / 2;
+        float maxRadius = center_MCX;
 
         for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
             for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
             {
-                //float radius = MathF.Sqrt((center_MCX - mcx) * (center_MCX - mcx) + (center_MCY - mcy) * (center_MCY - mcy));
-                //if (radius <= maxRadius + 1)
+                float radius = MathF.Sqrt((center_MCX - mcx) * (center_MCX - mcx) + (center_MCY - mcy) * (center_MCY - mcy));
+                if (radius <= maxRadius + 1)
                 {
                     MiniColumn miniColumn = new MiniColumn(
                         Constants,
@@ -91,7 +91,7 @@ public partial class Cortex : ISerializableModelObject
                         if (nearestMc is null)
                             continue;
 
-                        double k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
+                        double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
                         miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
                         if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
