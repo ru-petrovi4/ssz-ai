@@ -91,10 +91,10 @@ public partial class Cortex : ISerializableModelObject
                         if (nearestMc is null)
                             continue;
 
-                        float k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
+                        double k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
                         miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        if (Math.Abs(mcx - miniColumn.MCX) <= 10 && Math.Abs(mcy - miniColumn.MCY) <= 10)
+                        if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
                             miniColumn.Temp_AdjacentMiniColumns.Add(nearestMc);
                     }
             });
@@ -156,7 +156,7 @@ public partial class Cortex : ISerializableModelObject
         ///     Окружающие миниколонки, для которых считается энергия.
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<(float, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
+        public FastList<(double, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
         ///     Смежные миниколонки
@@ -164,7 +164,7 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public FastList<MiniColumn> Temp_AdjacentMiniColumns = null!;
 
-        public float Temp_Energy;
+        public double Temp_Energy;
 
         /// <summary>
         ///     Сохраненные хэш-коды
@@ -178,7 +178,7 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare()
         {            
-            Temp_K_ForNearestMiniColumns = new FastList<(float, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
+            Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
             Temp_AdjacentMiniColumns = new FastList<MiniColumn>(8);
         }
 

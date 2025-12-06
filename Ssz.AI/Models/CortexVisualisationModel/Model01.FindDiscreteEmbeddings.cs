@@ -127,7 +127,7 @@ public class Model01
                 var miniColumn = randomMiniColumns[randomMiniColumns_Index];
 
                 miniColumn.Temp_Energy = GetEnergy(miniColumn);
-                float initialEnergy = miniColumn.Temp_Energy;                
+                double initialEnergy = miniColumn.Temp_Energy;                
                 for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
                 {
                     MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
@@ -135,7 +135,7 @@ public class Model01
                     initialEnergy += adjacentMiniColumn.Temp_Energy;
                 }
 
-                float minEnergy = 0.0f;
+                double minEnergy = 0.0f;
                 MiniColumn minEnergy_MiniColumn = miniColumn;
 
                 for (int i = 0; i < miniColumn.Temp_AdjacentMiniColumns.Count; i += 1)
@@ -143,7 +143,7 @@ public class Model01
                     MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[i];
 
                     miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
-                    float energy = - miniColumn.Temp_Energy - adjacentMiniColumn.Temp_Energy
+                    double energy = - miniColumn.Temp_Energy - adjacentMiniColumn.Temp_Energy
                         + GetEnergy(miniColumn) + GetEnergy(adjacentMiniColumn);
                     miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
 
@@ -173,9 +173,9 @@ public class Model01
 
     #region private functions    
 
-    private float GetEnergy(MiniColumn miniColumn)
+    private double GetEnergy(MiniColumn miniColumn)
     {
-        float energy = 0.0f;
+        double energy = 0.0;
         for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
         {
             var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
@@ -184,17 +184,17 @@ public class Model01
         return energy;
     }
 
-    private float GetSimilarity(Memory memory1, Memory memory2)
+    private double GetSimilarity(Memory memory1, Memory memory2)
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
-        float x1 = inpitItem1.Magnitude * MathF.Cos(inpitItem1.Angle);
-        float y1 = inpitItem1.Magnitude * MathF.Sin(inpitItem1.Angle);
-        float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
-        float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
+        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
+        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
+        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
+        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
 
-        var d = MathF.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
         return -d;
     }
 
