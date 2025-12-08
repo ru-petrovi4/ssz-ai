@@ -96,12 +96,7 @@ public partial class Model01View : UserControl
     private void StopLongOperation_OnClick(object? sender, RoutedEventArgs args)
     {
         _cancellationTokenSource?.Cancel();
-    }
-
-    private void GenerateCortex_OnClick(object? sender, RoutedEventArgs args)
-    {
-        
-    }
+    }    
 
     private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
     {
@@ -170,14 +165,47 @@ public partial class Model01View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
+                double minEnergy = Double.MaxValue;
+                int failCount = 0;
+                for (; ; )
                 {
-                    Dispatcher.UIThread.Invoke(() =>
+                    await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
                     {
-                        Refresh_ImagesSet();
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
                     });
-                    return Task.CompletedTask;
-                });
+
+                    await Model.AddNoizeAsync(400, _random, cancellationToken, () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    });
+
+                    await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    });
+
+                    var energy = Model.GetEnergy();
+                    Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
+                    if (energy < minEnergy)
+                        minEnergy = energy;
+                    else
+                        failCount += 1;
+
+                    if (failCount > 10)
+                        break;
+                }
             }
             catch (OperationCanceledException)
             {
@@ -239,9 +267,6 @@ public partial class Model01View : UserControl
 
     private void Refresh_ImagesSet()
     {
-        if (Model.Cortex.MiniColumns is null || Model.Cortex.InputItems is null)
-            return;
-
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
     }
@@ -250,3 +275,34 @@ public partial class Model01View : UserControl
 
     private CancellationTokenSource? _cancellationTokenSource;
 }
+
+//private async void StartReorderMemories_OnClick(object? sender, RoutedEventArgs args)
+//    {
+//        _cancellationTokenSource = new CancellationTokenSource();
+//        var cancellationToken = _cancellationTokenSource.Token;
+
+//        await Task.Run(async () =>
+//        {
+//            try
+//            {
+//                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
+
+//                await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
+//                {
+//                    Dispatcher.UIThread.Invoke(() =>
+//                    {
+//                        Refresh_ImagesSet();
+//                    });
+//                    return Task.CompletedTask;
+//                });
+//            }
+//            catch (OperationCanceledException)
+//            {
+//                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Cancelled.");
+//            }
+
+//            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
+//        });
+
+//        Refresh_ImagesSet();
+//    }

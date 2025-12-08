@@ -22,7 +22,8 @@
 			<DataTemplate DataType="vm:ImageWithDesc">
 				<Grid RowDefinitions="*,4*" Margin="5">
 					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #MainImage.Bounds.Height}" />
-					<Image Grid.Row="1" Name="MainImage" Source="{Binding Image}" />
+					<Image Grid.Row="1" Name="MainImage" Source="{Binding Image}" 
+						RenderOptions.BitmapInterpolationMode="None"/>
 				</Grid>
 			</DataTemplate>
 			<DataTemplate DataType="vm:Model3DWithDesc">

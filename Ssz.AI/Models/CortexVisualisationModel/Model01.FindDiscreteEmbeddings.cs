@@ -63,12 +63,15 @@ public class Model01
     public Cortex Cortex = null!; 
 
     public VisualizationWithDesc[] GetImageWithDescs()
-    {        
+    {
+        var it = GetAverageDistance();
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
-                    Desc = $"Воспоминания в миниколонках: Energy: {GetEnergy()}" }
+                    Desc = $"Воспоминания в миниколонках.\nЭнергия: {GetEnergy()}" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 7.0)),
+                    Desc = $"Среднее расстояние: {it.Average}\nМинимальное: {it.Minimum}\nМаксимальное: {it.Maximum}" }
             ];
-    }
+    }    
 
     public void PutInitialMemoriesPinwheel(Random random, bool isRandom)
     {
@@ -77,12 +80,13 @@ public class Model01
 
         int center_MCX = Cortex.MiniColumns.Dimensions[0] / 2;
         int center_MCY = Cortex.MiniColumns.Dimensions[1] / 2;
-        float maxRadius = MathF.Sqrt(center_MCX * center_MCX + center_MCY * center_MCY);
+        //float maxRadius = MathF.Sqrt(center_MCX * center_MCX + center_MCY * center_MCY);
 
         var miniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
         var randomMiniColumns = (MiniColumn[])miniColumns.Clone();
         random.Shuffle(randomMiniColumns);        
 
+        float maxMagnitude = Single.MinValue;
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Length; miniColumns_Index += 1)            
         {
             MiniColumn? miniColumn = miniColumns[miniColumns_Index];
@@ -92,8 +96,9 @@ public class Model01
             InputItem inputItem = new();
             inputItem.Index = Cortex.InputItems.Count;
             inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY - center_MCY, miniColumn.MCX - center_MCX));
-            inputItem.Magnitude = MathF.Sqrt((miniColumn.MCY - center_MCY) * (miniColumn.MCY - center_MCY) + (miniColumn.MCX - center_MCX) * (miniColumn.MCX - center_MCX)) / maxRadius;
-            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), inputItem.Magnitude, 1.0);
+            inputItem.Magnitude = MathF.Sqrt((miniColumn.MCY - center_MCY) * (miniColumn.MCY - center_MCY) + (miniColumn.MCX - center_MCX) * (miniColumn.MCX - center_MCX));
+            if (inputItem.Magnitude > maxMagnitude)
+                maxMagnitude = inputItem.Magnitude;
 
             var cortexMemeory = new Memory
             {
@@ -110,6 +115,12 @@ public class Model01
             }   
 
             Cortex.InputItems.Add(inputItem);
+        }
+
+        for (int inputItem_Index = 0; inputItem_Index < Cortex.InputItems.Count; inputItem_Index += 1)
+        {
+            InputItem inputItem = Cortex.InputItems[inputItem_Index];            
+            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), inputItem.Magnitude / maxMagnitude, 1.0);
         }
     }
 
@@ -128,29 +139,29 @@ public class Model01
 
                 miniColumn.Temp_Energy = GetEnergy(miniColumn);
                 double initialEnergy = miniColumn.Temp_Energy;                
-                for (int i = 0; i < miniColumn.Temp_CandidatesForSwapMiniColumns.Count; i += 1)
+                for (int i = 0; i < miniColumn.Temp_CandidateForSwapMiniColumns.Count; i += 1)
                 {
-                    MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[i];
-                    adjacentMiniColumn.Temp_Energy = GetEnergy(adjacentMiniColumn);
-                    initialEnergy += adjacentMiniColumn.Temp_Energy;
+                    MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[i];
+                    candidateForSwapMiniColumn.Temp_Energy = GetEnergy(candidateForSwapMiniColumn);
+                    initialEnergy += candidateForSwapMiniColumn.Temp_Energy;
                 }
 
                 double minEnergy = 0.0f;
                 MiniColumn minEnergy_MiniColumn = miniColumn;
 
-                for (int i = 0; i < miniColumn.Temp_CandidatesForSwapMiniColumns.Count; i += 1)
+                for (int i = 0; i < miniColumn.Temp_CandidateForSwapMiniColumns.Count; i += 1)
                 {
-                    MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[i];
+                    MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[i];
 
-                    miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
-                    double energy = - miniColumn.Temp_Energy - adjacentMiniColumn.Temp_Energy
-                        + GetEnergy(miniColumn) + GetEnergy(adjacentMiniColumn);
-                    miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);
+                    miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);
+                    double energy = - miniColumn.Temp_Energy - candidateForSwapMiniColumn.Temp_Energy
+                        + GetEnergy(miniColumn) + GetEnergy(candidateForSwapMiniColumn);
+                    miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);
 
                     if (energy < minEnergy)
                     {
                         minEnergy = energy;
-                        minEnergy_MiniColumn = adjacentMiniColumn;
+                        minEnergy_MiniColumn = candidateForSwapMiniColumn;
                     }
                 }
 
@@ -179,21 +190,17 @@ public class Model01
         {
             var miniColumn = randomMiniColumns[randomMiniColumns_Index];
 
-            MiniColumn adjacentMiniColumn = miniColumn.Temp_CandidatesForSwapMiniColumns[random.Next(miniColumn.Temp_CandidatesForSwapMiniColumns.Count)];
+            MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[random.Next(miniColumn.Temp_CandidateForSwapMiniColumns.Count)];
 
-            miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);            
+            miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);            
         }
 
         await refreshAction();
     }
 
-    #endregion
-
-    #region private functions    
-
-    private double GetEnergy()
+    public double GetEnergy()
     {
-        if (Cortex.InputItems.Count == 0)
+        if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
             return Double.NaN;
 
         double energy = 0.0;
@@ -201,11 +208,47 @@ public class Model01
         {
             MiniColumn? miniColumn = Cortex.MiniColumns.Data[miniColumns_Index];
             if (miniColumn is null)
-                continue;            
+                continue;
             energy += GetEnergy(miniColumn);
         }
         return energy;
     }
+
+    public (double Average, double Minimum, double Maximum) GetAverageDistance()
+    {
+        if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
+            return (Double.NaN, Double.NaN, Double.NaN);
+
+        var miniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();        
+
+        double distanceTotal = 0.0;
+        double distanceMin = Double.MaxValue;
+        double distanceMax = Double.MinValue;
+        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Length; miniColumns_Index += 1)
+        {
+            var miniColumn = miniColumns[miniColumns_Index];
+
+            double distanceSubTotal = 0.0;
+            for (int i = 0; i < miniColumn.Temp_CandidateForSwapMiniColumns.Count; i += 1)
+            {
+                MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[i];
+                distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, candidateForSwapMiniColumn.CortexMemories[0]!);
+            }
+            double distance = distanceSubTotal / miniColumn.Temp_CandidateForSwapMiniColumns.Count;
+            if (distance < distanceMin)
+                distanceMin = distance;
+            if (distance > distanceMax)
+                distanceMax = distance;
+            distanceTotal += distance;
+            miniColumn.Temp_Distance = distance;
+        }
+
+        return (Average: distanceTotal / miniColumns.Length, Minimum: distanceMin, Maximum: distanceMax);
+    }
+
+    #endregion
+
+    #region private functions        
 
     private double GetEnergy(MiniColumn miniColumn)
     {
@@ -216,6 +259,20 @@ public class Model01
             energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
         }
         return energy;
+    }
+
+    private double GetDistance(Memory memory1, Memory memory2)
+    {
+        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+
+        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
+        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
+        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
+        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+
+        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        return Math.Sqrt(d);
     }
 
     private double GetSimilarity(Memory memory1, Memory memory2)

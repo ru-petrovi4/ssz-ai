@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
 
-public struct InputItem : IOwnedDataSerializable
+public class InputItem : IOwnedDataSerializable
 {
     public int Index;
 

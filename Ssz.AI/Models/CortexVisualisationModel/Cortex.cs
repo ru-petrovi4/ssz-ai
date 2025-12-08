@@ -91,17 +91,17 @@ public partial class Cortex : ISerializableModelObject
                         if (nearestMc is null)
                             continue;
 
-                        double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
-                        if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
-                            miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
-
-                        miniColumn.Temp_CandidatesForSwapMiniColumns.Add(nearestMc);
-
                         //double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
-                        //miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+                        //if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
+                        //    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        //if (Math.Abs(mcx - miniColumn.MCX) <= 1 && Math.Abs(mcy - miniColumn.MCY) <= 1)
-                        //    miniColumn.Temp_CandidatesForSwapMiniColumns.Add(nearestMc);
+                        //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
+
+                        double k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
+                        miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+
+                        if (Math.Abs(mcx - miniColumn.MCX) <= 3 && Math.Abs(mcy - miniColumn.MCY) <= 3)
+                            miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
                     }
             });
     }
@@ -162,9 +162,11 @@ public partial class Cortex : ISerializableModelObject
         ///     Смежные миниколонки
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<MiniColumn> Temp_CandidatesForSwapMiniColumns = null!;
+        public FastList<MiniColumn> Temp_CandidateForSwapMiniColumns = null!;
 
         public double Temp_Energy;
+
+        public double Temp_Distance;
 
         /// <summary>
         ///     Сохраненные хэш-коды
@@ -179,7 +181,7 @@ public partial class Cortex : ISerializableModelObject
         public void Prepare()
         {            
             Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
-            Temp_CandidatesForSwapMiniColumns = new FastList<MiniColumn>(8);
+            Temp_CandidateForSwapMiniColumns = new FastList<MiniColumn>(8);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
