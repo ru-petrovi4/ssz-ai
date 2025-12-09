@@ -38,34 +38,38 @@ public partial class Cortex : ISerializableModelObject
 
     public List<InputItem> InputItems { get; private set; } = null!;
 
-    public DenseMatrix<MiniColumn?> MiniColumns { get; private set; } = null!;    
+    public FastList<MiniColumn> MiniColumns { get; private set; } = null!;    
 
     public string Temp_InputCurrentDesc = null!;
 
     public void GenerateOwnedData(Random random)
     {
-        MiniColumns = new DenseMatrix<MiniColumn?>(Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns);
+        MiniColumns = new FastList<MiniColumn>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
+        
+        float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
+        float maxRadius = Constants.CortexRadius_MiniColumns + 0.00001f;
 
-        int center_MCX = MiniColumns.Dimensions[0] / 2;
-        int center_MCY = MiniColumns.Dimensions[1] / 2;
-        float maxRadius = center_MCX;
-
-        for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
-            for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
+        for (int mcj = -(int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj += 1)
+            for (int mci = -Constants.CortexRadius_MiniColumns; mci <= Constants.CortexRadius_MiniColumns; mci += 1)
             {
-                float radius = MathF.Sqrt((center_MCX - mcx) * (center_MCX - mcx) + (center_MCY - mcy) * (center_MCY - mcy));
-                if (radius <= maxRadius + 1)
+                float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
+                float mcy = mcj * delta_MCY;
+
+                float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
+                if (radius < maxRadius)
                 {
                     MiniColumn miniColumn = new MiniColumn(
-                        Constants,
-                        mcx,
-                        mcy);
+                        Constants)
+                    {
+                        MCX = mcx,
+                        MCY = mcy
+                    };
 
                     miniColumn.GenerateOwnedData();
 
-                    MiniColumns[mcx, mcy] = miniColumn;
+                    MiniColumns.Add(miniColumn);
                 }
-            }        
+            }                    
     }
 
     public void Prepare()
@@ -73,36 +77,32 @@ public partial class Cortex : ISerializableModelObject
         // Находим ближайшие миниколонки для каждой миниколонки
         Parallel.For(
             fromInclusive: 0,
-            toExclusive: MiniColumns.Data.Length,
+            toExclusive: MiniColumns.Count,
             mci =>
             {
-                MiniColumn? miniColumn = MiniColumns.Data[mci];
-                if (miniColumn is null)
-                    return;
+                MiniColumn miniColumn = MiniColumns[mci];                
                 miniColumn.Prepare();                                           
 
-                for (int mcy = 0; mcy < MiniColumns.Dimensions[1]; mcy += 1)
-                    for (int mcx = 0; mcx < MiniColumns.Dimensions[0]; mcx += 1)
-                    {
-                        if (mcx == miniColumn.MCX && mcy == miniColumn.MCY)
-                            continue;
+                for (int mci2 = 0; mci2 < MiniColumns.Count; mci2 += 1)                    
+                {
+                    if (mci2 == mci)
+                        continue;
 
-                        MiniColumn? nearestMc = MiniColumns[mcx, mcy];
-                        if (nearestMc is null)
-                            continue;
+                    MiniColumn nearestMc = MiniColumns[mci2];
 
-                        //double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
-                        //if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
-                        //    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+                    //double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
+                    //if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
+                    //    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
+                    //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
 
-                        double k = (mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY);
-                        miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
+                    double k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
+                    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
 
-                        if (Math.Abs(mcx - miniColumn.MCX) <= 3 && Math.Abs(mcy - miniColumn.MCY) <= 3)
-                            miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
-                    }
+                    double r = Math.Sqrt(k);
+                    if (r < 1.00001)
+                        miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
+                }
             });
     }
 
@@ -111,7 +111,7 @@ public partial class Cortex : ISerializableModelObject
         using (writer.EnterBlock(1))
         {
             writer.WriteListOfOwnedDataSerializable(InputItems, context);
-            Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(MiniColumns, writer, context);            
+            Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_FastList(MiniColumns, writer, context);            
         }
     }
 
@@ -123,7 +123,7 @@ public partial class Cortex : ISerializableModelObject
             {
                 case 1:
                     InputItems = reader.ReadListOfOwnedDataSerializable(() => new InputItem(), context);
-                    MiniColumns = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (mcx, mcy) => new MiniColumn(Constants, mcx, mcy));
+                    MiniColumns = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => new MiniColumn(Constants));
                     break;
             }
         }
@@ -133,24 +133,22 @@ public partial class Cortex : ISerializableModelObject
 
     public class MiniColumn : ISerializableModelObject
     {
-        public MiniColumn(Model01.ModelConstants constants, int mcx, int mcy)
+        public MiniColumn(Model01.ModelConstants constants)
         {
-            Constants = constants;            
-            MCX = mcx;
-            MCY = mcy;
+            Constants = constants;
         }
 
         public readonly Model01.ModelConstants Constants;
 
         /// <summary>
-        ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
+        ///     Координата миниколонки по оси X (горизонтально вправо)
         /// </summary>
-        public int MCX { get; }
+        public float MCX;
 
         /// <summary>
-        ///     Индекс миниколонки в матрице по оси Y (вертикально вниз)
+        ///     Координата миниколонки по оси Y (вертикально вниз)
         /// </summary>
-        public int MCY { get; }
+        public float MCY;
 
         /// <summary>
         ///     Окружающие миниколонки, для которых считается энергия.
@@ -159,7 +157,7 @@ public partial class Cortex : ISerializableModelObject
         public FastList<(double, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
-        ///     Смежные миниколонки
+        ///     Миниколонки - кандидаты для перестановки.
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
         public FastList<MiniColumn> Temp_CandidateForSwapMiniColumns = null!;
@@ -180,7 +178,7 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare()
         {            
-            Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
+            Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_CandidateForSwapMiniColumns = new FastList<MiniColumn>(8);
         }
 
@@ -188,6 +186,8 @@ public partial class Cortex : ISerializableModelObject
         {
             using (writer.EnterBlock(1))
             {
+                writer.Write(MCX);
+                writer.Write(MCY);
                 Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_FastList(CortexMemories, writer, context);                
             }
         }
@@ -199,6 +199,8 @@ public partial class Cortex : ISerializableModelObject
                 switch (block.Version)
                 {
                     case 1:
+                        MCX = reader.ReadSingle();
+                        MCY = reader.ReadSingle();
                         CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
                         break;                    
                 }

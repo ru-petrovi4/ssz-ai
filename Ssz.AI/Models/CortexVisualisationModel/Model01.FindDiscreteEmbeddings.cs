@@ -76,27 +76,21 @@ public class Model01
     public void PutInitialMemoriesPinwheel(Random random, bool isRandom)
     {
         if (Cortex.MiniColumns is null)
-            return;
+            return;       
 
-        int center_MCX = Cortex.MiniColumns.Dimensions[0] / 2;
-        int center_MCY = Cortex.MiniColumns.Dimensions[1] / 2;
-        //float maxRadius = MathF.Sqrt(center_MCX * center_MCX + center_MCY * center_MCY);
-
-        var miniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
-        var randomMiniColumns = (MiniColumn[])miniColumns.Clone();
+        var miniColumns = Cortex.MiniColumns;
+        var randomMiniColumns = Cortex.MiniColumns.ToArray();
         random.Shuffle(randomMiniColumns);        
 
         float maxMagnitude = Single.MinValue;
-        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Length; miniColumns_Index += 1)            
+        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)            
         {
-            MiniColumn? miniColumn = miniColumns[miniColumns_Index];
-            if (miniColumn is null)
-                continue;
+            MiniColumn miniColumn = miniColumns[miniColumns_Index];            
 
             InputItem inputItem = new();
             inputItem.Index = Cortex.InputItems.Count;
-            inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY - center_MCY, miniColumn.MCX - center_MCX));
-            inputItem.Magnitude = MathF.Sqrt((miniColumn.MCY - center_MCY) * (miniColumn.MCY - center_MCY) + (miniColumn.MCX - center_MCX) * (miniColumn.MCX - center_MCX));
+            inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
+            inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
             if (inputItem.Magnitude > maxMagnitude)
                 maxMagnitude = inputItem.Magnitude;
 
@@ -119,8 +113,9 @@ public class Model01
 
         for (int inputItem_Index = 0; inputItem_Index < Cortex.InputItems.Count; inputItem_Index += 1)
         {
-            InputItem inputItem = Cortex.InputItems[inputItem_Index];            
-            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), inputItem.Magnitude / maxMagnitude, 1.0);
+            InputItem inputItem = Cortex.InputItems[inputItem_Index];
+            float s = MathF.Sqrt(inputItem.Magnitude / maxMagnitude);            
+            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
         }
     }
 
@@ -128,7 +123,7 @@ public class Model01
     {        
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
-            var randomMiniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();
+            var randomMiniColumns = Cortex.MiniColumns.ToArray();
             random.Shuffle(randomMiniColumns);
 
             bool changed = false;
@@ -182,7 +177,7 @@ public class Model01
 
     public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
-        var randomMiniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();        
+        var randomMiniColumns = Cortex.MiniColumns.ToArray();        
         random.Shuffle(randomMiniColumns);
         randomMiniColumns = randomMiniColumns.Take(randomMiniColumns.Length * percents / 100).ToArray();
 
@@ -204,11 +199,9 @@ public class Model01
             return Double.NaN;
 
         double energy = 0.0;
-        for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Data.Length; miniColumns_Index += 1)
+        for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Count; miniColumns_Index += 1)
         {
-            MiniColumn? miniColumn = Cortex.MiniColumns.Data[miniColumns_Index];
-            if (miniColumn is null)
-                continue;
+            MiniColumn miniColumn = Cortex.MiniColumns[miniColumns_Index];            
             energy += GetEnergy(miniColumn);
         }
         return energy;
@@ -219,12 +212,12 @@ public class Model01
         if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
             return (Double.NaN, Double.NaN, Double.NaN);
 
-        var miniColumns = Cortex.MiniColumns.Data.OfType<MiniColumn>().ToArray();        
+        var miniColumns = Cortex.MiniColumns;        
 
         double distanceTotal = 0.0;
         double distanceMin = Double.MaxValue;
         double distanceMax = Double.MinValue;
-        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Length; miniColumns_Index += 1)
+        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
         {
             var miniColumn = miniColumns[miniColumns_Index];
 
@@ -243,7 +236,7 @@ public class Model01
             miniColumn.Temp_Distance = distance;
         }
 
-        return (Average: distanceTotal / miniColumns.Length, Minimum: distanceMin, Maximum: distanceMax);
+        return (Average: distanceTotal / miniColumns.Count, Minimum: distanceMin, Maximum: distanceMax);
     }
 
     #endregion
@@ -286,7 +279,7 @@ public class Model01
         double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
 
         var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return -d;
+        return - Math.Pow(d, 0.5);
     }    
 
     #endregion
@@ -298,13 +291,8 @@ public class Model01
     public class ModelConstants
     {        
         /// <summary>
-        ///     Количество миниколонок в зоне коры по оси X
+        ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int CortexWidth_MiniColumns => 17;
-
-        /// <summary>
-        ///     Количество миниколонок в зоне коры по оси Y
-        /// </summary>
-        public int CortexHeight_MiniColumns => 17;        
+        public int CortexRadius_MiniColumns => 10;        
     }
 }

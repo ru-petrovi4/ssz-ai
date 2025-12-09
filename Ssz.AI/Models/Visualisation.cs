@@ -1644,102 +1644,106 @@ public static class Visualisation
 
     public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex)
     {
-        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);        
+        float miniColumnRadius_Pixels = 5.0f;
+        float radius_Pixels = (cortex.Constants.CortexRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
             // Устанавливаем черный фон
             g.Clear(Color.Black);
-        }        
 
-        foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-            foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
             {
-                var mc = cortex.MiniColumns[mcx, mcy];
-                if (mc is not null && mc.CortexMemories.Count > 0)
+                var miniColumn = cortex.MiniColumns[mci];
+                if (miniColumn.CortexMemories.Count > 0)
                 {
-                    Color color = GetAverageLABColor(mc.CortexMemories
+                    Color color = GetAverageLABColor(miniColumn.CortexMemories
                         .Where(cm => cm is not null)
                         .Select(cm => cortex.InputItems[cm!.InputItemIndex])
                         .Where(ii => ii.Color != Color.Black)
                         .Select(ii => ii.Color));
 
-                    bitmap.SetPixel(mcx, mcy, color);
+                    g.FillEllipse(
+                        new SolidBrush(color),
+                        miniColumn.MCX * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                        miniColumn.MCY * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                        miniColumnRadius_Pixels * 2 + 2.0f,
+                        miniColumnRadius_Pixels * 2 + 2.0f
+                        );
                 }
             }
-
-        return bitmap;
-    }
-
-    public static Image GetBitmapFromMiniColumsValue(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.Cortex.MiniColumn, double> getValue)
-    {
-        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
-
-        using (Graphics g = Graphics.FromImage(bitmap))
-        {
-            // Устанавливаем черный фон
-            g.Clear(Color.Black);
         }
-        
-        double valueMin = Double.MaxValue;
-        double valueMax = Double.MinValue;
-        foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-            foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
-            {
-                var mc = cortex.MiniColumns[mcx, mcy];
-                if (mc is not null && mc.CortexMemories.Count > 0)
-                {
-                    double value = getValue(mc);
-                    if (value < valueMin)
-                        valueMin = value;
-                    if (value > valueMax)
-                        valueMax = value;
-                }
-            }
-        
-        foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-            foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
-            {
-                var mc = cortex.MiniColumns[mcx, mcy];
-                if (mc is not null && mc.CortexMemories.Count > 0)
-                {
-                    double distance = getValue(mc);
-                    int v = (int)(255 * (distance - valueMin) / (valueMax - valueMin));
-
-                    Color color = Color.FromArgb(v, v, v);
-
-                    bitmap.SetPixel(mcx, mcy, color);
-                }
-            }
 
         return bitmap;
     }
 
-    public static Image GetBitmapFromMiniColumsValue(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.Cortex.MiniColumn, double> getValue, double valueMin, double valueMax)
+    public static Image GetBitmapFromMiniColumsValue(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.Cortex.MiniColumn, double> getValue, double? valueMin = null, double? valueMax = null)
     {
-        Bitmap bitmap = new Bitmap(cortex.MiniColumns.Dimensions[0], cortex.MiniColumns.Dimensions[1]);
+        double valueMin_Final;
+        double valueMax_Final;
+        if (valueMin is not null && valueMax is not null)
+        {
+            valueMin_Final = valueMin.Value;
+            valueMax_Final = valueMax.Value;
+        }
+        else
+        {
+            double valueMin_Local = Double.MaxValue;
+            double valueMax_Local = Double.MinValue;
+
+            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+            {
+                var miniColumn = cortex.MiniColumns[mci];
+                if (miniColumn.CortexMemories.Count > 0)
+                {
+                    double value = getValue(miniColumn);
+                    if (value < valueMin_Local)
+                        valueMin_Local = value;
+                    if (value > valueMax_Local)
+                        valueMax_Local = value;
+                }
+            }
+
+            if (valueMin is not null)
+                valueMin_Final = valueMin.Value;            
+            else
+                valueMin_Final = valueMin_Local;
+
+            if (valueMax is not null)
+                valueMax_Final = valueMax.Value;
+            else
+                valueMax_Final = valueMax_Local;
+        }
+
+        float miniColumnRadius_Pixels = 5.0f;
+        float radius_Pixels = (cortex.Constants.CortexRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
             // Устанавливаем черный фон
             g.Clear(Color.Black);
-        }        
 
-        foreach (int mcy in Enumerable.Range(0, cortex.MiniColumns.Dimensions[1]))
-            foreach (int mcx in Enumerable.Range(0, cortex.MiniColumns.Dimensions[0]))
+            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
             {
-                var mc = cortex.MiniColumns[mcx, mcy];
-                if (mc is not null && mc.CortexMemories.Count > 0)
-                {
-                    double distance = getValue(mc);
-                    int v = (int)(255 * (distance - valueMin) / (valueMax - valueMin));
-                    if (v > 255)
-                        v = 255;
-                    Color color = Color.FromArgb(v, v, v);
+                var miniColumn = cortex.MiniColumns[mci];
+                double value = getValue(miniColumn);
+                int v = (int)(255 * (value - valueMin_Final) / (valueMax_Final - valueMin_Final));
+                if (v > 255)
+                    v = 255;
 
-                    bitmap.SetPixel(mcx, mcy, color);
-                }
+                Color color = Color.FromArgb(v, v, v);                
+
+                g.FillEllipse(
+                    new SolidBrush(color),
+                    miniColumn.MCX * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                    miniColumn.MCY * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                    miniColumnRadius_Pixels * 2 + 2.0f,
+                    miniColumnRadius_Pixels * 2 + 2.0f
+                    );                
             }
+        }
 
         return bitmap;
     }
