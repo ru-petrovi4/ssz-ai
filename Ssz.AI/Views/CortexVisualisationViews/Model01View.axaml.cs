@@ -227,9 +227,9 @@ public partial class Model01View : UserControl
         {
             try
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Started.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                await Model.ReorderMemoriesAsync(1, _random, cancellationToken, () =>
+                await Model.ReorderMemoriesGlobalAsync(1, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -240,10 +240,10 @@ public partial class Model01View : UserControl
             }
             catch (OperationCanceledException)
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Cancelled.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Cancelled.");
             }
 
-            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(".ReorderMemories Finished.");
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
         });
 
         Refresh_ImagesSet();

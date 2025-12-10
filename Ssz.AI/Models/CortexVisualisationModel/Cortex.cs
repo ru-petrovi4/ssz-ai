@@ -101,7 +101,7 @@ public partial class Cortex : ISerializableModelObject
 
                     double r = Math.Sqrt(k);
                     if (r < 1.00001)
-                        miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
+                        miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
                 }
             });
     }
@@ -160,7 +160,7 @@ public partial class Cortex : ISerializableModelObject
         ///     Миниколонки - кандидаты для перестановки.
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<MiniColumn> Temp_CandidateForSwapMiniColumns = null!;
+        public FastList<(double, MiniColumn)> Temp_CandidateForSwapMiniColumns = null!;
 
         public double Temp_Energy;
 
@@ -179,7 +179,7 @@ public partial class Cortex : ISerializableModelObject
         public void Prepare()
         {            
             Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
-            Temp_CandidateForSwapMiniColumns = new FastList<MiniColumn>(8);
+            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>(8);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
