@@ -97,11 +97,16 @@ public partial class Cortex : ISerializableModelObject
                     //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
 
                     double k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
-                    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
-
                     double r = Math.Sqrt(k);
+
+                    if (r < 3.00001)
+                        miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
+                    
+                    //if (r < 1.00001)
+                    miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
+
                     if (r < 1.00001)
-                        miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
+                        miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
                 }
             });
     }
@@ -154,13 +159,19 @@ public partial class Cortex : ISerializableModelObject
         ///     Окружающие миниколонки, для которых считается энергия.
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
-        public FastList<(double, MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
+        public FastList<(double, MiniColumn)> Temp_NearestForEnergyMiniColumns = null!;
 
         /// <summary>
         ///     Миниколонки - кандидаты для перестановки.
-        ///     <para>(r^2, MiniColumn)</para>        
+        ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_CandidateForSwapMiniColumns = null!;
+
+        /// <summary>
+        ///     Миниколонки - соседи.
+        ///     <para>(r, MiniColumn)</para>        
+        /// </summary>
+        public FastList<(double, MiniColumn)> Temp_AdjacentMiniColumns = null!;
 
         public double Temp_Energy;
 
@@ -178,8 +189,9 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare()
         {            
-            Temp_K_ForNearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
-            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>(8);
+            Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
+            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
+            Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)

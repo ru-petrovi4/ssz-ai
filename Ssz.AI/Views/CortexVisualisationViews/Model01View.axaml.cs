@@ -199,11 +199,16 @@ public partial class Model01View : UserControl
                     var energy = Model.GetEnergy();
                     Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
                     if (energy < minEnergy)
+                    {
                         minEnergy = energy;
+                        failCount = 0;
+                    }
                     else
+                    {
                         failCount += 1;
+                    }
 
-                    if (failCount > 10)
+                    if (failCount > 3)
                         break;
                 }
             }
@@ -229,14 +234,14 @@ public partial class Model01View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                await Model.ReorderMemoriesGlobalAsync(1, _random, cancellationToken, () =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        Refresh_ImagesSet();
-                    });
-                    return Task.CompletedTask;
-                });
+                //await Model.ReorderMemoriesGlobalAsync(1, _random, cancellationToken, () =>
+                //{
+                //    Dispatcher.UIThread.Invoke(() =>
+                //    {
+                //        Refresh_ImagesSet();
+                //    });
+                //    return Task.CompletedTask;
+                //});
             }
             catch (OperationCanceledException)
             {

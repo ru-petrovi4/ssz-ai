@@ -68,7 +68,7 @@ public class Model01
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках.\nЭнергия: {GetEnergy()}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 7.0)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 15.0)),
                     Desc = $"Среднее расстояние: {it.Average}\nМинимальное: {it.Minimum}\nМаксимальное: {it.Maximum}" }
             ];
     }    
@@ -122,12 +122,7 @@ public class Model01
     public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
         await ReorderMemoriesAsync(epochCount, random, cancellationToken, refreshAction, mc => mc.Temp_CandidateForSwapMiniColumns);
-    }
-
-    public async Task ReorderMemoriesGlobalAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
-    {
-        await ReorderMemoriesAsync(epochCount, random, cancellationToken, refreshAction, mc => mc.Temp_K_ForNearestMiniColumns);
-    }
+    }    
 
     public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
@@ -139,9 +134,9 @@ public class Model01
         {
             var miniColumn = randomMiniColumns[randomMiniColumns_Index];
 
-            MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[random.Next(miniColumn.Temp_CandidateForSwapMiniColumns.Count)].Item2;
+            MiniColumn adjacentMiniColumn = miniColumn.Temp_AdjacentMiniColumns[random.Next(miniColumn.Temp_AdjacentMiniColumns.Count)].Item2;
 
-            miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);            
+            miniColumn.CortexMemories.Swap(adjacentMiniColumn.CortexMemories);            
         }
 
         await refreshAction();
@@ -176,12 +171,12 @@ public class Model01
             var miniColumn = miniColumns[miniColumns_Index];
 
             double distanceSubTotal = 0.0;
-            for (int i = 0; i < miniColumn.Temp_CandidateForSwapMiniColumns.Count; i += 1)
+            for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
             {
-                MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_CandidateForSwapMiniColumns[i].Item2;
+                MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_NearestForEnergyMiniColumns[i].Item2;
                 distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, candidateForSwapMiniColumn.CortexMemories[0]!);
             }
-            double distance = distanceSubTotal / miniColumn.Temp_CandidateForSwapMiniColumns.Count;
+            double distance = distanceSubTotal / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
             if (distance < distanceMin)
                 distanceMin = distance;
             if (distance > distanceMax)
@@ -256,9 +251,20 @@ public class Model01
     private double GetEnergy(MiniColumn miniColumn)
     {
         double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
         {
-            var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
+            var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
+            energy += GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!);
+        }
+        return energy / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
+    }
+
+    private double GetEnergy_SpringModel(MiniColumn miniColumn)
+    {
+        double energy = 0.0;
+        for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
+        {
+            var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
             energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
         }
         return energy;
