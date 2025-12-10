@@ -66,6 +66,9 @@
     <Compile Update="Views\AdvancedEmbeddingViews\Model01View.axaml.cs">
       <DependentUpon>Model01View.axaml</DependentUpon>
     </Compile>
+    <Compile Update="Views\CortexVisualisationViews\Model02View.axaml.cs">
+      <DependentUpon>Model02View.axaml</DependentUpon>
+    </Compile>
     <Compile Update="Views\GeneratedImages11.axaml.cs">
       <DependentUpon>GeneratedImages11.axaml</DependentUpon>
     </Compile>

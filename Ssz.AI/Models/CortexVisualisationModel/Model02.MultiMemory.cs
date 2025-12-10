@@ -29,13 +29,13 @@ using static Ssz.AI.Models.CortexVisualisationModel.Cortex;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
 
-public class Model01
+public class Model02
 {
     public const string FileName_Cortex = "CortexVisualisationModel_Cortex.bin";
 
     #region construction and destruction
 
-    public Model01()
+    public Model02()
     {
         LoggersSet = new LoggersSet(
             NullLogger.Instance,
@@ -296,7 +296,7 @@ public class Model01
 
         var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
         return - Math.Pow(d, 0.5);
-    }    
+    }
 
     #endregion
 
@@ -304,11 +304,11 @@ public class Model01
 
     #endregion
 
-    public class ModelConstants
-    {        
+    public class ModelConstants : IModelConstants
+    {
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int CortexRadius_MiniColumns => 10;        
+        public int CortexRadius_MiniColumns => 10;
     }
 }

@@ -15,6 +15,14 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
 
+public interface IModelConstants
+{
+    /// <summary>
+    ///     Радиус зоны коры в миниколонках.
+    /// </summary>
+    int CortexRadius_MiniColumns { get; }
+}
+
 public partial class Cortex : ISerializableModelObject
 {
     /// <summary>
@@ -22,7 +30,7 @@ public partial class Cortex : ISerializableModelObject
     /// </summary>
     /// <param name="constants"></param>        
     public Cortex(
-        Model01.ModelConstants constants, 
+        IModelConstants constants, 
         ILogger logger)
     {
         Constants = constants;
@@ -32,7 +40,7 @@ public partial class Cortex : ISerializableModelObject
 
     #region public functions
 
-    public readonly Model01.ModelConstants Constants;
+    public readonly IModelConstants Constants;
 
     public readonly ILogger Logger;
 
@@ -138,12 +146,12 @@ public partial class Cortex : ISerializableModelObject
 
     public class MiniColumn : ISerializableModelObject
     {
-        public MiniColumn(Model01.ModelConstants constants)
+        public MiniColumn(IModelConstants constants)
         {
             Constants = constants;
         }
 
-        public readonly Model01.ModelConstants Constants;
+        public readonly IModelConstants Constants;
 
         /// <summary>
         ///     Координата миниколонки по оси X (горизонтально вправо)
