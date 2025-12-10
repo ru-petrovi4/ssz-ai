@@ -165,8 +165,8 @@ public partial class Model01View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                double minEnergy = Double.MaxValue;
-                int failCount = 0;
+                //double minEnergy = Double.MaxValue;
+                //int failCount = 0;
                 for (; ; )
                 {
                     await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
@@ -178,37 +178,37 @@ public partial class Model01View : UserControl
                         return Task.CompletedTask;
                     });
 
-                    await Model.AddNoizeAsync(400, _random, cancellationToken, () =>
-                    {
-                        Dispatcher.UIThread.Invoke(() =>
-                        {
-                            Refresh_ImagesSet();
-                        });
-                        return Task.CompletedTask;
-                    });
+                    //await Model.AddNoizeAsync(400, _random, cancellationToken, () =>
+                    //{
+                    //    Dispatcher.UIThread.Invoke(() =>
+                    //    {
+                    //        Refresh_ImagesSet();
+                    //    });
+                    //    return Task.CompletedTask;
+                    //});
 
-                    await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
-                    {
-                        Dispatcher.UIThread.Invoke(() =>
-                        {
-                            Refresh_ImagesSet();
-                        });
-                        return Task.CompletedTask;
-                    });
+                    //await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
+                    //{
+                    //    Dispatcher.UIThread.Invoke(() =>
+                    //    {
+                    //        Refresh_ImagesSet();
+                    //    });
+                    //    return Task.CompletedTask;
+                    //});
 
                     var energy = Model.GetEnergy();
                     Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
-                    if (energy < minEnergy)
-                    {
-                        minEnergy = energy;
-                        failCount = 0;
-                    }
-                    else
-                    {
-                        failCount += 1;
-                    }
+                    //if (energy < minEnergy)
+                    //{
+                    //    minEnergy = energy;
+                    //    failCount = 0;
+                    //}
+                    //else
+                    //{
+                    //    failCount += 1;
+                    //}
 
-                    if (failCount > 3)
+                    //if (failCount > 3)
                         break;
                 }
             }
@@ -261,7 +261,7 @@ public partial class Model01View : UserControl
         var constants = Model01.Constants;
         GetDataFromControls(constants); 
 
-        _random = new Random(41);
+        _random = new Random();
 
         Model = new Model01();
 
