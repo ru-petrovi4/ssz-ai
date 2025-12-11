@@ -173,8 +173,8 @@ public class Model01
             double distanceSubTotal = 0.0;
             for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
             {
-                MiniColumn candidateForSwapMiniColumn = miniColumn.Temp_NearestForEnergyMiniColumns[i].Item2;
-                distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, candidateForSwapMiniColumn.CortexMemories[0]!);
+                MiniColumn nearestMiniColumn = miniColumn.Temp_NearestForEnergyMiniColumns[i].Item2;
+                distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, nearestMiniColumn.CortexMemories[0]!);
             }
             double distance = distanceSubTotal / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
             if (distance < distanceMin)
@@ -280,8 +280,8 @@ public class Model01
         double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
         double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
 
-        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-        return Math.Sqrt(d);
+        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        return Math.Sqrt(r2);
     }
 
     private double GetSimilarity(Memory memory1, Memory memory2)
@@ -294,8 +294,8 @@ public class Model01
         double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
         double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
 
-        var d = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return - Math.Pow(d, 0.5);
+        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        return - Math.Pow(r2, 0.5);
     }    
 
     #endregion

@@ -223,7 +223,7 @@ public partial class Model02View : UserControl
         Refresh_ImagesSet();
     }
 
-    private async void StartReorderMemories1Epoch_OnClick(object? sender, RoutedEventArgs args)
+    private async void StartProcessN_OnClick(object? sender, RoutedEventArgs args)
     {
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
@@ -232,23 +232,23 @@ public partial class Model02View : UserControl
         {
             try
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Started.");
 
-                //await Model.ReorderMemoriesGlobalAsync(1, _random, cancellationToken, () =>
-                //{
-                //    Dispatcher.UIThread.Invoke(() =>
-                //    {
-                //        Refresh_ImagesSet();
-                //    });
-                //    return Task.CompletedTask;
-                //});
+                await Model.ProcessNAsync(300, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
             }
             catch (OperationCanceledException)
             {
-                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Cancelled.");
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Cancelled.");
             }
 
-            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Finished.");
         });
 
         Refresh_ImagesSet();

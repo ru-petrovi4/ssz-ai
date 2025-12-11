@@ -94,7 +94,10 @@ public partial class Cortex : ISerializableModelObject
                 for (int mci2 = 0; mci2 < MiniColumns.Count; mci2 += 1)                    
                 {
                     if (mci2 == mci)
+                    {
+                        miniColumn.Temp_NearestForEnergyMiniColumns.Add((0, miniColumn));
                         continue;
+                    }
 
                     MiniColumn nearestMc = MiniColumns[mci2];
 
@@ -164,19 +167,19 @@ public partial class Cortex : ISerializableModelObject
         public float MCY;
 
         /// <summary>
-        ///     Окружающие миниколонки, для которых считается энергия.
+        ///     Сама миниколонка и окружающие миниколонки, для которых считается энергия.
         ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_NearestForEnergyMiniColumns = null!;
 
         /// <summary>
-        ///     Миниколонки - кандидаты для перестановки.
+        ///     Миниколонки - кандидаты для перестановки воспоминаний.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_CandidateForSwapMiniColumns = null!;
 
         /// <summary>
-        ///     Миниколонки - соседи.
+        ///     Миниколонки - ближайшие соседи.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_AdjacentMiniColumns = null!;
