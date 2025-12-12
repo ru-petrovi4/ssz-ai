@@ -15,14 +15,6 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
 
-public interface IModelConstants
-{
-    /// <summary>
-    ///     Радиус зоны коры в миниколонках.
-    /// </summary>
-    int CortexRadius_MiniColumns { get; }
-}
-
 public partial class Cortex : ISerializableModelObject
 {
     /// <summary>
@@ -30,7 +22,7 @@ public partial class Cortex : ISerializableModelObject
     /// </summary>
     /// <param name="constants"></param>        
     public Cortex(
-        IModelConstants constants, 
+        IMiniColumnsActivityConstants constants, 
         ILogger logger)
     {
         Constants = constants;
@@ -40,7 +32,7 @@ public partial class Cortex : ISerializableModelObject
 
     #region public functions
 
-    public readonly IModelConstants Constants;
+    public readonly IMiniColumnsActivityConstants Constants;
 
     public readonly ILogger Logger;
 
@@ -95,6 +87,7 @@ public partial class Cortex : ISerializableModelObject
                 {
                     if (mci2 == mci)
                     {
+                        miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));
                         miniColumn.Temp_NearestForEnergyMiniColumns.Add((0, miniColumn));
                         continue;
                     }
@@ -107,16 +100,22 @@ public partial class Cortex : ISerializableModelObject
 
                     //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
 
-                    double k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
-                    double r = Math.Sqrt(k);
+                    float k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
+                    float r = MathF.Sqrt(k);
 
-                    if (r < 3.00001)
+                    if (r < 2.00001f)
+                        miniColumn.Temp_K_ForNearestMiniColumns.Add(
+                            (MathHelper.GetInterpolatedValue(Constants.PositiveK, r),
+                            MathHelper.GetInterpolatedValue(Constants.NegativeK, r), 
+                            miniColumn));
+
+                    if (r < 3.00001f)
                         miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
                     
                     //if (r < 1.00001)
                     miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
 
-                    if (r < 1.00001)
+                    if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
                 }
             });
@@ -149,12 +148,12 @@ public partial class Cortex : ISerializableModelObject
 
     public class MiniColumn : ISerializableModelObject
     {
-        public MiniColumn(IModelConstants constants)
+        public MiniColumn(IMiniColumnsActivityConstants constants)
         {
             Constants = constants;
         }
 
-        public readonly IModelConstants Constants;
+        public readonly IMiniColumnsActivityConstants Constants;
 
         /// <summary>
         ///     Координата миниколонки по оси X (горизонтально вправо)
@@ -165,6 +164,12 @@ public partial class Cortex : ISerializableModelObject
         ///     Координата миниколонки по оси Y (вертикально вниз)
         /// </summary>
         public float MCY;
+
+        /// <summary>
+        ///     Сама миниколонка и окружающие миниколонки, для которых считается суперактивность.
+        ///     <para>(r^2, MiniColumn)</para>        
+        /// </summary>
+        public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
         ///     Сама миниколонка и окружающие миниколонки, для которых считается энергия.
@@ -188,7 +193,9 @@ public partial class Cortex : ISerializableModelObject
 
         public double Temp_Distance;
 
-        public float Temp_Activity;
+        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
+
+        public float Temp_SuperActivity;
 
         /// <summary>
         ///     Сохраненные хэш-коды
@@ -201,7 +208,8 @@ public partial class Cortex : ISerializableModelObject
         }
 
         public void Prepare()
-        {            
+        {
+            Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>((int)(Math.PI * 2));
             Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);

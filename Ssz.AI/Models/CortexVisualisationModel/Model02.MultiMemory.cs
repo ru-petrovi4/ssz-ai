@@ -61,7 +61,9 @@ public class Model02
 
     public static readonly ModelConstants Constants = new();
 
-    public Cortex Cortex = null!; 
+    public Cortex Cortex = null!;
+
+    public ActivitiyMaxInfo ActivitiyMaxInfo = new();
 
     public VisualizationWithDesc[] GetImageWithDescs()
     {
@@ -111,8 +113,8 @@ public class Model02
         {
             Memory cortexMemory = CreateMemory(random);
 
-            MiniColumn bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, Cortex.MiniColumns);
-            bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
+            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, Cortex.MiniColumns);
+            bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
             if (i % 300 == 0)
                 await refreshAction();
@@ -220,22 +222,62 @@ public class Model02
         };
     }
 
-    private MiniColumn FindBestForMemoryMiniColumn(Memory cortexMemory, Random random, CancellationToken cancellationToken, FastList<MiniColumn> candidateMiniColumns)
-    {        
-        double minEnergy = Double.MaxValue;
-        MiniColumn? minEnergy_MiniColumn = null;
+    private MiniColumn? FindBestForMemoryMiniColumn(
+        Memory cortexMemory, 
+        Random random, 
+        CancellationToken cancellationToken, 
+        FastList<MiniColumn> candidateMiniColumns)
+    {
+        Parallel.For(
+                fromInclusive: 0,
+                toExclusive: candidateMiniColumns.Count,
+                miniColumns_Index =>
+                {
+                    var miniColumn = candidateMiniColumns[miniColumns_Index];
+                    
+                    miniColumn.Temp_Activity = MiniColumnsActivityHelper.GetActivity(miniColumn, cortexMemory, GetSimilarity, Constants);
+                });
+
+        ActivitiyMaxInfo.MaxActivity = float.MinValue;
+        ActivitiyMaxInfo.ActivityMax_MiniColumns.Clear();
+
+        if (Constants.SuperactivityThreshold)
+            ActivitiyMaxInfo.MaxSuperActivity = Constants.K4;
+        else
+            ActivitiyMaxInfo.MaxSuperActivity = float.MinValue;
+        ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
+
         for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            var energy = GetEnergy(miniColumn, cortexMemory);
-            if (energy < minEnergy)
+            miniColumn.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(miniColumn, Constants);
+
+            float a = miniColumn.Temp_Activity.PositiveActivity + miniColumn.Temp_Activity.NegativeActivity;
+            if (a > ActivitiyMaxInfo.MaxActivity)
             {
-                minEnergy = energy;
-                minEnergy_MiniColumn = miniColumn;
+                ActivitiyMaxInfo.MaxActivity = a;
+                ActivitiyMaxInfo.ActivityMax_MiniColumns.Clear();
+                ActivitiyMaxInfo.ActivityMax_MiniColumns.Add(miniColumn);
+            }
+            else if (a == ActivitiyMaxInfo.MaxActivity)
+            {
+                ActivitiyMaxInfo.ActivityMax_MiniColumns.Add(miniColumn);
+            }
+
+            if (miniColumn.Temp_SuperActivity > ActivitiyMaxInfo.MaxSuperActivity)
+            {
+                ActivitiyMaxInfo.MaxSuperActivity = miniColumn.Temp_SuperActivity;
+                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
+                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Add(miniColumn);
+            }
+            else if (miniColumn.Temp_SuperActivity == ActivitiyMaxInfo.MaxSuperActivity)
+            {
+                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Add(miniColumn);
             }
         }
-        return minEnergy_MiniColumn!;
+
+        return ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
     }
 
     private async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
@@ -264,8 +306,8 @@ public class Model02
 
                     miniColumn.CortexMemories[mi] = null;
 
-                    MiniColumn bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, Cortex.MiniColumns);
-                    if (!ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
+                    MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, Cortex.MiniColumns);
+                    if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
                     {
                         bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
                         changedCount += 1;
@@ -350,18 +392,18 @@ public class Model02
         return Math.Sqrt(r2);
     }
 
-    private double GetSimilarity(Memory memory1, Memory memory2)
+    private float GetSimilarity(Memory memory1, Memory memory2)
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
-        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
-        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
-        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
-        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+        float x1 = inpitItem1.Magnitude * MathF.Cos(inpitItem1.Angle);
+        float y1 = inpitItem1.Magnitude * MathF.Sin(inpitItem1.Angle);
+        float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
+        float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
 
-        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return - Math.Pow(r2, 0.5);
+        var r = MathF.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+        return MathHelper.NormalPdfF(r, 0.0f, 3.0f);
     }
 
     #endregion
@@ -370,11 +412,35 @@ public class Model02
 
     #endregion
 
-    public class ModelConstants : IModelConstants
+    public class ModelConstants : IMiniColumnsActivityConstants
     {
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
         public int CortexRadius_MiniColumns => 10;
+
+        /// <summary>
+        ///     Уровень подобия для нулевой активности
+        /// </summary>
+        public float K0 { get; set; } = 0.13f;
+
+        /// <summary>
+        ///     Уровень подобия с пустой миниколонкой
+        /// </summary>
+        public float K2 { get; set; } = 0.13f;
+
+        /// <summary>
+        ///     Порог суперактивности
+        /// </summary>
+        public float K4 { get; set; } = 0.13f;
+
+        public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f];
+
+        public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f];
+
+        /// <summary>
+        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        /// </summary>
+        public bool SuperactivityThreshold { get; set; } = false;
     }
 }

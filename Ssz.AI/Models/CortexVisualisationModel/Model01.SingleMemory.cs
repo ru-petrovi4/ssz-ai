@@ -307,11 +307,35 @@ public class Model01
 
     #endregion
 
-    public class ModelConstants : IModelConstants
+    public class ModelConstants : IMiniColumnsActivityConstants
     {        
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int CortexRadius_MiniColumns => 10;        
+        public int CortexRadius_MiniColumns => 10;
+
+        /// <summary>
+        ///     Уровень подобия для нулевой активности
+        /// </summary>
+        public float K0 { get; set; } = 0.13f;
+
+        /// <summary>
+        ///     Уровень подобия с пустой миниколонкой
+        /// </summary>
+        public float K2 { get; set; } = 0.13f;
+
+        /// <summary>
+        ///     Порог суперактивности
+        /// </summary>
+        public float K4 { get; set; } = 0.13f;
+
+        public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f];
+
+        public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f];
+
+        /// <summary>
+        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        /// </summary>
+        public bool SuperactivityThreshold { get; set; } = false;
     }
 }
