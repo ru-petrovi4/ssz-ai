@@ -188,6 +188,8 @@ public partial class Cortex : ISerializableModelObject
 
         public double Temp_Distance;
 
+        public float Temp_Activity;
+
         /// <summary>
         ///     Сохраненные хэш-коды
         /// </summary>

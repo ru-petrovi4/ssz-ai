@@ -230,7 +230,43 @@ public static class MathHelper
         // Heap теперь пуст для следующей операции.
     }
 
-    public static float NormalPdf(float x, float mu, float sigma)
+    public static double NormalPdf(double x, double mu, double sigma)
+    {
+        // Защитная проверка: стандартное отклонение не может быть <= 0.
+        if (sigma <= 0.0)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(sigma),
+                "Стандартное отклонение sigma должно быть строго положительным."
+            );
+        }
+
+        // Вычисляем отклонение от среднего: diff = x - mu.
+        double diff = x - mu;
+
+        // Вычисляем квадрат отклонения: diffSquared = diff * diff.
+        double diffSquared = diff * diff;
+
+        // Вычисляем квадрат стандартного отклонения: sigmaSquared = sigma * sigma.
+        double sigmaSquared = sigma * sigma;
+
+        // В знаменателе показателя экспоненты стоит 2 * sigma^2.
+        double twoSigmaSquared = 2.0f * sigmaSquared;
+
+        // Вычисляем показатель экспоненты:
+        // exponent = - diff^2 / (2 * sigma^2).
+        double exponent = -diffSquared / twoSigmaSquared;
+
+        // Нормирующий коэффициент: 1 / (sigma * sqrt(2 * π)).
+        double normCoeff = 1.0f / (sigma * SqrtTwoPi);
+
+        // Конечное значение плотности: normCoeff * exp(exponent).
+        double pdf = normCoeff * Math.Exp(exponent);
+
+        return pdf;
+    }
+
+    public static float NormalPdfF(float x, float mu, float sigma)
     {
         // Защитная проверка: стандартное отклонение не может быть <= 0.
         if (sigma <= 0.0)

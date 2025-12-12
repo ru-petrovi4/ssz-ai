@@ -81,16 +81,13 @@ public class Model02
 
         var miniColumns = Cortex.MiniColumns;
         var randomMiniColumns = Cortex.MiniColumns.ToArray();
-        random.Shuffle(randomMiniColumns);        
-
-        float maxMagnitude = Single.MinValue;
+        random.Shuffle(randomMiniColumns);
+        
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)            
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];            
 
-            InputItem inputItem = AddInputItem(random, miniColumn);
-            if (inputItem.Magnitude > maxMagnitude)
-                maxMagnitude = inputItem.Magnitude;            
+            InputItem inputItem = AddInputItem(random, miniColumn);                  
 
             var cortexMemory = new Memory
             {
@@ -106,13 +103,6 @@ public class Model02
                 miniColumn.CortexMemories.Add(cortexMemory);
             }
         }
-
-        for (int inputItem_Index = 0; inputItem_Index < Cortex.InputItems.Count; inputItem_Index += 1)
-        {
-            InputItem inputItem = Cortex.InputItems[inputItem_Index];
-            float s = MathF.Sqrt(inputItem.Magnitude / maxMagnitude);            
-            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
-        }
     }
 
     public async Task ProcessNAsync(int inputItemsCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -127,6 +117,8 @@ public class Model02
             if (i % 300 == 0)
                 await refreshAction();
         }
+
+        await refreshAction();
     }
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -208,6 +200,10 @@ public class Model02
         inputItem.Index = Cortex.InputItems.Count;
         inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
         inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
+
+        float s = MathF.Sqrt(inputItem.Magnitude / (Constants.CortexRadius_MiniColumns + 1));
+        inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
+
         Cortex.InputItems.Add(inputItem);
         return inputItem;
     }
@@ -315,7 +311,7 @@ public class Model02
                 Memory? nearestCortexMemory = nearestMiniColumn.CortexMemories[cortexMemoryIndex];
                 if (nearestCortexMemory is not null)
                 {
-                    energy += GetDistance(nearestCortexMemory, cortexMemory);
+                    energy += GetEnergy(nearestCortexMemory, cortexMemory);
                     cortexMemoriesCount += 1;
                 }
             }                
@@ -325,15 +321,19 @@ public class Model02
         return energy;
     }
 
-    private double GetEnergy_SpringModel(MiniColumn miniColumn)
+
+    private double GetEnergy(Memory memory1, Memory memory2)
     {
-        double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
-        {
-            var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
-            energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
-        }
-        return energy;
+        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+
+        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
+        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
+        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
+        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+
+        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        return r2;
     }
 
     private double GetDistance(Memory memory1, Memory memory2)

@@ -250,25 +250,17 @@ public class Model01
 
     private double GetEnergy(MiniColumn miniColumn)
     {
+        //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
+
         double energy = 0.0;
         for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
         {
             var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
+            //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
             energy += GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!);
         }
         return energy / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
-    }
-
-    private double GetEnergy_SpringModel(MiniColumn miniColumn)
-    {
-        double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
-        {
-            var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
-            energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
-        }
-        return energy;
-    }
+    }    
 
     private double GetDistance(Memory memory1, Memory memory2)
     {
@@ -284,19 +276,30 @@ public class Model01
         return Math.Sqrt(r2);
     }
 
-    private double GetSimilarity(Memory memory1, Memory memory2)
-    {
-        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
-        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+    //private double GetEnergy_SpringModel(MiniColumn miniColumn)
+    //{
+    //    double energy = 0.0;
+    //    for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
+    //    {
+    //        var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
+    //        energy += GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
+    //    }
+    //    return energy;
+    //}
 
-        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
-        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
-        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
-        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+    //private double GetSimilarity(Memory memory1, Memory memory2)
+    //{
+    //    InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
+    //    InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
-        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return - Math.Pow(r2, 0.5);
-    }    
+    //    double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
+    //    double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
+    //    double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
+    //    double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+
+    //    var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
+    //    return - Math.Pow(r2, 0.5);
+    //}    
 
     #endregion
 
