@@ -403,7 +403,22 @@ public class Model02
         float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
 
         var r = MathF.Sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));            
-        return MathHelper.NormalPdfF(r, 0.0f, 3.0f);
+        return NormalPdf(r, 3.0f);
+    }
+
+    private static float NormalPdf(float x, float sigma)
+    {
+       // Вычисляем квадрат отклонения: diffSquared = diff * diff.
+        float diffSquared = x * x;
+
+        // В знаменателе показателя экспоненты стоит 2 * sigma^2.
+        float twoSigmaSquared = 2.0f * sigma * sigma;
+
+        // Вычисляем показатель экспоненты:
+        // exponent = - diff^2 / (2 * sigma^2).
+        float exponent = -diffSquared / twoSigmaSquared;        
+
+        return MathF.Exp(exponent);
     }
 
     #endregion
@@ -427,12 +442,12 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 0.13f;
+        public float K2 { get; set; } = 0.96f;
 
         /// <summary>
         ///     Порог суперактивности
         /// </summary>
-        public float K4 { get; set; } = 0.13f;
+        public float K4 { get; set; } = 1.0f;
 
         public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f];
 
