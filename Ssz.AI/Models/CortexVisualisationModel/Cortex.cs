@@ -86,8 +86,7 @@ public partial class Cortex : ISerializableModelObject
                 for (int mci2 = 0; mci2 < MiniColumns.Count; mci2 += 1)                    
                 {
                     if (mci2 == mci)
-                    {
-                        miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));
+                    {                        
                         miniColumn.Temp_NearestForEnergyMiniColumns.Add((0, miniColumn));
                         continue;
                     }
@@ -106,8 +105,8 @@ public partial class Cortex : ISerializableModelObject
                     if (r < 2.00001f)
                         miniColumn.Temp_K_ForNearestMiniColumns.Add(
                             (MathHelper.GetInterpolatedValue(Constants.PositiveK, r),
-                            MathHelper.GetInterpolatedValue(Constants.NegativeK, r), 
-                            miniColumn));
+                            MathHelper.GetInterpolatedValue(Constants.NegativeK, r),
+                            nearestMc));
 
                     if (r < 3.00001f)
                         miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
@@ -166,8 +165,8 @@ public partial class Cortex : ISerializableModelObject
         public float MCY;
 
         /// <summary>
-        ///     Сама миниколонка и окружающие миниколонки, для которых считается суперактивность.
-        ///     <para>(r^2, MiniColumn)</para>        
+        ///     Окружающие миниколонки, для которых считается суперактивность.
+        ///     <para>(k, MiniColumn)</para>        
         /// </summary>
         public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
@@ -209,7 +208,7 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare()
         {
-            Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>((int)(Math.PI * 2));
+            Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
             Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);

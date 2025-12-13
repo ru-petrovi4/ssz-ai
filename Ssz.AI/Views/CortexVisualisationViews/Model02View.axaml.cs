@@ -196,8 +196,8 @@ public partial class Model02View : UserControl
                     //    return Task.CompletedTask;
                     //});
 
-                    var energy = Model.GetEnergy();
-                    Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
+                    //var energy = Model.GetEnergy();
+                    //Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
                     //if (energy < minEnergy)
                     //{
                     //    minEnergy = energy;
@@ -219,6 +219,13 @@ public partial class Model02View : UserControl
 
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
         });
+
+        Refresh_ImagesSet();
+    }
+
+    private async void StartProcess1_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Model.ProcessNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask);
 
         Refresh_ImagesSet();
     }

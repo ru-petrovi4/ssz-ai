@@ -1732,6 +1732,8 @@ public static class Visualisation
                 int v = (int)(255 * (value - valueMin_Final) / (valueMax_Final - valueMin_Final));
                 if (v > 255)
                     v = 255;
+                else if (v < 0)
+                    v = 0;
 
                 Color color = Color.FromArgb(v, v, v);                
 

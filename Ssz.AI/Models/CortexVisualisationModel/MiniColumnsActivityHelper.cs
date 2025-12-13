@@ -120,15 +120,14 @@ public static class MiniColumnsActivityHelper
     public static float GetSuperActivity(Cortex.MiniColumn miniColumn, IMiniColumnsActivityConstants constants)
     {
         float superActivity;
-
-        var k0 = miniColumn.Temp_K_ForNearestMiniColumns[0];
+        
         if (miniColumn.Temp_Activity.CortexMemoriesCount > 0)
-            superActivity = k0.PositiveK * miniColumn.Temp_Activity.PositiveActivity + 
-                k0.NegativeK * miniColumn.Temp_Activity.NegativeActivity;
+            superActivity = constants.PositiveK[0] * miniColumn.Temp_Activity.PositiveActivity +
+                constants.NegativeK[0] * miniColumn.Temp_Activity.NegativeActivity;
         else
-            superActivity = k0.PositiveK * (constants.K2 - constants.K0); // Best proximity
+            superActivity = constants.PositiveK[0] * (constants.K2 - constants.K0); // Best proximity
 
-        for (int i = 1; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
         {
             var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
             var nearestMiniColumn = it.MiniColumn;
