@@ -22,7 +22,7 @@
 
 	<dh:DialogHost Identifier="RootDialog">
 		<Grid>
-            <cortexVisualisationViews:Model02View />
+            <cortexVisualisationViews:Model01View />
 		</Grid>
 	</dh:DialogHost>
 </Window>

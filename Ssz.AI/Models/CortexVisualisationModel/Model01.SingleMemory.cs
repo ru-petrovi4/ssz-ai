@@ -250,6 +250,8 @@ public class Model01
 
     private double GetEnergy(MiniColumn miniColumn)
     {
+        if (miniColumn.CortexMemories.Count < 1)
+            return 0.0;
         //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
 
         double energy = 0.0;
@@ -257,7 +259,7 @@ public class Model01
         {
             var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
             //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
-            energy += GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!);
+            energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
         }
         return energy / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
     }    

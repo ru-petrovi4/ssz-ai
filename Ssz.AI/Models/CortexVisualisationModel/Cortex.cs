@@ -108,11 +108,11 @@ public partial class Cortex : ISerializableModelObject
                             MathHelper.GetInterpolatedValue(Constants.NegativeK, r),
                             nearestMc));
 
-                    if (r < 3.00001f)
-                        miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
+                    //if (r < 3.00001f)
+                    miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
                     
-                    //if (r < 1.00001)
-                    miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
+                    if (r < 1.00001)
+                        miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
 
                     if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
