@@ -242,13 +242,13 @@ public class Model02
         int min_ChangesCount = Int32.MaxValue;
         int min_ChangesCount_UnchangedCount = 0;
 
-        int epochCount = 10;
+        int epochCount = 100;
 
-        for (; ; )
+        for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
             int changedCount = 0;
 
-            for (int epoch = 0; epoch < epochCount; epoch += 1)
+            for (int miniEpoch = 0; miniEpoch < 50; miniEpoch += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -280,13 +280,30 @@ public class Model02
                             miniColumn.CortexMemories[mi] = cortexMemory;
                         }
                     }
+                }                           
+            }
+
+            for (int mci = 0; mci < candidateMiniColumns.Count; mci += 1)
+            {
+                MiniColumn mc = candidateMiniColumns[mci];
+
+                for (int mi = 0; mi < mc.CortexMemories.Count; mi += 1)
+                {
+                    Memory? cortexMemory = mc.CortexMemories[mi];
+                    if (cortexMemory is null)
+                        continue;
+
+                    mc.Temp_CortexMemories.Add(cortexMemory);
                 }
 
-                LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
-
-                if (refreshAction is not null)
-                    await refreshAction();                
+                mc.CortexMemories.Swap(mc.Temp_CortexMemories);
+                mc.Temp_CortexMemories.Clear();
             }
+
+            LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
+
+            if (refreshAction is not null)
+                await refreshAction();
 
             if (changedCount < min_ChangesCount)
             {
@@ -353,7 +370,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 0.96f;
+        public float K2 { get; set; } = 1.1f;
 
         /// <summary>
         ///     Порог суперактивности

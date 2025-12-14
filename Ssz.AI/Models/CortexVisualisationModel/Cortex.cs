@@ -199,11 +199,16 @@ public partial class Cortex : ISerializableModelObject
         /// <summary>
         ///     Сохраненные хэш-коды
         /// </summary>
-        public FastList<Memory?> CortexMemories = null!;        
+        public FastList<Memory?> CortexMemories = null!;
+
+        /// <summary>
+        ///     Сохраненные хэш-коды
+        /// </summary>
+        public FastList<Memory?> Temp_CortexMemories = null!;
 
         public void GenerateOwnedData()
         {
-            CortexMemories = new(1);
+            CortexMemories = new(10);            
         }
 
         public void Prepare()
@@ -212,6 +217,7 @@ public partial class Cortex : ISerializableModelObject
             Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
+            Temp_CortexMemories = new(10);
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
