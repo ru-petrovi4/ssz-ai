@@ -370,7 +370,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 1.1f;
+        public float K2 { get; set; } = 1.0f;
 
         /// <summary>
         ///     Порог суперактивности
