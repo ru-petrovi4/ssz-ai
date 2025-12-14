@@ -360,9 +360,9 @@ public class Model02
         /// </summary>
         public float K4 { get; set; } = 1.0f;
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.142f, 0.058f];
+        public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.150f, 0.067f];
+        public float[] NegativeK { get; set; } = [1.00f, 0.117f, 0.083f];
 
         /// <summary>
         ///     Включен ли порог на суперактивность при накоплении воспоминаний
