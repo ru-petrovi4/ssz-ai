@@ -74,7 +74,7 @@ public class Model02
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0)),
                     Desc = $"Активность" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_SuperActivity, valueMin: -5.0, valueMax: 5.0)),
+                        (MiniColumn mc) => mc.Temp_SuperActivity, valueMin: -2.0, valueMax: 2.0)),
                     Desc = $"Суперактивность" }
             ];
     }    
@@ -126,9 +126,9 @@ public class Model02
         await refreshAction();
     }
 
-    public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    public async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
-        await ReorderMemoriesAsync(epochCount, random, cancellationToken, refreshAction, Cortex.MiniColumns);
+        await ReorderMemoriesAsync(random, cancellationToken, refreshAction, Cortex.MiniColumns);
     }    
 
     public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -237,63 +237,71 @@ public class Model02
         return ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
     }
 
-    private async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
+    private async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
     {
-        int minChangesCount = Int32.MaxValue;
-        int minChangesCount_UnchangedCount = 0;
+        int min_ChangesCount = Int32.MaxValue;
+        int min_ChangesCount_UnchangedCount = 0;
 
-        for (int epoch = 0; epoch < epochCount; epoch += 1)
+        int epochCount = 10;
+
+        for (; ; )
         {
-            var randomMiniColumns = candidateMiniColumns.ToArray();
-            random.Shuffle(randomMiniColumns);
-
             int changedCount = 0;
 
-            for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
+            for (int epoch = 0; epoch < epochCount; epoch += 1)
             {
-                var miniColumn = randomMiniColumns[randomMiniColumns_Index];
+                cancellationToken.ThrowIfCancellationRequested();
 
-                //for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
-                if (miniColumn.CortexMemories.Count > 0)
+                var randomMiniColumns = candidateMiniColumns.ToArray();
+                random.Shuffle(randomMiniColumns);                
+
+                for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
                 {
-                    int mi = random.Next(miniColumn.CortexMemories.Count);
-                    Memory? cortexMemory = miniColumn.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
+                    var miniColumn = randomMiniColumns[randomMiniColumns_Index];
 
-                    miniColumn.CortexMemories[mi] = null;
+                    //for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                    if (miniColumn.CortexMemories.Count > 0)
+                    {
+                        int mi = random.Next(miniColumn.CortexMemories.Count);
+                        Memory? cortexMemory = miniColumn.CortexMemories[mi];
+                        if (cortexMemory is null)
+                            continue;
 
-                    MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, candidateMiniColumns);
-                    if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
-                    {
-                        bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
-                        changedCount += 1;
-                    }
-                    else
-                    {
-                        miniColumn.CortexMemories[mi] = cortexMemory;
+                        miniColumn.CortexMemories[mi] = null;
+
+                        MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, candidateMiniColumns);
+                        if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
+                        {
+                            bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
+                            changedCount += 1;
+                        }
+                        else
+                        {
+                            miniColumn.CortexMemories[mi] = cortexMemory;
+                        }
                     }
                 }
+
+                LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
+
+                if (refreshAction is not null)
+                    await refreshAction();                
             }
 
-            LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
-
-            if (refreshAction is not null)
-                await refreshAction();
-
-            if (changedCount < minChangesCount)
+            if (changedCount < min_ChangesCount)
             {
-                minChangesCount_UnchangedCount = 0;
-                minChangesCount = changedCount;
+                min_ChangesCount_UnchangedCount = 0;
+                min_ChangesCount = changedCount;
             }
             else
             {
-                minChangesCount_UnchangedCount += 1;
+                min_ChangesCount_UnchangedCount += 1;
             }
 
-            if (changedCount < 1 || minChangesCount_UnchangedCount > 20)
+            if (changedCount < 1 || min_ChangesCount_UnchangedCount > 20)
                 break;
         }
+        
 
         LoggersSet.UserFriendlyLogger.LogInformation($"ReorderMemories Finished.");
     }    
@@ -340,7 +348,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия для нулевой активности
         /// </summary>
-        public float K0 { get; set; } = 0.5f;
+        public float K0 { get; set; } = 0.66f;
 
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
@@ -352,9 +360,9 @@ public class Model02
         /// </summary>
         public float K4 { get; set; } = 1.0f;
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.025f];
+        public float[] PositiveK { get; set; } = [1.00f, 0.10f, 0.018f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f];
+        public float[] NegativeK { get; set; } = [1.00f, 0.10f, 0.05f];
 
         /// <summary>
         ///     Включен ли порог на суперактивность при накоплении воспоминаний

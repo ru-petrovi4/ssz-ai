@@ -125,10 +125,12 @@ public partial class Model02View : UserControl
 
     private async void AddNoize_OnClick(object? sender, RoutedEventArgs args)
     {
+        if (_curentLongRunningTask is not null)
+            await _curentLongRunningTask;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        await Task.Run(async () =>
+        _curentLongRunningTask = Task.Run(async () =>
         {
             try
             {
@@ -150,16 +152,19 @@ public partial class Model02View : UserControl
 
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Finished.");
         });
+        await _curentLongRunningTask;
 
         Refresh_ImagesSet();
     }
 
     private async void StartReorderMemories_OnClick(object? sender, RoutedEventArgs args)
     {
+        if (_curentLongRunningTask is not null)
+            await _curentLongRunningTask;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        await Task.Run(async () =>
+        _curentLongRunningTask = Task.Run(async () =>
         {
             try
             {
@@ -169,7 +174,7 @@ public partial class Model02View : UserControl
                 //int failCount = 0;
                 for (; ; )
                 {
-                    await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
+                    await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
                     {
                         Dispatcher.UIThread.Invoke(() =>
                         {
@@ -219,6 +224,7 @@ public partial class Model02View : UserControl
 
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
         });
+        await _curentLongRunningTask;
 
         Refresh_ImagesSet();
     }
@@ -232,10 +238,12 @@ public partial class Model02View : UserControl
 
     private async void StartProcessN_OnClick(object? sender, RoutedEventArgs args)
     {
+        if (_curentLongRunningTask is not null)
+            await _curentLongRunningTask;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        await Task.Run(async () =>
+        _curentLongRunningTask = Task.Run(async () =>
         {
             try
             {
@@ -254,9 +262,9 @@ public partial class Model02View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Cancelled.");
             }
-
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Finished.");
         });
+        await _curentLongRunningTask;
 
         Refresh_ImagesSet();
     }
@@ -286,4 +294,6 @@ public partial class Model02View : UserControl
     private Random _random = null!;
 
     private CancellationTokenSource? _cancellationTokenSource;
+
+    private Task? _curentLongRunningTask;
 }
