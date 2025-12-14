@@ -28,7 +28,7 @@
 						<TextBlock Text="{Binding Label}" />
 						<TextBlock Grid.Row="1" Text="{Binding Value, StringFormat=F03}" />
 						<!-- Слайдер, привязанный к значению Value -->
-						<Slider Grid.Row="2" Minimum="0" Maximum="1"
+						<Slider Grid.Row="2" Minimum="0" Maximum="0.5"
 								Value="{Binding Value}"
 								Orientation="Vertical" />
 					</Grid>
