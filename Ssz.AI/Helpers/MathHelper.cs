@@ -302,6 +302,11 @@ public static class MathHelper
         return pdf;
     }
 
+    public static float SigmoidfF(float x)
+    {
+        return 1.0f / (1.0f + MathF.Exp(-x));
+    }
+
     // Предвычисленные константы для плотности.
     // SqrtTwoPi = sqrt(2 * π).
     private static readonly float SqrtTwoPi = MathF.Sqrt(2.0f * MathF.PI);

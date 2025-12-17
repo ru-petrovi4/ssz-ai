@@ -166,52 +166,14 @@ public partial class Model02View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                //double minEnergy = Double.MaxValue;
-                //int failCount = 0;
-                for (; ; )
+                await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
                 {
-                    await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
+                    Dispatcher.UIThread.Invoke(() =>
                     {
-                        Dispatcher.UIThread.Invoke(() =>
-                        {
-                            Refresh_ImagesSet();
-                        });
-                        return Task.CompletedTask;
+                        Refresh_ImagesSet();
                     });
-
-                    //await Model.AddNoizeAsync(400, _random, cancellationToken, () =>
-                    //{
-                    //    Dispatcher.UIThread.Invoke(() =>
-                    //    {
-                    //        Refresh_ImagesSet();
-                    //    });
-                    //    return Task.CompletedTask;
-                    //});
-
-                    //await Model.ReorderMemoriesAsync(100, _random, cancellationToken, () =>
-                    //{
-                    //    Dispatcher.UIThread.Invoke(() =>
-                    //    {
-                    //        Refresh_ImagesSet();
-                    //    });
-                    //    return Task.CompletedTask;
-                    //});
-
-                    //var energy = Model.GetEnergy();
-                    //Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation($"Energy {energy}.");
-                    //if (energy < minEnergy)
-                    //{
-                    //    minEnergy = energy;
-                    //    failCount = 0;
-                    //}
-                    //else
-                    //{
-                    //    failCount += 1;
-                    //}
-
-                    //if (failCount > 3)
-                        break;
-                }
+                    return Task.CompletedTask;
+                });
             }
             catch (OperationCanceledException)
             {
@@ -265,6 +227,98 @@ public partial class Model02View : UserControl
         Refresh_ImagesSet();
     }
 
+    private async void StartProcessScript_OnClick(object? sender, RoutedEventArgs args)
+    {
+        if (_curentLongRunningTask is not null)
+            await _curentLongRunningTask;
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        _curentLongRunningTask = Task.Run(async () =>
+        {
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Started.");
+
+                var constants = Model02.Constants;
+
+                BestPinwheelSettings bestPinwheelSettings = new();
+
+                int interationN = 0;
+                for (float pk1 = 0.05f; pk1 < 0.17f; pk1 += 0.01f)
+                    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
+                        for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
+                            for (float nk2 = pk2; nk2 < nk1; nk2 += 0.005f)
+                            {
+                                interationN += 1;
+
+                                constants.PositiveK[1] = pk1;
+                                constants.PositiveK[2] = pk2;
+                                constants.NegativeK[1] = nk1;
+                                constants.NegativeK[2] = nk2;
+
+                                Model = new Model02();
+
+                                Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
+                                Model.Cortex.GenerateOwnedData(_random);
+                                Model.Cortex.Prepare();
+
+                                await Model.ProcessNAsync(900, _random, cancellationToken, () =>
+                                {   
+                                    return Task.CompletedTask;
+                                });
+
+                                await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
+                                {                                    
+                                    return Task.CompletedTask;
+                                });
+
+                                float pinwheellIndex = Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns);
+                                if (pinwheellIndex > bestPinwheelSettings.MaxPinwheelIndex)
+                                {
+                                    bestPinwheelSettings.MaxPinwheelIndex = pinwheellIndex;
+                                    bestPinwheelSettings.Pk1 = pk1;
+                                    bestPinwheelSettings.Pk2 = pk2;
+                                    bestPinwheelSettings.Nk1 = nk1;
+                                    bestPinwheelSettings.Nk2 = nk2;
+                                }
+
+                                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
+                                    @",",
+                                    [ interationN,
+                                    bestPinwheelSettings.MaxPinwheelIndex,
+                                    bestPinwheelSettings.Pk1,
+                                    bestPinwheelSettings.Pk2,
+                                    0.0f,
+                                    bestPinwheelSettings.Nk1,
+                                    bestPinwheelSettings.Nk2,
+                                    0.0f,
+                                    "Current",
+                                    pinwheellIndex,
+                                    pk1,
+                                    pk2,
+                                    0.0f,
+                                    nk1,
+                                    nk2,
+                                    0.0f ]));
+                            }
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Cancelled.");
+            }
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Finished.");
+        });
+        await _curentLongRunningTask;
+
+        Refresh_ImagesSet();
+    }
+
+    private async void VisualizesScriptResults_OnClick(object? sender, RoutedEventArgs args)
+    {
+        ImagesSet1.MainItemsControl.ItemsSource = Visualisation.VisualizeKSearch();
+    }
+
     #endregion
 
     private void Reset()
@@ -272,7 +326,7 @@ public partial class Model02View : UserControl
         var constants = Model02.Constants;
         GetDataFromControls(constants); 
 
-        _random = new Random();
+        _random = new Random(41);
 
         Model = new Model02();
 
@@ -292,4 +346,14 @@ public partial class Model02View : UserControl
     private CancellationTokenSource? _cancellationTokenSource;
 
     private Task? _curentLongRunningTask;
+
+    private class BestPinwheelSettings
+    {
+        public float MaxPinwheelIndex = float.MinValue;
+
+        public float Pk1;
+        public float Pk2;
+        public float Nk1;
+        public float Nk2;
+    }
 }

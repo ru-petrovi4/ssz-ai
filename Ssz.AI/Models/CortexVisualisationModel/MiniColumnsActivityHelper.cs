@@ -86,7 +86,7 @@ public static class MiniColumnsActivityHelper
                 continue;
 
             float similarity = getSimilarity(cortexMemory, miniColumn_CortexMemory);
-            //if (memoryCosineSimilarity > constants.K1)
+            if (!Single.IsNaN(similarity))
             {
                 float activity = similarity - constants.K0;
                 if (activity >= 0)

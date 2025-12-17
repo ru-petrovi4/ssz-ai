@@ -65,6 +65,8 @@ public class Model02
 
     public ActivitiyMaxInfo ActivitiyMaxInfo = new();
 
+    public readonly Cortex.Memory[] PinwheelIndexConstantCortexMemories = new Cortex.Memory[7];
+
     public VisualizationWithDesc[] GetImageWithDescs()
     {        
         return [
@@ -92,7 +94,7 @@ public class Model02
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];            
 
-            InputItem inputItem = AddInputItem(random, miniColumn);                  
+            InputItem inputItem = Cortex.AddInputItem(random, miniColumn);                  
 
             var cortexMemory = new Memory
             {
@@ -147,31 +149,55 @@ public class Model02
         }
 
         await refreshAction();
-    }     
+    }
+
+    public float GetPinwheelIndex(Random random, FastList<MiniColumn> candidateMiniColumns)
+    {
+        MiniColumn? centerMiniColumn = FindBestForMemoryMiniColumn(
+            Memory.IdealPinwheelCenterMemory,
+            random,
+            CancellationToken.None,
+            candidateMiniColumns);
+        if (centerMiniColumn is null || centerMiniColumn.Temp_AdjacentMiniColumns.Count < 6)
+            return 0.0f;
+
+        float maxPinwheelIndex = Single.MinValue;
+        for (int adjacentMiniColumns_StartIndex = 0; adjacentMiniColumns_StartIndex < 6; adjacentMiniColumns_StartIndex += 1)
+        {            
+            float pinwheelIndex = 0.0f;
+            for (int j = 0; j < 6; j += 1)
+            {
+                var idealPinwheelMemory = Memory.IdealPinwheelMemories[j];
+
+                MiniColumn miniColumn = centerMiniColumn.Temp_AdjacentMiniColumns[(adjacentMiniColumns_StartIndex + j) % 6].Item2;
+                int cortexMemoriesCount = 0;
+                float similaritySum = 0.0f;
+                for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
+                {
+                    Memory? cortexMemory = miniColumn.CortexMemories[mi];
+                    if (cortexMemory is null)
+                        continue;
+                    cortexMemoriesCount += 1;
+                    similaritySum += GetSimilarity(idealPinwheelMemory, cortexMemory);
+                }
+                if (cortexMemoriesCount > 0)
+                    pinwheelIndex += similaritySum / cortexMemoriesCount;
+            }
+            if (pinwheelIndex > maxPinwheelIndex)
+                maxPinwheelIndex = pinwheelIndex;
+        }
+        return maxPinwheelIndex;
+    }
 
     #endregion
 
-    #region private functions   
-
-    private InputItem AddInputItem(Random random, MiniColumn miniColumn)
-    {
-        InputItem inputItem = new();
-        inputItem.Index = Cortex.InputItems.Count;
-        inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
-        inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
-
-        float s = MathF.Sqrt(inputItem.Magnitude / (Constants.CortexRadius_MiniColumns + 1));
-        inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
-
-        Cortex.InputItems.Add(inputItem);
-        return inputItem;
-    }
+    #region private functions       
 
     private Memory CreateMemory(Random random)
     {
         MiniColumn miniColumn = Cortex.MiniColumns[random.Next(Cortex.MiniColumns.Count)];
 
-        InputItem inputItem = AddInputItem(random, miniColumn);
+        InputItem inputItem = Cortex.AddInputItem(random, miniColumn);
 
         return new Memory
         {
@@ -242,7 +268,7 @@ public class Model02
         int min_ChangesCount = Int32.MaxValue;
         int min_ChangesCount_UnchangedCount = 0;
 
-        int epochCount = 100;
+        int epochCount = 20;
 
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
@@ -326,7 +352,7 @@ public class Model02
     private float GetSimilarity(Memory memory1, Memory memory2)
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
-        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];        
 
         float x1 = inpitItem1.Magnitude * MathF.Cos(inpitItem1.Angle);
         float y1 = inpitItem1.Magnitude * MathF.Sin(inpitItem1.Angle);
@@ -334,7 +360,12 @@ public class Model02
         float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
 
         var r2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
-        return MathF.Exp(-r2 / 8.0f); // sigma == 2.0f
+        float similarity = MathF.Exp(-r2 / 8.0f); // sigma == 2.0f
+
+        //if (similarity < inpitItem1.SimilarityThreshold)
+        //    return Single.NaN;
+
+        return similarity;
     }
 
     private static float NormalPdf(float x2, float sigma)
@@ -347,7 +378,7 @@ public class Model02
         float exponent = -x2 / twoSigmaSquared;        
 
         return MathF.Exp(exponent);
-    }
+    }    
 
     #endregion
 
@@ -370,7 +401,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием.
+        public float K2 { get; set; } = 0.99f; // Или чуть меньше, чем с точно таким же воспоминанием.
 
         /// <summary>
         ///     Порог суперактивности

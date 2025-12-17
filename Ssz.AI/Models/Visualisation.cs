@@ -1,15 +1,63 @@
 ﻿using Microsoft.AspNetCore.JsonPatch.Internal;
 using Ssz.AI.Helpers;
+using Ssz.AI.ViewModels;
+using Ssz.Utils;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 
 namespace Ssz.AI.Models;
 
 public static class Visualisation
 {
+    public static ImageWithDesc[] VisualizeKSearch()
+    {
+        Dictionary<float, System.Drawing.Bitmap> info = new();
+
+        int currentWordIndex = 8;
+        foreach (var it in CsvHelper.LoadCsvFile(Path.Combine("Data", @"CortexVisualisationModel_Model01_Logs.1 - Full Log.txt"), false))
+        {
+            if (it.Value.Count == 16)
+            {
+                float key = new Any(it.Value[currentWordIndex + 2]).ValueAsSingle(false);
+                if (!info.TryGetValue(key, out var bitmap))
+                {
+                    bitmap = new(50, 50);
+
+                    using (Graphics g = Graphics.FromImage(bitmap))
+                    {
+                        // Устанавливаем черный фон
+                        g.Clear(Color.Black);
+                    }
+
+                    info.Add(key, bitmap);
+                }
+                float a = new Any(it.Value[currentWordIndex + 1]).ValueAsSingle(false);                
+                int brightness = (int)(255 * (a - 4.0f) / 2.0f);
+                if (brightness < 0)
+                    brightness = 0;
+                if (brightness > 255)
+                    brightness = 255;
+                bitmap.SetPixel(
+                    x: (int)(new Any(it.Value[currentWordIndex + 3]).ValueAsSingle(false) * 200),
+                    y: (int)(new Any(it.Value[currentWordIndex + 6]).ValueAsSingle(false) * 200),
+                    color: Color.FromArgb(brightness, brightness, brightness)
+                    );
+            }
+        }
+
+        return info
+            .Select(kvp => new ImageWithDesc
+            {
+                Image = BitmapHelper.ConvertImageToAvaloniaBitmap(kvp.Value),
+                Desc = $"K[1]: {kvp.Key}"
+            })
+            .ToArray();
+    }
+
     public static Color GetColorFromDiscreteVector(float[] discreteVector)
     {
         List<Color> colors = new();

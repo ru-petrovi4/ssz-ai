@@ -43,6 +43,8 @@
               <Button Content="Start Reoder" Click="StartReorderMemories_OnClick" />                             
               <Button Content="Start Process 1" Click="StartProcess1_OnClick" /> 
               <Button Content="Start Process N" Click="StartProcessN_OnClick" /> 
+              <Button Content="Start Process Script" Click="StartProcessScript_OnClick" /> 
+              <Button Content="Visualizes Script Results" Click="VisualizesScriptResults_OnClick" /> 
           </StackPanel>
     </Grid>    
 

@@ -36,6 +36,9 @@ public partial class Cortex : ISerializableModelObject
 
     public readonly ILogger Logger;
 
+    /// <summary>
+    ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
+    /// </summary>
     public List<InputItem> InputItems { get; private set; } = null!;
 
     public FastList<MiniColumn> MiniColumns { get; private set; } = null!;    
@@ -49,6 +52,9 @@ public partial class Cortex : ISerializableModelObject
         float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
         float maxRadius = Constants.CortexRadius_MiniColumns + 0.00001f;
 
+        MiniColumn? centerMiniColumn = null;
+        FastList<MiniColumn> centerMiniColumn_AdjacentMiniColumns = new FastList<MiniColumn>(6);
+        
         for (int mcj = -(int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj += 1)
             for (int mci = -Constants.CortexRadius_MiniColumns; mci <= Constants.CortexRadius_MiniColumns; mci += 1)
             {
@@ -68,8 +74,21 @@ public partial class Cortex : ISerializableModelObject
                     miniColumn.GenerateOwnedData();
 
                     MiniColumns.Add(miniColumn);
+
+                    if (radius < 0.00001f)
+                        centerMiniColumn = miniColumn;
+                    else if (radius < 1.00001f)
+                        centerMiniColumn_AdjacentMiniColumns.Add(miniColumn);
                 }
-            }                    
+            }
+
+        // Воспоминания для оценки качества вертушки
+        AddInputItem(random, centerMiniColumn!);
+        foreach (var miniColumn in centerMiniColumn_AdjacentMiniColumns
+            .OrderBy(mc => MathF.Atan2(mc.MCY, mc.MCX)))
+        {
+            AddInputItem(random, miniColumn);
+        }
     }
 
     public void Prepare()
@@ -117,7 +136,26 @@ public partial class Cortex : ISerializableModelObject
                     if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
                 }
+
+                miniColumn.Temp_AdjacentMiniColumns = miniColumn.Temp_AdjacentMiniColumns
+                    .OrderBy(it => MathF.Atan2(miniColumn.MCY - it.Item2.MCY, miniColumn.MCX - it.Item2.MCX))
+                    .ToFastList();
             });
+    }
+
+    public InputItem AddInputItem(Random random, MiniColumn miniColumn)
+    {
+        InputItem inputItem = new();
+        inputItem.Index = InputItems.Count;
+        inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
+        inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
+
+        float s = MathF.Sqrt(inputItem.Magnitude / (Constants.CortexRadius_MiniColumns + 1));
+        inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
+        inputItem.SimilarityThreshold = 0.00f * (1.0f - inputItem.Magnitude / 3.0f);
+
+        InputItems.Add(inputItem);
+        return inputItem;
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -247,7 +285,18 @@ public partial class Cortex : ISerializableModelObject
     }
 
     public class Memory : IOwnedDataSerializable
-    {        
+    {   
+        public static readonly Memory IdealPinwheelCenterMemory = new Memory() { InputItemIndex = 0 };
+
+        public static readonly Memory[] IdealPinwheelMemories = [
+            new Memory() { InputItemIndex = 1 },
+            new Memory() { InputItemIndex = 2 },
+            new Memory() { InputItemIndex = 3 },
+            new Memory() { InputItemIndex = 4 },
+            new Memory() { InputItemIndex = 5 },
+            new Memory() { InputItemIndex = 6 },
+            ];
+
         public int InputItemIndex;      
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
