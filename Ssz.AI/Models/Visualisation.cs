@@ -17,39 +17,46 @@ public static class Visualisation
     {
         Dictionary<float, System.Drawing.Bitmap> info = new();
 
-        int currentWordIndex = 8;
-        foreach (var it in CsvHelper.LoadCsvFile(Path.Combine("Data", @"CortexVisualisationModel_Model01_Logs.1 - Full Log.txt"), false))
+        try
         {
-            if (it.Value.Count == 16)
+            int currentWordIndex = 8;
+            foreach (var it in CsvHelper.ParseCsvMultiline(@",", File.ReadAllText(Path.Combine("Data", @"CortexVisualisationModel_Model01_Logs.1 - Full Log.txt"))))
             {
-                float key = new Any(it.Value[currentWordIndex + 2]).ValueAsSingle(false);
-                if (!info.TryGetValue(key, out var bitmap))
+                if (it.Count == 16)
                 {
-                    bitmap = new(50, 50);
-
-                    using (Graphics g = Graphics.FromImage(bitmap))
+                    float key = MathF.Round(new Any(it[currentWordIndex + 2]).ValueAsSingle(false), 4);
+                    if (!info.TryGetValue(key, out var bitmap))
                     {
-                        // Устанавливаем черный фон
-                        g.Clear(Color.Black);
-                    }
+                        bitmap = new(50, 50);
 
-                    info.Add(key, bitmap);
+                        using (Graphics g = Graphics.FromImage(bitmap))
+                        {
+                            // Устанавливаем черный фон
+                            g.Clear(Color.Blue);
+                        }
+
+                        info.Add(key, bitmap);
+                    }
+                    float a = new Any(it[currentWordIndex + 1]).ValueAsSingle(false);
+                    int brightness = (int)(255 * (a - 4.5f) / 1.5f);
+                    if (brightness < 0)
+                        brightness = 0;
+                    if (brightness > 255)
+                        brightness = 255;
+                    bitmap.SetPixel(
+                        x: (int)(new Any(it[currentWordIndex + 3]).ValueAsSingle(false) * 200),
+                        y: (int)(new Any(it[currentWordIndex + 6]).ValueAsSingle(false) * 200),
+                        color: Color.FromArgb(brightness, brightness, brightness)
+                        );
                 }
-                float a = new Any(it.Value[currentWordIndex + 1]).ValueAsSingle(false);                
-                int brightness = (int)(255 * (a - 4.0f) / 2.0f);
-                if (brightness < 0)
-                    brightness = 0;
-                if (brightness > 255)
-                    brightness = 255;
-                bitmap.SetPixel(
-                    x: (int)(new Any(it.Value[currentWordIndex + 3]).ValueAsSingle(false) * 200),
-                    y: (int)(new Any(it.Value[currentWordIndex + 6]).ValueAsSingle(false) * 200),
-                    color: Color.FromArgb(brightness, brightness, brightness)
-                    );
             }
+        }
+        catch
+        {
         }
 
         return info
+            .OrderBy(kvp => kvp.Key)
             .Select(kvp => new ImageWithDesc
             {
                 Image = BitmapHelper.ConvertImageToAvaloniaBitmap(kvp.Value),

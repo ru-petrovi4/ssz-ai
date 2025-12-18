@@ -9,11 +9,13 @@
 			 xmlns:oxy="clr-namespace:OxyPlot.Avalonia;assembly=OxyPlot.Avalonia"
 			 x:CompileBindings="False"
              x:Class="Ssz.AI.Views.ImagesSet">
-	<ItemsControl Name="MainItemsControl">
+	<ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Hidden" HorizontalAlignment="Stretch">
+	<ItemsControl Name="MainItemsControl" Height="300">
 		<!-- Определяем панель для размещения элементов по горизонтали -->
 		<ItemsControl.ItemsPanel>
 			<ItemsPanelTemplate>
-				<StackPanel Orientation="Horizontal" />
+				<StackPanel Orientation="Horizontal"  />	
+				
 			</ItemsPanelTemplate>
 		</ItemsControl.ItemsPanel>
 
@@ -40,4 +42,5 @@
 			</DataTemplate>
 		</ItemsControl.DataTemplates>
 	</ItemsControl>
+	</ScrollViewer>
 </UserControl>

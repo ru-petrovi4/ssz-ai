@@ -67,11 +67,11 @@ public class Model02
 
     public readonly Cortex.Memory[] PinwheelIndexConstantCortexMemories = new Cortex.Memory[7];
 
-    public VisualizationWithDesc[] GetImageWithDescs()
+    public VisualizationWithDesc[] GetImageWithDescs(Random random)
     {        
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
-                    Desc = $"Воспоминания в миниколонках" },
+                    Desc = $"Воспоминания в миниколонках. Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, 
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0)),
                     Desc = $"Активность" },
@@ -101,13 +101,19 @@ public class Model02
                 InputItemIndex = inputItem.Index
             };
 
-            if (isRandom)
+            float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
+            int count = (int)((Constants.CortexRadius_MiniColumns + 0.5) / r);
+
+            for (int i = 0; i < count; i += 1)
             {
-                randomMiniColumns[miniColumns_Index].CortexMemories.Add(cortexMemory);                
-            }
-            else
-            {
-                miniColumn.CortexMemories.Add(cortexMemory);
+                if (isRandom)
+                {
+                    randomMiniColumns[random.Next(randomMiniColumns.Length)].CortexMemories.Add(cortexMemory);
+                }
+                else
+                {
+                    miniColumn.CortexMemories.Add(cortexMemory);
+                }
             }
         }
     }
@@ -268,7 +274,7 @@ public class Model02
         int min_ChangesCount = Int32.MaxValue;
         int min_ChangesCount_UnchangedCount = 0;
 
-        int epochCount = 20;
+        int epochCount = 100;
 
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
@@ -401,16 +407,16 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 0.99f; // Или чуть меньше, чем с точно таким же воспоминанием.
+        public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием.
 
         /// <summary>
         ///     Порог суперактивности
         /// </summary>
         public float K4 { get; set; } = 1.0f;
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f];
+        public float[] PositiveK { get; set; } = [1.00f, 0.14f, 0.125f, 0.015f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.117f, 0.083f];
+        public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.125f, 0.015f];
 
         /// <summary>
         ///     Включен ли порог на суперактивность при накоплении воспоминаний

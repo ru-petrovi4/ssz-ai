@@ -121,7 +121,7 @@ public partial class Cortex : ISerializableModelObject
                     float k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
                     float r = MathF.Sqrt(k);
 
-                    if (r < 2.00001f)
+                    if (r < 3.00001f)
                         miniColumn.Temp_K_ForNearestMiniColumns.Add(
                             (MathHelper.GetInterpolatedValue(Constants.PositiveK, r),
                             MathHelper.GetInterpolatedValue(Constants.NegativeK, r),

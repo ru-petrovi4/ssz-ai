@@ -59,10 +59,12 @@ public partial class Model02View : UserControl
         LevelScrollBar4.Value = constants.K4;
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[1];
-        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];        
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];
+        ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[3];
 
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value = constants.NegativeK[1];
-        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = constants.NegativeK[2];        
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value = constants.NegativeK[2];
+        ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value = constants.NegativeK[3];
     }
 
     private void GetDataFromControls(Model02.ModelConstants constants)
@@ -74,10 +76,12 @@ public partial class Model02View : UserControl
         constants.K4 = (float)LevelScrollBar4.Value;
 
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
-        constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;        
+        constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
+        constants.PositiveK[3] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value;
 
         constants.NegativeK[1] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[0].Value;
-        constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value;        
+        constants.NegativeK[2] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[1].Value;
+        constants.NegativeK[3] = (float)((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[2].Value;
     }
 
     #region Buttons Handlers
@@ -245,17 +249,25 @@ public partial class Model02View : UserControl
                 BestPinwheelSettings bestPinwheelSettings = new();
 
                 int interationN = 0;
-                for (float pk1 = 0.05f; pk1 < 0.17f; pk1 += 0.01f)
-                    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
-                        for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
-                            for (float nk2 = pk2; nk2 < nk1; nk2 += 0.005f)
+                //for (float pk1 = 0.05f; pk1 < 0.17f; pk1 += 0.01f)
+                //    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
+                //        for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
+                //            for (float nk2 = pk2; nk2 > 0; nk2 -= 0.005f)
+                for (float k3 = 0.0f; k3 <= 0.125f; k3 += 0.005f)                    
                             {
                                 interationN += 1;
 
-                                constants.PositiveK[1] = pk1;
+                    float pk1 = 0.14f;
+                    float pk2 = 0.125f;
+                    float nk1 = 0.14f;
+                    float nk2 = 0.125f;
+
+                    constants.PositiveK[1] = pk1;
                                 constants.PositiveK[2] = pk2;
+                                constants.PositiveK[3] = k3;
                                 constants.NegativeK[1] = nk1;
                                 constants.NegativeK[2] = nk2;
+                                constants.NegativeK[3] = k3;
 
                                 Model = new Model02();
 
@@ -279,9 +291,11 @@ public partial class Model02View : UserControl
                                     bestPinwheelSettings.MaxPinwheelIndex = pinwheellIndex;
                                     bestPinwheelSettings.Pk1 = pk1;
                                     bestPinwheelSettings.Pk2 = pk2;
-                                    bestPinwheelSettings.Nk1 = nk1;
+                        bestPinwheelSettings.Pk3 = k3;
+                        bestPinwheelSettings.Nk1 = nk1;
                                     bestPinwheelSettings.Nk2 = nk2;
-                                }
+                        bestPinwheelSettings.Nk3 = k3;
+                    }
 
                                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
                                     @",",
@@ -289,18 +303,18 @@ public partial class Model02View : UserControl
                                     bestPinwheelSettings.MaxPinwheelIndex,
                                     bestPinwheelSettings.Pk1,
                                     bestPinwheelSettings.Pk2,
-                                    0.0f,
+                                    bestPinwheelSettings.Pk3,
                                     bestPinwheelSettings.Nk1,
                                     bestPinwheelSettings.Nk2,
-                                    0.0f,
+                                    bestPinwheelSettings.Nk3,
                                     "Current",
                                     pinwheellIndex,
                                     pk1,
                                     pk2,
-                                    0.0f,
+                                    k3,
                                     nk1,
                                     nk2,
-                                    0.0f ]));
+                                    k3 ]));
                             }
             }
             catch (OperationCanceledException)
@@ -326,7 +340,7 @@ public partial class Model02View : UserControl
         var constants = Model02.Constants;
         GetDataFromControls(constants); 
 
-        _random = new Random(41);
+        _random = new Random();
 
         Model = new Model02();
 
@@ -338,7 +352,7 @@ public partial class Model02View : UserControl
     private void Refresh_ImagesSet()
     {
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
-        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs();
+        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(_random);
     }
 
     private Random _random = null!;
@@ -353,7 +367,9 @@ public partial class Model02View : UserControl
 
         public float Pk1;
         public float Pk2;
+        public float Pk3;
         public float Nk1;
         public float Nk2;
+        public float Nk3;
     }
 }
