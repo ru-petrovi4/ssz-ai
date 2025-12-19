@@ -430,16 +430,16 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 0.985f; // Или чуть меньше, чем с точно таким же воспоминанием. 
+        public float K2 { get; set; } = 0.98f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
 
         /// <summary>
         ///     Порог суперактивности
         /// </summary>
         public float K4 { get; set; } = 1.0f;
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f, 0.015f];
+        public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f, 0.0f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.117f, 0.083f, 0.020f];
+        public float[] NegativeK { get; set; } = [1.00f, 0.117f, 0.083f, 0.0f];
 
         /// <summary>
         ///     Включен ли порог на суперактивность при накоплении воспоминаний
