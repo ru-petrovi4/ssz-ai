@@ -195,6 +195,26 @@ public class Model02
         return maxPinwheelIndex;
     }
 
+    public void Flood(Random random, FastList<MiniColumn> candidateMiniColumns)
+    {
+        MiniColumn? centerMiniColumn = FindBestForMemoryMiniColumn(
+            Memory.IdealPinwheelCenterMemory,
+            random,
+            CancellationToken.None,
+            candidateMiniColumns);
+        if (centerMiniColumn is null)
+            return;
+        
+        for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)
+        {
+            var candidateMiniColumn = candidateMiniColumns[candidateMiniColumns_Index];
+            if (ReferenceEquals(candidateMiniColumn, centerMiniColumn) ||
+                    centerMiniColumn.Temp_AdjacentMiniColumns.Any(it => ReferenceEquals(candidateMiniColumn, it.Item2)))
+                continue;
+            candidateMiniColumn.CortexMemories.Clear();
+        }
+    }
+
     #endregion
 
     #region private functions       
@@ -312,7 +332,10 @@ public class Model02
                             miniColumn.CortexMemories[mi] = cortexMemory;
                         }
                     }
-                }                           
+                }      
+                
+                if (refreshAction is not null && miniEpoch % 10 == 0)
+                    await refreshAction();
             }
 
             for (int mci = 0; mci < candidateMiniColumns.Count; mci += 1)
@@ -407,7 +430,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой
         /// </summary>
-        public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием.
+        public float K2 { get; set; } = 0.985f; // Или чуть меньше, чем с точно таким же воспоминанием. 
 
         /// <summary>
         ///     Порог суперактивности

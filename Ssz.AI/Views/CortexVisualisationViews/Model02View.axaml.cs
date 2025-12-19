@@ -59,6 +59,8 @@ public partial class Model02View : UserControl
         //LevelScrollBar3.Value = constants.K3;
         LevelScrollBar4.Value = constants.K4;
 
+        SuperactivityThreshold.IsChecked = constants.SuperactivityThreshold;
+
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[1];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[2].Value = constants.PositiveK[3];
@@ -75,6 +77,8 @@ public partial class Model02View : UserControl
         constants.K2 = (float)LevelScrollBar2.Value;
         //constants.K3 = (float)LevelScrollBar3.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
+
+        constants.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;
 
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
@@ -108,6 +112,11 @@ public partial class Model02View : UserControl
     {
         Helpers.SerializationHelper.LoadFromFileIfExists(Model02.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
         Model.Cortex.Prepare();
+    }
+
+    private void SuperactivityThreshold_OnClick(object? sender, RoutedEventArgs args)
+    {
+        GetDataFromControls(Model02.Constants);
     }
 
     private void PutInitialMemoriesPinwheel_OnClick(object? sender, RoutedEventArgs args)
@@ -154,6 +163,13 @@ public partial class Model02View : UserControl
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Finished.");
         });
         await _curentLongRunningTask;
+
+        Refresh_ImagesSet();
+    }
+
+    private async void Flood_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.Flood(_random, Model.Cortex.MiniColumns);
 
         Refresh_ImagesSet();
     }
