@@ -20,7 +20,7 @@ public static class Visualisation
         try
         {
             int currentWordIndex = 8;
-            foreach (var it in CsvHelper.ParseCsvMultiline(@",", File.ReadAllText(Path.Combine("Data", @"CortexVisualisationModel_Model01_Logs.1 - Full Log.txt"))))
+            foreach (var it in CsvHelper.ParseCsvMultiline(@",", File.ReadAllText(Path.Combine("Data", @"CortexVisualisationModel_Model01_Logs.2025.12.19 Full Log.txt"))))
             {
                 if (it.Count == 16)
                 {
@@ -38,7 +38,7 @@ public static class Visualisation
                         info.Add(key, bitmap);
                     }
                     float a = new Any(it[currentWordIndex + 1]).ValueAsSingle(false);
-                    int brightness = (int)(255 * (a - 4.5f) / 1.5f);
+                    int brightness = (int)(255 * (a - 5.9f) / 0.1f);
                     if (brightness < 0)
                         brightness = 0;
                     if (brightness > 255)

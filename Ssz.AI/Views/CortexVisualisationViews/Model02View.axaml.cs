@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using Ssz.AI.Models.CortexVisualisationModel;
 using Avalonia.Threading;
 using System.Threading;
+using MathNet.Numerics.Random;
 
 namespace Ssz.AI.Views.CortexVisualisationViews;
 
@@ -34,7 +35,7 @@ public partial class Model02View : UserControl
 
         LevelScrollBar0.ValueChanged += (s, e) => GetDataFromControls(constants);
         LevelScrollBar1.ValueChanged += (s, e) => GetDataFromControls(constants);
-        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(constants);        
+        LevelScrollBar2.ValueChanged += (s, e) => GetDataFromControls(constants);
         LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(constants);
         LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(constants);
 
@@ -96,7 +97,7 @@ public partial class Model02View : UserControl
     private void StopLongOperation_OnClick(object? sender, RoutedEventArgs args)
     {
         _cancellationTokenSource?.Cancel();
-    }    
+    }
 
     private void SaveCortex_OnClick(object? sender, RoutedEventArgs args)
     {
@@ -249,20 +250,21 @@ public partial class Model02View : UserControl
                 BestPinwheelSettings bestPinwheelSettings = new();
 
                 int interationN = 0;
-                //for (float pk1 = 0.05f; pk1 < 0.17f; pk1 += 0.01f)
-                //    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
-                //        for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
-                //            for (float nk2 = pk2; nk2 > 0; nk2 -= 0.005f)
-                for (float k3 = 0.0f; k3 <= 0.125f; k3 += 0.005f)                    
+                for (float pk1 = 0.05f; pk1 < 0.17f; pk1 += 0.01f)
+                    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
+                        for (float nk1 = pk1; nk1 <= pk1; nk1 += 0.01f)
+                            for (float nk2 = 0.005f; nk2 < nk1; nk2 += 0.005f)
+                            //for (float k3 = 0.0f; k3 <= 0.125f; k3 += 0.005f)                    
                             {
                                 interationN += 1;
 
-                    float pk1 = 0.14f;
-                    float pk2 = 0.125f;
-                    float nk1 = 0.14f;
-                    float nk2 = 0.125f;
+                                //float pk1 = 0.14f;
+                                //float pk2 = 0.125f;
+                                //float nk1 = 0.14f;
+                                //float nk2 = 0.125f;
+                                float k3 = 0.015f;
 
-                    constants.PositiveK[1] = pk1;
+                                constants.PositiveK[1] = pk1;
                                 constants.PositiveK[2] = pk2;
                                 constants.PositiveK[3] = k3;
                                 constants.NegativeK[1] = nk1;
@@ -276,12 +278,12 @@ public partial class Model02View : UserControl
                                 Model.Cortex.Prepare();
 
                                 await Model.ProcessNAsync(900, _random, cancellationToken, () =>
-                                {   
+                                {
                                     return Task.CompletedTask;
                                 });
 
                                 await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
-                                {                                    
+                                {
                                     return Task.CompletedTask;
                                 });
 
@@ -291,11 +293,11 @@ public partial class Model02View : UserControl
                                     bestPinwheelSettings.MaxPinwheelIndex = pinwheellIndex;
                                     bestPinwheelSettings.Pk1 = pk1;
                                     bestPinwheelSettings.Pk2 = pk2;
-                        bestPinwheelSettings.Pk3 = k3;
-                        bestPinwheelSettings.Nk1 = nk1;
+                                    bestPinwheelSettings.Pk3 = k3;
+                                    bestPinwheelSettings.Nk1 = nk1;
                                     bestPinwheelSettings.Nk2 = nk2;
-                        bestPinwheelSettings.Nk3 = k3;
-                    }
+                                    bestPinwheelSettings.Nk3 = k3;
+                                }
 
                                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
                                     @",",
@@ -338,7 +340,7 @@ public partial class Model02View : UserControl
     private void Reset()
     {
         var constants = Model02.Constants;
-        GetDataFromControls(constants); 
+        GetDataFromControls(constants);
 
         _random = new Random();
 
