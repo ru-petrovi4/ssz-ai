@@ -435,7 +435,7 @@ public class Model02
         /// <summary>
         ///     Порог суперактивности
         /// </summary>
-        public float K4 { get; set; } = 1.0f;
+        public float K4 { get; set; } = 0.33f; // Чуть больше, чем активность пустого пространства
 
         public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f, 0.0f];
 
