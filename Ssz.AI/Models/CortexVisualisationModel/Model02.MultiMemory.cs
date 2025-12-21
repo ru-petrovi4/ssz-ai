@@ -77,7 +77,7 @@ public class Model02
                     Desc = $"Среднее сходство" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -2.0, valueMax: 2.0)),
-                    Desc = $"Энергия" }
+                    Desc = $"Энергия" },                
             ];
     }    
 
@@ -157,13 +157,38 @@ public class Model02
         await refreshAction();
     }
 
+    /// <summary>
+    ///     
+    /// </summary>
+    /// <param name="random"></param>
+    /// <param name="candidateMiniColumns"></param>
+    /// <returns></returns>
     public float GetPinwheelIndex(Random random, FastList<MiniColumn> candidateMiniColumns)
     {
-        MiniColumn? centerMiniColumn = FindBestForMemoryMiniColumn(
-            Memory.IdealPinwheelCenterMemory,
-            random,
-            CancellationToken.None,
-            candidateMiniColumns);
+        StateInfo stateInfo = new();
+        stateInfo.MaxAverageSimilarity = float.MinValue;
+        stateInfo.AverageSimilarityMax_MiniColumns.Clear();
+        
+        for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
+        {
+            var miniColumn = candidateMiniColumns[miniColumns_Index];
+
+            var averageSimilarity = MiniColumnsEnergyHelper.GetAverageSimilarity(miniColumn, Memory.IdealPinwheelCenterMemory, GetSimilarity, Constants);
+
+            float a = averageSimilarity.PositiveAverageSimilarity + averageSimilarity.NegativeAverageSimilarity;
+            if (a > stateInfo.MaxAverageSimilarity)
+            {
+                stateInfo.MaxAverageSimilarity = a;
+                stateInfo.AverageSimilarityMax_MiniColumns.Clear();
+                stateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+            }
+            else if (a == stateInfo.MaxAverageSimilarity)
+            {
+                stateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+            }
+        };
+
+        MiniColumn? centerMiniColumn = stateInfo.AverageSimilarityMax_MiniColumns.FirstOrDefault();
         if (centerMiniColumn is null || centerMiniColumn.Temp_AdjacentMiniColumns.Count < 6)
             return 0.0f;
 
@@ -334,7 +359,7 @@ public class Model02
                     }
                 }      
                 
-                if (refreshAction is not null && miniEpoch % 10 == 0)
+                if (miniEpoch % 10 == 0 && refreshAction is not null)
                     await refreshAction();
             }
 
