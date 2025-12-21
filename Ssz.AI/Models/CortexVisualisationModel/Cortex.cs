@@ -16,6 +16,42 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
 
+public interface ICortexConstants
+{
+    int CotrexWidth_MiniColumns { get; }
+
+    int CotrexHeight_MiniColumns { get; }
+
+    /// <summary>
+    ///     Олпределенный зараниие радиус гиперколонки в миниколонках.
+    /// </summary>
+    int HypercolumnDefinedRadius_MiniColumns { get; }
+
+    /// <summary>
+    ///     Уровень подобия для нулевой активности
+    /// </summary>
+    float K0 { get; set; }
+
+    /// <summary>
+    ///     Уровень подобия с пустой миниколонкой
+    /// </summary>
+    float K2 { get; set; }
+
+    /// <summary>
+    ///     Порог суперактивности
+    /// </summary>
+    float K4 { get; set; }
+
+    float[] PositiveK { get; set; }
+
+    float[] NegativeK { get; set; }
+
+    /// <summary>
+    ///     Включен ли порог на суперактивность при накоплении воспоминаний
+    /// </summary>
+    public bool SuperactivityThreshold { get; set; }
+}
+
 public partial class Cortex : ISerializableModelObject
 {
     /// <summary>
@@ -23,7 +59,7 @@ public partial class Cortex : ISerializableModelObject
     /// </summary>
     /// <param name="constants"></param>        
     public Cortex(
-        IMiniColumnsActivityConstants constants, 
+        ICortexConstants constants, 
         ILogger logger)
     {
         Constants = constants;
@@ -33,7 +69,7 @@ public partial class Cortex : ISerializableModelObject
 
     #region public functions
 
-    public readonly IMiniColumnsActivityConstants Constants;
+    public readonly ICortexConstants Constants;
 
     public readonly ILogger Logger;
 
@@ -217,12 +253,12 @@ public partial class Cortex : ISerializableModelObject
 
     public class MiniColumn : ISerializableModelObject
     {
-        public MiniColumn(IMiniColumnsActivityConstants constants)
+        public MiniColumn(ICortexConstants constants)
         {
             Constants = constants;
         }
 
-        public readonly IMiniColumnsActivityConstants Constants;
+        public readonly ICortexConstants Constants;
 
         /// <summary>
         ///     Координата миниколонки по оси X (горизонтально вправо)
@@ -258,13 +294,14 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_AdjacentMiniColumns = null!;
 
-        public double Temp_Energy;
+        public double Temp_MiniColumnEnergy;
 
-        public double Temp_Distance;
+        public (float PositiveAverageSimilarity, float NegativeAverageSimilarity, int CortexMemoriesCount) Temp_AverageSimilarity;
 
-        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
-
-        public float Temp_SuperActivity;
+        /// <summary>
+        ///     Total system energy if memory in this minicolumn.
+        /// </summary>
+        public float Temp_TotalEnergy;
 
         /// <summary>
         ///     Сохраненные хэш-коды

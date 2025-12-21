@@ -68,8 +68,8 @@ public class Model01
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках.\nЭнергия: {GetEnergy()}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 15.0)),
-                    Desc = $"Среднее расстояние: {it.Average}\nМинимальное: {it.Minimum}\nМаксимальное: {it.Maximum}" }
+                //new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 15.0)),
+                //    Desc = $"Среднее расстояние: {it.Average}\nМинимальное: {it.Minimum}\nМаксимальное: {it.Maximum}" }
             ];
     }    
 
@@ -151,7 +151,7 @@ public class Model01
         for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Count; miniColumns_Index += 1)
         {
             MiniColumn miniColumn = Cortex.MiniColumns[miniColumns_Index];            
-            energy += GetEnergy(miniColumn);
+            energy += GetMiniColumnEnergy(miniColumn);
         }
         return energy;
     }
@@ -182,7 +182,7 @@ public class Model01
             if (distance > distanceMax)
                 distanceMax = distance;
             distanceTotal += distance;
-            miniColumn.Temp_Distance = distance;
+            //miniColumn.Temp_Distance = distance;
         }
 
         return (Average: distanceTotal / miniColumns.Count, Minimum: distanceMin, Maximum: distanceMax);
@@ -207,11 +207,11 @@ public class Model01
 
                 var candidateForSwapMiniColumns = getCandidateForSwapMiniColumns(miniColumn);
 
-                miniColumn.Temp_Energy = GetEnergy(miniColumn);                
+                miniColumn.Temp_MiniColumnEnergy = GetMiniColumnEnergy(miniColumn);                
                 for (int i = 0; i < candidateForSwapMiniColumns.Count; i += 1)
                 {
                     MiniColumn candidateForSwapMiniColumn = candidateForSwapMiniColumns[i].Item2;
-                    candidateForSwapMiniColumn.Temp_Energy = GetEnergy(candidateForSwapMiniColumn);                    
+                    candidateForSwapMiniColumn.Temp_MiniColumnEnergy = GetMiniColumnEnergy(candidateForSwapMiniColumn);                    
                 }
 
                 double minEnergy = 0.0f;
@@ -222,8 +222,8 @@ public class Model01
                     MiniColumn candidateForSwapMiniColumn = candidateForSwapMiniColumns[i].Item2;
 
                     miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);
-                    double energy = -miniColumn.Temp_Energy - candidateForSwapMiniColumn.Temp_Energy
-                        + GetEnergy(miniColumn) + GetEnergy(candidateForSwapMiniColumn);
+                    double energy = -miniColumn.Temp_MiniColumnEnergy - candidateForSwapMiniColumn.Temp_MiniColumnEnergy
+                        + GetMiniColumnEnergy(miniColumn) + GetMiniColumnEnergy(candidateForSwapMiniColumn);
                     miniColumn.CortexMemories.Swap(candidateForSwapMiniColumn.CortexMemories);
 
                     if (energy < minEnergy)
@@ -248,7 +248,7 @@ public class Model01
         }
     }
 
-    private double GetEnergy(MiniColumn miniColumn)
+    private double GetMiniColumnEnergy(MiniColumn miniColumn)
     {
         if (miniColumn.CortexMemories.Count < 1)
             return 0.0;
@@ -309,7 +309,7 @@ public class Model01
 
     #endregion
 
-    public class ModelConstants : IMiniColumnsActivityConstants
+    public class ModelConstants : ICortexConstants
     {
         public int CotrexWidth_MiniColumns => 20;
 

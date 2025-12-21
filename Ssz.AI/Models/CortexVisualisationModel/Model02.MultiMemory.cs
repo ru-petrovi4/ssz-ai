@@ -63,7 +63,7 @@ public class Model02
 
     public Cortex Cortex = null!;
 
-    public ActivitiyMaxInfo ActivitiyMaxInfo = new();
+    public StateInfo StateInfo = new();
 
     public readonly Cortex.Memory[] PinwheelIndexConstantCortexMemories = new Cortex.Memory[7];
 
@@ -73,11 +73,11 @@ public class Model02
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках. Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, 
-                        (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0)),
-                    Desc = $"Активность" },
+                        (MiniColumn mc) => (double)(mc.Temp_AverageSimilarity.PositiveAverageSimilarity + mc.Temp_AverageSimilarity.NegativeAverageSimilarity), valueMin: -1.0, valueMax: 1.0)),
+                    Desc = $"Среднее сходство" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_SuperActivity, valueMin: -2.0, valueMax: 2.0)),
-                    Desc = $"Суперактивность" }
+                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -2.0, valueMax: 2.0)),
+                    Desc = $"Энергия" }
             ];
     }    
 
@@ -244,49 +244,49 @@ public class Model02
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
                     
-                    miniColumn.Temp_Activity = MiniColumnsActivityHelper.GetActivity(miniColumn, cortexMemory, GetSimilarity, Constants);
+                    miniColumn.Temp_AverageSimilarity = MiniColumnsEnergyHelper.GetAverageSimilarity(miniColumn, cortexMemory, GetSimilarity, Constants);
                 });
 
-        ActivitiyMaxInfo.MaxActivity = float.MinValue;
-        ActivitiyMaxInfo.ActivityMax_MiniColumns.Clear();
+        StateInfo.MaxAverageSimilarity = float.MinValue;
+        StateInfo.AverageSimilarityMax_MiniColumns.Clear();
 
         if (Constants.SuperactivityThreshold)
-            ActivitiyMaxInfo.MaxSuperActivity = Constants.K4;
+            StateInfo.MinTotalEnergy = Constants.K4;
         else
-            ActivitiyMaxInfo.MaxSuperActivity = float.MinValue;
-        ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
+            StateInfo.MinTotalEnergy = float.MaxValue;
+        StateInfo.TotalEnergyMin_MiniColumns.Clear();
 
         for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            miniColumn.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(miniColumn, Constants);
+            miniColumn.Temp_TotalEnergy = MiniColumnsEnergyHelper.GetTotalEnergy(miniColumn, Constants);
 
-            float a = miniColumn.Temp_Activity.PositiveActivity + miniColumn.Temp_Activity.NegativeActivity;
-            if (a > ActivitiyMaxInfo.MaxActivity)
+            float a = miniColumn.Temp_AverageSimilarity.PositiveAverageSimilarity + miniColumn.Temp_AverageSimilarity.NegativeAverageSimilarity;
+            if (a > StateInfo.MaxAverageSimilarity)
             {
-                ActivitiyMaxInfo.MaxActivity = a;
-                ActivitiyMaxInfo.ActivityMax_MiniColumns.Clear();
-                ActivitiyMaxInfo.ActivityMax_MiniColumns.Add(miniColumn);
+                StateInfo.MaxAverageSimilarity = a;
+                StateInfo.AverageSimilarityMax_MiniColumns.Clear();
+                StateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
             }
-            else if (a == ActivitiyMaxInfo.MaxActivity)
+            else if (a == StateInfo.MaxAverageSimilarity)
             {
-                ActivitiyMaxInfo.ActivityMax_MiniColumns.Add(miniColumn);
+                StateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
             }
 
-            if (miniColumn.Temp_SuperActivity > ActivitiyMaxInfo.MaxSuperActivity)
+            if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
             {
-                ActivitiyMaxInfo.MaxSuperActivity = miniColumn.Temp_SuperActivity;
-                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
-                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Add(miniColumn);
+                StateInfo.MinTotalEnergy = miniColumn.Temp_TotalEnergy;
+                StateInfo.TotalEnergyMin_MiniColumns.Clear();
+                StateInfo.TotalEnergyMin_MiniColumns.Add(miniColumn);
             }
-            else if (miniColumn.Temp_SuperActivity == ActivitiyMaxInfo.MaxSuperActivity)
+            else if (miniColumn.Temp_TotalEnergy == StateInfo.MinTotalEnergy)
             {
-                ActivitiyMaxInfo.SuperActivityMax_MiniColumns.Add(miniColumn);
+                StateInfo.TotalEnergyMin_MiniColumns.Add(miniColumn);
             }
         }
 
-        return ActivitiyMaxInfo.GetSuperActivityMax_MiniColumn(random);
+        return StateInfo.GetTotalEnergyMin_MiniColumn(random);
     }
 
     private async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
@@ -415,7 +415,7 @@ public class Model02
 
     #endregion
 
-    public class ModelConstants : IMiniColumnsActivityConstants
+    public class ModelConstants : ICortexConstants
     {
         public int CotrexWidth_MiniColumns => 60;
 
