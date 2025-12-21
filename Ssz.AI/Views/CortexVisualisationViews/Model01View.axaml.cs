@@ -266,7 +266,7 @@ public partial class Model01View : UserControl
         Model = new Model01();
 
         Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model01.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-        Model.Cortex.GenerateOwnedData(_random);
+        Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
         Model.Cortex.Prepare();
     }
 

@@ -11,6 +11,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
@@ -45,27 +46,58 @@ public partial class Cortex : ISerializableModelObject
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(Random random)
+    public void GenerateOwnedData(Random random, bool onlyCeneterHypercolumn)
     {
-        MiniColumns = new FastList<MiniColumn>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
+        MiniColumns = new FastList<MiniColumn>(Constants.CotrexWidth_MiniColumns * Constants.CotrexHeight_MiniColumns);
         
-        float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
-        float maxRadius = Constants.CortexRadius_MiniColumns + 0.00001f;
+        float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);        
 
         MiniColumn? centerMiniColumn = null;
         FastList<MiniColumn> centerMiniColumn_AdjacentMiniColumns = new FastList<MiniColumn>(6);
-        
-        for (int mcj = -(int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.CortexRadius_MiniColumns / delta_MCY); mcj += 1)
-            for (int mci = -Constants.CortexRadius_MiniColumns; mci <= Constants.CortexRadius_MiniColumns; mci += 1)
-            {
-                float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
-                float mcy = mcj * delta_MCY;
 
-                float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
-                if (radius < maxRadius)
+        if (onlyCeneterHypercolumn)
+        {
+            float maxRadius = Constants.HypercolumnDefinedRadius_MiniColumns + 0.00001f;
+
+            for (int mcj = -(int)(Constants.HypercolumnDefinedRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.HypercolumnDefinedRadius_MiniColumns / delta_MCY); mcj += 1)
+                for (int mci = -Constants.HypercolumnDefinedRadius_MiniColumns; mci <= Constants.HypercolumnDefinedRadius_MiniColumns; mci += 1)
                 {
+                    float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
+                    float mcy = mcj * delta_MCY;
+
+                    float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
+                    if (radius < maxRadius)
+                    {
+                        MiniColumn miniColumn = new MiniColumn(
+                            Constants)
+                        {
+                            MCX = mcx,
+                            MCY = mcy
+                        };
+
+                        miniColumn.GenerateOwnedData();
+
+                        MiniColumns.Add(miniColumn);
+
+                        if (radius < 0.00001f)
+                            centerMiniColumn = miniColumn;
+                        else if (radius < 1.00001f)
+                            centerMiniColumn_AdjacentMiniColumns.Add(miniColumn);
+                    }
+                }
+        }
+        else
+        {
+            for (int mcj = -(int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
+                for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci <= (int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci += 1)
+                {
+                    float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
+                    float mcy = mcj * delta_MCY;
+
+                    float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
+
                     MiniColumn miniColumn = new MiniColumn(
-                        Constants)
+                            Constants)
                     {
                         MCX = mcx,
                         MCY = mcy
@@ -80,7 +112,7 @@ public partial class Cortex : ISerializableModelObject
                     else if (radius < 1.00001f)
                         centerMiniColumn_AdjacentMiniColumns.Add(miniColumn);
                 }
-            }
+        }
 
         // Воспоминания для оценки качества вертушки
         AddInputItem(random, centerMiniColumn!);
@@ -150,7 +182,7 @@ public partial class Cortex : ISerializableModelObject
         inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
         inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
 
-        float s = MathF.Sqrt(inputItem.Magnitude / (Constants.CortexRadius_MiniColumns + 1));
+        float s = MathF.Sqrt(inputItem.Magnitude / (Constants.HypercolumnDefinedRadius_MiniColumns + 1));
         inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
         inputItem.SimilarityThreshold = 0.00f * (1.0f - inputItem.Magnitude / 3.0f);
 
@@ -252,8 +284,8 @@ public partial class Cortex : ISerializableModelObject
         public void Prepare()
         {
             Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
-            Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
-            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.CortexRadius_MiniColumns * Constants.CortexRadius_MiniColumns));
+            Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
+            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
         }

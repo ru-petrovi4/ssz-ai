@@ -102,7 +102,7 @@ public class Model02
             };
 
             float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
-            int count = (int)((Constants.CortexRadius_MiniColumns + 0.5) / r);
+            int count = 1; //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
 
             for (int i = 0; i < count; i += 1)
             {
@@ -417,10 +417,14 @@ public class Model02
 
     public class ModelConstants : IMiniColumnsActivityConstants
     {
+        public int CotrexWidth_MiniColumns => 60;
+
+        public int CotrexHeight_MiniColumns => 60;
+
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int CortexRadius_MiniColumns => 10;
+        public int HypercolumnDefinedRadius_MiniColumns => 10;
 
         /// <summary>
         ///     Уровень подобия для нулевой активности

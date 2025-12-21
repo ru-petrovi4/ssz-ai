@@ -1700,7 +1700,7 @@ public static class Visualisation
     public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex)
     {
         float miniColumnRadius_Pixels = 5.0f;
-        float radius_Pixels = (cortex.Constants.CortexRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float radius_Pixels = (cortex.Constants.HypercolumnDefinedRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
 
         using (Graphics g = Graphics.FromImage(bitmap))
@@ -1772,7 +1772,7 @@ public static class Visualisation
         }
 
         float miniColumnRadius_Pixels = 5.0f;
-        float radius_Pixels = (cortex.Constants.CortexRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float radius_Pixels = (cortex.Constants.HypercolumnDefinedRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
 
         using (Graphics g = Graphics.FromImage(bitmap))

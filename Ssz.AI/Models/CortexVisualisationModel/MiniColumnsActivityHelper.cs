@@ -8,10 +8,14 @@ namespace Ssz.AI.Models.CortexVisualisationModel;
 
 public interface IMiniColumnsActivityConstants
 {
+    int CotrexWidth_MiniColumns { get; }
+
+    int CotrexHeight_MiniColumns { get; }
+
     /// <summary>
-    ///     Радиус зоны коры в миниколонках.
+    ///     Олпределенный зараниие радиус гиперколонки в миниколонках.
     /// </summary>
-    int CortexRadius_MiniColumns { get; }
+    int HypercolumnDefinedRadius_MiniColumns { get; }
 
     /// <summary>
     ///     Уровень подобия для нулевой активности

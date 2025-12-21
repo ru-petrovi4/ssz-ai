@@ -290,7 +290,7 @@ public partial class Model02View : UserControl
                                 Model = new Model02();
 
                                 Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-                                Model.Cortex.GenerateOwnedData(_random);
+                                Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
                                 Model.Cortex.Prepare();
 
                                 await Model.ProcessNAsync(900, _random, cancellationToken, () =>
@@ -346,7 +346,7 @@ public partial class Model02View : UserControl
         Refresh_ImagesSet();
     }
 
-    private async void VisualizesScriptResults_OnClick(object? sender, RoutedEventArgs args)
+    private void VisualizesScriptResults_OnClick(object? sender, RoutedEventArgs args)
     {
         ImagesSet1.MainItemsControl.ItemsSource = Visualisation.VisualizeKSearch();
     }
@@ -363,7 +363,7 @@ public partial class Model02View : UserControl
         Model = new Model02();
 
         Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-        Model.Cortex.GenerateOwnedData(_random);
+        Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
         Model.Cortex.Prepare();
     }
 
