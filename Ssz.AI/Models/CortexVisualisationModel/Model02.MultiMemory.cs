@@ -73,11 +73,11 @@ public class Model02
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках. Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, 
-                        (MiniColumn mc) => (double)(mc.Temp_AverageSimilarity.PositiveAverageSimilarity + mc.Temp_AverageSimilarity.NegativeAverageSimilarity), valueMin: -1.0, valueMax: 1.0)),
+                        (MiniColumn mc) => (double)(mc.Temp_AverageSimilarity.PositiveAverageSimilarity + mc.Temp_AverageSimilarity.NegativeAverageSimilarity), valueMin: -0.5, valueMax: 1.0)),
                     Desc = $"Среднее сходство" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -2.0, valueMax: 2.0)),
-                    Desc = $"Энергия" },                
+                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -1.0, valueMax: 1.0)),
+                    Desc = $"Энергия (минимизируем)" },                
             ];
     }    
 
