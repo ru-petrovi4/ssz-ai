@@ -81,13 +81,9 @@ public static class MiniColumnsEnergyHelper
     
     public static float GetTotalEnergy(Cortex.MiniColumn miniColumn, ICortexConstants constants)
     {
-        float totalEnergy;
-
-        if (miniColumn.Temp_Activity.CortexMemoriesCount > 0)
-            totalEnergy = -constants.PositiveK[0] * miniColumn.Temp_Activity.PositiveActivity -
-                constants.NegativeK[0] * miniColumn.Temp_Activity.NegativeActivity;
-        else
-            totalEnergy = -constants.PositiveK[0] * (constants.K2 - constants.K0); // Best proximity
+        float totalEnergy = -constants.PositiveK[0] * miniColumn.Temp_Activity.PositiveActivity -
+                constants.NegativeK[0] * miniColumn.Temp_Activity.NegativeActivity -
+                (miniColumn.Temp_Activity.CortexMemoriesCount == 0 ? (constants.K2 - constants.K0) : 0.0f); // Штраф за воспоминания        
 
         for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
         {

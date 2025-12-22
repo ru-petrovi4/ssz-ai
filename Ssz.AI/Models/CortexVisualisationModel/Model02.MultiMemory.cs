@@ -325,7 +325,7 @@ public class Model02
         {
             int changedCount = 0;
 
-            for (int miniEpoch = 0; miniEpoch < 50; miniEpoch += 1)
+            for (int miniEpoch = 0; miniEpoch < 100; miniEpoch += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -395,7 +395,7 @@ public class Model02
                 min_ChangesCount_UnchangedCount += 1;
             }
 
-            if (changedCount < 1 || min_ChangesCount_UnchangedCount > 20)
+            if (changedCount < 1 || min_ChangesCount_UnchangedCount > 100)
                 break;
         }
         
@@ -457,9 +457,10 @@ public class Model02
         public float K0 { get; set; } = 0.66f;
 
         /// <summary>
-        ///     Уровень подобия с пустой миниколонкой
+        ///     Уровень подобия с пустой миниколонкой.
+        ///     Штраф за воспоминания (для равномерности заполнения).
         /// </summary>
-        public float K2 { get; set; } = 0.98f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
+        public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
 
         /// <summary>
         ///     Порог энергии
