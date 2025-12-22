@@ -38,7 +38,7 @@ public interface ICortexConstants
     float K2 { get; set; }
 
     /// <summary>
-    ///     Порог суперактивности
+    ///     Порог энергии
     /// </summary>
     float K4 { get; set; }
 
@@ -47,9 +47,9 @@ public interface ICortexConstants
     float[] NegativeK { get; set; }
 
     /// <summary>
-    ///     Включен ли порог на суперактивность при накоплении воспоминаний
+    ///     Включен ли порог энергии при накоплении воспоминаний
     /// </summary>
-    public bool SuperactivityThreshold { get; set; }
+    public bool TotalEnergyThreshold { get; set; }
 }
 
 public partial class Cortex : ISerializableModelObject
@@ -296,7 +296,7 @@ public partial class Cortex : ISerializableModelObject
 
         public double Temp_MiniColumnEnergy;
 
-        public (float PositiveAverageSimilarity, float NegativeAverageSimilarity, int CortexMemoriesCount) Temp_AverageSimilarity;
+        public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
 
         /// <summary>
         ///     Total system energy if memory in this minicolumn.

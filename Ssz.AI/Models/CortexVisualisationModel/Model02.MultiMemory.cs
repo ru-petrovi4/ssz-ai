@@ -73,10 +73,10 @@ public class Model02
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках. Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, 
-                        (MiniColumn mc) => (double)(mc.Temp_AverageSimilarity.PositiveAverageSimilarity + mc.Temp_AverageSimilarity.NegativeAverageSimilarity), valueMin: -0.5, valueMax: 1.0)),
-                    Desc = $"Среднее сходство" },
+                        (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0)),
+                    Desc = $"Активность миниколонок" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -1.0, valueMax: 1.0)),
+                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -0.4, valueMax: 1.0)),
                     Desc = $"Энергия (минимизируем)" },                
             ];
     }    
@@ -166,29 +166,29 @@ public class Model02
     public float GetPinwheelIndex(Random random, FastList<MiniColumn> candidateMiniColumns)
     {
         StateInfo stateInfo = new();
-        stateInfo.MaxAverageSimilarity = float.MinValue;
-        stateInfo.AverageSimilarityMax_MiniColumns.Clear();
+        stateInfo.MaxActivity = float.MinValue;
+        stateInfo.ActivityMax_MiniColumns.Clear();
         
         for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            var averageSimilarity = MiniColumnsEnergyHelper.GetAverageSimilarity(miniColumn, Memory.IdealPinwheelCenterMemory, GetSimilarity, Constants);
+            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Memory.IdealPinwheelCenterMemory, GetSimilarity, Constants);
 
-            float a = averageSimilarity.PositiveAverageSimilarity + averageSimilarity.NegativeAverageSimilarity;
-            if (a > stateInfo.MaxAverageSimilarity)
+            float a = activity.PositiveActivity + activity.NegativeActivity;
+            if (a > stateInfo.MaxActivity)
             {
-                stateInfo.MaxAverageSimilarity = a;
-                stateInfo.AverageSimilarityMax_MiniColumns.Clear();
-                stateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+                stateInfo.MaxActivity = a;
+                stateInfo.ActivityMax_MiniColumns.Clear();
+                stateInfo.ActivityMax_MiniColumns.Add(miniColumn);
             }
-            else if (a == stateInfo.MaxAverageSimilarity)
+            else if (a == stateInfo.MaxActivity)
             {
-                stateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+                stateInfo.ActivityMax_MiniColumns.Add(miniColumn);
             }
         };
 
-        MiniColumn? centerMiniColumn = stateInfo.AverageSimilarityMax_MiniColumns.FirstOrDefault();
+        MiniColumn? centerMiniColumn = stateInfo.ActivityMax_MiniColumns.FirstOrDefault();
         if (centerMiniColumn is null || centerMiniColumn.Temp_AdjacentMiniColumns.Count < 6)
             return 0.0f;
 
@@ -269,13 +269,13 @@ public class Model02
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
                     
-                    miniColumn.Temp_AverageSimilarity = MiniColumnsEnergyHelper.GetAverageSimilarity(miniColumn, cortexMemory, GetSimilarity, Constants);
+                    miniColumn.Temp_Activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, cortexMemory, GetSimilarity, Constants);
                 });
 
-        StateInfo.MaxAverageSimilarity = float.MinValue;
-        StateInfo.AverageSimilarityMax_MiniColumns.Clear();
+        StateInfo.MaxActivity = float.MinValue;
+        StateInfo.ActivityMax_MiniColumns.Clear();
 
-        if (Constants.SuperactivityThreshold)
+        if (Constants.TotalEnergyThreshold)
             StateInfo.MinTotalEnergy = Constants.K4;
         else
             StateInfo.MinTotalEnergy = float.MaxValue;
@@ -287,16 +287,16 @@ public class Model02
 
             miniColumn.Temp_TotalEnergy = MiniColumnsEnergyHelper.GetTotalEnergy(miniColumn, Constants);
 
-            float a = miniColumn.Temp_AverageSimilarity.PositiveAverageSimilarity + miniColumn.Temp_AverageSimilarity.NegativeAverageSimilarity;
-            if (a > StateInfo.MaxAverageSimilarity)
+            float a = miniColumn.Temp_Activity.PositiveActivity + miniColumn.Temp_Activity.NegativeActivity;
+            if (a > StateInfo.MaxActivity)
             {
-                StateInfo.MaxAverageSimilarity = a;
-                StateInfo.AverageSimilarityMax_MiniColumns.Clear();
-                StateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+                StateInfo.MaxActivity = a;
+                StateInfo.ActivityMax_MiniColumns.Clear();
+                StateInfo.ActivityMax_MiniColumns.Add(miniColumn);
             }
-            else if (a == StateInfo.MaxAverageSimilarity)
+            else if (a == StateInfo.MaxActivity)
             {
-                StateInfo.AverageSimilarityMax_MiniColumns.Add(miniColumn);
+                StateInfo.ActivityMax_MiniColumns.Add(miniColumn);
             }
 
             if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
@@ -462,18 +462,18 @@ public class Model02
         public float K2 { get; set; } = 0.98f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
 
         /// <summary>
-        ///     Порог суперактивности
+        ///     Порог энергии
         /// </summary>
-        public float K4 { get; set; } = 0.33f; // Чуть больше, чем активность пустого пространства
+        public float K4 { get; set; } = -0.33f; // Чуть меньше, чем энергия пустого пространства
 
-        public float[] PositiveK { get; set; } = [1.00f, 0.117f, 0.050f, 0.0f];
+        public float[] PositiveK { get; set; } = [1.000f, 0.117f, 0.050f, 0.000f];
 
-        public float[] NegativeK { get; set; } = [1.00f, 0.117f, 0.083f, 0.0f];
+        public float[] NegativeK { get; set; } = [1.000f, 0.117f, 0.083f, 0.000f];
 
         /// <summary>
-        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        ///     Включен ли порог энергии при накоплении воспоминаний
         /// </summary>
-        public bool SuperactivityThreshold { get; set; } = false;
+        public bool TotalEnergyThreshold { get; set; } = false;
     }
 }
 
@@ -491,7 +491,7 @@ public class Model02
 //        return energy;
 //    }
 
-//public (double Average, double Minimum, double Maximum) GetAverageSimilarity()
+//public (double Average, double Minimum, double Maximum) GetActivity()
 //    {
 //        if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
 //            return (Double.NaN, Double.NaN, Double.NaN);

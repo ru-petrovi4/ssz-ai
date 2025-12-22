@@ -109,19 +109,19 @@
       
       <TextBlock Text="Уровень подобия для нулевой активности:" Grid.Row="2" />
       <TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
       <TextBlock Text="" Grid.Row="3" />
       <TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />
+      <ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
       <TextBlock Text="Уровень подобия с пустой миниколонкой" Grid.Row="4" />
       <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="-1" Maximum="1" />      
+      <ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />      
       <TextBlock Text="" Grid.Row="6" />
       <TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="6" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar3" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="10" />
-      <TextBlock Text="Порог суперактивности:" Grid.Row="7" />
+      <ScrollBar Name="LevelScrollBar3" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />
+      <TextBlock Text="Порог энергии:" Grid.Row="7" />
       <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="7" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Value="" Minimum="0" Maximum="100" />      
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-100" Maximum="0" />      
     </Grid>    
   </Grid>  
 </UserControl>

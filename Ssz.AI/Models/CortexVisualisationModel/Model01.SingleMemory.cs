@@ -331,7 +331,7 @@ public class Model01
         public float K2 { get; set; } = 0.13f;
 
         /// <summary>
-        ///     Порог суперактивности
+        ///     Порог энергии
         /// </summary>
         public float K4 { get; set; } = 0.13f;
 
@@ -340,8 +340,8 @@ public class Model01
         public float[] NegativeK { get; set; } = [1.00f, 0.14f, 0.07f];
 
         /// <summary>
-        ///     Включен ли порог на суперактивность при накоплении воспоминаний
+        ///     Включен ли порог энергии при накоплении воспоминаний
         /// </summary>
-        public bool SuperactivityThreshold { get; set; } = false;
+        public bool TotalEnergyThreshold { get; set; } = false;
     }
 }

@@ -59,7 +59,7 @@ public partial class Model02View : UserControl
         //LevelScrollBar3.Value = constants.K3;
         LevelScrollBar4.Value = constants.K4;
 
-        SuperactivityThreshold.IsChecked = constants.SuperactivityThreshold;
+        SuperactivityThreshold.IsChecked = constants.TotalEnergyThreshold;
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[1];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];
@@ -78,7 +78,7 @@ public partial class Model02View : UserControl
         //constants.K3 = (float)LevelScrollBar3.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
 
-        constants.SuperactivityThreshold = SuperactivityThreshold.IsChecked == true;
+        constants.TotalEnergyThreshold = SuperactivityThreshold.IsChecked == true;
 
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
