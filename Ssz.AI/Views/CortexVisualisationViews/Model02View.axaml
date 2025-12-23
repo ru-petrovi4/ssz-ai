@@ -34,7 +34,7 @@
               <!--<Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />-->
               <Button Content="SaveCortex" Click="SaveCortex_OnClick" />   
               <Button Content="LoadCortex" Click="LoadCortex_OnClick" /> 
-              <CheckBox Name="SuperactivityThreshold" Content="SuperactivityThreshold" Click="SuperactivityThreshold_OnClick" />
+              <CheckBox Name="EnergyThreshold" Content="Energy Threshold" Click="EnergyThreshold_OnClick" />
           </StackPanel>          
           <StackPanel Grid.Row="2" Orientation="Horizontal">        
               <TextBlock Text="Reorder:" VerticalAlignment="Center" />              

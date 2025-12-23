@@ -59,7 +59,7 @@ public partial class Model02View : UserControl
         //LevelScrollBar3.Value = constants.K3;
         LevelScrollBar4.Value = constants.K4;
 
-        SuperactivityThreshold.IsChecked = constants.TotalEnergyThreshold;
+        EnergyThreshold.IsChecked = constants.TotalEnergyThreshold;
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[1];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];
@@ -78,7 +78,7 @@ public partial class Model02View : UserControl
         //constants.K3 = (float)LevelScrollBar3.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
 
-        constants.TotalEnergyThreshold = SuperactivityThreshold.IsChecked == true;
+        constants.TotalEnergyThreshold = EnergyThreshold.IsChecked == true;
 
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
@@ -114,7 +114,7 @@ public partial class Model02View : UserControl
         Model.Cortex.Prepare();
     }
 
-    private void SuperactivityThreshold_OnClick(object? sender, RoutedEventArgs args)
+    private void EnergyThreshold_OnClick(object? sender, RoutedEventArgs args)
     {
         GetDataFromControls(Model02.Constants);
     }
