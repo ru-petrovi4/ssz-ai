@@ -374,6 +374,9 @@ public class Model02
                 {
                     miniColumn.CortexMemories[it.Item2] = cortexMemory;
                 }
+
+                if (refreshAction is not null && (index % 1000 == 0))
+                    await refreshAction();
             }
 
             for (int mci = 0; mci < candidateMiniColumns.Count; mci += 1)
