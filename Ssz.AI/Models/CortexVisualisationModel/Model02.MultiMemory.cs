@@ -68,20 +68,22 @@ public class Model02
     public readonly Cortex.Memory[] PinwheelIndexConstantCortexMemories = new Cortex.Memory[7];
 
     public VisualizationWithDesc[] GetImageWithDescs(Random random)
-    {        
+    {
+        var r1 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
+                        (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0);
+        var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
+                        (MiniColumn mc) => mc.Temp_TotalEnergy);
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
                     Desc = $"Воспоминания в миниколонках. Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, 
-                        (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0)),
-                    Desc = $"Активность миниколонок" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_TotalEnergy, valueMin: -0.4, valueMax: 1.0)),
-                    Desc = $"Энергия (минимизируем)" },                
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r1.Image),
+                    Desc = $"Активность миниколонок; Min: {r1.ValueMin:F03}; Max: {r1.ValueMax:F03}" },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
+                    Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" },                
             ];
     }    
 
-    public void PutInitialMemoriesPinwheel(Random random, bool isRandom)
+    public void PutInitialMemoriesPinwheel(Random random, bool isRandom, int count)
     {
         if (Cortex.MiniColumns is null)
             return;       
@@ -102,7 +104,7 @@ public class Model02
             };
 
             float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
-            int count = 1; //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
+            //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
 
             for (int i = 0; i < count; i += 1)
             {
@@ -220,6 +222,19 @@ public class Model02
         return maxPinwheelIndex;
     }
 
+    public float GetEmptyMiniColumnsIndex(Random random, FastList<MiniColumn> candidateMiniColumns)
+    {
+        float emptyMinicolumnsIndex = 0.0f;
+        for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
+        {
+            var miniColumn = candidateMiniColumns[miniColumns_Index];
+
+            if (miniColumn.CortexMemories.Count(cm => cm is not null) == 0)
+                emptyMinicolumnsIndex -= 1.0f;
+        }
+        return emptyMinicolumnsIndex;
+    }
+
     public void Flood(Random random, FastList<MiniColumn> candidateMiniColumns)
     {
         MiniColumn? centerMiniColumn = FindBestForMemoryMiniColumn(
@@ -319,48 +334,46 @@ public class Model02
         int min_ChangesCount = Int32.MaxValue;
         int min_ChangesCount_UnchangedCount = 0;
 
-        int epochCount = 100;
+        int epochCount = 1000;
 
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
             int changedCount = 0;
 
-            for (int miniEpoch = 0; miniEpoch < 100; miniEpoch += 1)
+            cancellationToken.ThrowIfCancellationRequested();
+
+            FastList<(MiniColumn, int)> randomMiniColumnCortexMemoryIndices = new(candidateMiniColumns.Count * 10);
+            for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
             {
-                cancellationToken.ThrowIfCancellationRequested();
+                var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                var randomMiniColumns = candidateMiniColumns.ToArray();
-                random.Shuffle(randomMiniColumns);                
-
-                for (int randomMiniColumns_Index = 0; randomMiniColumns_Index < randomMiniColumns.Length; randomMiniColumns_Index += 1)
+                for (int cortexMemory_Index = 0; cortexMemory_Index < miniColumn.CortexMemories.Count; cortexMemory_Index += 1)
                 {
-                    var miniColumn = randomMiniColumns[randomMiniColumns_Index];
+                    randomMiniColumnCortexMemoryIndices.Add((miniColumn, cortexMemory_Index));
+                }
+            }
+            random.Shuffle(randomMiniColumnCortexMemoryIndices.Items);
 
-                    //for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
-                    if (miniColumn.CortexMemories.Count > 0)
-                    {
-                        int mi = random.Next(miniColumn.CortexMemories.Count);
-                        Memory? cortexMemory = miniColumn.CortexMemories[mi];
-                        if (cortexMemory is null)
-                            continue;
+            for (int index = 0; index < randomMiniColumnCortexMemoryIndices.Count; index += 1)
+            {
+                var it = randomMiniColumnCortexMemoryIndices[index];
+                var miniColumn = it.Item1;
+                Memory? cortexMemory = miniColumn.CortexMemories[it.Item2];
+                if (cortexMemory is null)
+                    continue;
 
-                        miniColumn.CortexMemories[mi] = null;
+                miniColumn.CortexMemories[it.Item2] = null;
 
-                        MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, candidateMiniColumns);
-                        if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
-                        {
-                            bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
-                            changedCount += 1;
-                        }
-                        else
-                        {
-                            miniColumn.CortexMemories[mi] = cortexMemory;
-                        }
-                    }
-                }      
-                
-                if (miniEpoch % 10 == 0 && refreshAction is not null)
-                    await refreshAction();
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, candidateMiniColumns);
+                if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
+                {
+                    bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
+                    changedCount += 1;
+                }
+                else
+                {
+                    miniColumn.CortexMemories[it.Item2] = cortexMemory;
+                }
             }
 
             for (int mci = 0; mci < candidateMiniColumns.Count; mci += 1)
@@ -395,10 +408,9 @@ public class Model02
                 min_ChangesCount_UnchangedCount += 1;
             }
 
-            if (changedCount < 1 || min_ChangesCount_UnchangedCount > 100)
+            if (changedCount == 0 || min_ChangesCount_UnchangedCount > 20)
                 break;
-        }
-        
+        }        
 
         LoggersSet.UserFriendlyLogger.LogInformation($"ReorderMemories Finished.");
     }    

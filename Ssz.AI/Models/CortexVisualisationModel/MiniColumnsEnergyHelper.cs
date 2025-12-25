@@ -83,7 +83,8 @@ public static class MiniColumnsEnergyHelper
     {
         float totalEnergy = -constants.PositiveK[0] * miniColumn.Temp_Activity.PositiveActivity -
                 constants.NegativeK[0] * miniColumn.Temp_Activity.NegativeActivity -
-                (miniColumn.Temp_Activity.CortexMemoriesCount == 0 ? (constants.K2 - constants.K0) : 0.0f); // Штраф за воспоминания        
+                (miniColumn.Temp_Activity.CortexMemoriesCount == 0 ? (constants.K2 - constants.K0) : 0.0f);
+                //(miniColumn.Temp_Activity.CortexMemoriesCount / 10); // Штраф за воспоминания        
 
         for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
         {

@@ -1733,43 +1733,35 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Image GetBitmapFromMiniColumsValue(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.Cortex.MiniColumn, double> getValue, double? valueMin = null, double? valueMax = null)
+    public static (Image Image, double ValueMin, double ValueMax) GetBitmapFromMiniColumsValue(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.Cortex.MiniColumn, double> getValue, double? valueMin = null, double? valueMax = null)
     {
-        double valueMin_Final;
-        double valueMax_Final;
-        if (valueMin is not null && valueMax is not null)
-        {
-            valueMin_Final = valueMin.Value;
-            valueMax_Final = valueMax.Value;
-        }
-        else
-        {
-            double valueMin_Local = Double.MaxValue;
-            double valueMax_Local = Double.MinValue;
+        double valueMin_Local = Double.MaxValue;
+        double valueMax_Local = Double.MinValue;
 
-            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+        for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+        {
+            var miniColumn = cortex.MiniColumns[mci];
+            if (miniColumn.CortexMemories.Count > 0)
             {
-                var miniColumn = cortex.MiniColumns[mci];
-                if (miniColumn.CortexMemories.Count > 0)
-                {
-                    double value = getValue(miniColumn);
-                    if (value < valueMin_Local)
-                        valueMin_Local = value;
-                    if (value > valueMax_Local)
-                        valueMax_Local = value;
-                }
+                double value = getValue(miniColumn);
+                if (value < valueMin_Local)
+                    valueMin_Local = value;
+                if (value > valueMax_Local)
+                    valueMax_Local = value;
             }
-
-            if (valueMin is not null)
-                valueMin_Final = valueMin.Value;            
-            else
-                valueMin_Final = valueMin_Local;
-
-            if (valueMax is not null)
-                valueMax_Final = valueMax.Value;
-            else
-                valueMax_Final = valueMax_Local;
         }
+
+        double valueMin_Final;
+        if (valueMin is not null)
+            valueMin_Final = valueMin.Value;
+        else
+            valueMin_Final = valueMin_Local;
+
+        double valueMax_Final;
+        if (valueMax is not null)
+            valueMax_Final = valueMax.Value;
+        else
+            valueMax_Final = valueMax_Local;
 
         float miniColumnRadius_Pixels = 5.0f;
         float radius_Pixels = (cortex.Constants.HypercolumnDefinedRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
@@ -1802,7 +1794,7 @@ public static class Visualisation
             }
         }
 
-        return bitmap;
+        return (bitmap, valueMin_Local, valueMax_Local);
     }
 }
 
