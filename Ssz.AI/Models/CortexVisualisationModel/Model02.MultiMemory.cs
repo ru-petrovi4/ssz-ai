@@ -83,7 +83,7 @@ public class Model02
             ];
     }    
 
-    public void PutInitialMemoriesPinwheel(Random random, bool isRandom, int count)
+    public void PutInitialMemoriesPinwheel(Random random, bool isRandom, int inMiniColumn_CortexMemoriesCount)
     {
         if (Cortex.MiniColumns is null)
             return;       
@@ -103,7 +103,7 @@ public class Model02
             float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
             //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
 
-            for (int i = 0; i < count; i += 1)
+            for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
                 if (isRandom)
                 {
@@ -474,6 +474,8 @@ public class Model02
         ///     Штраф за воспоминания (для равномерности заполнения).
         /// </summary>
         public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
+
+        public float K3 { get; set; } = 0.001f;
 
         /// <summary>
         ///     Порог энергии

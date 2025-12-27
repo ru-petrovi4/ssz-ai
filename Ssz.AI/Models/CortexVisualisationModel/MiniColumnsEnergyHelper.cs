@@ -48,7 +48,7 @@ public static class MiniColumnsEnergyHelper
         float negativeActivity = 0.0f;
         int negativeCortexMemoriesCount = 0;
 
-        float minActivity = MathHelper.GetLinearF(min: -constants.K0 + 0.1f, max: -constants.K0 - 0.000001f, cortexMemory.DistanceFromCenter / 2.5f);
+        float minActivity = MathHelper.GetLinearF(min: -constants.K0 + constants.K3, max: -constants.K0 - 0.000001f, cortexMemory.DistanceFromCenter / 2.0f);
 
         for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
         {

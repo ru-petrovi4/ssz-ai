@@ -327,6 +327,8 @@ public class Model01
         /// </summary>
         public float K2 { get; set; } = 0.13f;
 
+        public float K3 { get; set; } = 0.1f;
+
         /// <summary>
         ///     Порог энергии
         /// </summary>

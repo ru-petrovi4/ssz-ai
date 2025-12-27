@@ -56,7 +56,7 @@ public partial class Model02View : UserControl
         LevelScrollBar0.Value = constants.K0;
         //LevelScrollBar1.Value = constants.K1;
         LevelScrollBar2.Value = constants.K2;
-        //LevelScrollBar3.Value = constants.K3;
+        LevelScrollBar3.Value = constants.K3;
         LevelScrollBar4.Value = constants.K4;
 
         EnergyThreshold.IsChecked = constants.TotalEnergyThreshold;
@@ -75,7 +75,7 @@ public partial class Model02View : UserControl
         constants.K0 = (float)LevelScrollBar0.Value;
         //constants.K1 = (float)LevelScrollBar1.Value;
         constants.K2 = (float)LevelScrollBar2.Value;
-        //constants.K3 = (float)LevelScrollBar3.Value;
+        constants.K3 = (float)LevelScrollBar3.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
 
         constants.TotalEnergyThreshold = EnergyThreshold.IsChecked == true;
@@ -121,14 +121,14 @@ public partial class Model02View : UserControl
 
     private void PutInitialMemoriesPinwheel_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutInitialMemoriesPinwheel(_random, isRandom: false, count: 1);
+        Model.PutInitialMemoriesPinwheel(_random, isRandom: false, inMiniColumn_CortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
 
     private void PutInitialMemoriesRandom_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutInitialMemoriesPinwheel(_random, isRandom: true, count: 1);
+        Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
@@ -363,26 +363,12 @@ public partial class Model02View : UserControl
 
                 BestSettings bestSettings = new();
 
-                int interationN = 0;
-                for (float pk1 = 0.03f; pk1 < 0.17f; pk1 += 0.01f)
-                    for (float pk2 = 0.005f; pk2 < pk1; pk2 += 0.005f)
-                        for (float nk1 = pk1; nk1 == pk1; nk1 += 0.01f)
-                            for (float nk2 = pk2; nk2 < nk1; nk2 += 0.005f)                                         
+                int interationN = 0;                
+                            for (float k3 = 0.00f; k3 < 0.66; k3 += 0.005f)                                         
                             {
                                 interationN += 1;
 
-                                //float pk1 = 0.14f;
-                                //float pk2 = 0.125f;
-                                //float nk1 = 0.14f;
-                                //float nk2 = 0.125f;
-                                float k3 = 0.0f;
-
-                                constants.PositiveK[1] = pk1;
-                                constants.PositiveK[2] = pk2;
-                                constants.PositiveK[3] = k3;
-                                constants.NegativeK[1] = nk1;
-                                constants.NegativeK[2] = nk2;
-                                constants.NegativeK[3] = k3;
+                                constants.K3 = k3;                                
 
                                 Model = new Model02();
 
@@ -390,47 +376,43 @@ public partial class Model02View : UserControl
                                 Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
                                 Model.Cortex.Prepare();
 
-                                await Model.ProcessNAsync(900, _random, cancellationToken, () =>
-                                {
-                                    return Task.CompletedTask;
-                                });
+                                Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 6);
 
                                 await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
                                 {
                                     return Task.CompletedTask;
                                 });
 
-                                //float index = Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns);
-                                float index = Model.GetEmptyMiniColumnsIndex(_random, Model.Cortex.MiniColumns);
+                                float index = Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns);                                
                                 if (index > bestSettings.MaxIndex)
                                 {
                                     bestSettings.MaxIndex = index;
-                                    bestSettings.Pk1 = pk1;
-                                    bestSettings.Pk2 = pk2;
+                                    //bestSettings.Pk1 = pk1;
+                                    //bestSettings.Pk2 = pk2;
                                     bestSettings.Pk3 = k3;
-                                    bestSettings.Nk1 = nk1;
-                                    bestSettings.Nk2 = nk2;
-                                    bestSettings.Nk3 = k3;
+                                    //bestSettings.Nk1 = nk1;
+                                    //bestSettings.Nk2 = nk2;
+                                    //bestSettings.Nk3 = k3;
                                 }
 
                                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
                                     @",",
                                     [ interationN,
                                     bestSettings.MaxIndex,
-                                    bestSettings.Pk1,
-                                    bestSettings.Pk2,
                                     bestSettings.Pk3,
-                                    bestSettings.Nk1,
-                                    bestSettings.Nk2,
-                                    bestSettings.Nk3,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
                                     "Current",
                                     index,
-                                    pk1,
-                                    pk2,
                                     k3,
-                                    nk1,
-                                    nk2,
-                                    k3 ]));
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f ]));
                             }
             }
             catch (OperationCanceledException)
