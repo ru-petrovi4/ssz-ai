@@ -94,10 +94,7 @@ public class Model01
             if (inputItem.Magnitude > maxMagnitude)
                 maxMagnitude = inputItem.Magnitude;
 
-            var cortexMemeory = new Memory
-            {
-                InputItemIndex = inputItem.Index
-            };
+            var cortexMemeory = Memory.FromInputItem(inputItem);
 
             if (isRandom)
             {

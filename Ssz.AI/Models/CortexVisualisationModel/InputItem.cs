@@ -25,7 +25,7 @@ public class InputItem : IOwnedDataSerializable
 
     public Color Color;
 
-    public float SimilarityThreshold = Single.MinValue;
+    public float DistanceFromCenterNormalized = Single.MinValue;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -35,7 +35,7 @@ public class InputItem : IOwnedDataSerializable
         writer.Write(XRetina);
         writer.Write(YRetina);
         writer.Write(Color);
-        writer.Write(SimilarityThreshold);
+        writer.Write(DistanceFromCenterNormalized);
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
@@ -46,7 +46,7 @@ public class InputItem : IOwnedDataSerializable
         XRetina = reader.ReadSingle();
         YRetina = reader.ReadSingle();
         Color = reader.ReadColor();
-        SimilarityThreshold = reader.ReadSingle();
+        DistanceFromCenterNormalized = reader.ReadSingle();
     }
 
     public override string ToString()

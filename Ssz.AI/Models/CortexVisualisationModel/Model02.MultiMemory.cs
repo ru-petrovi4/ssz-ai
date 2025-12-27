@@ -98,10 +98,7 @@ public class Model02
 
             InputItem inputItem = Cortex.AddInputItem(random, miniColumn);                  
 
-            var cortexMemory = new Memory
-            {
-                InputItemIndex = inputItem.Index
-            };
+            var cortexMemory = Memory.FromInputItem(inputItem);
 
             float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
             //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
@@ -265,10 +262,7 @@ public class Model02
 
         InputItem inputItem = Cortex.AddInputItem(random, miniColumn);
 
-        return new Memory
-        {
-            InputItemIndex = inputItem.Index
-        };
+        return Memory.FromInputItem(inputItem);        
     }
 
     private MiniColumn? FindBestForMemoryMiniColumn(
@@ -411,7 +405,7 @@ public class Model02
                 min_ChangesCount_UnchangedCount += 1;
             }
 
-            if (changedCount == 0 || min_ChangesCount_UnchangedCount > 20)
+            if (changedCount == 0 || min_ChangesCount_UnchangedCount > 1000)
                 break;
         }        
 
@@ -421,14 +415,18 @@ public class Model02
     private float GetSimilarity(Memory memory1, Memory memory2)
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
-        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];        
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
-        float x1 = inpitItem1.Magnitude * MathF.Cos(inpitItem1.Angle);
-        float y1 = inpitItem1.Magnitude * MathF.Sin(inpitItem1.Angle);
-        float x2 = inpitItem2.Magnitude * MathF.Cos(inpitItem2.Angle);
-        float y2 = inpitItem2.Magnitude * MathF.Sin(inpitItem2.Angle);
+        float radialDistance1 = inpitItem1.Magnitude;
+        float radialDistance2 = inpitItem2.Magnitude;
+
+        float x1 = radialDistance1 * MathF.Cos(inpitItem1.Angle);
+        float y1 = radialDistance1 * MathF.Sin(inpitItem1.Angle);
+        float x2 = radialDistance2 * MathF.Cos(inpitItem2.Angle);
+        float y2 = radialDistance2 * MathF.Sin(inpitItem2.Angle);
 
         var r2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+
         float similarity = MathF.Exp(-r2 / 8.0f); // sigma == 2.0f
 
         //if (similarity < inpitItem1.SimilarityThreshold)

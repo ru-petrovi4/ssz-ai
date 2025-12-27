@@ -307,6 +307,11 @@ public static class MathHelper
         return 1.0f / (1.0f + MathF.Exp(-x));
     }
 
+    public static float GetLinearF(float min, float max, float valueNormalized)
+    {
+        return min + (max - min) * valueNormalized;
+    }
+
     // Предвычисленные константы для плотности.
     // SqrtTwoPi = sqrt(2 * π).
     private static readonly float SqrtTwoPi = MathF.Sqrt(2.0f * MathF.PI);

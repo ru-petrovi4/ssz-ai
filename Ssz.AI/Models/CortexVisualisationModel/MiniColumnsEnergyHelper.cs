@@ -1,4 +1,5 @@
-﻿using Ssz.Utils;
+﻿using Ssz.AI.Helpers;
+using Ssz.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,7 +75,10 @@ public static class MiniColumnsEnergyHelper
             positiveActivity /= positiveCortexMemoriesCount;
 
         if (negativeCortexMemoriesCount > 0)
+        {
             negativeActivity /= negativeCortexMemoriesCount;
+            //negativeActivity = negativeActivity * MathHelper.GetLinearF(min: 0.1f, max: 1.0f, cortexMemory.DistanceFromCenterNormalized);
+        }
 
         return (positiveActivity, negativeActivity, positiveCortexMemoriesCount + negativeCortexMemoriesCount);
     }
