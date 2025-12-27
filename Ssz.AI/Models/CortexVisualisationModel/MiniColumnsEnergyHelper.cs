@@ -48,6 +48,8 @@ public static class MiniColumnsEnergyHelper
         float negativeActivity = 0.0f;
         int negativeCortexMemoriesCount = 0;
 
+        float minActivity = MathHelper.GetLinearF(min: -constants.K0 + 0.1f, max: -constants.K0 - 0.000001f, cortexMemory.DistanceFromCenter / 3.0f);
+
         for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
         {
             var miniColumn_CortexMemory = miniColumn.CortexMemories[mi];
@@ -65,8 +67,11 @@ public static class MiniColumnsEnergyHelper
                 }
                 else
                 {
-                    negativeActivity += activity;
-                    negativeCortexMemoriesCount += 1;
+                    if (activity > minActivity)
+                    {
+                        negativeActivity += activity;
+                        negativeCortexMemoriesCount += 1;
+                    }                    
                 }
             }
         }
@@ -75,10 +80,7 @@ public static class MiniColumnsEnergyHelper
             positiveActivity /= positiveCortexMemoriesCount;
 
         if (negativeCortexMemoriesCount > 0)
-        {
             negativeActivity /= negativeCortexMemoriesCount;
-            //negativeActivity = negativeActivity * MathHelper.GetLinearF(min: 0.1f, max: 1.0f, cortexMemory.DistanceFromCenterNormalized);
-        }
 
         return (positiveActivity, negativeActivity, positiveCortexMemoriesCount + negativeCortexMemoriesCount);
     }

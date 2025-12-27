@@ -25,7 +25,10 @@ public class InputItem : IOwnedDataSerializable
 
     public Color Color;
 
-    public float DistanceFromCenterNormalized = Single.MinValue;
+    /// <summary>
+    ///     Distance from center in ideal pinwheel in minicolumns
+    /// </summary>
+    public float DistanceFromCenter = Single.MinValue;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -35,7 +38,7 @@ public class InputItem : IOwnedDataSerializable
         writer.Write(XRetina);
         writer.Write(YRetina);
         writer.Write(Color);
-        writer.Write(DistanceFromCenterNormalized);
+        writer.Write(DistanceFromCenter);
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
@@ -46,7 +49,7 @@ public class InputItem : IOwnedDataSerializable
         XRetina = reader.ReadSingle();
         YRetina = reader.ReadSingle();
         Color = reader.ReadColor();
-        DistanceFromCenterNormalized = reader.ReadSingle();
+        DistanceFromCenter = reader.ReadSingle();
     }
 
     public override string ToString()

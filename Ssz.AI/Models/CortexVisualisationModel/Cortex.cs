@@ -218,9 +218,9 @@ public partial class Cortex : ISerializableModelObject
         inputItem.Index = InputItems.Count;
         inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
         inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
-
-        inputItem.DistanceFromCenterNormalized = MathF.Sqrt(inputItem.Magnitude / (Constants.HypercolumnDefinedRadius_MiniColumns + 1));
-        inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), inputItem.DistanceFromCenterNormalized, 1.0);        
+        inputItem.DistanceFromCenter = inputItem.Magnitude;
+        var distanceFromCenterNormalized = MathF.Sqrt(inputItem.Magnitude / (Constants.HypercolumnDefinedRadius_MiniColumns + 1));
+        inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);        
 
         InputItems.Add(inputItem);
         return inputItem;
@@ -373,14 +373,17 @@ public partial class Cortex : ISerializableModelObject
 
         public int InputItemIndex;
 
-        public float DistanceFromCenterNormalized;
+        /// <summary>
+        ///    Distance from center in ideal pinwheel in minicolumns
+        /// </summary>
+        public float DistanceFromCenter;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
             using (writer.EnterBlock(1))
             {
                 writer.Write(InputItemIndex);
-                writer.Write(DistanceFromCenterNormalized);
+                writer.Write(DistanceFromCenter);
             }
         }
 
@@ -392,7 +395,7 @@ public partial class Cortex : ISerializableModelObject
                 {
                     case 1:
                         InputItemIndex = reader.ReadInt32();
-                        DistanceFromCenterNormalized = reader.ReadSingle();
+                        DistanceFromCenter = reader.ReadSingle();
                         break;
                 }
             }
@@ -403,7 +406,7 @@ public partial class Cortex : ISerializableModelObject
             return new Memory()
             {
                 InputItemIndex = inputItem.Index,
-                DistanceFromCenterNormalized = inputItem.DistanceFromCenterNormalized
+                DistanceFromCenter = inputItem.DistanceFromCenter
             };
         }
     }    
