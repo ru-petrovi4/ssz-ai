@@ -371,7 +371,8 @@ public partial class Model02View : UserControl
                                 constants.K3 = k3;
 
                     float index = 0.0f;
-                    for (int it = 0; it < 10; it += 1)
+                    int count = 50;
+                    for (int it = 0; it < count; it += 1)
                     {
                         Model = new Model02();
 
@@ -386,9 +387,9 @@ public partial class Model02View : UserControl
                             return Task.CompletedTask;
                         });
 
-                        index += (Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 5.0) ? 1.0f : 0.0f;                        
+                        index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 4.5) ? 1.0f : 0.0f);                        
                     }
-                    index = index / 10;
+                    index = index / count;
                     if (index > bestSettings.MaxIndex)
                     {
                         bestSettings.MaxIndex = index;
