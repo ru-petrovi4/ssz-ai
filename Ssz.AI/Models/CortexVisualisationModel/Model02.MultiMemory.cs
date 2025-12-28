@@ -480,7 +480,7 @@ public class Model02
         /// <summary>
         ///     Порог энергии
         /// </summary>
-        public float K4 { get; set; } = -0.8f; // Чуть меньше, чем энергия пустого пространства
+        public float K4 { get; set; } = -0.85f; // Чуть меньше, чем энергия пустого пространства
 
         public float[] PositiveK { get; set; } = [1.000f, 0.117f, 0.050f, 0.000f];
 

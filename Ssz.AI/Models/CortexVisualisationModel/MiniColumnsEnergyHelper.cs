@@ -60,8 +60,8 @@ public static class MiniColumnsEnergyHelper
             if (!Single.IsNaN(similarity))
             {
                 float activity = similarity - constants.K0;
-                if (activity < minActivity)
-                    activity = minActivity;
+                //if (activity < minActivity)
+                //    activity = minActivity;
                 if (activity >= 0)
                 {
                     positiveActivity += activity;
@@ -69,8 +69,11 @@ public static class MiniColumnsEnergyHelper
                 }
                 else
                 {
-                    negativeActivity += activity;
-                    negativeCortexMemoriesCount += 1;
+                    if (activity > minActivity)
+                    {
+                        negativeActivity += activity;
+                        negativeCortexMemoriesCount += 1;
+                    }
                 }
             }
         }
