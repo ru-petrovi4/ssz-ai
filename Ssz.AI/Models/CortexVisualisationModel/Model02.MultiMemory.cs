@@ -482,9 +482,9 @@ public class Model02
         /// </summary>
         public float K4 { get; set; } = -0.85f; // Чуть меньше, чем энергия пустого пространства
 
-        public float[] PositiveK { get; set; } = [1.000f, 0.117f, 0.050f, 0.000f];
+        public float[] PositiveK { get; set; } = [1.000f, 0.110f, 0.050f, 0.000f];
 
-        public float[] NegativeK { get; set; } = [1.000f, 0.117f, 0.083f, 0.000f];
+        public float[] NegativeK { get; set; } = [1.000f, 0.020f, 0.010f, 0.000f];
 
         /// <summary>
         ///     Включен ли порог энергии при накоплении воспоминаний
