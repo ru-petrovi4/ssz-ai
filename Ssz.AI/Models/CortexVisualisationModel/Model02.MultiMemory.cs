@@ -467,7 +467,7 @@ public class Model02
         /// <summary>
         ///     Уровень подобия для нулевой активности
         /// </summary>
-        public float K0 { get; set; } = 0.66f;
+        public float K0 { get; set; } = 0.33f;
 
         /// <summary>
         ///     Уровень подобия с пустой миниколонкой.
@@ -475,12 +475,12 @@ public class Model02
         /// </summary>
         public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
 
-        public float K3 { get; set; } = 0.071f;
+        public float K3 { get; set; } = 0.1f;
 
         /// <summary>
         ///     Порог энергии
         /// </summary>
-        public float K4 { get; set; } = -0.41f; // Чуть меньше, чем энергия пустого пространства
+        public float K4 { get; set; } = -0.8f; // Чуть меньше, чем энергия пустого пространства
 
         public float[] PositiveK { get; set; } = [1.000f, 0.117f, 0.050f, 0.000f];
 
