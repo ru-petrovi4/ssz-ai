@@ -39,7 +39,7 @@ public interface ICortexConstants
     float K2 { get; set; }
 
     /// <summary>
-    ///     Минимальная активность для мини-вертушки.
+    ///     Минимальное подобие для мини-вертушки.
     /// </summary>
     float K3 { get; set; }
 

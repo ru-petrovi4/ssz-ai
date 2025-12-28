@@ -48,7 +48,7 @@ public static class MiniColumnsEnergyHelper
         float negativeActivity = 0.0f;
         int negativeCortexMemoriesCount = 0;
 
-        float minActivity = cortexMemory.DistanceFromCenter < 3 ? -constants.K0 + 0.02f : -1.0f;
+        float minActivity = cortexMemory.DistanceFromCenter < 3.0 ? constants.K3 - constants.K0 : -1.0f;
             //MathHelper.GetLinearF(min: -constants.K0 + constants.K3, max: -constants.K0 - 0.000001f, cortexMemory.DistanceFromCenter / 2.0f);
 
         for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
@@ -61,6 +61,8 @@ public static class MiniColumnsEnergyHelper
             if (!Single.IsNaN(similarity))
             {
                 float activity = similarity - constants.K0;
+                if (activity < minActivity)
+                    activity = minActivity;
                 if (activity >= 0)
                 {
                     positiveActivity += activity;
@@ -68,11 +70,8 @@ public static class MiniColumnsEnergyHelper
                 }
                 else
                 {
-                    if (activity > minActivity)
-                    {
-                        negativeActivity += activity;
-                        negativeCortexMemoriesCount += 1;
-                    }                    
+                    negativeActivity += activity;
+                    negativeCortexMemoriesCount += 1;
                 }
             }
         }
