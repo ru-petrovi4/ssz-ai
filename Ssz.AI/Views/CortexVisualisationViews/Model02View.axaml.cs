@@ -364,38 +364,43 @@ public partial class Model02View : UserControl
                 BestSettings bestSettings = new();
 
                 int interationN = 0;                
-                            for (float k3 = 0.00f; k3 < 0.66; k3 += 0.005f)                                         
-                            {
+                            for (float k3 = 0.00f; k3 < 0.33; k3 += 0.05f)                    
+                    {
                                 interationN += 1;
 
-                                constants.K3 = k3;                                
+                                constants.K3 = k3;
 
-                                Model = new Model02();
+                    float index = 0.0f;
+                    for (int it = 0; it < 10; it += 1)
+                    {
+                        Model = new Model02();
 
-                                Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-                                Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
-                                Model.Cortex.Prepare();
+                        Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
+                        Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
+                        Model.Cortex.Prepare();
 
-                                Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 6);
+                        Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 6);
 
-                                await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
-                                {
-                                    return Task.CompletedTask;
-                                });
+                        await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
+                        {
+                            return Task.CompletedTask;
+                        });
 
-                                float index = Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns);                                
-                                if (index > bestSettings.MaxIndex)
-                                {
-                                    bestSettings.MaxIndex = index;
-                                    //bestSettings.Pk1 = pk1;
-                                    //bestSettings.Pk2 = pk2;
-                                    bestSettings.Pk3 = k3;
-                                    //bestSettings.Nk1 = nk1;
-                                    //bestSettings.Nk2 = nk2;
-                                    //bestSettings.Nk3 = k3;
-                                }
+                        index += (Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 5.0) ? 1.0f : 0.0f;                        
+                    }
+                    index = index / 10;
+                    if (index > bestSettings.MaxIndex)
+                    {
+                        bestSettings.MaxIndex = index;
+                        //bestSettings.Pk1 = pk1;
+                        //bestSettings.Pk2 = pk2;
+                        bestSettings.Pk3 = k3;
+                        //bestSettings.Nk1 = nk1;
+                        //bestSettings.Nk2 = nk2;
+                        //bestSettings.Nk3 = k3;
+                    }
 
-                                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
+                    Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation(CsvHelper.FormatForCsv(
                                     @",",
                                     [ interationN,
                                     bestSettings.MaxIndex,
