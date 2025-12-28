@@ -475,7 +475,7 @@ public class Model02
         /// </summary>
         public float K2 { get; set; } = 1.0f; // Или чуть меньше, чем с точно таким же воспоминанием. Проверить что бы боьшая и малая вертушки не разрушались
 
-        public float K3 { get; set; } = 0.25f;
+        public float K3 { get; set; } = 0.33f;
 
         /// <summary>
         ///     Порог энергии
