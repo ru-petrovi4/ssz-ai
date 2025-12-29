@@ -363,15 +363,15 @@ public partial class Model02View : UserControl
 
                 BestSettings bestSettings = new();
 
-                int interationN = 0;                
-                            for (float k3 = 0.00f; k3 < 0.33; k3 += 0.05f)                    
-                    {
-                                interationN += 1;
+                int interationN = 0;
+                for (float k3 = 0.00f; k3 < 0.33; k3 += 0.05f)
+                {
+                    interationN += 1;
 
-                                constants.K3 = k3;
+                    constants.K3 = k3;
 
                     float index = 0.0f;
-                    int count = 50;
+                    int count = 100;
                     for (int it = 0; it < count; it += 1)
                     {
                         Model = new Model02();
@@ -387,7 +387,7 @@ public partial class Model02View : UserControl
                             return Task.CompletedTask;
                         });
 
-                        index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 4.5) ? 1.0f : 0.0f);                        
+                        index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 4.5) ? 1.0f : 0.0f);
                     }
                     index = index / count;
                     if (index > bestSettings.MaxIndex)
@@ -419,7 +419,7 @@ public partial class Model02View : UserControl
                                     0.0f,
                                     0.0f,
                                     0.0f ]));
-                            }
+                }
             }
             catch (OperationCanceledException)
             {
