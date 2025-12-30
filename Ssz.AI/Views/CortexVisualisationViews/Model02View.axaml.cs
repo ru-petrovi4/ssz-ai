@@ -121,14 +121,14 @@ public partial class Model02View : UserControl
 
     private void PutInitialMemoriesPinwheel_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutInitialMemoriesPinwheel(_random, isRandom: false, inMiniColumn_CortexMemoriesCount: 1);
+        Model.PutMemories_Pinwheel(_random, inMiniColumn_CortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
 
     private void PutInitialMemoriesRandom_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 1);
+        Model.PutMemories_Random(_random, inMiniColumn_CortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
@@ -380,7 +380,7 @@ public partial class Model02View : UserControl
                         Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
                         Model.Cortex.Prepare();
 
-                        Model.PutInitialMemoriesPinwheel(_random, isRandom: true, inMiniColumn_CortexMemoriesCount: 6);
+                        Model.PutMemories_Random(_random, inMiniColumn_CortexMemoriesCount: 6);
 
                         await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
                         {
@@ -449,7 +449,7 @@ public partial class Model02View : UserControl
         Model = new Model02();
 
         Model.Cortex = new Models.CortexVisualisationModel.Cortex(Model02.Constants, Model.LoggersSet.LoggerAndUserFriendlyLogger);
-        Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
+        Model.Cortex.GenerateOwnedData(_random, OnlyCenterHyperColumn);
         Model.Cortex.Prepare();
     }
 
@@ -458,6 +458,8 @@ public partial class Model02View : UserControl
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(_random);
     }
+
+    private const bool OnlyCenterHyperColumn = true;
 
     private Random _random = null!;
 

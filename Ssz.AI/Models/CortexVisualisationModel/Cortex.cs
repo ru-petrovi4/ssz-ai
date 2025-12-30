@@ -84,7 +84,9 @@ public partial class Cortex : ISerializableModelObject
     /// </summary>
     public List<InputItem> InputItems { get; private set; } = null!;
 
-    public FastList<MiniColumn> MiniColumns { get; private set; } = null!;    
+    public FastList<MiniColumn> MiniColumns { get; private set; } = null!;
+
+    public FastList<MiniColumn> Temp_CenterHyperColumn_MiniColumns = null!;
 
     public string Temp_InputCurrentDesc = null!;
 
@@ -167,45 +169,48 @@ public partial class Cortex : ISerializableModelObject
 
     public void Prepare()
     {
+        Temp_CenterHyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
+
+        float hypercolumnDefinedRadius_MiniColumns = Constants.HypercolumnDefinedRadius_MiniColumns + 0.000001f;
+
+        for (int mci = 0; mci < MiniColumns.Count; mci += 1)            
+        {
+            MiniColumn miniColumn = MiniColumns[mci];
+            miniColumn.Prepare();
+
+            float abs_r2 = miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY;
+            float abs_r = MathF.Sqrt(abs_r2);
+
+            if (abs_r < hypercolumnDefinedRadius_MiniColumns)
+                Temp_CenterHyperColumn_MiniColumns.Add(miniColumn);
+        };
+
         // Находим ближайшие миниколонки для каждой миниколонки
         Parallel.For(
             fromInclusive: 0,
             toExclusive: MiniColumns.Count,
-            mci =>
+            (Action<int>)(mci =>
             {
-                MiniColumn miniColumn = MiniColumns[mci];                
-                miniColumn.Prepare();                                           
+                MiniColumn miniColumn = MiniColumns[mci];                                
 
                 for (int mci2 = 0; mci2 < MiniColumns.Count; mci2 += 1)                    
                 {
                     if (mci2 == mci)
-                    {                        
-                        miniColumn.Temp_NearestForEnergyMiniColumns.Add((0, miniColumn));
                         continue;
-                    }
 
-                    MiniColumn nearestMc = MiniColumns[mci2];
+                    MiniColumn nearestMc = MiniColumns[mci2];                    
 
-                    //double k = MathF.Pow((mcx - miniColumn.MCX) * (mcx - miniColumn.MCX) + (mcy - miniColumn.MCY) * (mcy - miniColumn.MCY), 1.0f);
-                    //if (Math.Abs(mcx - miniColumn.MCX) <= 15 && Math.Abs(mcy - miniColumn.MCY) <= 15)
-                    //    miniColumn.Temp_K_ForNearestMiniColumns.Add((k, nearestMc));
-
-                    //miniColumn.Temp_CandidateForSwapMiniColumns.Add(nearestMc);
-
-                    float k = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
-                    float r = MathF.Sqrt(k);
+                    float r2 = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
+                    float r = MathF.Sqrt(r2);
 
                     if (r < 2.00001f)
                         miniColumn.Temp_K_ForNearestMiniColumns.Add(
                             (MathHelper.GetInterpolatedValue(Constants.PositiveK, r),
                             MathHelper.GetInterpolatedValue(Constants.NegativeK, r),
-                            nearestMc));
-
-                    //if (r < 3.00001f)
-                    miniColumn.Temp_NearestForEnergyMiniColumns.Add((k, nearestMc));
+                            nearestMc));                    
                     
-                    if (r < 1.00001)
-                        miniColumn.Temp_CandidateForSwapMiniColumns.Add((r, nearestMc));
+                    if (r < hypercolumnDefinedRadius_MiniColumns)
+                        miniColumn.Temp_HyperColumnMiniColumns.Add((r, nearestMc));
 
                     if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
@@ -214,15 +219,15 @@ public partial class Cortex : ISerializableModelObject
                 miniColumn.Temp_AdjacentMiniColumns = miniColumn.Temp_AdjacentMiniColumns
                     .OrderBy(it => MathF.Atan2(miniColumn.MCY - it.Item2.MCY, miniColumn.MCX - it.Item2.MCX))
                     .ToFastList();
-            });
+            }));
     }
 
-    public InputItem AddInputItem(Random random, MiniColumn miniColumn)
+    public InputItem AddInputItem(Random random, MiniColumn centerHyperColumn_MiniColumn)
     {
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;
-        inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(miniColumn.MCY, miniColumn.MCX));
-        inputItem.Magnitude = MathF.Sqrt(miniColumn.MCY * miniColumn.MCY + miniColumn.MCX * miniColumn.MCX);
+        inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2(centerHyperColumn_MiniColumn.MCY, centerHyperColumn_MiniColumn.MCX));
+        inputItem.Magnitude = MathF.Sqrt(centerHyperColumn_MiniColumn.MCY * centerHyperColumn_MiniColumn.MCY + centerHyperColumn_MiniColumn.MCX * centerHyperColumn_MiniColumn.MCX);
         inputItem.DistanceFromCenter = inputItem.Magnitude;
         var distanceFromCenterNormalized = MathF.Sqrt(inputItem.Magnitude / (Constants.HypercolumnDefinedRadius_MiniColumns + 1));
         inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);        
@@ -282,16 +287,10 @@ public partial class Cortex : ISerializableModelObject
         public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
-        ///     Сама миниколонка и окружающие миниколонки, для которых считается энергия.
-        ///     <para>(r^2, MiniColumn)</para>        
-        /// </summary>
-        public FastList<(double, MiniColumn)> Temp_NearestForEnergyMiniColumns = null!;
-
-        /// <summary>
-        ///     Миниколонки - кандидаты для перестановки воспоминаний.
+        ///     Сама миниколонка и окружающие миниколонки размером примерно с гиперколонку.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
-        public FastList<(double, MiniColumn)> Temp_CandidateForSwapMiniColumns = null!;
+        public FastList<(double, MiniColumn)> Temp_HyperColumnMiniColumns = null!;        
 
         /// <summary>
         ///     Миниколонки - ближайшие соседи.
@@ -326,8 +325,7 @@ public partial class Cortex : ISerializableModelObject
         public void Prepare()
         {
             Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
-            Temp_NearestForEnergyMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
-            Temp_CandidateForSwapMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
+            Temp_HyperColumnMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));            
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
         }
@@ -359,21 +357,20 @@ public partial class Cortex : ISerializableModelObject
     }
 
     public class Memory : IOwnedDataSerializable
-    {   
-        // TODO
+    {           
         public static readonly Memory IdealPinwheelCenterMemory = new Memory()
         {
-            InputItemIndex = 0
+            InputItemIndex = 0,
+            DistanceFromCenter = 0
         };
-
-        // TODO
+        
         public static readonly Memory[] IdealPinwheelMemories = [
-            new Memory() { InputItemIndex = 1 },
-            new Memory() { InputItemIndex = 2 },
-            new Memory() { InputItemIndex = 3 },
-            new Memory() { InputItemIndex = 4 },
-            new Memory() { InputItemIndex = 5 },
-            new Memory() { InputItemIndex = 6 },
+            new Memory() { InputItemIndex = 1, DistanceFromCenter = 1 },
+            new Memory() { InputItemIndex = 2, DistanceFromCenter = 1 },
+            new Memory() { InputItemIndex = 3, DistanceFromCenter = 1 },
+            new Memory() { InputItemIndex = 4, DistanceFromCenter = 1 },
+            new Memory() { InputItemIndex = 5, DistanceFromCenter = 1 },
+            new Memory() { InputItemIndex = 6, DistanceFromCenter = 1 },
             ];
 
         public int InputItemIndex;

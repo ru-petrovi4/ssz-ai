@@ -118,7 +118,7 @@ public class Model01
 
     public async Task ReorderMemoriesAsync(int epochCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
-        await ReorderMemoriesAsync(epochCount, random, cancellationToken, refreshAction, mc => mc.Temp_CandidateForSwapMiniColumns);
+        await ReorderMemoriesAsync(epochCount, random, cancellationToken, refreshAction, mc => mc.Temp_AdjacentMiniColumns);
     }    
 
     public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -168,12 +168,12 @@ public class Model01
             var miniColumn = miniColumns[miniColumns_Index];
 
             double distanceSubTotal = 0.0;
-            for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
+            for (int i = 0; i < miniColumn.Temp_HyperColumnMiniColumns.Count; i += 1)
             {
-                MiniColumn nearestMiniColumn = miniColumn.Temp_NearestForEnergyMiniColumns[i].Item2;
+                MiniColumn nearestMiniColumn = miniColumn.Temp_HyperColumnMiniColumns[i].Item2;
                 distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, nearestMiniColumn.CortexMemories[0]!);
             }
-            double distance = distanceSubTotal / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
+            double distance = distanceSubTotal / miniColumn.Temp_HyperColumnMiniColumns.Count;
             if (distance < distanceMin)
                 distanceMin = distance;
             if (distance > distanceMax)
@@ -252,13 +252,13 @@ public class Model01
         //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
 
         double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_NearestForEnergyMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_HyperColumnMiniColumns.Count; i += 1)
         {
-            var it = miniColumn.Temp_NearestForEnergyMiniColumns[i];
+            var it = miniColumn.Temp_HyperColumnMiniColumns[i];
             //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
             energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
         }
-        return energy / miniColumn.Temp_NearestForEnergyMiniColumns.Count;
+        return energy / miniColumn.Temp_HyperColumnMiniColumns.Count;
     }    
 
     private double GetDistance(Memory memory1, Memory memory2)

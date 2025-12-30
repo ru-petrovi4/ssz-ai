@@ -83,15 +83,12 @@ public class Model02
             ];
     }    
 
-    public void PutInitialMemoriesPinwheel(Random random, bool isRandom, int inMiniColumn_CortexMemoriesCount)
+    public void PutMemories_Pinwheel(Random random, int inMiniColumn_CortexMemoriesCount)
     {
         if (Cortex.MiniColumns is null)
             return;       
 
-        var miniColumns = Cortex.MiniColumns;
-        var randomMiniColumns = Cortex.MiniColumns.ToArray();
-        random.Shuffle(randomMiniColumns);
-        
+        var miniColumns = Cortex.Temp_CenterHyperColumn_MiniColumns;        
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)            
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];            
@@ -99,20 +96,33 @@ public class Model02
             InputItem inputItem = Cortex.AddInputItem(random, miniColumn);                  
 
             var cortexMemory = Memory.FromInputItem(inputItem);
+            
+            for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
+            {
+                miniColumn.CortexMemories.Add(cortexMemory);
+            }
+        }
+    }
 
-            float r = MathF.Sqrt(miniColumn.MCX * miniColumn.MCX + miniColumn.MCY * miniColumn.MCY) + 0.5f;
-            //(int)((Constants.HypercolumnDefinedRadius_MiniColumns + 0.5) / r);
+    public void PutMemories_Random(Random random, int inMiniColumn_CortexMemoriesCount)
+    {
+        if (Cortex.MiniColumns is null)
+            return;
+        
+        var randomMiniColumns = Cortex.MiniColumns.ToArray();
+        random.Shuffle(randomMiniColumns);
+
+        for (int miniColumns_Index = 0; miniColumns_Index < randomMiniColumns.Length; miniColumns_Index += 1)
+        {
+            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_CenterHyperColumn_MiniColumns[random.Next(Cortex.Temp_CenterHyperColumn_MiniColumns.Count)];
+
+            InputItem inputItem = Cortex.AddInputItem(random, centerHyperColumn_MiniColumn);
+
+            var cortexMemory = Memory.FromInputItem(inputItem);
 
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
-                if (isRandom)
-                {
-                    randomMiniColumns[random.Next(randomMiniColumns.Length)].CortexMemories.Add(cortexMemory);
-                }
-                else
-                {
-                    miniColumn.CortexMemories.Add(cortexMemory);
-                }
+                randomMiniColumns[random.Next(randomMiniColumns.Length)].CortexMemories.Add(cortexMemory);
             }
         }
     }
@@ -121,7 +131,11 @@ public class Model02
     {
         for (int i = 0; i < inputItemsCount; i += 1)
         {
-            Memory cortexMemory = CreateMemory(random);
+            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_CenterHyperColumn_MiniColumns[random.Next(Cortex.Temp_CenterHyperColumn_MiniColumns.Count)];
+
+            InputItem inputItem = Cortex.AddInputItem(random, centerHyperColumn_MiniColumn);
+
+            Memory cortexMemory = Memory.FromInputItem(inputItem);
 
             MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, Cortex.MiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
@@ -254,16 +268,7 @@ public class Model02
 
     #endregion
 
-    #region private functions       
-
-    private Memory CreateMemory(Random random)
-    {
-        MiniColumn miniColumn = Cortex.MiniColumns[random.Next(Cortex.MiniColumns.Count)];
-
-        InputItem inputItem = Cortex.AddInputItem(random, miniColumn);
-
-        return Memory.FromInputItem(inputItem);        
-    }
+    #region private functions 
 
     private MiniColumn? FindBestForMemoryMiniColumn(
         Memory cortexMemory, 
