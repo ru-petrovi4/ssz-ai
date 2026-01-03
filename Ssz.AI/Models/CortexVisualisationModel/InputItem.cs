@@ -19,26 +19,29 @@ public class InputItem : IOwnedDataSerializable
     /// </summary>
     public float Magnitude;
 
-    public float XRetina;
+    public int Main_MiniColumnIndex;
 
-    public float YRetina;
+    public float X_Retina;
+
+    public float Y_Retina;
 
     public Color Color;
 
     /// <summary>
     ///     Distance from center in ideal pinwheel in minicolumns
     /// </summary>
-    public float DistanceFromCenter = Single.MinValue;
+    public float DistanceFromCenter = Single.MinValue;    
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         writer.Write(Index);
         writer.Write(Angle);
         writer.Write(Magnitude);
-        writer.Write(XRetina);
-        writer.Write(YRetina);
+        writer.Write(Main_MiniColumnIndex);
+        writer.Write(X_Retina);
+        writer.Write(Y_Retina);
         writer.Write(Color);
-        writer.Write(DistanceFromCenter);
+        writer.Write(DistanceFromCenter);        
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
@@ -46,14 +49,15 @@ public class InputItem : IOwnedDataSerializable
         Index = reader.ReadInt32();
         Angle = reader.ReadSingle();
         Magnitude = reader.ReadSingle();
-        XRetina = reader.ReadSingle();
-        YRetina = reader.ReadSingle();
+        Main_MiniColumnIndex = reader.ReadInt32();
+        X_Retina = reader.ReadSingle();
+        Y_Retina = reader.ReadSingle();
         Color = reader.ReadColor();
-        DistanceFromCenter = reader.ReadSingle();
+        DistanceFromCenter = reader.ReadSingle();        
     }
 
     public override string ToString()
     {
-        return $"Angle: {Angle:F1}; Magnitude: {Magnitude:F03}; XRetina: {XRetina:F03}; YRetina: {YRetina:F03}";
+        return $"Angle: {Angle:F1}; Magnitude: {Magnitude:F03}; XRetina: {X_Retina:F03}; YRetina: {Y_Retina:F03}";
     }
 }

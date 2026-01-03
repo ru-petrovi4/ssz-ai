@@ -168,12 +168,12 @@ public class Model01
             var miniColumn = miniColumns[miniColumns_Index];
 
             double distanceSubTotal = 0.0;
-            for (int i = 0; i < miniColumn.Temp_HyperColumnMiniColumns.Count; i += 1)
+            for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
             {
-                MiniColumn nearestMiniColumn = miniColumn.Temp_HyperColumnMiniColumns[i].Item2;
+                MiniColumn nearestMiniColumn = miniColumn.Temp_K_HyperColumnMiniColumns[i].Item2;
                 distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, nearestMiniColumn.CortexMemories[0]!);
             }
-            double distance = distanceSubTotal / miniColumn.Temp_HyperColumnMiniColumns.Count;
+            double distance = distanceSubTotal / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
             if (distance < distanceMin)
                 distanceMin = distance;
             if (distance > distanceMax)
@@ -252,13 +252,13 @@ public class Model01
         //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
 
         double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_HyperColumnMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
         {
-            var it = miniColumn.Temp_HyperColumnMiniColumns[i];
+            var it = miniColumn.Temp_K_HyperColumnMiniColumns[i];
             //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
             energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
         }
-        return energy / miniColumn.Temp_HyperColumnMiniColumns.Count;
+        return energy / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
     }    
 
     private double GetDistance(Memory memory1, Memory memory2)
@@ -312,10 +312,12 @@ public class Model01
 
         public int CotrexHeight_MiniColumns => 20;
 
+        public float HyperColumn_Retina => 0.1f;
+
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int HypercolumnDefinedRadius_MiniColumns => 10;
+        public int HypercolumnDefinedRadius_MiniColumns => 10;        
 
         /// <summary>
         ///     Уровень подобия для нулевой активности

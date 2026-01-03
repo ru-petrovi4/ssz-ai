@@ -167,7 +167,7 @@ public partial class Model02View : UserControl
         Refresh_ImagesSet();
     }
 
-    private async void Flood_OnClick(object? sender, RoutedEventArgs args)
+    private void Flood_OnClick(object? sender, RoutedEventArgs args)
     {
         Model.Flood(_random, Model.Cortex.MiniColumns);
 
