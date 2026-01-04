@@ -205,7 +205,7 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns[mci];
 
-                miniColumn.Temp_HyperColumnMiniColumns.Add(miniColumn);
+                miniColumn.Temp_BigAreaMiniColumns.Add(miniColumn);
 
                 for (int mci2 = 0; mci2 < MiniColumns.Count; mci2 += 1)                    
                 {
@@ -227,7 +227,7 @@ public partial class Cortex : ISerializableModelObject
                         miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
 
                     if (r < _2hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_HyperColumnMiniColumns.Add(nearestMc);
+                        miniColumn.Temp_BigAreaMiniColumns.Add(nearestMc);
 
                     if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
@@ -324,7 +324,7 @@ public partial class Cortex : ISerializableModelObject
         /// <summary>
         ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2 гиперколонки.
         /// </summary>
-        public FastList<MiniColumn> Temp_HyperColumnMiniColumns = null!;
+        public FastList<MiniColumn> Temp_BigAreaMiniColumns = null!;
 
         /// <summary>
         ///     Миниколонки - ближайшие соседи.
@@ -360,7 +360,7 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
             Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
-            Temp_HyperColumnMiniColumns = new FastList<MiniColumn>((int)(Math.PI * 4.0f * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
+            Temp_BigAreaMiniColumns = new FastList<MiniColumn>((int)(Math.PI * 4.0f * Constants.HypercolumnDefinedRadius_MiniColumns * Constants.HypercolumnDefinedRadius_MiniColumns));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
         }

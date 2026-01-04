@@ -123,7 +123,7 @@ public class Model02
 
             var cortexMemory = Memory.FromInputItem(inputItem);
 
-            var subMiniColumns = main_MiniColumn.Temp_HyperColumnMiniColumns;
+            var subMiniColumns = main_MiniColumn.Temp_BigAreaMiniColumns;
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
                 subMiniColumns[random.Next(subMiniColumns.Count)].CortexMemories.Add(cortexMemory);
@@ -146,7 +146,7 @@ public class Model02
 
             Memory cortexMemory = Memory.FromInputItem(inputItem);
 
-            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, main_MiniColumn.Temp_HyperColumnMiniColumns);
+            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, main_MiniColumn.Temp_BigAreaMiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
             if (i % 300 == 0)
@@ -372,7 +372,7 @@ public class Model02
 
                 miniColumn.CortexMemories[it.Item2] = null;
 
-                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_HyperColumnMiniColumns);
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_BigAreaMiniColumns);
                 if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
                 {
                     bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
@@ -496,7 +496,7 @@ public class Model02
         /// <summary>
         ///     Порог энергии
         /// </summary>
-        public float K4 { get; set; } = -0.85f; // Чуть меньше, чем энергия пустого пространства
+        public float K4 { get; set; } = -0.84f; // Чуть меньше, чем энергия пустого пространства
 
         public float[] PositiveK { get; set; } = [1.000f, 0.110f, 0.050f, 0.000f];
 
