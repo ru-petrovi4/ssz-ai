@@ -339,6 +339,8 @@ public class Model02
 
     private async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
     {
+        Stopwatch sw = Stopwatch.StartNew();
+
         int min_ChangesCount = Int32.MaxValue;
         int min_ChangesCount_UnchangedCount = 0;
 
@@ -383,8 +385,11 @@ public class Model02
                     miniColumn.CortexMemories[it.Item2] = cortexMemory;
                 }
 
-                if (refreshAction is not null && (index % 1000 == 0))
+                if (refreshAction is not null && sw.ElapsedMilliseconds > 400)
+                {
                     await refreshAction();
+                    sw.Restart();
+                }
             }
 
             for (int mci = 0; mci < candidateMiniColumns.Count; mci += 1)

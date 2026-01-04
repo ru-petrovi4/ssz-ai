@@ -1700,8 +1700,9 @@ public static class Visualisation
     public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex)
     {
         float miniColumnRadius_Pixels = 5.0f;
-        float radius_Pixels = (cortex.Constants.HypercolumnDefinedRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
-        Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
+        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
@@ -1721,8 +1722,8 @@ public static class Visualisation
 
                     g.FillEllipse(
                         new SolidBrush(color),
-                        miniColumn.MCX * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
-                        miniColumn.MCY * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                        miniColumn.MCX * miniColumnRadius_Pixels * 2 + width_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                        miniColumn.MCY * miniColumnRadius_Pixels * 2 + height_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
                         miniColumnRadius_Pixels * 2 + 2.0f,
                         miniColumnRadius_Pixels * 2 + 2.0f
                         );
@@ -1764,8 +1765,9 @@ public static class Visualisation
             valueMax_Final = valueMax_Local;
 
         float miniColumnRadius_Pixels = 5.0f;
-        float radius_Pixels = (cortex.Constants.HypercolumnDefinedRadius_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
-        Bitmap bitmap = new Bitmap((int)(radius_Pixels * 2), (int)(radius_Pixels * 2));
+        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
@@ -1786,8 +1788,8 @@ public static class Visualisation
 
                 g.FillEllipse(
                     new SolidBrush(color),
-                    miniColumn.MCX * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
-                    miniColumn.MCY * miniColumnRadius_Pixels * 2 + radius_Pixels - miniColumnRadius_Pixels - 1.0f,
+                    miniColumn.MCX * miniColumnRadius_Pixels * 2 + width_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                    miniColumn.MCY * miniColumnRadius_Pixels * 2 + height_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
                     miniColumnRadius_Pixels * 2 + 2.0f,
                     miniColumnRadius_Pixels * 2 + 2.0f
                     );                
