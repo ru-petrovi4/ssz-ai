@@ -312,12 +312,12 @@ public class Model01
 
         public int CotrexHeight_MiniColumns => 20;
 
-        public float HyperColumn_Retina => 0.1f;
+        public float HyperColumnDiameter_Retina => 0.1f;
 
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int HypercolumnDefinedRadius_MiniColumns => 10;        
+        public int HyperColumnDefinedRadius_MiniColumns => 10;        
 
         /// <summary>
         ///     Уровень подобия для нулевой активности

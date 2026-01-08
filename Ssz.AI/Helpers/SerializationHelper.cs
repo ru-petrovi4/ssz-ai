@@ -69,59 +69,7 @@ public static class SerializationHelper
             }
         }
         throw new InvalidOperationException();
-    }
-
-    /// <summary>
-    ///     Cannot have nulls!
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="fastList"></param>
-    /// <param name="writer"></param>
-    /// <param name="context"></param>
-    public static void SerializeOwnedData_FastList<T>(FastList<T> fastList, SerializationWriter writer, object? context)
-        where T : IOwnedDataSerializable?
-    {
-        using (writer.EnterBlock(1))
-        {
-            writer.WriteOptimized(fastList.Count);
-            for (int mcx = 0; mcx < fastList.Count; mcx += 1)
-            {
-                var o = fastList[mcx];                
-                o!.SerializeOwnedData(writer, context);
-            }
-        }
-    }
-
-    /// <summary>
-    ///     Do not have nulls.
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="reader"></param>
-    /// <param name="context"></param>
-    /// <param name="func"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public static FastList<T> DeserializeOwnedData_FastList<T>(SerializationReader reader, object? context, Func<int, T> func)
-        where T : IOwnedDataSerializable?
-    {
-        using (Block block = reader.EnterBlock())
-        {
-            switch (block.Version)
-            {
-                case 1:
-                    var count = reader.ReadOptimizedInt32()!;
-                    T[] items = new T[count];
-                    for (int mcx = 0; mcx < count; mcx += 1)
-                    {
-                        var o = func(mcx);
-                        o.DeserializeOwnedData(reader, context);
-                        items[mcx] = o;
-                    }
-                    return new FastList<T>(items);
-            }
-        }
-        throw new InvalidOperationException();
-    }
+    }        
 
     public static void Write(this SerializationWriter writer, Color value)
     {

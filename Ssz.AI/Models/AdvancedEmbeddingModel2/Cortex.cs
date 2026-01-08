@@ -375,7 +375,7 @@ public partial class Cortex : ISerializableModelObject
         {
             using (writer.EnterBlock(2))
             {
-                Ssz.AI.Helpers.SerializationHelper.SerializeOwnedData_FastList(CortexMemories, writer, context);
+                writer.WriteFastListOfOwnedDataSerializable(CortexMemories, context);
                 writer.WriteOptimized(DiscreteOptimizedVector_ProjectionIndex);
             }
         }
@@ -385,12 +385,9 @@ public partial class Cortex : ISerializableModelObject
             using (Block block = reader.EnterBlock())
             {
                 switch (block.Version)
-                {
-                    case 1:
-                        CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
-                        break;
+                {   
                     case 2:
-                        CortexMemories = Ssz.AI.Helpers.SerializationHelper.DeserializeOwnedData_FastList(reader, context, idx => (Memory?)new Memory());
+                        CortexMemories = reader.ReadFastListOfOwnedDataSerializable(idx => (Memory?)new Memory(), context);
                         DiscreteOptimizedVector_ProjectionIndex = reader.ReadOptimizedInt32();
                         break;
                 }

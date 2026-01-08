@@ -88,7 +88,7 @@ public class Model02
         if (Cortex.MiniColumns is null)
             return;       
 
-        var miniColumns = Cortex.Temp_CenterHyperColumn_MiniColumns;        
+        var miniColumns = Cortex.Temp_MainHyperColumn_MiniColumns;        
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)            
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];            
@@ -113,7 +113,7 @@ public class Model02
 
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
         {
-            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_CenterHyperColumn_MiniColumns[random.Next(Cortex.Temp_CenterHyperColumn_MiniColumns.Count)];
+            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_MainHyperColumn_MiniColumns[random.Next(Cortex.Temp_MainHyperColumn_MiniColumns.Count)];
             MiniColumn main_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             InputItem inputItem = Cortex.AddInputItem(
                 random, 
@@ -123,10 +123,10 @@ public class Model02
 
             var cortexMemory = Memory.FromInputItem(inputItem);
 
-            var subMiniColumns = main_MiniColumn.Temp_BigAreaMiniColumns;
+            var sameFieldOfViewMiniColumns = main_MiniColumn.Temp_SameFieldOfViewMiniColumns;
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
-                subMiniColumns[random.Next(subMiniColumns.Count)].CortexMemories.Add(cortexMemory);
+                sameFieldOfViewMiniColumns[random.Next(sameFieldOfViewMiniColumns.Count)].CortexMemories.Add(cortexMemory);
             }
         }
     }
@@ -140,13 +140,13 @@ public class Model02
 
         for (int i = 0; i < inputItemsCount; i += 1)
         {
-            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_CenterHyperColumn_MiniColumns[random.Next(Cortex.Temp_CenterHyperColumn_MiniColumns.Count)];
+            MiniColumn centerHyperColumn_MiniColumn = Cortex.Temp_MainHyperColumn_MiniColumns[random.Next(Cortex.Temp_MainHyperColumn_MiniColumns.Count)];
             MiniColumn main_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             InputItem inputItem = Cortex.AddInputItem(random, centerHyperColumn_MiniColumn, main_MiniColumn);
 
             Memory cortexMemory = Memory.FromInputItem(inputItem);
 
-            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, main_MiniColumn.Temp_BigAreaMiniColumns);
+            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, main_MiniColumn.Temp_SameFieldOfViewMiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
             if (i % 300 == 0)
@@ -374,7 +374,7 @@ public class Model02
 
                 miniColumn.CortexMemories[it.Item2] = null;
 
-                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_BigAreaMiniColumns);
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_SameFieldOfViewMiniColumns);
                 if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
                 {
                     bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
@@ -436,17 +436,27 @@ public class Model02
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
+        var r2 = (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina) * (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina)
+            + (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina) * (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina);
+        float k;
+        if (r2 > Cortex.HyperColumnRadius_Retina2 + 0.001)
+            k = 0.0f;
+        else if (r2 > Cortex.HyperColumnRadius_Retina2 - 0.001)
+            k = 0.8f;
+        else
+            k = 1.0f;
+
         float radialDistance1 = inpitItem1.Magnitude;
         float radialDistance2 = inpitItem2.Magnitude;
 
-        float x1 = radialDistance1 * MathF.Cos(inpitItem1.Angle);
-        float y1 = radialDistance1 * MathF.Sin(inpitItem1.Angle);
-        float x2 = radialDistance2 * MathF.Cos(inpitItem2.Angle);
-        float y2 = radialDistance2 * MathF.Sin(inpitItem2.Angle);
+        float gx1 = radialDistance1 * MathF.Cos(inpitItem1.Angle);
+        float gy1 = radialDistance1 * MathF.Sin(inpitItem1.Angle);
+        float gx2 = radialDistance2 * MathF.Cos(inpitItem2.Angle);
+        float gy2 = radialDistance2 * MathF.Sin(inpitItem2.Angle);
 
-        var r2 = (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+        var gr2 = (gx1 - gx2) * (gx1 - gx2) + (gy1 - gy2) * (gy1 - gy2);
 
-        float similarity = MathF.Exp(-r2 / 8.0f); // sigma == 2.0f
+        float similarity = MathF.Exp(-gr2 / 8.0f) * k; // sigma == 2.0f
 
         //if (similarity < inpitItem1.SimilarityThreshold)
         //    return Single.NaN;
@@ -478,12 +488,12 @@ public class Model02
 
         public int CotrexHeight_MiniColumns => 60;
 
-        public float HyperColumn_Retina => 0.1f;
+        public float HyperColumnDiameter_Retina => 0.1f;
 
         /// <summary>
         ///     Радиус зоны коры в миниколонках.
         /// </summary>
-        public int HypercolumnDefinedRadius_MiniColumns => 10;
+        public int HyperColumnDefinedRadius_MiniColumns => 10;
 
         /// <summary>
         ///     Уровень подобия для нулевой активности
