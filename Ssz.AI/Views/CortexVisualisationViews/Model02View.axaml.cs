@@ -112,6 +112,8 @@ public partial class Model02View : UserControl
     {
         Helpers.SerializationHelper.LoadFromFileIfExists(Model02.FileName_Cortex, Model.Cortex, null, Model.LoggersSet.LoggerAndUserFriendlyLogger);
         Model.Cortex.Prepare();
+
+        Refresh_ImagesSet();
     }
 
     private void EnergyThreshold_OnClick(object? sender, RoutedEventArgs args)
@@ -136,7 +138,7 @@ public partial class Model02View : UserControl
     private async void AddNoize_OnClick(object? sender, RoutedEventArgs args)
     {
         if (_curentLongRunningTask is not null)
-            await _curentLongRunningTask;
+            return;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
@@ -163,6 +165,7 @@ public partial class Model02View : UserControl
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("AddNoize Finished.");
         });
         await _curentLongRunningTask;
+        _curentLongRunningTask = null;
 
         Refresh_ImagesSet();
     }
@@ -177,7 +180,7 @@ public partial class Model02View : UserControl
     private async void StartReorderMemories_OnClick(object? sender, RoutedEventArgs args)
     {
         if (_curentLongRunningTask is not null)
-            await _curentLongRunningTask;
+            return;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
@@ -204,6 +207,7 @@ public partial class Model02View : UserControl
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Finished.");
         });
         await _curentLongRunningTask;
+        _curentLongRunningTask = null;
 
         Refresh_ImagesSet();
     }
@@ -218,7 +222,7 @@ public partial class Model02View : UserControl
     private async void StartProcessN_OnClick(object? sender, RoutedEventArgs args)
     {
         if (_curentLongRunningTask is not null)
-            await _curentLongRunningTask;
+            return;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
@@ -244,6 +248,7 @@ public partial class Model02View : UserControl
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Finished.");
         });
         await _curentLongRunningTask;
+        _curentLongRunningTask = null;
 
         Refresh_ImagesSet();
     }
@@ -342,6 +347,7 @@ public partial class Model02View : UserControl
     //        Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Finished.");
     //    });
     //    await _curentLongRunningTask;
+    //_curentLongRunningTask = null;
 
     //    Refresh_ImagesSet();
     //}
@@ -349,7 +355,7 @@ public partial class Model02View : UserControl
     private async void StartProcessScript_OnClick(object? sender, RoutedEventArgs args)
     {
         if (_curentLongRunningTask is not null)
-            await _curentLongRunningTask;
+            return;
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
@@ -428,6 +434,7 @@ public partial class Model02View : UserControl
             Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Finished.");
         });
         await _curentLongRunningTask;
+        _curentLongRunningTask = null;
 
         Refresh_ImagesSet();
     }
