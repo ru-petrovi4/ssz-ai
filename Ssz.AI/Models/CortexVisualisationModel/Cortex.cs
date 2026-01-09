@@ -352,6 +352,8 @@ public partial class Cortex : ISerializableModelObject
         inputItem.Y_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCY * MiniColumnY_Retina;        
 
         var distanceFromCenterNormalized = MathF.Sqrt(inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 1));
+        if (distanceFromCenterNormalized > 1.0f)
+            distanceFromCenterNormalized = 1.0f;
         inputItem.ColorAngleMagnitude = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
 
         float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(inputItem.Y_HyperColumnCenter_Retina, inputItem.X_HyperColumnCenter_Retina));

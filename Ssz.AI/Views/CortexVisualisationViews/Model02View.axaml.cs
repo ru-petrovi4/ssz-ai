@@ -459,7 +459,7 @@ public partial class Model02View : UserControl
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(_random);
     }
 
-    private const bool OnlyCenterHyperColumn = true;
+    private const bool OnlyCenterHyperColumn = false;
 
     private Random _random = null!;
 
