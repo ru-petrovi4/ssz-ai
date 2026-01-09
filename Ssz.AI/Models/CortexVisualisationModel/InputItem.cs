@@ -19,7 +19,7 @@ public class InputItem : IOwnedDataSerializable
     /// </summary>
     public float Magnitude;
 
-    public int Main_MiniColumnIndex;
+    public int MainXY_MiniColumnIndex;
 
     public float X_Retina;
 
@@ -31,7 +31,9 @@ public class InputItem : IOwnedDataSerializable
 
     public float Y_HyperColumnCenter_Retina;
 
-    public Color Color;
+    public Color ColorAngleMagnitude;
+
+    public Color ColorXY;
 
     /// <summary>
     ///     Distance from center in ideal pinwheel in minicolumns
@@ -43,13 +45,14 @@ public class InputItem : IOwnedDataSerializable
         writer.Write(Index);
         writer.Write(Angle);
         writer.Write(Magnitude);
-        writer.Write(Main_MiniColumnIndex);
+        writer.Write(MainXY_MiniColumnIndex);
         writer.Write(X_Retina);
         writer.Write(Y_Retina);
         writer.Write(HyperColumnCenter_MiniColumnIndex);
         writer.Write(X_HyperColumnCenter_Retina);
         writer.Write(Y_HyperColumnCenter_Retina);
-        writer.Write(Color);
+        writer.Write(ColorAngleMagnitude);
+        writer.Write(ColorXY);
         writer.Write(DistanceFromCenter);        
     }
 
@@ -58,13 +61,14 @@ public class InputItem : IOwnedDataSerializable
         Index = reader.ReadInt32();
         Angle = reader.ReadSingle();
         Magnitude = reader.ReadSingle();
-        Main_MiniColumnIndex = reader.ReadInt32();
+        MainXY_MiniColumnIndex = reader.ReadInt32();
         X_Retina = reader.ReadSingle();
         Y_Retina = reader.ReadSingle();
         HyperColumnCenter_MiniColumnIndex = reader.ReadInt32();
         X_HyperColumnCenter_Retina = reader.ReadSingle();
         Y_HyperColumnCenter_Retina = reader.ReadSingle();
-        Color = reader.ReadColor();
+        ColorAngleMagnitude = reader.ReadColor();
+        ColorXY = reader.ReadColor();
         DistanceFromCenter = reader.ReadSingle();        
     }
 

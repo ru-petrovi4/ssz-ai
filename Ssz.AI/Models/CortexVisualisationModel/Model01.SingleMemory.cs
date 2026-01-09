@@ -66,7 +66,7 @@ public class Model01
     {
         var it = GetAverageDistance();
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorAngleMagnitude)),
                     Desc = $"Воспоминания в миниколонках.\nЭнергия: {GetEnergy()}" },
                 //new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsValue(Cortex, (MiniColumn mc) => mc.Temp_Distance, valueMin: 0.0, valueMax: 15.0)),
                 //    Desc = $"Среднее расстояние: {it.Average}\nМинимальное: {it.Minimum}\nМаксимальное: {it.Maximum}" }
@@ -106,13 +106,6 @@ public class Model01
             }   
 
             Cortex.InputItems.Add(inputItem);
-        }
-
-        for (int inputItem_Index = 0; inputItem_Index < Cortex.InputItems.Count; inputItem_Index += 1)
-        {
-            InputItem inputItem = Cortex.InputItems[inputItem_Index];
-            float s = MathF.Sqrt(inputItem.Magnitude / maxMagnitude);            
-            inputItem.Color = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), s, 1.0);
         }
     }
 

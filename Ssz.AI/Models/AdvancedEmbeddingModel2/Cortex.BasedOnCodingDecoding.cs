@@ -38,16 +38,16 @@ public partial class Cortex : ISerializableModelObject
 
             var miniColumnActivities = new DenseMatrix<MiniColumnActivity>(MiniColumns.Dimensions);
 
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
             {
-                var miniColumn = MiniColumns.Data[mci];
+                var miniColumn = MiniColumns.Data[mc_index];
                 MiniColumnActivity miniColumnActivity = new MiniColumnActivity(miniColumn);
                 miniColumnActivities[miniColumn.MCX, miniColumn.MCY] = miniColumnActivity;
             }
 
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
             {
-                var miniColumn = MiniColumns.Data[mci];
+                var miniColumn = MiniColumns.Data[mc_index];
                 MiniColumnActivity miniColumnActivity = miniColumnActivities[miniColumn.MCX, miniColumn.MCY];
                 var k_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * maxR * maxR) + 1);
 
@@ -159,11 +159,11 @@ public partial class Cortex : ISerializableModelObject
 
                 sw.Restart();
 
-                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    var miniColumn = MiniColumns.Data[mci];
+                    var miniColumn = MiniColumns.Data[mc_index];
                     
                     for (; ; )
                     {
@@ -180,12 +180,12 @@ public partial class Cortex : ISerializableModelObject
 
                         MiniColumn? prevIteratorMiniColumn = miniColumn;
                         MiniColumn? iteratorMiniColumn = null;
-                        for (int mci2 = 0; mci2 < MiniColumns.Data.Length; mci2 += 1)
+                        for (int mc_index2 = 0; mc_index2 < MiniColumns.Data.Length; mc_index2 += 1)
                         {
-                            if (mci2 == mci)
+                            if (mc_index2 == mc_index)
                                 continue;
 
-                            iteratorMiniColumn = MiniColumns.Data[mci2];
+                            iteratorMiniColumn = MiniColumns.Data[mc_index2];
                             iteratorMiniColumn.CortexMemories.Add(cortexMemory);
 
                             var batch_CortexMemories_Span2 = batch_CortexMemories.Span;
@@ -291,9 +291,9 @@ public partial class Cortex : ISerializableModelObject
 
                 if ((miniColumns_Epoch + 1) % 10 == 0)
                 {
-                    for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                    for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
                     {
-                        MiniColumn miniColumn = MiniColumns.Data[mci];
+                        MiniColumn miniColumn = MiniColumns.Data[mc_index];
                         miniColumn.Temp_CortexMemories.Clear();
 
                         for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
@@ -318,9 +318,9 @@ public partial class Cortex : ISerializableModelObject
         }
         finally
         {
-            for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
             {
-                MiniColumn miniColumn = MiniColumns.Data[mci];
+                MiniColumn miniColumn = MiniColumns.Data[mc_index];
                 miniColumn.Temp_CortexMemories.Clear();
 
                 for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)

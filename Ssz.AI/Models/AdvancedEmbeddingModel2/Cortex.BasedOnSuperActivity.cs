@@ -79,11 +79,11 @@ public partial class Cortex : ISerializableModelObject
 
             try
             {
-                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    MiniColumn miniColumn = MiniColumns.Data[mci];
+                    MiniColumn miniColumn = MiniColumns.Data[mc_index];
 
                     for (int mi = miniColumn.CortexMemories.Count - 1; mi >= Math.Max(0, miniColumn.CortexMemories.Count - inMiniColumn_TopMemoriesCount); mi -= 1)
                     {
@@ -115,9 +115,9 @@ public partial class Cortex : ISerializableModelObject
             }
             finally
             {
-                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
                 {
-                    MiniColumn miniColumn = MiniColumns.Data[mci];
+                    MiniColumn miniColumn = MiniColumns.Data[mc_index];
                     miniColumn.Temp_CortexMemories.Clear();
 
                     for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)

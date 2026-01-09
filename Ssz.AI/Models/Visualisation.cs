@@ -1697,7 +1697,7 @@ public static class Visualisation
         return Color.FromArgb(finalR, finalG, finalB);
     }
 
-    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex)
+    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.InputItem, Color> getColor)
     {
         float miniColumnRadius_Pixels = 5.0f;
         float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
@@ -1709,16 +1709,16 @@ public static class Visualisation
             // Устанавливаем черный фон
             g.Clear(Color.Black);
 
-            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+            for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
             {
-                var miniColumn = cortex.MiniColumns[mci];
+                var miniColumn = cortex.MiniColumns[mc_index];
                 if (miniColumn.CortexMemories.Count > 0)
                 {
                     Color color = GetAverageLABColor(miniColumn.CortexMemories
                         .Where(cm => cm is not null)
-                        .Select(cm => cortex.InputItems[cm!.InputItemIndex])
-                        .Where(ii => ii.Color != Color.Black)
-                        .Select(ii => ii.Color));
+                        .Select(cm => cortex.InputItems[cm!.InputItemIndex])                        
+                        .Select(ii => getColor(ii))
+                        .Where(c => c != Color.Black));
 
                     g.FillEllipse(
                         new SolidBrush(color),
@@ -1739,9 +1739,9 @@ public static class Visualisation
         double valueMin_Local = Double.MaxValue;
         double valueMax_Local = Double.MinValue;
 
-        for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+        for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
         {
-            var miniColumn = cortex.MiniColumns[mci];
+            var miniColumn = cortex.MiniColumns[mc_index];
             if (miniColumn.CortexMemories.Count > 0)
             {
                 double value = getValue(miniColumn);
@@ -1774,9 +1774,9 @@ public static class Visualisation
             // Устанавливаем черный фон
             g.Clear(Color.Black);
 
-            for (int mci = 0; mci < cortex.MiniColumns.Count; mci += 1)
+            for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
             {
-                var miniColumn = cortex.MiniColumns[mci];
+                var miniColumn = cortex.MiniColumns[mc_index];
                 double value = getValue(miniColumn);
                 int v = (int)(255 * (value - valueMin_Final) / (valueMax_Final - valueMin_Final));
                 if (v > 255)

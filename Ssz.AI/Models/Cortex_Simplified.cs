@@ -197,11 +197,11 @@ public class Cortex_Simplified : ISerializableModelObject
             using (writer.EnterBlock(1))
             {
                 writer.Write(MiniColumns.Data.Length);
-                for (int mci = 0; mci < MiniColumns.Data.Length; mci += 1)
+                for (int mc_index = 0; mc_index < MiniColumns.Data.Length; mc_index += 1)
                 {
                     using (writer.EnterBlock(1))
                     {
-                        MiniColumn miniColumn = MiniColumns.Data[mci];
+                        MiniColumn miniColumn = MiniColumns.Data[mc_index];
                         writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
                     }
                 }
@@ -226,11 +226,11 @@ public class Cortex_Simplified : ISerializableModelObject
                 {
                     case 1:
                         int miniColumnsDataLength = reader.ReadInt32();
-                        for (int mci = 0; mci < miniColumnsDataLength; mci += 1)
+                        for (int mc_index = 0; mc_index < miniColumnsDataLength; mc_index += 1)
                         {
                             using (Block block2 = reader.EnterBlock())
                             {
-                                MiniColumn? miniColumn = MiniColumns.Data[mci];
+                                MiniColumn? miniColumn = MiniColumns.Data[mc_index];
                                 if (miniColumn is not null)
                                     reader.ReadOwnedDataSerializableAndRecreatable<MiniColumn>(() => miniColumn, context);
                             }
