@@ -127,10 +127,10 @@ public class Model02
                 );
             var cortexMemory = Memory.FromInputItem(inputItem);
 
-            var sameFieldOfViewMiniColumns = mainXY_MiniColumn.Temp_SameFieldOfViewMiniColumns;
+            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns;
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
-                sameFieldOfViewMiniColumns[random.Next(sameFieldOfViewMiniColumns.Count)].CortexMemories.Add(cortexMemory);
+                forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Count)].CortexMemories.Add(cortexMemory);
             }
         }
     }
@@ -463,7 +463,7 @@ public class Model02
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
             k = 0.0f;
         else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.0f;
+            k = 0.5f;
         else
             k = 1.0f;
 
@@ -479,6 +479,9 @@ public class Model02
 
         float similarity = MathF.Exp(-gr2 / 8.0f) * k; // sigma == 2.0f
 
+        //float activity = similarity - Cortex.Constants.K0;
+        //activity = activity * k;
+        //similarity = activity + Cortex.Constants.K0;
         //if (similarity < inpitItem1.SimilarityThreshold)
         //    return Single.NaN;
 

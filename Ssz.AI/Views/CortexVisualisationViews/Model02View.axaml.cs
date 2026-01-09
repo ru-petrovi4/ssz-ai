@@ -232,7 +232,7 @@ public partial class Model02View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Started.");
 
-                await Model.ProcessNAsync(300, _random, cancellationToken, () =>
+                await Model.ProcessNAsync(2000, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
