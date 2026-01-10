@@ -355,7 +355,7 @@ public partial class Cortex : ISerializableModelObject
         inputItem.X_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCX * MiniColumnX_Retina;
         inputItem.Y_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCY * MiniColumnY_Retina;        
 
-        var distanceFromCenterNormalized = MathF.Sqrt(inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 1));
+        var distanceFromCenterNormalized = inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 1);
         if (distanceFromCenterNormalized > 1.0f)
             distanceFromCenterNormalized = 1.0f;
         inputItem.ColorAngleMagnitude = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);

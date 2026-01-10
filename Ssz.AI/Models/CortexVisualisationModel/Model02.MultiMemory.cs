@@ -463,7 +463,7 @@ public class Model02
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
             k = 0.0f;
         else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.5f;
+            k = 0.3f;
         else
             k = 1.0f;
 
