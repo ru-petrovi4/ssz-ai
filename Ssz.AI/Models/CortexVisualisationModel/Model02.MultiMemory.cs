@@ -401,6 +401,8 @@ public class Model02
 
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var randomMiniColumns = Cortex.MiniColumns.ToArray();
             random.Shuffle(randomMiniColumns);
 
@@ -563,31 +565,11 @@ public class Model02
             //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
             if (it.Item2.CortexMemories.Count > 0)
             {
-                energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
+                energy += Math.Log(GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!)) * it.Item1;
                 count += 1;
             }
         }
         return energy / count;
-    }
-
-    /// <summary>
-    ///     TEMP
-    /// </summary>
-    /// <param name="memory1"></param>
-    /// <param name="memory2"></param>
-    /// <returns></returns>
-    private double GetDistance(Memory memory1, Memory memory2)
-    {
-        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
-        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
-
-        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
-        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
-        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
-        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
-
-        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-        return Math.Sqrt(r2);
     }
 
     private float GetSimilarity(Memory memory1, Memory memory2)
