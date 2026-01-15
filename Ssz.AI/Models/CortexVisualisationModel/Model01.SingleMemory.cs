@@ -337,5 +337,10 @@ public class Model01
         ///     Включен ли порог энергии при накоплении воспоминаний
         /// </summary>
         public bool TotalEnergyThreshold { get; set; } = false;
+
+        /// <summary>
+        ///     Режим с одним воспоминанием в миниколонке.
+        /// </summary>
+        public bool SingleMemory { get; set; }
     }
 }

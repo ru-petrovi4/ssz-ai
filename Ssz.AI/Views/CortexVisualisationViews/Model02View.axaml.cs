@@ -18,6 +18,7 @@ using Ssz.AI.Models.CortexVisualisationModel;
 using Avalonia.Threading;
 using System.Threading;
 using MathNet.Numerics.Random;
+using Tensorflow.Keras.Saving.SavedModel;
 
 namespace Ssz.AI.Views.CortexVisualisationViews;
 
@@ -60,6 +61,7 @@ public partial class Model02View : UserControl
         LevelScrollBar4.Value = constants.K4;
 
         EnergyThreshold.IsChecked = constants.TotalEnergyThreshold;
+        SingleMemory.IsChecked = constants.SingleMemory;
 
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value = constants.PositiveK[1];
         ((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value = constants.PositiveK[2];
@@ -77,8 +79,9 @@ public partial class Model02View : UserControl
         constants.K2 = (float)LevelScrollBar2.Value;
         constants.K3 = (float)LevelScrollBar3.Value;
         constants.K4 = (float)LevelScrollBar4.Value;
-
+        
         constants.TotalEnergyThreshold = EnergyThreshold.IsChecked == true;
+        constants.SingleMemory = SingleMemory.IsChecked == true;
 
         constants.PositiveK[1] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[0].Value;
         constants.PositiveK[2] = (float)((SlidersViewModel)PositiveSliders.DataContext!).SlidersItems[1].Value;
@@ -116,6 +119,11 @@ public partial class Model02View : UserControl
         Refresh_ImagesSet();
     }
 
+    private void SingleMemory_OnClick(object? sender, RoutedEventArgs args)
+    {
+        GetDataFromControls(Model02.Constants);
+    }
+
     private void EnergyThreshold_OnClick(object? sender, RoutedEventArgs args)
     {
         GetDataFromControls(Model02.Constants);
@@ -130,7 +138,10 @@ public partial class Model02View : UserControl
 
     private void PutInitialMemoriesRandom_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutMemories_Random(_random, inMiniColumn_CortexMemoriesCount: 1);
+        if (Model02.Constants.SingleMemory)
+            Model.PutMemories_Random_SingleMemory(_random, cortexMemoriesCount: 1);
+        else
+            Model.PutMemories_Random_MultiMemory(_random, cortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
@@ -386,7 +397,7 @@ public partial class Model02View : UserControl
                         Model.Cortex.GenerateOwnedData(_random, onlyCeneterHypercolumn: true);
                         Model.Cortex.Prepare();
 
-                        Model.PutMemories_Random(_random, inMiniColumn_CortexMemoriesCount: 6);
+                        Model.PutMemories_Random_MultiMemory(_random, cortexMemoriesCount: 6);
 
                         await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
                         {
@@ -466,7 +477,7 @@ public partial class Model02View : UserControl
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(_random);
     }
 
-    private const bool OnlyCenterHyperColumn = false;
+    private const bool OnlyCenterHyperColumn = true;
 
     private Random _random = null!;
 

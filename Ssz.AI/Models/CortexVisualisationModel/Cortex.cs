@@ -57,7 +57,12 @@ public interface ICortexConstants
     /// <summary>
     ///     Включен ли порог энергии при накоплении воспоминаний
     /// </summary>
-    public bool TotalEnergyThreshold { get; set; }
+    bool TotalEnergyThreshold { get; set; }
+
+    /// <summary>
+    ///     Режим с одним воспоминанием в миниколонке.
+    /// </summary>
+    bool SingleMemory { get; set; }
 }
 
 public partial class Cortex : ISerializableModelObject
