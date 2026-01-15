@@ -260,6 +260,7 @@ public partial class Cortex : ISerializableModelObject
     public void Prepare()
     {
         float hypercolumnDefinedRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns + 0.000001f;
+        float _2hypercolumnDefinedRadius_MiniColumns = 2.0f * Constants.HyperColumnDefinedRadius_MiniColumns + 0.000001f;
         float sameFieldOfViewRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns / Constants.HyperColumnDiameter_Retina + 0.000001f;
 
         for (int mc_index = 0; mc_index < MiniColumns.Count; mc_index += 1)            
@@ -298,9 +299,12 @@ public partial class Cortex : ISerializableModelObject
                     if (r < hypercolumnDefinedRadius_MiniColumns)
                         miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
 
+                    if (r < _2hypercolumnDefinedRadius_MiniColumns)
+                        miniColumn.Temp_K_2HyperColumnMiniColumns.Add((r2, nearestMc));
+
                     if (r < hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_HyperColumnMiniColumns.Add(nearestMc);
-                    
+                        miniColumn.Temp_HyperColumnMiniColumns.Add(nearestMc);                    
+
                     if (r < sameFieldOfViewRadius_MiniColumns)                    
                         miniColumn.Temp_SameFieldOfViewMiniColumns.Add(nearestMc);
 
@@ -434,13 +438,19 @@ public partial class Cortex : ISerializableModelObject
         public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
 
         /// <summary>
-        ///     Окружающие миниколонки размером примерно с гиперколонку.
+        ///     Окружающие миниколонки в радиусе примерно 0.5 гиперколонки.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(float, MiniColumn)> Temp_K_HyperColumnMiniColumns = null!;
 
         /// <summary>
-        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонок.
+        ///     Окружающие миниколонки в радиусе примерно 1 гиперколонки.
+        ///     <para>(r^2, MiniColumn)</para>        
+        /// </summary>
+        public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
+
+        /// <summary>
+        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.
         /// </summary>
         public FastList<MiniColumn> Temp_HyperColumnMiniColumns = null!;
 
@@ -483,6 +493,7 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
             Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            Temp_K_2HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * 4.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
             Temp_HyperColumnMiniColumns = new FastList<MiniColumn>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns) + 5);
             Temp_SameFieldOfViewMiniColumns = new FastList<MiniColumn>((int)(Math.PI * sameFieldOfViewRadius_MiniColumns * sameFieldOfViewRadius_MiniColumns + 5));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);

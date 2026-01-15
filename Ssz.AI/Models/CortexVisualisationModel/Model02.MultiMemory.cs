@@ -114,9 +114,9 @@ public class Model02
 
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
         {
-            MiniColumn mainXY_MiniColumn = miniColumns[miniColumns_Index];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
+            MiniColumn idealAngleMagnitude_MiniColumn = miniColumns[miniColumns_Index];
+            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn);
+            MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
                 [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
 
             InputItem inputItem = Cortex.AddInputItem(
@@ -557,17 +557,37 @@ public class Model02
 
         double energy = 0.0;
         int count = 0;
-        for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_K_2HyperColumnMiniColumns.Count; i += 1)
         {
-            var it = miniColumn.Temp_K_HyperColumnMiniColumns[i];
+            var it = miniColumn.Temp_K_2HyperColumnMiniColumns[i];
             //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
             if (it.Item2.CortexMemories.Count > 0)
             {
-                energy = GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
+                energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
                 count += 1;
             }
         }
         return energy / count;
+    }
+
+    /// <summary>
+    ///     TEMP
+    /// </summary>
+    /// <param name="memory1"></param>
+    /// <param name="memory2"></param>
+    /// <returns></returns>
+    private double GetDistance(Memory memory1, Memory memory2)
+    {
+        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
+        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
+
+        double x1 = inpitItem1.Magnitude * Math.Cos(inpitItem1.Angle);
+        double y1 = inpitItem1.Magnitude * Math.Sin(inpitItem1.Angle);
+        double x2 = inpitItem2.Magnitude * Math.Cos(inpitItem2.Angle);
+        double y2 = inpitItem2.Magnitude * Math.Sin(inpitItem2.Angle);
+
+        var r2 = ((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+        return Math.Sqrt(r2);
     }
 
     private float GetSimilarity(Memory memory1, Memory memory2)
