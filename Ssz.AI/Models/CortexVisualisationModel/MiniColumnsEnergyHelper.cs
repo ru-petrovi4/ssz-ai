@@ -40,7 +40,7 @@ public static class MiniColumnsEnergyHelper
     public static (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) GetActivity(
         Cortex.MiniColumn miniColumn, 
         Cortex.Memory cortexMemory,
-        Func<Cortex.Memory, Cortex.Memory, float> getSimilarity,
+        Func<Cortex.Memory, Cortex.Memory, double> getSimilarity,
         ICortexConstants constants)
     {
         float positiveActivity = 0.0f;
@@ -56,7 +56,7 @@ public static class MiniColumnsEnergyHelper
             if (miniColumn_CortexMemory is null)
                 continue;
 
-            float similarity = getSimilarity(cortexMemory, miniColumn_CortexMemory);
+            float similarity = (float)getSimilarity(cortexMemory, miniColumn_CortexMemory);
             if (!Single.IsNaN(similarity))
             {
                 float activity = similarity - constants.K0;

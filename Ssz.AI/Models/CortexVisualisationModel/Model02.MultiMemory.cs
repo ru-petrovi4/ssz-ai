@@ -93,6 +93,8 @@ public class Model02
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
+            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
+                continue;
 
             InputItem inputItem = Cortex.AddInputItem(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn);                  
 
@@ -115,7 +117,11 @@ public class Model02
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
         {
             MiniColumn idealAngleMagnitude_MiniColumn = miniColumns[miniColumns_Index];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn);
+            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn);            
+
+            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
+                continue;
+
             MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
                 [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
 
@@ -127,7 +133,7 @@ public class Model02
                 );
             var cortexMemory = Memory.FromInputItem(inputItem);
 
-            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Where(mc => mc.CortexMemories.Count == 0).ToArray();
+            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Where(mc => mc.CortexMemories.Count == 0).ToArray();            
             if (forMemoryMiniColumns.Length > 0)
             {
                 var cortexMemories = forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Length)].CortexMemories;                
@@ -147,8 +153,12 @@ public class Model02
         {            
             MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
+
+            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(mainXY_MiniColumn))
+                continue;
+
             MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
+                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;            
 
             InputItem inputItem = Cortex.AddInputItem(
                 random,
@@ -277,7 +287,7 @@ public class Model02
                     if (cortexMemory is null)
                         continue;
                     cortexMemoriesCount += 1;
-                    similaritySum += GetSimilarity(idealPinwheelMemory, cortexMemory);
+                    similaritySum += (float)GetSimilarity(idealPinwheelMemory, cortexMemory);
                 }
                 if (cortexMemoriesCount > 0)
                     pinwheelIndex += similaritySum / cortexMemoriesCount;
@@ -397,7 +407,7 @@ public class Model02
     {
         Func<MiniColumn, FastList<(double, MiniColumn)>> getCandidateForSwapMiniColumns = mc => mc.Temp_AdjacentMiniColumns;
 
-        int epochCount = 1000;
+        int epochCount = 10000;
 
         for (int epoch = 0; epoch < epochCount; epoch += 1)
         {
@@ -572,34 +582,34 @@ public class Model02
         return energy / count;
     }
 
-    private float GetSimilarity(Memory memory1, Memory memory2)
+    private double GetSimilarity(Memory memory1, Memory memory2)
     {
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
         var r2 = (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina) * (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina)
             + (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina) * (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina);
-        float k;
+        double k;
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
-            k = 0.0f;
+            k = 0.0;
         else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.3f;
+            k = 0.3;
         else
-            k = 1.0f;
+            k = 1.0;
 
-        float radialDistance1 = inpitItem1.Magnitude;
-        float radialDistance2 = inpitItem2.Magnitude;
+        double radialDistance1 = inpitItem1.Magnitude;
+        double radialDistance2 = inpitItem2.Magnitude;
 
-        float gx1 = radialDistance1 * MathF.Cos(inpitItem1.Angle);
-        float gy1 = radialDistance1 * MathF.Sin(inpitItem1.Angle);
-        float gx2 = radialDistance2 * MathF.Cos(inpitItem2.Angle);
-        float gy2 = radialDistance2 * MathF.Sin(inpitItem2.Angle);
+        double gx1 = radialDistance1 * Math.Cos(inpitItem1.Angle);
+        double gy1 = radialDistance1 * Math.Sin(inpitItem1.Angle);
+        double gx2 = radialDistance2 * Math.Cos(inpitItem2.Angle);
+        double gy2 = radialDistance2 * Math.Sin(inpitItem2.Angle);
 
         var gr2 = (gx1 - gx2) * (gx1 - gx2) + (gy1 - gy2) * (gy1 - gy2);
 
-        float similarity = MathF.Exp(-gr2 / 8.0f) * k; // sigma == 2.0f
+        double similarity = Math.Exp(-gr2 / 8.0) * k; // sigma == 2.0f
 
-        //float activity = similarity - Cortex.Constants.K0;
+        //double activity = similarity - Cortex.Constants.K0;
         //activity = activity * k;
         //similarity = activity + Cortex.Constants.K0;
         //if (similarity < inpitItem1.SimilarityThreshold)
