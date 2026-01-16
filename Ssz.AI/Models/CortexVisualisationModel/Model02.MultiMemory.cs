@@ -93,8 +93,8 @@ public class Model02
         {
             MiniColumn miniColumn = miniColumns[miniColumns_Index];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
-            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
-                continue;
+            //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
+            //    continue;
 
             InputItem inputItem = Cortex.AddInputItem(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn);                  
 
@@ -117,10 +117,9 @@ public class Model02
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
         {
             MiniColumn idealAngleMagnitude_MiniColumn = miniColumns[miniColumns_Index];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn);            
-
-            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
-                continue;
+            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn); 
+            //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
+            //    continue;
 
             MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
                 [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
@@ -153,9 +152,8 @@ public class Model02
         {            
             MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-
-            if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(mainXY_MiniColumn))
-                continue;
+            //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(mainXY_MiniColumn))
+            //    continue;
 
             MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
                 [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;            
@@ -576,6 +574,8 @@ public class Model02
             if (it.Item2.CortexMemories.Count > 0)
             {
                 energy += Math.Log(GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!)) * it.Item1;
+                if (Double.IsNaN(energy) || Double.IsInfinity(energy))
+                    throw new InvalidOperationException();
                 count += 1;
             }
         }
@@ -591,9 +591,9 @@ public class Model02
             + (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina) * (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina);
         double k;
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
-            k = 0.0;
+            k = 0.000001;
         else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.3;
+            k = 0.000001; // TEMPCODE
         else
             k = 1.0;
 

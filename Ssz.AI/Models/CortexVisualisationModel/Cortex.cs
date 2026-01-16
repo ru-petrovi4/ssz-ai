@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
 using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.CortexVisualisationModel;
@@ -167,23 +168,29 @@ public partial class Cortex : ISerializableModelObject
         }
         else
         {
+            float maxRadius = Math.Min(Constants.CotrexWidth_MiniColumns / 2.0f, Constants.CotrexHeight_MiniColumns / 2.0f) + 0.00001f;
+
             for (int mcj = -(int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
                 for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci <= (int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci += 1)
                 {
                     float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
                     float mcy = mcj * delta_MCY;
 
-                    MiniColumn miniColumn = new MiniColumn(
-                            Constants)
+                    float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
+                    if (radius < maxRadius)
                     {
-                        Index = MiniColumns.Count,
-                        MCX = mcx,
-                        MCY = mcy
-                    };
+                        MiniColumn miniColumn = new MiniColumn(
+                            Constants)
+                        {
+                            Index = MiniColumns.Count,
+                            MCX = mcx,
+                            MCY = mcy
+                        };
 
-                    miniColumn.GenerateOwnedData();
+                        miniColumn.GenerateOwnedData();
 
-                    MiniColumns.Add(miniColumn);
+                        MiniColumns.Add(miniColumn);
+                    }
                 }
 
             int x_Limit_MiniColumns = Constants.CotrexWidth_MiniColumns / 2 - 1;
@@ -267,7 +274,12 @@ public partial class Cortex : ISerializableModelObject
         {
             MiniColumn miniColumn = MiniColumns[mc_index];
             miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns);
-        };
+
+            MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
+            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns is null)
+                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Add(miniColumn);
+        }
 
         // Находим ближайшие миниколонки для каждой миниколонки
         Parallel.For(
@@ -276,8 +288,6 @@ public partial class Cortex : ISerializableModelObject
             (Action<int>)(mci =>
             {
                 MiniColumn miniColumn = MiniColumns[mci];
-
-                miniColumn.Temp_HyperColumnMiniColumns.Add(miniColumn);
                 miniColumn.Temp_SameFieldOfViewMiniColumns.Add(miniColumn);
 
                 for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)                    
@@ -300,10 +310,7 @@ public partial class Cortex : ISerializableModelObject
                         miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
 
                     if (r < _2hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_K_2HyperColumnMiniColumns.Add((r2, nearestMc));
-
-                    if (r < hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_HyperColumnMiniColumns.Add(nearestMc);                    
+                        miniColumn.Temp_K_2HyperColumnMiniColumns.Add((r2, nearestMc));        
 
                     if (r < sameFieldOfViewRadius_MiniColumns)                    
                         miniColumn.Temp_SameFieldOfViewMiniColumns.Add(nearestMc);
@@ -350,10 +357,18 @@ public partial class Cortex : ISerializableModelObject
         MiniColumn hyperColumnCenter_MiniColumn, 
         MiniColumn idealAngleMagnitude_MiniColumn, 
         MiniColumn mainXY_MiniColumn)
-    {        
+    {
+        float angleK = 1.0f;
+        float angleBias = 0.0f;
+        //if (hyperColumnCenter_MiniColumn.MCX > 1.0f || hyperColumnCenter_MiniColumn.MCY > 1.0f)
+        //{
+        //    angleBias = MathF.Atan2(-hyperColumnCenter_MiniColumn.MCY, -hyperColumnCenter_MiniColumn.MCX);
+        //    angleK = 1.0f;
+        //}
+
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;
-        inputItem.Angle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
+        inputItem.Angle = MathHelper.NormalizeAngle(angleBias + angleK * MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
         inputItem.Magnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
         inputItem.MainXY_MiniColumnIndex = mainXY_MiniColumn.Index;
@@ -364,7 +379,7 @@ public partial class Cortex : ISerializableModelObject
         inputItem.X_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCX * MiniColumnX_Retina;
         inputItem.Y_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCY * MiniColumnY_Retina;        
 
-        var distanceFromCenterNormalized = inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 1);
+        var distanceFromCenterNormalized = inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
         if (distanceFromCenterNormalized > 1.0f)
             distanceFromCenterNormalized = 1.0f;
         inputItem.ColorAngleMagnitude = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
@@ -450,7 +465,9 @@ public partial class Cortex : ISerializableModelObject
         public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
 
         /// <summary>
-        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.
+        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
+        ///     <para>Может быть неровной формы.</para>
+        ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
         public FastList<MiniColumn> Temp_HyperColumnMiniColumns = null!;
 
@@ -493,8 +510,7 @@ public partial class Cortex : ISerializableModelObject
         {
             Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
             Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            Temp_K_2HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * 4.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            Temp_HyperColumnMiniColumns = new FastList<MiniColumn>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns) + 5);
+            Temp_K_2HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * 4.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));            
             Temp_SameFieldOfViewMiniColumns = new FastList<MiniColumn>((int)(Math.PI * sameFieldOfViewRadius_MiniColumns * sameFieldOfViewRadius_MiniColumns + 5));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
