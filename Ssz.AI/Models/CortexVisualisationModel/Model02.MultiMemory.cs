@@ -591,9 +591,9 @@ public class Model02
             + (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina) * (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina);
         double k;
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
-            k = 0.000001;
+            k = 0.0;
         else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.000001; // TEMPCODE
+            k = 0.00005; // 0.3;
         else
             k = 1.0;
 
@@ -609,6 +609,8 @@ public class Model02
 
         double similarity = Math.Exp(-gr2 / 8.0) * k; // sigma == 2.0f
 
+        if (similarity < 0.000001)
+            similarity = 0.000001;
         //double activity = similarity - Cortex.Constants.K0;
         //activity = activity * k;
         //similarity = activity + Cortex.Constants.K0;

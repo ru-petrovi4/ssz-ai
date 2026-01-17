@@ -202,7 +202,11 @@ public partial class Cortex : ISerializableModelObject
             for (int mcj = -(int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
                 for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
-                    float mcx = (mci + ((mcj % 2 == 0) ? 0.0f : 0.5f)) * delta_MCX;
+                    bool r = mcj % 2 == 0;
+                    if ((300 + mci + (r ? 0 : 2)) % 3 == 2)
+                        continue;
+
+                    float mcx = (mci + (r ? 0.0f : 0.5f)) * delta_MCX;
                     float mcy = mcj * delta_MCY;
 
                     if (mcx <= -x_Limit_MiniColumns || mcx >= x_Limit_MiniColumns ||
@@ -357,18 +361,21 @@ public partial class Cortex : ISerializableModelObject
         MiniColumn hyperColumnCenter_MiniColumn, 
         MiniColumn idealAngleMagnitude_MiniColumn, 
         MiniColumn mainXY_MiniColumn)
-    {
-        float angleK = 1.0f;
-        float angleBias = 0.0f;
-        //if (hyperColumnCenter_MiniColumn.MCX > 1.0f || hyperColumnCenter_MiniColumn.MCY > 1.0f)
-        //{
-        //    angleBias = MathF.Atan2(-hyperColumnCenter_MiniColumn.MCY, -hyperColumnCenter_MiniColumn.MCX);
-        //    angleK = 1.0f;
-        //}
+    {        
+        float angle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
+        if (MathF.Abs(hyperColumnCenter_MiniColumn.MCX) < 1.0f && MathF.Abs(hyperColumnCenter_MiniColumn.MCY) < 1.0f)
+        {                 
+        }
+        else
+        {
+            float angleHypercolumn = MathHelper.NormalizeAngle(MathF.Atan2(hyperColumnCenter_MiniColumn.MCY, hyperColumnCenter_MiniColumn.MCX));
+            float delta = angle - angleHypercolumn;
+            angle = angleHypercolumn + MathF.PI - delta;
+        }
 
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;
-        inputItem.Angle = MathHelper.NormalizeAngle(angleBias + angleK * MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
+        inputItem.Angle = angle;
         inputItem.Magnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
         inputItem.MainXY_MiniColumnIndex = mainXY_MiniColumn.Index;
