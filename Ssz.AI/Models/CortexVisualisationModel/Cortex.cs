@@ -203,7 +203,7 @@ public partial class Cortex : ISerializableModelObject
                 for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
                     bool r = mcj % 2 == 0;
-                    if ((300 + mci + (r ? 0 : 2)) % 3 == 2)
+                    if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
                         continue;
 
                     float mcx = (mci + (r ? 0.0f : 0.5f)) * delta_MCX;
@@ -229,7 +229,11 @@ public partial class Cortex : ISerializableModelObject
                     }
 
                     if (nearestMiniColumn is not null)
+                    {
+                        nearestMiniColumn.HyperColumn_Mci = mci;
+                        nearestMiniColumn.HyperColumn_Mcj = mcj;
                         HyperColumnCenters_MiniColumnIndices.Add(nearestMiniColumn.Index);
+                    }
                 }
         }
 
@@ -280,9 +284,9 @@ public partial class Cortex : ISerializableModelObject
             miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns);
 
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
-            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns is null)
-                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Add(miniColumn);
+            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns is null)
+                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
         }
 
         // Находим ближайшие миниколонки для каждой миниколонки
@@ -364,14 +368,34 @@ public partial class Cortex : ISerializableModelObject
     {        
         float angle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
         if (MathF.Abs(hyperColumnCenter_MiniColumn.MCX) < 1.0f && MathF.Abs(hyperColumnCenter_MiniColumn.MCY) < 1.0f)
-        {                 
+        {   
         }
         else
         {
-            float angleHypercolumn = MathHelper.NormalizeAngle(MathF.Atan2(hyperColumnCenter_MiniColumn.MCY, hyperColumnCenter_MiniColumn.MCX));
-            float delta = angle - angleHypercolumn;
-            angle = angleHypercolumn + MathF.PI - delta;
+            int mci = hyperColumnCenter_MiniColumn.HyperColumn_Mci;
+            int mcj = hyperColumnCenter_MiniColumn.HyperColumn_Mcj;
+            int mcj_remainder = (30000 + mcj) % 3;
+            bool r = mcj % 2 == 0;
+            int mci_remainder = (30000 + mci + (r ? 0 : 2)) % 3;
+            bool c = mci_remainder == 0;            
+            float angleHypercolumn;
+            switch (mcj_remainder)
+            {
+                case 0:
+                    angleHypercolumn = 0;
+                    break;
+                case 1:
+                    angleHypercolumn = -MathF.PI * 2.0f / 3.0f;
+                    break;
+                case 2:
+                    angleHypercolumn = MathF.PI * 2.0f / 3.0f;
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+            angle = angleHypercolumn + (c ? angle : MathF.PI - angle);            
         }
+        angle = MathHelper.NormalizeAngle(MathF.PI / 5.0f + angle);
 
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;
@@ -453,6 +477,16 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public float MCY;
 
+        /// <summary>        
+        ///     <para>Определено только для центров гиперколонок.</para>
+        /// </summary>
+        public int HyperColumn_Mci;
+
+        /// <summary>        
+        ///     <para>Определено только для центров гиперколонок.</para>
+        /// </summary>
+        public int HyperColumn_Mcj;
+
         /// <summary>
         ///     Окружающие миниколонки, для которых считается суперактивность.
         ///     <para>(k, MiniColumn)</para>        
@@ -476,7 +510,7 @@ public partial class Cortex : ISerializableModelObject
         ///     <para>Может быть неровной формы.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
-        public FastList<MiniColumn> Temp_HyperColumnMiniColumns = null!;
+        public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;        
 
         /// <summary>
         ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 5 гиперколонок.
@@ -530,6 +564,8 @@ public partial class Cortex : ISerializableModelObject
                 writer.Write(Index);
                 writer.Write(MCX);
                 writer.Write(MCY);
+                writer.Write(HyperColumn_Mci);
+                writer.Write(HyperColumn_Mcj);
                 writer.WriteFastListOfOwnedDataSerializable(CortexMemories, context);                
             }
         }
@@ -544,6 +580,8 @@ public partial class Cortex : ISerializableModelObject
                         Index = reader.ReadInt32();
                         MCX = reader.ReadSingle();
                         MCY = reader.ReadSingle();
+                        HyperColumn_Mci = reader.ReadInt32();
+                        HyperColumn_Mcj = reader.ReadInt32();
                         CortexMemories = reader.ReadFastListOfOwnedDataSerializable(idx => (Memory?)new Memory(), context);
                         break;                    
                 }
