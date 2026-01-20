@@ -186,6 +186,8 @@ public class Model02
 
         for (int i = 0; i < cortexMemoriesCount * miniColumns.Count; i += 1)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
             MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
