@@ -106,6 +106,8 @@
         <RowDefinition Height="auto" />
         <RowDefinition Height="auto" />
         <RowDefinition Height="auto" />        
+        <RowDefinition Height="auto" />  
+        <RowDefinition Height="auto" />  
       </Grid.RowDefinitions>
       
       <TextBlock Text="Уровень подобия для нулевой активности:" Grid.Row="2" />
@@ -123,6 +125,9 @@
       <TextBlock Text="Порог энергии:" Grid.Row="7" />
       <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="7" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-100" Maximum="0" />      
+
+      <ScrollBar Name="ColorLowScrollBar" Grid.Row="8" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" Value="0" />      
+      <ScrollBar Name="ColorHighScrollBar" Grid.Row="9" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" Value="1" />      
     </Grid>    
   </Grid>  
 </UserControl>

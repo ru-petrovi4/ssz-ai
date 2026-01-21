@@ -1697,12 +1697,19 @@ public static class Visualisation
         return Color.FromArgb(finalR, finalG, finalB);
     }
 
-    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(CortexVisualisationModel.Cortex cortex, Func<CortexVisualisationModel.InputItem, Color> getColor)
+    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(
+        CortexVisualisationModel.Cortex cortex, 
+        Func<CortexVisualisationModel.InputItem, Color> getColor,
+        double filterColorLow = 0.0,
+        double filterColorHigh = 1.0)
     {
         float miniColumnRadius_Pixels = 5.0f;
         float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
+
+        double low = filterColorLow * 360.0;
+        double high = filterColorHigh * 360.0;
 
         using (Graphics g = Graphics.FromImage(bitmap))
         {
@@ -1719,6 +1726,11 @@ public static class Visualisation
                         .Select(cm => cortex.InputItems[cm!.InputItemIndex])                        
                         .Select(ii => getColor(ii))
                         .Where(c => c != Color.Black));
+
+                    float hue = color.GetHue();
+                    
+                    if (hue < low || hue > high)
+                        color = Color.Black;
 
                     g.FillEllipse(
                         new SolidBrush(color),

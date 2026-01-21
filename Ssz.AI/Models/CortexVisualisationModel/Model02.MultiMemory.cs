@@ -65,14 +65,17 @@ public class Model02
 
     public StateInfo StateInfo = new();
 
-    public VisualizationWithDesc[] GetImageWithDescs(Random random)
+    public VisualizationWithDesc[] GetImageWithDescs(
+        Random random,
+        double filterColorLow,
+        double filterColorHigh)
     {
         var r1 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0);
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorAngleMagnitude)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorAngleMagnitude, filterColorLow, filterColorHigh)),
                     Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorXY)),
                     Desc = $"Воспоминания в миниколонках (XY)." },

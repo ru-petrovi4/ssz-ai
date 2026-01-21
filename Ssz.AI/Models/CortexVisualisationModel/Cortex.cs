@@ -395,7 +395,7 @@ public partial class Cortex : ISerializableModelObject
             }
             angle = angleHypercolumn + (c ? angle : MathF.PI - angle);            
         }
-        angle = MathHelper.NormalizeAngle(MathF.PI / 5.0f + angle);
+        angle = MathHelper.NormalizeAngle(angle);
 
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;

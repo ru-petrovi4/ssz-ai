@@ -40,6 +40,9 @@ public partial class Model02View : UserControl
         LevelScrollBar3.ValueChanged += (s, e) => GetDataFromControls(constants);
         LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(constants);
 
+        ColorLowScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
+        ColorHighScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
+
         Reset();
         Refresh_ImagesSet();
 
@@ -474,7 +477,10 @@ public partial class Model02View : UserControl
     private void Refresh_ImagesSet()
     {
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
-        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(_random);
+        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(
+            _random, 
+            ColorLowScrollBar.Value,
+            ColorHighScrollBar.Value);
     }
 
     private const bool OnlyCenterHyperColumn = false;
