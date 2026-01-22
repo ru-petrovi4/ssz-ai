@@ -203,8 +203,8 @@ public partial class Cortex : ISerializableModelObject
                 for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
                     bool r = mcj % 2 == 0;
-                    if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
-                        continue;
+                    //if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
+                    //    continue;
 
                     float mcx = (mci + (r ? 0.0f : 0.5f)) * delta_MCX;
                     float mcy = mcj * delta_MCY;
@@ -239,13 +239,17 @@ public partial class Cortex : ISerializableModelObject
 
         IdealPinwheelMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
 
+        var newHyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
+
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
             MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
 
+            var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
+
             // Воспоминания для оценки качества вертушки
             var inputItem = AddInputItem(random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn);
-            IdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
+            hyperColumnIdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
 
             FastList<MiniColumn> adjacentMiniColumns = new(6);
             for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)
@@ -267,16 +271,23 @@ public partial class Cortex : ISerializableModelObject
                 .OrderBy(mc => MathF.Atan2(mc.MCY - hyperColumnCenter_MiniColumn.MCY, mc.MCX - hyperColumnCenter_MiniColumn.MCX)))
             {
                 inputItem = AddInputItem(random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn);
-                IdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
+                hyperColumnIdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
             }
-        }        
+
+            if (hyperColumnIdealPinwheelMemories.Count == 7)
+            {
+                newHyperColumnCenters_MiniColumnIndices.Add(mc_index);
+                IdealPinwheelMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);                
+            }
+        }
+
+        HyperColumnCenters_MiniColumnIndices.Swap(newHyperColumnCenters_MiniColumnIndices);
     }
 
     public void Prepare()
     {
-        float hypercolumnDefinedRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns + 0.000001f;
-        float _2hypercolumnDefinedRadius_MiniColumns = 2.0f * Constants.HyperColumnDefinedRadius_MiniColumns + 0.000001f;
-        float sameFieldOfViewRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns / Constants.HyperColumnDiameter_Retina + 0.000001f;
+        float hypercolumnRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns / MathF.Cos(MathHelper.DegreesToRadians(60)) + 0.000001f;        
+        float sameFieldOfViewRadius_MiniColumns = 2.0f * hypercolumnRadius_MiniColumns;
 
         for (int mc_index = 0; mc_index < MiniColumns.Count; mc_index += 1)            
         {
@@ -286,7 +297,7 @@ public partial class Cortex : ISerializableModelObject
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
             if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns is null)
                 nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
+            //nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
         }
 
         // Находим ближайшие миниколонки для каждой миниколонки
@@ -297,6 +308,9 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns[mci];
                 miniColumn.Temp_SameFieldOfViewMiniColumns.Add(miniColumn);
+
+                if (miniColumn.Temp_HyperColumn_MiniColumns is not null)
+                    miniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
 
                 for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)                    
                 {
@@ -309,16 +323,20 @@ public partial class Cortex : ISerializableModelObject
                     float r = MathF.Sqrt(r2);
 
                     if (r < 2.00001f)
-                        miniColumn.Temp_K_ForNearestMiniColumns.Add(
+                        miniColumn.Temp_K_SuperActivityMiniColumns.Add(
                             (MathHelper.GetInterpolatedValue(Constants.PositiveK, r),
                             MathHelper.GetInterpolatedValue(Constants.NegativeK, r),
                             nearestMc));
 
-                    if (r < hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
+                    if (r < hypercolumnRadius_MiniColumns)
+                    {
+                        //miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
+                        if (miniColumn.Temp_HyperColumn_MiniColumns is not null)
+                            miniColumn.Temp_HyperColumn_MiniColumns.Add(nearestMc);
+                    }
 
-                    if (r < _2hypercolumnDefinedRadius_MiniColumns)
-                        miniColumn.Temp_K_2HyperColumnMiniColumns.Add((r2, nearestMc));        
+                    //if (r < _2hypercolumnDefinedRadius_MiniColumns)
+                    //    miniColumn.Temp_K_2HyperColumnMiniColumns.Add((r2, nearestMc));        
 
                     if (r < sameFieldOfViewRadius_MiniColumns)                    
                         miniColumn.Temp_SameFieldOfViewMiniColumns.Add(nearestMc);
@@ -491,19 +509,19 @@ public partial class Cortex : ISerializableModelObject
         ///     Окружающие миниколонки, для которых считается суперактивность.
         ///     <para>(k, MiniColumn)</para>        
         /// </summary>
-        public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_ForNearestMiniColumns = null!;
+        public FastList<(float PositiveK, float NegativeK, MiniColumn MiniColumn)> Temp_K_SuperActivityMiniColumns = null!;
 
-        /// <summary>
-        ///     Окружающие миниколонки в радиусе примерно 0.5 гиперколонки.
-        ///     <para>(r, MiniColumn)</para>        
-        /// </summary>
-        public FastList<(float, MiniColumn)> Temp_K_HyperColumnMiniColumns = null!;
+        ///// <summary>
+        /////     Окружающие миниколонки в радиусе примерно 0.5 гиперколонки.
+        /////     <para>(r, MiniColumn)</para>        
+        ///// </summary>
+        //public FastList<(float, MiniColumn)> Temp_K_HyperColumnMiniColumns = null!;
 
-        /// <summary>
-        ///     Окружающие миниколонки в радиусе примерно 1 гиперколонки.
-        ///     <para>(r^2, MiniColumn)</para>        
-        /// </summary>
-        public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
+        ///// <summary>
+        /////     Окружающие миниколонки в радиусе примерно 1 гиперколонки.
+        /////     <para>(r^2, MiniColumn)</para>        
+        ///// </summary>
+        //public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
 
         /// <summary>
         ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
@@ -513,7 +531,7 @@ public partial class Cortex : ISerializableModelObject
         public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;        
 
         /// <summary>
-        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 5 гиперколонок.
+        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2 гиперколонок (хотя реально видимость равна 5 гиперколонкам).
         /// </summary>
         public FastList<MiniColumn> Temp_SameFieldOfViewMiniColumns = null!;
 
@@ -549,9 +567,9 @@ public partial class Cortex : ISerializableModelObject
 
         public void Prepare(float sameFieldOfViewRadius_MiniColumns)
         {
-            Temp_K_ForNearestMiniColumns = new FastList<(float, float, MiniColumn)>(18);
-            Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            Temp_K_2HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * 4.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));            
+            Temp_K_SuperActivityMiniColumns = new FastList<(float, float, MiniColumn)>(18);
+            //Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            //Temp_K_2HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * 4.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));            
             Temp_SameFieldOfViewMiniColumns = new FastList<MiniColumn>((int)(Math.PI * sameFieldOfViewRadius_MiniColumns * sameFieldOfViewRadius_MiniColumns + 5));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);

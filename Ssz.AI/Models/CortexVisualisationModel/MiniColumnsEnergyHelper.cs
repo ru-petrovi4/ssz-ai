@@ -94,9 +94,9 @@ public static class MiniColumnsEnergyHelper
                 (miniColumn.Temp_Activity.CortexMemoriesCount == 0 ? (constants.K2 - constants.K0) : 0.0f);
                 //(miniColumn.Temp_Activity.CortexMemoriesCount / 10); // Штраф за воспоминания        
 
-        for (int i = 0; i < miniColumn.Temp_K_ForNearestMiniColumns.Count; i += 1)
+        for (int i = 0; i < miniColumn.Temp_K_SuperActivityMiniColumns.Count; i += 1)
         {
-            var it = miniColumn.Temp_K_ForNearestMiniColumns[i];
+            var it = miniColumn.Temp_K_SuperActivityMiniColumns[i];
             var nearestMiniColumn = it.MiniColumn;
 
             if (nearestMiniColumn.Temp_Activity.CortexMemoriesCount > 0)

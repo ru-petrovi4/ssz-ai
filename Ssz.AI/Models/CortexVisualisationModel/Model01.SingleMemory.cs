@@ -148,34 +148,35 @@ public class Model01
 
     public (double Average, double Minimum, double Maximum) GetAverageDistance()
     {
-        if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
-            return (Double.NaN, Double.NaN, Double.NaN);
+        //if (Cortex.MiniColumns is null || Cortex.InputItems.Count == 0)
+        //    return (Double.NaN, Double.NaN, Double.NaN);
 
-        var miniColumns = Cortex.MiniColumns;        
+        //var miniColumns = Cortex.MiniColumns;        
 
-        double distanceTotal = 0.0;
-        double distanceMin = Double.MaxValue;
-        double distanceMax = Double.MinValue;
-        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
-        {
-            var miniColumn = miniColumns[miniColumns_Index];
+        //double distanceTotal = 0.0;
+        //double distanceMin = Double.MaxValue;
+        //double distanceMax = Double.MinValue;
+        //for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
+        //{
+        //    var miniColumn = miniColumns[miniColumns_Index];
 
-            double distanceSubTotal = 0.0;
-            for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
-            {
-                MiniColumn nearestMiniColumn = miniColumn.Temp_K_HyperColumnMiniColumns[i].Item2;
-                distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, nearestMiniColumn.CortexMemories[0]!);
-            }
-            double distance = distanceSubTotal / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
-            if (distance < distanceMin)
-                distanceMin = distance;
-            if (distance > distanceMax)
-                distanceMax = distance;
-            distanceTotal += distance;
-            //miniColumn.Temp_Distance = distance;
-        }
+        //    double distanceSubTotal = 0.0;
+        //    for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
+        //    {
+        //        MiniColumn nearestMiniColumn = miniColumn.Temp_K_HyperColumnMiniColumns[i].Item2;
+        //        distanceSubTotal += GetDistance(miniColumn.CortexMemories[0]!, nearestMiniColumn.CortexMemories[0]!);
+        //    }
+        //    double distance = distanceSubTotal / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
+        //    if (distance < distanceMin)
+        //        distanceMin = distance;
+        //    if (distance > distanceMax)
+        //        distanceMax = distance;
+        //    distanceTotal += distance;
+        //    //miniColumn.Temp_Distance = distance;
+        //}
 
-        return (Average: distanceTotal / miniColumns.Count, Minimum: distanceMin, Maximum: distanceMax);
+        //return (Average: distanceTotal / miniColumns.Count, Minimum: distanceMin, Maximum: distanceMax);
+        return (0.0, 0.0, 0.0);
     }
 
     #endregion
@@ -240,18 +241,19 @@ public class Model01
 
     private double GetMiniColumnEnergy(MiniColumn miniColumn)
     {
-        if (miniColumn.CortexMemories.Count < 1)
-            return 0.0;
-        //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
+        //if (miniColumn.CortexMemories.Count < 1)
+        //    return 0.0;
+        ////var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
 
-        double energy = 0.0;
-        for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
-        {
-            var it = miniColumn.Temp_K_HyperColumnMiniColumns[i];
-            //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
-            energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
-        }
-        return energy / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
+        //double energy = 0.0;
+        //for (int i = 0; i < miniColumn.Temp_K_HyperColumnMiniColumns.Count; i += 1)
+        //{
+        //    var it = miniColumn.Temp_K_HyperColumnMiniColumns[i];
+        //    //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
+        //    energy -= GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!) * it.Item1;
+        //}
+        //return energy / miniColumn.Temp_K_HyperColumnMiniColumns.Count;
+        return 0.0;
     }    
 
     private double GetDistance(Memory memory1, Memory memory2)

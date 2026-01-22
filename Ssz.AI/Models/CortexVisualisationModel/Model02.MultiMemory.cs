@@ -76,7 +76,7 @@ public class Model02
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorAngleMagnitude, filterColorLow, filterColorHigh)),
-                    Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns)}" },
+                    Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns, hypercolumnIndex: 0)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorXY)),
                     Desc = $"Воспоминания в миниколонках (XY)." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r1.Image),
@@ -124,8 +124,8 @@ public class Model02
             //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
             //    continue;
 
-            MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
+            MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
+                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
 
             InputItem inputItem = Cortex.AddInputItem(
                 random,
@@ -146,26 +146,23 @@ public class Model02
 
     public void PutMemories_Random_MultiMemory(Random random, int cortexMemoriesCount)
     {
-        if (Cortex.MiniColumns is null)
-            return;
-        
+        if (Cortex.MiniColumns is null || Cortex.HyperColumnCenters_MiniColumnIndices.Count == 0)
+            return;        
+
         var miniColumns = Cortex.MiniColumns;        
 
         for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
-        {            
-            MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-            //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(mainXY_MiniColumn))
-            //    continue;
+        {
+            MiniColumn nearest_HyperColumnCenter_MiniColumn = miniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];            
 
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;            
+            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
+                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];            
 
             InputItem inputItem = Cortex.AddInputItem(
                 random,
                 nearest_HyperColumnCenter_MiniColumn,
                 idealAngleMagnitude_MiniColumn,
-                mainXY_MiniColumn
+                nearest_HyperColumnCenter_MiniColumn
                 );
             var cortexMemory = Memory.FromInputItem(inputItem);
 
@@ -193,8 +190,8 @@ public class Model02
 
             MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_K_HyperColumnMiniColumns.Count)].Item2;
+            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
+                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
 
             InputItem inputItem = Cortex.AddInputItem(
                 random,
@@ -249,7 +246,7 @@ public class Model02
     /// <param name="random"></param>
     /// <param name="candidateMiniColumns"></param>
     /// <returns></returns>
-    public float GetPinwheelIndex(Random random, FastList<MiniColumn> candidateMiniColumns)
+    public float GetPinwheelIndex(Random random, FastList<MiniColumn> candidateMiniColumns, int hypercolumnIndex)
     {
         StateInfo stateInfo = new();
         stateInfo.MaxActivity = float.MinValue;
@@ -259,7 +256,7 @@ public class Model02
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.IdealPinwheelMemories[0], GetSimilarity, Constants);
+            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.IdealPinwheelMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
 
             float a = activity.PositiveActivity + activity.NegativeActivity;
             if (a > stateInfo.MaxActivity)
@@ -274,19 +271,25 @@ public class Model02
             }
         };
 
-        MiniColumn? centerMiniColumn = stateInfo.ActivityMax_MiniColumns.FirstOrDefault();
-        if (centerMiniColumn is null || centerMiniColumn.Temp_AdjacentMiniColumns.Count < 6)
+        MiniColumn? pinwheelCenterMiniColumn = stateInfo.ActivityMax_MiniColumns.FirstOrDefault();
+
+        return GetPinwheelIndex(pinwheelCenterMiniColumn, hypercolumnIndex);
+    }
+
+    public float GetPinwheelIndex(MiniColumn? pinwheelCenterMiniColumn, int hypercolumnIndex)
+    {
+        if (pinwheelCenterMiniColumn is null || pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Count < 6)
             return 0.0f;
 
         float maxPinwheelIndex = Single.MinValue;
         for (int adjacentMiniColumns_StartIndex = 0; adjacentMiniColumns_StartIndex < 6; adjacentMiniColumns_StartIndex += 1)
-        {            
+        {
             float pinwheelIndex = 0.0f;
             for (int j = 1; j < 7; j += 1)
             {
-                var idealPinwheelMemory = Cortex.IdealPinwheelMemories[j];
+                var idealPinwheelMemory = Cortex.IdealPinwheelMemories[hypercolumnIndex * 7 + j];
 
-                MiniColumn miniColumn = centerMiniColumn.Temp_AdjacentMiniColumns[(adjacentMiniColumns_StartIndex + j) % 6].Item2;
+                MiniColumn miniColumn = pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns[(adjacentMiniColumns_StartIndex + j) % 6].Item2;
                 int cortexMemoriesCount = 0;
                 float similaritySum = 0.0f;
                 for (int mi = 0; mi < miniColumn.CortexMemories.Count; mi += 1)
@@ -323,21 +326,34 @@ public class Model02
     {
         FastList<MiniColumn> excludeFromFlood_MiniColumns = new();
 
-        for (int i = 0; i < Cortex.HyperColumnCenters_MiniColumnIndices.Count; i += 1)
+        for (int hypercolumnIndex = 0; hypercolumnIndex < Cortex.HyperColumnCenters_MiniColumnIndices.Count; hypercolumnIndex += 1)
         {
-            //int mc_index = Cortex.HyperColumnCenters_MiniColumnIndices[i];
-            //MiniColumn hyperColumnCenter_MiniColumn = Cortex.MiniColumns[mc_index];
-
-            MiniColumn? centerMiniColumn = FindBestForMemoryMiniColumn(
-                Cortex.IdealPinwheelMemories[i * 7],
-                random,
-                CancellationToken.None,
-                candidateMiniColumns);
-            if (centerMiniColumn is not null)
+            for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)
             {
-                excludeFromFlood_MiniColumns.Add(centerMiniColumn);
-                excludeFromFlood_MiniColumns.AddRange(centerMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+                var pinwheelCenterMiniColumn = candidateMiniColumns[candidateMiniColumns_Index];
+
+                var activity = MiniColumnsEnergyHelper.GetActivity(pinwheelCenterMiniColumn, Cortex.IdealPinwheelMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
+                if (activity.PositiveActivity > 0.5f)
+                {
+                    float pinwheelIndex = GetPinwheelIndex(pinwheelCenterMiniColumn, hypercolumnIndex);
+                    if (pinwheelIndex > 2.5f)
+                    {
+                        excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
+                        excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+                    }
+                }
             }
+
+            //MiniColumn? pinwheelCenterMiniColumn = FindBestForMemoryMiniColumn(
+            //    Cortex.IdealPinwheelMemories[i * 7],
+            //    random,
+            //    CancellationToken.None,
+            //    candidateMiniColumns);
+            //if (pinwheelCenterMiniColumn is not null)
+            //{
+            //    excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
+            //    excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+            //}
         }
 
         for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)
@@ -571,25 +587,27 @@ public class Model02
 
     private double GetMiniColumnEnergy_SingleMemory(MiniColumn miniColumn)
     {
-        if (miniColumn.CortexMemories.Count == 0)
-            return 0.0;
-        //var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
+        //if (miniColumn.CortexMemories.Count == 0)
+        //    return 0.0;
+        ////var d = MathHelper.NormalPdf(3.0f, 0.0f, 3.0f);
 
-        double energy = 0.0;
-        int count = 0;
-        for (int i = 0; i < miniColumn.Temp_K_2HyperColumnMiniColumns.Count; i += 1)
-        {
-            var it = miniColumn.Temp_K_2HyperColumnMiniColumns[i];
-            //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
-            if (it.Item2.CortexMemories.Count > 0)
-            {
-                energy += Math.Log(GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!)) * it.Item1;
-                if (Double.IsNaN(energy) || Double.IsInfinity(energy))
-                    throw new InvalidOperationException();
-                count += 1;
-            }
-        }
-        return energy / count;
+        //double energy = 0.0;
+        //int count = 0;
+        //for (int i = 0; i < miniColumn.Temp_K_2HyperColumnMiniColumns.Count; i += 1)
+        //{
+        //    var it = miniColumn.Temp_K_2HyperColumnMiniColumns[i];
+        //    //energy -= MathHelper.NormalPdf(GetDistance(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!), 0.0f, 3.0f);
+        //    if (it.Item2.CortexMemories.Count > 0)
+        //    {
+        //        energy += Math.Log(GetSimilarity(miniColumn.CortexMemories[0]!, it.Item2.CortexMemories[0]!)) * it.Item1;
+        //        if (Double.IsNaN(energy) || Double.IsInfinity(energy))
+        //            throw new InvalidOperationException();
+        //        count += 1;
+        //    }
+        //}
+        //return energy / count;
+
+        return 0.0;
     }
 
     private double GetSimilarity(Memory memory1, Memory memory2)

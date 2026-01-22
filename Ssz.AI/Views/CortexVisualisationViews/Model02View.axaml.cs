@@ -407,7 +407,7 @@ public partial class Model02View : UserControl
                             return Task.CompletedTask;
                         });
 
-                        index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns) > 4.5) ? 1.0f : 0.0f);
+                        index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns, hypercolumnIndex: 0) > 4.5) ? 1.0f : 0.0f);
                     }
                     index = index / count;
                     if (index > bestSettings.MaxIndex)
