@@ -190,8 +190,8 @@ public class Model02
 
             MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
             MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
+            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns
+                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Count)];
 
             InputItem inputItem = Cortex.AddInputItem(
                 random,
@@ -328,32 +328,32 @@ public class Model02
 
         for (int hypercolumnIndex = 0; hypercolumnIndex < Cortex.HyperColumnCenters_MiniColumnIndices.Count; hypercolumnIndex += 1)
         {
-            for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)
-            {
-                var pinwheelCenterMiniColumn = candidateMiniColumns[candidateMiniColumns_Index];
-
-                var activity = MiniColumnsEnergyHelper.GetActivity(pinwheelCenterMiniColumn, Cortex.IdealPinwheelMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
-                if (activity.PositiveActivity > 0.5f)
-                {
-                    float pinwheelIndex = GetPinwheelIndex(pinwheelCenterMiniColumn, hypercolumnIndex);
-                    if (pinwheelIndex > 2.5f)
-                    {
-                        excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
-                        excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
-                    }
-                }
-            }
-
-            //MiniColumn? pinwheelCenterMiniColumn = FindBestForMemoryMiniColumn(
-            //    Cortex.IdealPinwheelMemories[i * 7],
-            //    random,
-            //    CancellationToken.None,
-            //    candidateMiniColumns);
-            //if (pinwheelCenterMiniColumn is not null)
+            //for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)
             //{
-            //    excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
-            //    excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+            //    var pinwheelCenterMiniColumn = candidateMiniColumns[candidateMiniColumns_Index];
+
+            //    var activity = MiniColumnsEnergyHelper.GetActivity(pinwheelCenterMiniColumn, Cortex.IdealPinwheelMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
+            //    if (activity.PositiveActivity > 0.5f)
+            //    {
+            //        float pinwheelIndex = GetPinwheelIndex(pinwheelCenterMiniColumn, hypercolumnIndex);
+            //        if (pinwheelIndex > 2.5f)
+            //        {
+            //            excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
+            //            excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+            //        }
+            //    }
             //}
+
+            MiniColumn? pinwheelCenterMiniColumn = FindBestForMemoryMiniColumn(
+                Cortex.IdealPinwheelMemories[hypercolumnIndex * 7],
+                random,
+                CancellationToken.None,
+                candidateMiniColumns);
+            if (pinwheelCenterMiniColumn is not null)
+            {
+                excludeFromFlood_MiniColumns.Add(pinwheelCenterMiniColumn);
+                excludeFromFlood_MiniColumns.AddRange(pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns.Select(it => it.Item2).ToArray());
+            }
         }
 
         for (int candidateMiniColumns_Index = 0; candidateMiniColumns_Index < candidateMiniColumns.Count; candidateMiniColumns_Index += 1)

@@ -297,7 +297,9 @@ public partial class Cortex : ISerializableModelObject
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
             if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns is null)
                 nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            //nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
+            if (nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns is null)
+                nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Add(miniColumn);
         }
 
         // Находим ближайшие миниколонки для каждой миниколонки
@@ -528,7 +530,14 @@ public partial class Cortex : ISerializableModelObject
         ///     <para>Может быть неровной формы.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
-        public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;        
+        public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;
+
+        /// <summary>
+        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
+        ///     <para>Может быть неровной формы.</para>
+        ///     <para>Определено только для центров гиперколонок.</para>
+        /// </summary>
+        public FastList<MiniColumn> Temp_Strict_HyperColumn_MiniColumns = null!;
 
         /// <summary>
         ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2 гиперколонок (хотя реально видимость равна 5 гиперколонкам).
