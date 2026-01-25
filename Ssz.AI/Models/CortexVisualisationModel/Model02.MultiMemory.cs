@@ -117,31 +117,31 @@ public class Model02
 
         var miniColumns = Cortex.MiniColumns;
 
-        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
-        {
-            MiniColumn idealAngleMagnitude_MiniColumn = miniColumns[miniColumns_Index];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn); 
-            //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
-            //    continue;
+        //for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
+        //{
+        //    MiniColumn idealAngleMagnitude_MiniColumn = miniColumns[miniColumns_Index];
+        //    MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(idealAngleMagnitude_MiniColumn); 
+        //    //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(idealAngleMagnitude_MiniColumn))
+        //    //    continue;
 
-            MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
+        //    MiniColumn mainXY_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
+        //        [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
 
-            InputItem inputItem = Cortex.AddInputItem(
-                random,
-                nearest_HyperColumnCenter_MiniColumn,
-                idealAngleMagnitude_MiniColumn,
-                mainXY_MiniColumn
-                );
-            var cortexMemory = Memory.FromInputItem(inputItem);
+        //    InputItem inputItem = Cortex.AddInputItem(
+        //        random,
+        //        nearest_HyperColumnCenter_MiniColumn,
+        //        idealAngleMagnitude_MiniColumn,
+        //        mainXY_MiniColumn
+        //        );
+        //    var cortexMemory = Memory.FromInputItem(inputItem);
 
-            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Where(mc => mc.CortexMemories.Count == 0).ToArray();            
-            if (forMemoryMiniColumns.Length > 0)
-            {
-                var cortexMemories = forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Length)].CortexMemories;                
-                cortexMemories.Add(cortexMemory);
-            }
-        }
+        //    var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Where(mc => mc.CortexMemories.Count == 0).ToArray();            
+        //    if (forMemoryMiniColumns.Length > 0)
+        //    {
+        //        var cortexMemories = forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Length)].CortexMemories;                
+        //        cortexMemories.Add(cortexMemory);
+        //    }
+        //}
     }
 
     public void PutMemories_Random_MultiMemory(Random random, int cortexMemoriesCount)
@@ -214,13 +214,110 @@ public class Model02
         await refreshAction();
     }
 
-    public async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    //public async Task ReorderMemoriesAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    //{
+    //    if (Constants.SingleMemory)
+    //        await ReorderMemories_SingleMemoryAsync(random, cancellationToken, refreshAction, Cortex.MiniColumns);
+    //    else
+    //        await ReorderMemories_MultiMemoryAsync(random, cancellationToken, refreshAction, Cortex.MiniColumns);
+    //}
+
+    public async Task ReorderMemories_MultiMemoryAsync(
+        Random random, 
+        CancellationToken cancellationToken, 
+        Func<Task> refreshAction, 
+        FastList<MiniColumn> candidateMiniColumns, 
+        int epochCount)
     {
-        if (Constants.SingleMemory)
-            await ReorderMemories_SingleMemoryAsync(random, cancellationToken, refreshAction, Cortex.MiniColumns);
-        else
-            await ReorderMemories_MultiMemoryAsync(random, cancellationToken, refreshAction, Cortex.MiniColumns);
-    }    
+        Stopwatch sw = Stopwatch.StartNew();
+
+        int min_ChangesCount = Int32.MaxValue;
+        int min_ChangesCount_UnchangedCount = 0;
+
+        for (int epoch = 0; epoch < epochCount; epoch += 1)
+        {
+            int changedCount = 0;
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            FastList<(MiniColumn, int)> randomMiniColumnCortexMemoryIndices = new(candidateMiniColumns.Count * 10);
+            for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
+            {
+                var miniColumn = candidateMiniColumns[miniColumns_Index];
+
+                for (int cortexMemory_Index = 0; cortexMemory_Index < miniColumn.CortexMemories.Count; cortexMemory_Index += 1)
+                {
+                    randomMiniColumnCortexMemoryIndices.Add((miniColumn, cortexMemory_Index));
+                }
+            }
+            random.Shuffle(randomMiniColumnCortexMemoryIndices.Items);
+
+            for (int index = 0; index < randomMiniColumnCortexMemoryIndices.Count; index += 1)
+            {
+                var it = randomMiniColumnCortexMemoryIndices[index];
+                var miniColumn = it.Item1;
+                Memory? cortexMemory = miniColumn.CortexMemories[it.Item2];
+                if (cortexMemory is null)
+                    continue;
+
+                miniColumn.CortexMemories[it.Item2] = null;
+
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_SameFieldOfViewMiniColumns);
+                if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
+                {
+                    bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
+                    changedCount += 1;
+                }
+                else
+                {
+                    miniColumn.CortexMemories[it.Item2] = cortexMemory;
+                }
+
+                if (refreshAction is not null && sw.ElapsedMilliseconds > 500)
+                {
+                    await refreshAction();
+                    sw.Restart();
+                }
+            }
+
+            for (int mc_index = 0; mc_index < candidateMiniColumns.Count; mc_index += 1)
+            {
+                MiniColumn mc = candidateMiniColumns[mc_index];
+
+                for (int mi = 0; mi < mc.CortexMemories.Count; mi += 1)
+                {
+                    Memory? cortexMemory = mc.CortexMemories[mi];
+                    if (cortexMemory is null)
+                        continue;
+
+                    mc.Temp_CortexMemories.Add(cortexMemory);
+                }
+
+                mc.CortexMemories.Swap(mc.Temp_CortexMemories);
+                mc.Temp_CortexMemories.Clear();
+            }
+
+            LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
+
+            if (refreshAction is not null)
+                await refreshAction();
+
+            if (changedCount < min_ChangesCount)
+            {
+                min_ChangesCount_UnchangedCount = 0;
+                min_ChangesCount = changedCount;
+            }
+            else
+            {
+                min_ChangesCount_UnchangedCount += 1;
+            }
+
+            if (changedCount == 0 || min_ChangesCount_UnchangedCount > 1000)
+                break;
+        }
+
+        LoggersSet.UserFriendlyLogger.LogInformation($"ReorderMemories Finished.");
+    }
 
     public async Task AddNoizeAsync(int percents, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
@@ -489,101 +586,7 @@ public class Model02
             if (!changed)
                 break;
         }
-    }
-
-    private async Task ReorderMemories_MultiMemoryAsync(Random random, CancellationToken cancellationToken, Func<Task> refreshAction, FastList<MiniColumn> candidateMiniColumns)
-    {
-        Stopwatch sw = Stopwatch.StartNew();
-
-        int min_ChangesCount = Int32.MaxValue;
-        int min_ChangesCount_UnchangedCount = 0;
-
-        int epochCount = 1000;
-
-        for (int epoch = 0; epoch < epochCount; epoch += 1)
-        {
-            int changedCount = 0;
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            FastList<(MiniColumn, int)> randomMiniColumnCortexMemoryIndices = new(candidateMiniColumns.Count * 10);
-            for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
-            {
-                var miniColumn = candidateMiniColumns[miniColumns_Index];
-
-                for (int cortexMemory_Index = 0; cortexMemory_Index < miniColumn.CortexMemories.Count; cortexMemory_Index += 1)
-                {
-                    randomMiniColumnCortexMemoryIndices.Add((miniColumn, cortexMemory_Index));
-                }
-            }
-            random.Shuffle(randomMiniColumnCortexMemoryIndices.Items);
-
-            for (int index = 0; index < randomMiniColumnCortexMemoryIndices.Count; index += 1)
-            {
-                var it = randomMiniColumnCortexMemoryIndices[index];
-                var miniColumn = it.Item1;
-                Memory? cortexMemory = miniColumn.CortexMemories[it.Item2];
-                if (cortexMemory is null)
-                    continue;
-
-                miniColumn.CortexMemories[it.Item2] = null;
-
-                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, miniColumn.Temp_SameFieldOfViewMiniColumns);
-                if (bestForMemoryMiniColumn is not null && !ReferenceEquals(bestForMemoryMiniColumn, miniColumn))
-                {
-                    bestForMemoryMiniColumn.CortexMemories.Add(cortexMemory);
-                    changedCount += 1;
-                }
-                else
-                {
-                    miniColumn.CortexMemories[it.Item2] = cortexMemory;
-                }
-
-                if (refreshAction is not null && sw.ElapsedMilliseconds > 500)
-                {
-                    await refreshAction();
-                    sw.Restart();
-                }
-            }
-
-            for (int mc_index = 0; mc_index < candidateMiniColumns.Count; mc_index += 1)
-            {
-                MiniColumn mc = candidateMiniColumns[mc_index];
-
-                for (int mi = 0; mi < mc.CortexMemories.Count; mi += 1)
-                {
-                    Memory? cortexMemory = mc.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
-
-                    mc.Temp_CortexMemories.Add(cortexMemory);
-                }
-
-                mc.CortexMemories.Swap(mc.Temp_CortexMemories);
-                mc.Temp_CortexMemories.Clear();
-            }
-
-            LoggersSet.UserFriendlyLogger.LogInformation($"Epoch: {epoch}/{epochCount};");
-
-            if (refreshAction is not null)
-                await refreshAction();
-
-            if (changedCount < min_ChangesCount)
-            {
-                min_ChangesCount_UnchangedCount = 0;
-                min_ChangesCount = changedCount;
-            }
-            else
-            {
-                min_ChangesCount_UnchangedCount += 1;
-            }
-
-            if (changedCount == 0 || min_ChangesCount_UnchangedCount > 1000)
-                break;
-        }        
-
-        LoggersSet.UserFriendlyLogger.LogInformation($"ReorderMemories Finished.");
-    }
+    }    
 
     private double GetMiniColumnEnergy_SingleMemory(MiniColumn miniColumn)
     {

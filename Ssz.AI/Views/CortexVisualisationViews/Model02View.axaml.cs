@@ -204,14 +204,19 @@ public partial class Model02View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ReorderMemories Started.");
 
-                await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
+                await Model.ReorderMemories_MultiMemoryAsync(
+                    _random,
+                    cancellationToken, 
+                    () =>
                     {
-                        Refresh_ImagesSet();
-                    });
-                    return Task.CompletedTask;
-                });
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    },
+                    Model.Cortex.MiniColumns,
+                    epochCount: 1000);
             }
             catch (OperationCanceledException)
             {
@@ -246,7 +251,7 @@ public partial class Model02View : UserControl
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Started.");
 
-                await Model.ProcessNAsync(10, _random, cancellationToken, () =>
+                await Model.ProcessNAsync(1, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -381,6 +386,64 @@ public partial class Model02View : UserControl
 
                 var constants = Model02.Constants;
 
+                int count = 100;
+                for (int it = 0; it < count; it += 1)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    Model.Flood(_random, Model.Cortex.MiniColumns);
+
+                    await Model.ProcessNAsync(3, _random, cancellationToken, () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    });
+
+                    await Model.ReorderMemories_MultiMemoryAsync(
+                        _random, 
+                        cancellationToken,
+                        () =>
+                        {
+                            Dispatcher.UIThread.Invoke(() =>
+                            {
+                                Refresh_ImagesSet();
+                            });
+                            return Task.CompletedTask;
+                        },
+                        Model.Cortex.MiniColumns,
+                        epochCount: 30);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Cancelled.");
+            }
+            Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Finished.");
+        });
+        await _curentLongRunningTask;
+        _curentLongRunningTask = null;
+
+        Refresh_ImagesSet();
+    }
+
+    private async void StartProcessScript_OptimizeSettings_OnClick(object? sender, RoutedEventArgs args)
+    {
+        if (_curentLongRunningTask is not null)
+            return;
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        _curentLongRunningTask = Task.Run(async () =>
+        {
+            try
+            {
+                Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("ProcessScript Started.");
+
+                var constants = Model02.Constants;
+
                 BestSettings bestSettings = new();
 
                 int interationN = 0;
@@ -402,10 +465,15 @@ public partial class Model02View : UserControl
 
                         Model.PutMemories_Random_MultiMemory(_random, cortexMemoriesCount: 6);
 
-                        await Model.ReorderMemoriesAsync(_random, cancellationToken, () =>
-                        {
-                            return Task.CompletedTask;
-                        });
+                        await Model.ReorderMemories_MultiMemoryAsync(
+                            _random, 
+                            cancellationToken,                            
+                            () =>
+                            {
+                                return Task.CompletedTask;
+                            },
+                            Model.Cortex.MiniColumns,
+                            epochCount: 30);
 
                         index += ((Model.GetPinwheelIndex(_random, Model.Cortex.MiniColumns, hypercolumnIndex: 0) > 4.5) ? 1.0f : 0.0f);
                     }

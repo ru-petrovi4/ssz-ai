@@ -526,8 +526,7 @@ public partial class Cortex : ISerializableModelObject
         //public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
 
         /// <summary>
-        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
-        ///     <para>Может быть неровной формы.</para>
+        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2.0 * HyperColumnDefinedRadius_MiniColumns.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
         public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;

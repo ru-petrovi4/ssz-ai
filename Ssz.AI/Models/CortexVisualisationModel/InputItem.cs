@@ -69,7 +69,10 @@ public class InputItem : IOwnedDataSerializable
         Y_HyperColumnCenter_Retina = reader.ReadSingle();
         ColorAngleMagnitude = reader.ReadColor();
         ColorXY = reader.ReadColor();
-        DistanceFromCenter = reader.ReadSingle();        
+        DistanceFromCenter = reader.ReadSingle();
+
+        // TEMPCODE
+        //ColorAngleMagnitude = Visualisation.ColorFromHSV(ColorAngleMagnitude.GetHue() / 360.0f, 1.0, 1.0);
     }
 
     public override string ToString()
