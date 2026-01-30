@@ -448,7 +448,7 @@ public static partial class ModelHelper
             {                     
                 if (bitsNearest_N1_A_Mapped == bitsNearest_B[n2])
                 {
-                    //float w = n2 + 1;//ComputeNeighborWeight(n2); // TEMPCODE
+                    //float w = n2 + 1;//ComputeNeighborWeight(n2);
                     strength += n2 + 1;
                     break;
                 }

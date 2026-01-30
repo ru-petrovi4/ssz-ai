@@ -175,7 +175,7 @@ public class Model02
         }
     }
 
-    public async Task ProcessNAsync(int cortexMemoriesCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    public async Task ProcessNAsync(float cortexMemoriesCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
         if (Cortex.MiniColumns is null)
             return;
@@ -273,7 +273,7 @@ public class Model02
                     miniColumn.CortexMemories[it.Item2] = cortexMemory;
                 }
 
-                if (refreshAction is not null && sw.ElapsedMilliseconds > 500)
+                if (refreshAction is not null && sw.ElapsedMilliseconds > 1000)
                 {
                     await refreshAction();
                     sw.Restart();

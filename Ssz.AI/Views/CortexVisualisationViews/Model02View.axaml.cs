@@ -245,13 +245,15 @@ public partial class Model02View : UserControl
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
+        float cortexMemoriesCount = new Any(await DialogHelper.GetValueFromUserAsync("cortexMemoriesCount", defaultValue: @"1")).ValueAsSingle(false);
+
         _curentLongRunningTask = Task.Run(async () =>
         {
             try
             {
                 Model.LoggersSet.LoggerAndUserFriendlyLogger.LogInformation("StartProcessN Started.");
 
-                await Model.ProcessNAsync(1, _random, cancellationToken, () =>
+                await Model.ProcessNAsync(cortexMemoriesCount, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {

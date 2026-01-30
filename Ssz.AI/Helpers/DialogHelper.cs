@@ -8,9 +8,10 @@ namespace Ssz.AI.Helpers
 {
     public static class DialogHelper
     {
-        public static async Task<string?> GetValueFromUserAsync(string label)
+        public static async Task<string?> GetValueFromUserAsync(string label, string defaultValue = @"")
         {
-            return (await DialogHost.Show(new InputDialog(label))) as string;
+            return (await DialogHost.Show(
+                new InputDialog(label, defaultValue))) as string;
             //Title = title;
             //var textBox = new TextBox();
             //var okButton = new Button { Content = "OK" };

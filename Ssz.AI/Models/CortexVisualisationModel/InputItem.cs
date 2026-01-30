@@ -71,7 +71,7 @@ public class InputItem : IOwnedDataSerializable
         ColorXY = reader.ReadColor();
         DistanceFromCenter = reader.ReadSingle();
 
-        // TEMPCODE
+        // 
         //ColorAngleMagnitude = Visualisation.ColorFromHSV(ColorAngleMagnitude.GetHue() / 360.0f, 1.0, 1.0);
     }
 
