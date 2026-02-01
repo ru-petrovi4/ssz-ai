@@ -527,13 +527,14 @@ public partial class Cortex : ISerializableModelObject
 
         /// <summary>
         ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2.0 * HyperColumnDefinedRadius_MiniColumns.</para>
+        ///     <para>Круглой формы. Может пересекаться с другими гиперколонками.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
         public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;
 
         /// <summary>
         ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
-        ///     <para>Может быть неровной формы.</para>
+        ///     <para>Может быть неровной формы. Не пересекается с другими гиперколонками.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
         public FastList<MiniColumn> Temp_Strict_HyperColumn_MiniColumns = null!;

@@ -149,22 +149,9 @@ public class Model02
         if (Cortex.MiniColumns is null || Cortex.HyperColumnCenters_MiniColumnIndices.Count == 0)
             return;        
 
-        var miniColumns = Cortex.MiniColumns;        
-
-        for (int miniColumns_Index = 0; miniColumns_Index < miniColumns.Count; miniColumns_Index += 1)
-        {
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = miniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];            
-
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];            
-
-            InputItem inputItem = Cortex.AddInputItem(
-                random,
-                nearest_HyperColumnCenter_MiniColumn,
-                idealAngleMagnitude_MiniColumn,
-                nearest_HyperColumnCenter_MiniColumn
-                );
-            var cortexMemory = Memory.FromInputItem(inputItem);
+        for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Count; miniColumns_Index += 1)
+        {   
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory(random); 
 
             var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns;
             for (int i = 0; i < cortexMemoriesCount; i += 1)
@@ -173,6 +160,22 @@ public class Model02
                 cortexMemories.Add(cortexMemory);
             }
         }
+    }
+
+    private (Memory, MiniColumn) GetRandomCortexMemory(Random random)
+    {
+        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
+
+        MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
+            [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
+
+        InputItem inputItem = Cortex.AddInputItem(
+            random,
+            nearest_HyperColumnCenter_MiniColumn,
+            idealAngleMagnitude_MiniColumn,
+            nearest_HyperColumnCenter_MiniColumn
+            );
+        return (Memory.FromInputItem(inputItem), nearest_HyperColumnCenter_MiniColumn);
     }
 
     public async Task ProcessNAsync(float cortexMemoriesCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -188,23 +191,12 @@ public class Model02
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            MiniColumn mainXY_MiniColumn = miniColumns[random.Next(miniColumns.Count)];
-            MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.GetNearest_HyperColumnCenter_MiniColumn(mainXY_MiniColumn);
-            MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns
-                [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Count)];
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory(random);
 
-            InputItem inputItem = Cortex.AddInputItem(
-                random,
-                nearest_HyperColumnCenter_MiniColumn,
-                idealAngleMagnitude_MiniColumn,
-                mainXY_MiniColumn
-                );
-            Memory cortexMemory = Memory.FromInputItem(inputItem);
-
-            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, mainXY_MiniColumn.Temp_SameFieldOfViewMiniColumns);
+            MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
-            if (sw.ElapsedMilliseconds > 500)
+            if (sw.ElapsedMilliseconds > 1000)
             {
                 await refreshAction();
                 sw.Restart();
