@@ -203,8 +203,8 @@ public partial class Cortex : ISerializableModelObject
                 for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
                     bool r = mcj % 2 == 0;
-                    //if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
-                    //    continue;
+                    if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
+                        continue;
 
                     float mcx = (mci + (r ? 0.0f : 0.5f)) * delta_MCX;
                     float mcy = mcj * delta_MCY;
