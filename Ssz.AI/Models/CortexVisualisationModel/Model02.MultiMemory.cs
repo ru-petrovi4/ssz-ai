@@ -153,7 +153,7 @@ public class Model02
         {   
             var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory(random); 
 
-            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns;
+            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns;
             for (int i = 0; i < cortexMemoriesCount; i += 1)
             {
                 var cortexMemories = forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Count)].CortexMemories;                
@@ -166,8 +166,8 @@ public class Model02
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
 
-        MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns
-            [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns.Count)];
+        MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns
+            [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Count)];
 
         InputItem inputItem = Cortex.AddInputItem(
             random,
