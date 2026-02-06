@@ -208,7 +208,9 @@ public partial class Model11View : UserControl
     private async void FloodButton_OnClick(object? sender, RoutedEventArgs args)
     {
         var floodRadius = await DialogHelper.GetValueFromUserAsync(
-                "Радиус потопа:"             // Заголовок                
+                "Радиус потопа:",             // Заголовок
+                                             //
+                ""
             );
 
         Model.Flood(_random, new Any(floodRadius).ValueAsSingle(false));
