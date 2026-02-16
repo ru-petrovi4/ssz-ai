@@ -3,7 +3,7 @@ using System;
 
 namespace Ssz.AI.Models
 {
-    public interface IConstants : IMiniColumnsActivityConstants
+    public interface IRetinaConstants
     {
         PixelSize RetinaImagePixelSize { get; set; }
 
@@ -12,21 +12,40 @@ namespace Ssz.AI.Models
         /// </summary>
         float RetinaDetectorsDeltaPixels { get; set; }
 
-        /// <summary>
-        ///     Количество детекторов, видимых одной миниколонкой
-        /// </summary>
-        int MiniColumnVisibleDetectorsCount { get; }
+        int GeneratedMinGradientMagnitude { get; }
+
+        int GeneratedMaxGradientMagnitude { get; }
+
+        int MagnitudeRangesCount { get; }
 
         /// <summary>
         ///     Минимальная чувствительность к модулю градиента
         /// </summary>
         double DetectorMinGradientMagnitude { get; }
 
-        int GeneratedMinGradientMagnitude { get; }
+        Vector3DFloat PhysicalImageCenter { get; }
 
-        int GeneratedMaxGradientMagnitude { get; }
+        Size2DFloat PhysicalImageSize { get; }
 
-        int MagnitudeRangesCount { get; }
+        float DistanceBetweenEyes { get; }
+
+        /// <summary>
+        ///     Примерный радиус гиперколонки (измеренный в миниколонках).
+        /// </summary>
+        int HyperColumnDefinedRadius_MiniColumns { get; }
+
+        /// <summary>
+        ///     Длина хэш-вектора
+        /// </summary>
+        int HashLength { get; }
+    }
+
+    public interface IConstants : IMiniColumnsActivityConstants, IRetinaConstants
+    {
+        /// <summary>
+        ///     Количество детекторов, видимых одной миниколонкой
+        /// </summary>
+        int MiniColumnVisibleDetectorsCount { get; }                
 
         /// <summary>
         ///     Количество миниколонок в подобласти
@@ -43,24 +62,14 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Индекс Y центра подобласти
         /// </summary>
-        int CalculationsSubAreaCenter_Cy { get; }
-
-        /// <summary>
-        ///     Примерный радиус гиперколонки (измеренный в миниколонках).
-        /// </summary>
-        float HyperColumnSupposedRadius_MiniColumns { get; }
+        int CalculationsSubAreaCenter_Cy { get; }        
 
         float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns { get; }
 
         /// <summary>
         ///     Количество гиперколнок в рецептивном поле миниколонки.
         /// </summary>
-        float DetectorsField_HyperColumns { get; }
-
-        /// <summary>
-        ///     Длина хэш-вектора
-        /// </summary>
-        int HashLength { get; }
+        float DetectorsField_HyperColumns { get; }        
 
         /// <summary>
         ///     Длина короткого хэш-вектора

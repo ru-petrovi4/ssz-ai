@@ -37,7 +37,7 @@ namespace Ssz.AI.Models
         public Model11(ModelConstants constants)
         {
             // Количество полных гиперколонок в картинке по ширине
-            float hyperColumnsWidthCount = constants.CortexWidth_MiniColumns / (constants.HyperColumnSupposedRadius_MiniColumns * 2.0f);
+            float hyperColumnsWidthCount = constants.CortexWidth_MiniColumns / (constants.HyperColumnDefinedRadius_MiniColumns * 2.0f);
             // Количество полных полей детекторов в картинке по ширине
             float detectorsFieldsWidthCount = (hyperColumnsWidthCount / constants.DetectorsField_HyperColumns) + 1.0f;
             float imageRadiusDegrees = 4.0f;                        
@@ -1239,7 +1239,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Примерный радиус гиперколонки (измеренный в миниколонках).
             /// </summary>
-            public float HyperColumnSupposedRadius_MiniColumns => 10;
+            public float HyperColumnDefinedRadius_MiniColumns => 10;
 
             public float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns => 14;            
 
@@ -1329,6 +1329,8 @@ namespace Ssz.AI.Models
             public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
             public Size2DFloat PhysicalImageSize => new Size2DFloat(0.1f, 0.1f);
+
+            int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
         }
     }
 }

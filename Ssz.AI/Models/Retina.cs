@@ -17,7 +17,7 @@ namespace Ssz.AI.Models
     {
         #region construction and destruction
 
-        public Retina(IConstants constants)
+        public Retina(IRetinaConstants constants)
         {  
             Detectors = new DenseMatrix<Detector>(
                 (int)Math.Round(constants.RetinaImagePixelSize.Width / constants.RetinaDetectorsDeltaPixels, 0), 
@@ -52,14 +52,14 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Generates model data after construction.
         /// </summary>
-        public void GenerateOwnedData(Random initializationRandom, IConstants constants, GradientDistribution gradientDistribution)
+        public void GenerateOwnedData(Random initializationRandom, IRetinaConstants constants, GradientDistribution gradientDistribution)
         {
             // TODO gradientDistribution -> DetectorRanges            
             int gradientMagnitudeRange = constants.GeneratedMaxGradientMagnitude / constants.MagnitudeRangesCount;
 
             DetectorsRanges = new DenseMatrix<DetectorRange>(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);                                  
 
-            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / constants.HyperColumnSupposedRadius_MiniColumns;
+            float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / constants.HyperColumnDefinedRadius_MiniColumns;
 
             //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
             //float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
@@ -74,7 +74,7 @@ namespace Ssz.AI.Models
                 //    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
                 //else
                     //angleRange = angleRange0;
-                angleRange = MathF.Atan2(constants.K5, gradientMagnitude / gmIn1) * 4.0f;
+                angleRange = MathF.Atan2(1.8f, gradientMagnitude / gmIn1) * 4.0f; // constants.K5
 
                 if (angleRange > 2 * MathF.PI)
                     angleRange = 2 * MathF.PI;

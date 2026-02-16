@@ -1,0 +1,134 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+       xmlns:local="clr-namespace:Ssz.AI"
+       xmlns:localViews="clr-namespace:Ssz.AI.Views"       
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"       
+             x:Class="Ssz.AI.Views.ImageProcessingModelViews.Model01View">
+  <Grid>
+    <Grid.Styles>
+      <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="8"/>        
+      </Style>
+    </Grid.Styles>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />      
+      <RowDefinition Height="auto" />   
+    </Grid.RowDefinitions>
+    
+    <Grid>
+		  <Grid.RowDefinitions>
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />
+              <RowDefinition Height="auto" />              
+          </Grid.RowDefinitions>
+          <StackPanel Orientation="Horizontal">  
+              <Button Content="Reset" Click="Reset_OnClick" />                  
+              <Button Content="Stop Long Operation" Click="StopLongOperation_OnClick" />               
+              <!--<Button Content="GenerateCortex" Click="GenerateCortex_OnClick" />-->
+              <Button Content="SaveCortex" Click="SaveCortex_OnClick" />   
+              <Button Content="LoadCortex" Click="LoadCortex_OnClick" /> 
+              <CheckBox Name="SingleMemory" Content="Single Memory" Click="SingleMemory_OnClick" />
+              <CheckBox Name="EnergyThreshold" Content="Energy Threshold" Click="EnergyThreshold_OnClick" />
+          </StackPanel>          
+          <StackPanel Grid.Row="2" Orientation="Horizontal">        
+              <TextBlock Text="Reorder:" VerticalAlignment="Center" />              
+              <Button Content="Put Initial Memories Pinwheel" Click="PutInitialMemoriesPinwheel_OnClick" />  
+              <Button Content="Put Initial Memories Random" Click="PutInitialMemoriesRandom_OnClick" /> 
+              <Button Content="Add Noize 20%" Click="AddNoize_OnClick" /> 
+              <Button Content="Flood" Click="Flood_OnClick" /> 
+              <Button Content="Start Reoder" Click="StartReorderMemories_OnClick" />                             
+              <Button Content="Start Process 1" Click="StartProcess1_OnClick" /> 
+              <Button Content="Start Process N" Click="StartProcessN_OnClick" /> 
+              <Button Content="Start Process Script" Click="StartProcessScript_OnClick" /> 
+              <Button Content="Visualizes Script Results" Click="VisualizesScriptResults_OnClick" /> 
+          </StackPanel>
+    </Grid>    
+
+    <Grid Grid.Row="1">      
+      <TextBlock Margin="5" x:Name="ImagesSet1_TextBlock" FontSize="16" FontWeight="Bold" />
+    </Grid>
+    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+
+    <Grid Grid.Row="3">      
+      <TextBlock Margin="5" x:Name="ImagesSet2_TextBlock" FontSize="16" FontWeight="Bold" />
+    </Grid>
+    <localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />
+
+    <Grid Grid.Row="5">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="auto" />        
+        <ColumnDefinition Width="*" />        
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="100" />
+        <RowDefinition Height="100" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Text="Притяжение:" />      
+      <local:Sliders Name="PositiveSliders" Grid.Column="1" />
+      <TextBlock Text="Отталкивание:" Grid.Row="1" Grid.Column="0" />      
+      <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
+    </Grid>
+    
+    <Grid Grid.Row="6">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>        
+        <RowDefinition Height="0" />
+        <RowDefinition Height="0" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />        
+        <RowDefinition Height="auto" />  
+        <RowDefinition Height="auto" />  
+      </Grid.RowDefinitions>
+      
+      <TextBlock Text="Уровень подобия для нулевой активности:" Grid.Row="2" />
+      <TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="2" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar0" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
+      <TextBlock Text="" Grid.Row="3" />
+      <TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="3" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar1" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
+      <TextBlock Text="Штраф за воспоминания" Grid.Row="4" />
+      <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="4" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar2" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
+      <TextBlock Text="" Grid.Row="6" />
+      <TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="6" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar3" Grid.Row="6" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />
+      <TextBlock Text="Порог энергии:" Grid.Row="7" />
+      <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="7" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="7" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-100" Maximum="0" />      
+
+      <ScrollBar Name="ColorLowScrollBar" Grid.Row="8" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" Value="0" />      
+      <ScrollBar Name="ColorHighScrollBar" Grid.Row="9" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" Value="1" />      
+    </Grid>    
+  </Grid>  
+</UserControl>
+

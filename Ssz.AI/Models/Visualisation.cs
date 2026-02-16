@@ -13,6 +13,122 @@ namespace Ssz.AI.Models;
 
 public static class Visualisation
 {
+    public static Bitmap GetBitmapFromMiniColumsMemoriesColor(
+        ImageProcessingModel.Cortex cortex,
+        Func<ImageProcessingModel.InputItem, Color> getColor,
+        double filterColorLow = 0.0,
+        double filterColorHigh = 1.0)
+    {
+        float miniColumnRadius_Pixels = 5.0f;
+        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
+
+        double low = filterColorLow * 360.0;
+        double high = filterColorHigh * 360.0;
+
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            // Устанавливаем черный фон
+            g.Clear(Color.Black);
+
+            for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
+            {
+                var miniColumn = cortex.MiniColumns[mc_index];
+                if (miniColumn.CortexMemories.Count > 0)
+                {
+                    Color color = GetAverageLABColor(miniColumn.CortexMemories
+                        .Where(cm => cm is not null)
+                        .Select(cm => cortex.InputItems[cm!.InputItemIndex])
+                        .Select(ii => getColor(ii))
+                        .Where(c => c != Color.Black));
+
+                    float hue = color.GetHue();
+
+                    if (hue < low || hue > high)
+                        color = Color.Black;
+
+                    g.FillEllipse(
+                        new SolidBrush(color),
+                        miniColumn.MCX * miniColumnRadius_Pixels * 2 + width_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                        miniColumn.MCY * miniColumnRadius_Pixels * 2 + height_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                        miniColumnRadius_Pixels * 2 + 2.0f,
+                        miniColumnRadius_Pixels * 2 + 2.0f
+                        );
+                }
+            }
+        }
+
+        return bitmap;
+    }
+
+    public static (Image Image, double ValueMin, double ValueMax) GetBitmapFromMiniColumsValue(ImageProcessingModel.Cortex cortex, Func<ImageProcessingModel.Cortex.MiniColumn, double> getValue, double? valueMin = null, double? valueMax = null)
+    {
+        double valueMin_Local = Double.MaxValue;
+        double valueMax_Local = Double.MinValue;
+
+        for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
+        {
+            var miniColumn = cortex.MiniColumns[mc_index];
+            if (miniColumn.CortexMemories.Count > 0)
+            {
+                double value = getValue(miniColumn);
+                if (value < valueMin_Local)
+                    valueMin_Local = value;
+                if (value > valueMax_Local)
+                    valueMax_Local = value;
+            }
+        }
+
+        double valueMin_Final;
+        if (valueMin is not null)
+            valueMin_Final = valueMin.Value;
+        else
+            valueMin_Final = valueMin_Local;
+
+        double valueMax_Final;
+        if (valueMax is not null)
+            valueMax_Final = valueMax.Value;
+        else
+            valueMax_Final = valueMax_Local;
+
+        float miniColumnRadius_Pixels = 5.0f;
+        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
+
+        using (Graphics g = Graphics.FromImage(bitmap))
+        {
+            // Устанавливаем черный фон
+            g.Clear(Color.Black);
+
+            for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
+            {
+                var miniColumn = cortex.MiniColumns[mc_index];
+                double value = getValue(miniColumn);
+                int v = (int)(255 * (value - valueMin_Final) / (valueMax_Final - valueMin_Final));
+                if (v > 255)
+                    v = 255;
+                else if (v < 0)
+                    v = 0;
+
+                Color color = Color.FromArgb(v, v, v);
+
+                g.FillEllipse(
+                    new SolidBrush(color),
+                    miniColumn.MCX * miniColumnRadius_Pixels * 2 + width_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                    miniColumn.MCY * miniColumnRadius_Pixels * 2 + height_Pixels / 2 - miniColumnRadius_Pixels - 1.0f,
+                    miniColumnRadius_Pixels * 2 + 2.0f,
+                    miniColumnRadius_Pixels * 2 + 2.0f
+                    );
+            }
+        }
+
+        return (bitmap, valueMin_Local, valueMax_Local);
+    }    
+
+
+    // =================================================== Obsolete ===================================================
     public static ImageWithDesc[] VisualizeKSearch()
     {
         Dictionary<float, System.Drawing.Bitmap> info = new();

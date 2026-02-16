@@ -25,6 +25,47 @@ namespace Ssz.AI.Models
             {  1,  2,  1 }
         };
 
+        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, IRetinaConstants constants)
+        {
+            int width = gradientMatrix.Dimensions[0];
+            int height = gradientMatrix.Dimensions[1];
+
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
+                    if (magnitudeInt < constants.DetectorMinGradientMagnitude)
+                        continue;
+
+                    gradientDistribution.MagnitudeData[magnitudeInt] += 1;
+
+                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);
+                    gradientDistribution.AngleData[angleDegree] += 1;
+                }
+            }
+
+            //var detectors = new DenseMatrix<Detector>((int)(gradientMatrix.Dimensions[0] / constants.DetectorDelta), (int)(gradientMatrix.Dimensions[1] / constants.DetectorDelta));
+            //foreach (int dy in Enumerable.Range(0, detectors.Dimensions[1]))
+            //    foreach (int dx in Enumerable.Range(0, detectors.Dimensions[0]))
+            //    {
+            //        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(dx * constants.DetectorDelta, dy * constants.DetectorDelta, gradientMatrix);
+
+            //        var magnitudeInt = (int)magnitude;
+            //        if (magnitudeInt < Detector.GradientMagnitudeMinimum)
+            //            continue;
+
+            //        gradientDistribution.MagnitudeData[magnitudeInt] += 1;
+
+            //        int angleDegree = (int)(180.0 * angle / Math.PI + 180.0);
+            //        if (angleDegree == 360)
+            //            angleDegree = 0;
+            //        gradientDistribution.AngleData[angleDegree] += 1;
+            //    }            
+        }
+
+        // ====================================================================================================
+
         public static DenseMatrix<GradientInPoint> ApplySobel(byte[] mnistImageData, int width, int height)
         {
             DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
@@ -273,45 +314,6 @@ namespace Ssz.AI.Models
             }
 
             return gradientMatrix;
-        }
-
-        public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, IConstants constants)
-        {
-            int width = gradientMatrix.Dimensions[0];
-            int height = gradientMatrix.Dimensions[1];
-
-            for (int y = 0; y < height; y += 1)
-            {
-                for (int x = 0; x < width; x += 1)
-                {
-                    var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < constants.DetectorMinGradientMagnitude)
-                        continue;
-
-                    gradientDistribution.MagnitudeData[magnitudeInt] += 1;
-
-                    int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);                    
-                    gradientDistribution.AngleData[angleDegree] += 1;
-                }
-            }
-
-            //var detectors = new DenseMatrix<Detector>((int)(gradientMatrix.Dimensions[0] / constants.DetectorDelta), (int)(gradientMatrix.Dimensions[1] / constants.DetectorDelta));
-            //foreach (int dy in Enumerable.Range(0, detectors.Dimensions[1]))
-            //    foreach (int dx in Enumerable.Range(0, detectors.Dimensions[0]))
-            //    {
-            //        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(dx * constants.DetectorDelta, dy * constants.DetectorDelta, gradientMatrix);
-
-            //        var magnitudeInt = (int)magnitude;
-            //        if (magnitudeInt < Detector.GradientMagnitudeMinimum)
-            //            continue;
-
-            //        gradientDistribution.MagnitudeData[magnitudeInt] += 1;
-
-            //        int angleDegree = (int)(180.0 * angle / Math.PI + 180.0);
-            //        if (angleDegree == 360)
-            //            angleDegree = 0;
-            //        gradientDistribution.AngleData[angleDegree] += 1;
-            //    }            
         }
 
         public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, IConstants constants, GradientDistribution gradientDistribution)

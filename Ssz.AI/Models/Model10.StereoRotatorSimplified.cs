@@ -901,7 +901,7 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Примерный радиус гиперколонки (измеренный в миниколонках).
             /// </summary>
-            public float HyperColumnSupposedRadius_MiniColumns => 10;
+            public float HyperColumnDefinedRadius_MiniColumns => 10;
 
             public float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns => 10;
 
@@ -985,6 +985,14 @@ namespace Ssz.AI.Models
             public float[] PositiveK { get; set; } = [0.16f, 0.05f];
 
             public float[] NegativeK { get; set; } = [0.16f, 0.05f];
+
+            public Vector3DFloat PhysicalImageCenter => throw new NotImplementedException();
+
+            public Size2DFloat PhysicalImageSize => throw new NotImplementedException();
+
+            public float DistanceBetweenEyes => throw new NotImplementedException();
+
+            int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
         }        
     }
 }
