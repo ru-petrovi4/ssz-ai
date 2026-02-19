@@ -92,13 +92,13 @@ namespace Ssz.AI.Models
             Eye leftEye,
             Eye rightEye)
         {
-            StereoInputItem[] stereoInputItems = stereoInput.StereoInputItems;
+            StereoInputItem[] stereoInputImages = stereoInput.StereoInputItems;
 
             foreach (var i in Enumerable.Range(0, 5000))
             {
-                var stereoInputItem = stereoInputItems[i];
+                var stereoInputImage = stereoInputImages[i];
 
-                var leftEye_GradientMatrix = stereoInputItem.LeftEye_GradientMatrix;
+                var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
                 var leftEye_Detectors = leftEye.Retina.Detectors;
                 Parallel.For(
                     fromInclusive: 0,
@@ -109,7 +109,7 @@ namespace Ssz.AI.Models
                         d.CalculateIsActivated(leftEye.Retina, leftEye_GradientMatrix, Constants);
                     });
                 
-                var rightEye_GradientMatrix = stereoInputItem.RightEye_GradientMatrix;
+                var rightEye_GradientMatrix = stereoInputImage.RightEye_GradientMatrix;
                 var rightEye_Detectors = rightEye.Retina.Detectors;
                 Parallel.For(
                     fromInclusive: 0,

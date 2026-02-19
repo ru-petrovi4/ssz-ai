@@ -39,24 +39,24 @@ namespace Ssz.AI.Models
             StereoInputItems = new StereoInputItem[inputImageDatas.Length];            
             foreach (int i in Enumerable.Range(0, inputImageDatas.Length))
             {
-                StereoInputItem stereoInputItem = new();
-                StereoInputItems[i] = stereoInputItem;
+                StereoInputItem stereoInputImage = new();
+                StereoInputItems[i] = stereoInputImage;
                 byte[] inputImageData = inputImageDatas[i];
-                stereoInputItem.Label = inputImagesLabels[i];
-                stereoInputItem.InputImageData = inputImageData;
-                stereoInputItem.ImageNormalDirection = new Direction();
-                stereoInputItem.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
-                stereoInputItem.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
+                stereoInputImage.Label = inputImagesLabels[i];
+                stereoInputImage.InputImageData = inputImageData;
+                stereoInputImage.ImageNormalDirection = new Direction();
+                stereoInputImage.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
+                stereoInputImage.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
 
-                stereoInputItem.LeftRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputItem.ImageNormalDirection, leftEye);
-                stereoInputItem.RightRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputItem.ImageNormalDirection, rightEye);
+                stereoInputImage.LeftRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputImage.ImageNormalDirection, leftEye);
+                stereoInputImage.RightRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputImage.ImageNormalDirection, rightEye);
 
                 // Применяем оператор Собеля
-                stereoInputItem.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-                SobelOperator.CalculateDistribution(stereoInputItem.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
+                stereoInputImage.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputImage.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
+                SobelOperator.CalculateDistribution(stereoInputImage.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
 
-                stereoInputItem.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputItem.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-                SobelOperator.CalculateDistribution(stereoInputItem.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
+                stereoInputImage.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputImage.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
+                SobelOperator.CalculateDistribution(stereoInputImage.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
             }
         }
 

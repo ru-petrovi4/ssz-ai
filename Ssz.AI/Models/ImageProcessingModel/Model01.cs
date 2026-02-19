@@ -116,6 +116,9 @@ public class Model01
         Cortex = new Cortex(Constants, Logger);
         Cortex.GenerateOwnedData(random, onlyCeneterHypercolumn);
         Cortex.Prepare();
+
+
+        DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
 
     #endregion

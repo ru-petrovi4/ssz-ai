@@ -193,9 +193,9 @@ namespace Ssz.AI.Models
             {
                 CurrentInputIndex += 1;
 
-                var stereoInputItem = StereoInput.StereoInputItems[CurrentInputIndex];
+                var stereoInputImage = StereoInput.StereoInputItems[CurrentInputIndex];
 
-                await DoStepAsync(CurrentInputIndex, stereoInputItem, Temp_ActivitiyMaxInfo, random, randomInitialization, reorderMemoriesPeriodically);
+                await DoStepAsync(CurrentInputIndex, stereoInputImage, Temp_ActivitiyMaxInfo, random, randomInitialization, reorderMemoriesPeriodically);
             }
 
             sw.Stop();
@@ -370,9 +370,9 @@ namespace Ssz.AI.Models
             else
                 currentInputIndex = CurrentInputIndex;
 
-            StereoInputItem stereoInputItem = StereoInput.StereoInputItems[currentInputIndex];
+            StereoInputItem stereoInputImage = StereoInput.StereoInputItems[currentInputIndex];
 
-            var gradientMatrix = stereoInputItem.LeftEye_GradientMatrix;
+            var gradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
             //var subImage = BitmapHelper.GetSubBitmap(
             //    gradientBitmap,
@@ -395,7 +395,7 @@ namespace Ssz.AI.Models
 
             return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(gradientBitmap), 
-                    Desc = $"Видимая картина градиентов. {stereoInputItem.Label}" },
+                    Desc = $"Видимая картина градиентов. {stereoInputImage.Label}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(detectorsActivationBitmap),
                     Desc = $"Активация детекторов. Всего (для одной миниколонки): {activatedDetectors.Count} ({forMinicolumn_ActivatedDetectors.Count})" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
@@ -873,12 +873,12 @@ namespace Ssz.AI.Models
             UserFriendlyLogger.LogInformation("ReorderMemories() finished.");
         }
 
-        public void CalculateDetectorsAndActivityAndSuperActivity(StereoInputItem? stereoInputItem)
+        public void CalculateDetectorsAndActivityAndSuperActivity(StereoInputItem? stereoInputImage)
         {
-            if (stereoInputItem is null)
+            if (stereoInputImage is null)
                 return;
 
-            var leftEye_GradientMatrix = stereoInputItem.LeftEye_GradientMatrix;
+            var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
             var leftEye_Detectors = LeftEye.Retina.Detectors;
             Parallel.For(
                 fromInclusive: 0,
@@ -890,7 +890,7 @@ namespace Ssz.AI.Models
                 });
 
             // TEMPCODE
-            //var rightEye_GradientMatrix = stereoInputItem.RightEye_GradientMatrix;
+            //var rightEye_GradientMatrix = stereoInputImage.RightEye_GradientMatrix;
             //var rightEye_Detectors = RightEye.Retina.Detectors;
             //Parallel.For(
             //    fromInclusive: 0,
@@ -948,7 +948,7 @@ namespace Ssz.AI.Models
 
         private async Task DoStepAsync(
             int inputIndex,
-            StereoInputItem stereoInputItem, 
+            StereoInputItem stereoInputImage, 
             ActivitiyMaxInfo activitiyMaxInfo, 
             Random random, 
             bool randomInitialization,
@@ -960,7 +960,7 @@ namespace Ssz.AI.Models
                 await ReorderMemoriesAsync(1, random);
             }
 
-            CalculateDetectorsAndActivityAndSuperActivity(stereoInputItem);
+            CalculateDetectorsAndActivityAndSuperActivity(stereoInputImage);
 
             StoreMemories(inputIndex, activitiyMaxInfo, random);                     
         }
