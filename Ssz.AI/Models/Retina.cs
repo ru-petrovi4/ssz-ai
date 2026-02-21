@@ -18,21 +18,22 @@ namespace Ssz.AI.Models
         #region construction and destruction
 
         public Retina(IRetinaConstants constants)
-        {  
+        {
+            float retinaDetectorsDeltaPixels = constants.RetinaDetectorsDeltaPixels;
             Detectors = new DenseMatrix<Detector>(
-                (int)Math.Round(constants.RetinaImagePixelSize.Width / constants.RetinaDetectorsDeltaPixels, 0), 
-                (int)Math.Round(constants.RetinaImagePixelSize.Height / constants.RetinaDetectorsDeltaPixels, 0));
-            foreach (int detectorY in Enumerable.Range(0, Detectors.Dimensions[1]))
-                foreach (int detectorX in Enumerable.Range(0, Detectors.Dimensions[0]))
+                (int)Math.Round(constants.RetinaImagePixelSize.Width / retinaDetectorsDeltaPixels, 0), 
+                (int)Math.Round(constants.RetinaImagePixelSize.Height / retinaDetectorsDeltaPixels, 0));
+            foreach (int dJ in Enumerable.Range(0, Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Detectors.Dimensions[0]))
                 {
                     Detector detector = new()
                     {
-                        DetectorX = detectorX,
-                        DetectorY = detectorY,
-                        CenterXPixels = detectorX * constants.RetinaDetectorsDeltaPixels,
-                        CenterYPixels = detectorY * constants.RetinaDetectorsDeltaPixels,
+                        DI = dI,
+                        DJ = dJ,
+                        CenterXPixels = dI * retinaDetectorsDeltaPixels,
+                        CenterYPixels = dJ * retinaDetectorsDeltaPixels,
                     };
-                    Detectors[detectorX, detectorY] = detector;
+                    Detectors[dI, dJ] = detector;
                 }
         }
 
@@ -190,17 +191,17 @@ namespace Ssz.AI.Models
 
     public class Detector
     {
-        public int DetectorX;
+        public int DI;
 
-        public int DetectorY;        
+        public int DJ;        
 
         /// <summary>
-        ///     [0..MNISTImageWidth]
+        ///     
         /// </summary>
         public double CenterXPixels { get; init; }
 
         /// <summary>
-        ///     [0..MNISTImageHeight]
+        ///     
         /// </summary>
         public double CenterYPixels { get; init; }
         
@@ -217,7 +218,7 @@ namespace Ssz.AI.Models
 
         public GradientInPoint Temp_GradientInPoint;
 
-        public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, IConstants constants, Vector2 offset = default)
+        public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, IConstantsObsolete constants, Vector2 offset = default)
         {
             Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
@@ -252,7 +253,7 @@ namespace Ssz.AI.Models
             Temp_IsActivated = activated;
         }
 
-        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstants constants, Vector2 offset = default)
+        public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstantsObsolete constants, Vector2 offset = default)
         {
             (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 

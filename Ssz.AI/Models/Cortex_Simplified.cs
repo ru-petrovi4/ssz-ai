@@ -18,7 +18,7 @@ public class Cortex_Simplified : ISerializableModelObject
     /// </summary>
     /// <param name="constants"></param>        
     public Cortex_Simplified(
-        IConstants constants,            
+        IConstantsObsolete constants,            
         Retina retina)
     {
         Constants = constants;
@@ -152,7 +152,7 @@ public class Cortex_Simplified : ISerializableModelObject
     /// </summary>
     public double DetectorsVisibleRadiusPixels { get; }
 
-    public IConstants Constants { get; }
+    public IConstantsObsolete Constants { get; }
 
     //public float[] PositiveK;
 
@@ -255,7 +255,7 @@ public class Cortex_Simplified : ISerializableModelObject
 
     public class MiniColumn : IMiniColumn, IMiniColumnActivity, ISerializableModelObject
     {
-        public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
+        public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
         {
             Constants = constants;
             Detectors = detectors;
@@ -272,7 +272,7 @@ public class Cortex_Simplified : ISerializableModelObject
             K_ForNearestMiniColumns = new FastList<(float, float, IMiniColumnActivity)>((int)(Math.PI * maxR * maxR) + 1);
         }
 
-        public readonly IConstants Constants;
+        public readonly IConstantsObsolete Constants;
 
         public readonly List<Detector> Detectors;
 

@@ -59,13 +59,12 @@ public class Model01
 
         DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
-
         // Constants init.
-
         Rect2DFloat subImageRect = new Rect2DFloat(x: 0.45f, y: 0.45f, width: 0.1f, height: 0.1f);
-        Constants.RetinaImagePixelSize = new PixelSize((int)(200 * subImageRect.Width), (int)(200 * subImageRect.Height));
-
-
+        Constants.RetinaImagePixelSize = new PixelSize(
+            (int)(Constants.RetinaImagePixelSize.Width * subImageRect.Width), 
+            (int)(Constants.RetinaImagePixelSize.Height * subImageRect.Height));
+        Constants.RetinaImageVerticalAngle = Constants.RetinaImageVerticalAngle * subImageRect.Height;
 
         LeftEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f }, subImageRect);
         RightEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f }, subImageRect);
@@ -94,7 +93,7 @@ public class Model01
 #else
         Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
 #endif
-        StereoInput.Prepare();
+        StereoInput.Prepare(); // Does nothing.
 
 #if GENERATE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null, null);
@@ -151,9 +150,9 @@ public class Model01
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorAngleMagnitude, filterColorLow, filterColorHigh)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns, hypercolumnIndex: 0)}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.ColorXY)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.RetinaXYAngle_Color)),
                     Desc = $"Воспоминания в миниколонках (XY)." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r1.Image),
                     Desc = $"Активность миниколонок; Min: {r1.ValueMin:F03}; Max: {r1.ValueMax:F03}" },
@@ -538,23 +537,23 @@ public class Model01
     {
         Eye eye = new();
         eye.Pupil = pupil;
-        eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.PhysicalImageCenter.X - Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaUpperLeftYRadians = MathF.Atan2(Constants.PhysicalImageCenter.Y - Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaBottomRightXRadians = MathF.Atan2(Constants.PhysicalImageCenter.X + Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaBottomRightYRadians = MathF.Atan2(Constants.PhysicalImageCenter.Y + Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
+        eye.RetinaUpperLeftXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X - Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
+        eye.RetinaUpperLeftYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y - Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
+        eye.RetinaBottomRightXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X + Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
+        eye.RetinaBottomRightYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y + Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
 
-        float widthRadians = eye.RetinaBottomRightXRadians - eye.RetinaUpperLeftXRadians;
-        float heightRadians = eye.RetinaBottomRightYRadians - eye.RetinaUpperLeftYRadians;
+        float widthAngle = eye.RetinaBottomRightXAngle - eye.RetinaUpperLeftXAngle;
+        float heightAngle = eye.RetinaBottomRightYAngle - eye.RetinaUpperLeftYAngle;
 
-        float subImageWidthRadians = widthRadians * subImageRect.Width;
-        float subImageHeightRadians = heightRadians * subImageRect.Height;
-        float subImageBiasXRadians = widthRadians * subImageRect.X;
-        float subImageBiasYRadians = heightRadians * subImageRect.Y;
+        float subImageWidthAngle = widthAngle * subImageRect.Width;
+        float subImageHeightAngle = heightAngle * subImageRect.Height;
+        float subImageBiasXAngle = widthAngle * subImageRect.X;
+        float subImageBiasYAngle = heightAngle * subImageRect.Y;
 
-        eye.RetinaUpperLeftXRadians = eye.RetinaUpperLeftXRadians + subImageBiasXRadians;
-        eye.RetinaUpperLeftYRadians = eye.RetinaUpperLeftYRadians + subImageBiasYRadians;
-        eye.RetinaBottomRightXRadians = eye.RetinaUpperLeftXRadians + subImageWidthRadians;
-        eye.RetinaBottomRightYRadians = eye.RetinaUpperLeftYRadians + subImageHeightRadians;
+        eye.RetinaUpperLeftXAngle = eye.RetinaUpperLeftXAngle + subImageBiasXAngle;
+        eye.RetinaUpperLeftYAngle = eye.RetinaUpperLeftYAngle + subImageBiasYAngle;
+        eye.RetinaBottomRightXAngle = eye.RetinaUpperLeftXAngle + subImageWidthAngle;
+        eye.RetinaBottomRightYAngle = eye.RetinaUpperLeftYAngle + subImageHeightAngle;
 
         return eye;
     }
@@ -711,8 +710,8 @@ public class Model01
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
-        var r2 = (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina) * (inpitItem1.X_HyperColumnCenter_Retina - inpitItem2.X_HyperColumnCenter_Retina)
-            + (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina) * (inpitItem1.Y_HyperColumnCenter_Retina - inpitItem2.Y_HyperColumnCenter_Retina);
+        var r2 = (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle) * (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle)
+            + (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle) * (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle);
         double k;
         if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
             k = 0.0;
@@ -721,13 +720,13 @@ public class Model01
         else
             k = 1.0;
 
-        double radialDistance1 = inpitItem1.Magnitude;
-        double radialDistance2 = inpitItem2.Magnitude;
+        double radialDistance1 = inpitItem1.GradientMagnitude;
+        double radialDistance2 = inpitItem2.GradientMagnitude;
 
-        double gx1 = radialDistance1 * Math.Cos(inpitItem1.Angle);
-        double gy1 = radialDistance1 * Math.Sin(inpitItem1.Angle);
-        double gx2 = radialDistance2 * Math.Cos(inpitItem2.Angle);
-        double gy2 = radialDistance2 * Math.Sin(inpitItem2.Angle);
+        double gx1 = radialDistance1 * Math.Cos(inpitItem1.GradientAngle);
+        double gy1 = radialDistance1 * Math.Sin(inpitItem1.GradientAngle);
+        double gx2 = radialDistance2 * Math.Cos(inpitItem2.GradientAngle);
+        double gy2 = radialDistance2 * Math.Sin(inpitItem2.GradientAngle);
 
         var gr2 = (gx1 - gx2) * (gx1 - gx2) + (gy1 - gy2) * (gy1 - gy2);
 
@@ -762,18 +761,49 @@ public class Model01
 
     #endregion
 
-    public class ModelConstants : IRetinaConstants, ICortexConstants
+    public class ModelConstants : ICortexConstants
     {
-        public int CotrexWidth_MiniColumns => 100;
+        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(200, 200);
 
-        public int CotrexHeight_MiniColumns => 100;
+        public float RetinaImageVerticalAngle { get; set; } = MathHelper.DegreesToRadians(0.5f);
 
-        public float HyperColumnDiameter_Retina => 0.1f;
+        public int GeneratedMinGradientMagnitude => 5;
+
+        public int GeneratedMaxGradientMagnitude => 1200;
+
+        public int MagnitudeRangesCount => 3;
+
+        public double DetectorMinGradientMagnitude => 42;
+
+        public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
+
+        public Size2DFloat PhysicalImageSize => new Size2DFloat(0.25f * MathHelper.DegreesToRadians(0.5f), 0.25f * MathHelper.DegreesToRadians(0.5f));
+
+        public float DistanceBetweenEyes => 0.064f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.
         /// </summary>
         public int HyperColumnDefinedRadius_MiniColumns => 10;
+
+        /// <summary>
+        ///     Полное поле зрения (измеренное в миниколонках).
+        ///     <para>При смечщении на такое число миниколонок, поле зрения смещается на 100%.</para>
+        /// </summary>
+        public int FullFieldOfView_MiniColumns => 20;
+
+        public float MiniColumnFieldOfViewDiameter_Angle => MathHelper.DegreesToRadians(0.1f);
+
+        /// <summary>
+        ///     Количество детекторов, видимых одной миниколонкой
+        /// </summary>
+        public int MiniColumnVisibleDetectorsCount => 300;
+
+        public int HashLength => 300;
+
+        public int CotrexWidth_MiniColumns => 100;
+
+        public int CotrexHeight_MiniColumns => 100;
 
         /// <summary>
         ///     Уровень подобия для нулевой активности
@@ -806,28 +836,5 @@ public class Model01
         ///     Режим с одним воспоминанием в миниколонке.
         /// </summary>
         public bool SingleMemory { get; set; } = false;        
-
-        public float DistanceBetweenEyes => 0.064f;
-
-        public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
-
-        public Size2DFloat PhysicalImageSize => new Size2DFloat(0.1f, 0.1f);
-
-        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(200, 200);
-
-        /// <summary>
-        ///     Расстояние между детекторами по горизонтали и вертикали
-        /// </summary>
-        public float RetinaDetectorsDeltaPixels { get; set; } = 0.5f;
-
-        public double DetectorMinGradientMagnitude => 42;
-
-        public int GeneratedMinGradientMagnitude => 5;
-
-        public int GeneratedMaxGradientMagnitude => 1200;
-
-        public int MagnitudeRangesCount => 3;
-
-        public int HashLength => 300;
     }
 }

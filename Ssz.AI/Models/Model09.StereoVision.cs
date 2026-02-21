@@ -167,17 +167,17 @@ namespace Ssz.AI.Models
             float kY = (float)Constants.RetinaImagePixelSize.Height / (float)MNISTHelper.MNISTImageHeightPixels;
             Eye eye = new();
             eye.Pupil = pupil;            
-            eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaUpperLeftYRadians = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightXRadians = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightYRadians = MathF.Atan2(Constants.ImageCenter.Y + kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftXAngle = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftYAngle = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightXAngle = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightYAngle = MathF.Atan2(Constants.ImageCenter.Y + kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
             return eye;
         }                              
 
         /// <summary>        
         ///     Константы данной модели
         /// </summary>
-        public class ModelConstants : IConstants
+        public class ModelConstants : IConstantsObsolete
         {
             public int DiscreteVectorLength => 300;
 
@@ -331,6 +331,12 @@ namespace Ssz.AI.Models
             public Size2DFloat PhysicalImageSize => throw new NotImplementedException();
 
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
+
+            public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
+
+            public float MiniColumnFieldOfViewDiameter_Angle => throw new NotImplementedException();
+
+            public float RetinaImageVerticalAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         }        
     }
 }

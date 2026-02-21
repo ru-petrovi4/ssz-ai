@@ -316,7 +316,7 @@ namespace Ssz.AI.Models
             return gradientMatrix;
         }
 
-        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, IConstants constants, GradientDistribution gradientDistribution)
+        public static void CalculateDistributionObsolete(GradientInPoint[,] gradientMatrix, IConstantsObsolete constants, GradientDistribution gradientDistribution)
         {
             int width = gradientMatrix.GetLength(0);
             int height = gradientMatrix.GetLength(1);

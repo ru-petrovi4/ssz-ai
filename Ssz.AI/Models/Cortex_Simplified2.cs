@@ -29,19 +29,19 @@ namespace Ssz.AI.Models
                 Detector detetctor = rightEye.Retina.Detectors.Data[di];
                 DetectorCorrelation detectorCorrelation = new();
 
-                detectorCorrelation.RangeLeftUpperX = detetctor.DetectorX - Constants.DependantDetectorsRangeWidthCount / 2;
+                detectorCorrelation.RangeLeftUpperX = detetctor.DI - Constants.DependantDetectorsRangeWidthCount / 2;
                 if (detectorCorrelation.RangeLeftUpperX < 0)
                     detectorCorrelation.RangeLeftUpperX = 0;
 
-                detectorCorrelation.RangeLeftUpperY = detetctor.DetectorY - Constants.DependantDetectorsRangeHeightCount / 2;
+                detectorCorrelation.RangeLeftUpperY = detetctor.DJ - Constants.DependantDetectorsRangeHeightCount / 2;
                 if (detectorCorrelation.RangeLeftUpperY < 0)
                     detectorCorrelation.RangeLeftUpperY = 0;
 
-                detectorCorrelation.RangeRightBottomX = detetctor.DetectorX + Constants.DependantDetectorsRangeWidthCount / 2;
+                detectorCorrelation.RangeRightBottomX = detetctor.DI + Constants.DependantDetectorsRangeWidthCount / 2;
                 if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.Detectors.Dimensions[0])
                     detectorCorrelation.RangeRightBottomX = leftEye.Retina.Detectors.Dimensions[0];
 
-                detectorCorrelation.RangeRightBottomY = detetctor.DetectorY + Constants.DependantDetectorsRangeHeightCount / 2;
+                detectorCorrelation.RangeRightBottomY = detetctor.DJ + Constants.DependantDetectorsRangeHeightCount / 2;
                 if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.Detectors.Dimensions[1])
                     detectorCorrelation.RangeRightBottomY = leftEye.Retina.Detectors.Dimensions[1];
 

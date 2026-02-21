@@ -7,7 +7,7 @@ namespace Ssz.AI.Models
 {
     public static class Clusterization
     {
-        public static List<List<Memory>> GetMemoryClusters(List<Memory?> memories, IConstants constants)
+        public static List<List<Memory>> GetMemoryClusters(List<Memory?> memories, IConstantsObsolete constants)
         {
             List<List<Memory>> memoryClusters = memories.Where(m => m is not null).Select(m => new List<Memory> { m! }).ToList();
 

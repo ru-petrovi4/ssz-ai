@@ -1144,23 +1144,23 @@ namespace Ssz.AI.Models
         {
             Eye eye = new();
             eye.Pupil = pupil;            
-            eye.RetinaUpperLeftXRadians = MathF.Atan2(Constants.PhysicalImageCenter.X - Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-            eye.RetinaUpperLeftYRadians = MathF.Atan2(Constants.PhysicalImageCenter.Y - Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightXRadians = MathF.Atan2(Constants.PhysicalImageCenter.X + Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightYRadians = MathF.Atan2(Constants.PhysicalImageCenter.Y + Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X - Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y - Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X + Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y + Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
 
-            float widthRadians = eye.RetinaBottomRightXRadians - eye.RetinaUpperLeftXRadians;
-            float heightRadians = eye.RetinaBottomRightYRadians - eye.RetinaUpperLeftYRadians;
+            float widthRadians = eye.RetinaBottomRightXAngle - eye.RetinaUpperLeftXAngle;
+            float heightRadians = eye.RetinaBottomRightYAngle - eye.RetinaUpperLeftYAngle;
 
             float subImageWidthRadians = widthRadians * subImageRect.Width;
             float subImageHeightRadians = heightRadians * subImageRect.Height;
             float subImageBiasXRadians = widthRadians * subImageRect.X;
             float subImageBiasYRadians = heightRadians * subImageRect.Y;
 
-            eye.RetinaUpperLeftXRadians = eye.RetinaUpperLeftXRadians + subImageBiasXRadians;
-            eye.RetinaUpperLeftYRadians = eye.RetinaUpperLeftYRadians + subImageBiasYRadians;
-            eye.RetinaBottomRightXRadians = eye.RetinaUpperLeftXRadians + subImageWidthRadians;
-            eye.RetinaBottomRightYRadians = eye.RetinaUpperLeftYRadians + subImageHeightRadians;
+            eye.RetinaUpperLeftXAngle = eye.RetinaUpperLeftXAngle + subImageBiasXRadians;
+            eye.RetinaUpperLeftYAngle = eye.RetinaUpperLeftYAngle + subImageBiasYRadians;
+            eye.RetinaBottomRightXAngle = eye.RetinaUpperLeftXAngle + subImageWidthRadians;
+            eye.RetinaBottomRightYAngle = eye.RetinaUpperLeftYAngle + subImageHeightRadians;
 
             return eye;
         }
@@ -1181,7 +1181,7 @@ namespace Ssz.AI.Models
         /// <summary>        
         ///     Константы данной модели
         /// </summary>
-        public class ModelConstants : IConstants
+        public class ModelConstants : IConstantsObsolete
         {
             public int DiscreteVectorLength => 300;
 
@@ -1329,6 +1329,12 @@ namespace Ssz.AI.Models
             public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
             public Size2DFloat PhysicalImageSize => new Size2DFloat(0.1f, 0.1f);
+
+            public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
+
+            public float MiniColumnFieldOfViewDiameter_Angle => throw new NotImplementedException();
+
+            public float RetinaImageVerticalAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
         }

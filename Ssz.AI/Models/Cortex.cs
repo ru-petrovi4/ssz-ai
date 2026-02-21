@@ -11,6 +11,81 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models
 {
+    public interface IConstantsObsolete : IMiniColumnsActivityConstants, IRetinaConstants
+    {        
+        /// <summary>
+        ///     Количество миниколонок в подобласти
+        /// </summary>
+        float? CalculationsSubAreaRadius_MiniColumns { get; }
+
+        int CalculationsSubArea_MiniColumns_Count => (int)(MathF.PI * CalculationsSubAreaRadius_MiniColumns!.Value * CalculationsSubAreaRadius_MiniColumns.Value);
+
+        /// <summary>
+        ///     Индекс X центра подобласти
+        /// </summary>
+        int CalculationsSubAreaCenter_Cx { get; }
+
+        /// <summary>
+        ///     Индекс Y центра подобласти
+        /// </summary>
+        int CalculationsSubAreaCenter_Cy { get; }
+
+        float HyperColumnSupposedRadius_ForMemorySaving_MiniColumns { get; }
+
+        /// <summary>
+        ///     Количество гиперколнок в рецептивном поле миниколонки.
+        /// </summary>
+        float DetectorsField_HyperColumns { get; }
+
+        /// <summary>
+        ///     Длина короткого хэш-вектора
+        /// </summary>
+        int ShortHashLength { get; }
+
+        /// <summary>
+        ///     Количество бит в коротком хэш-векторе
+        /// </summary>
+        int ShortHashBitsCount { get; }
+
+        /// <summary>
+        ///     Минимальное число бит в хэше, что бы быть сохраненным в память
+        /// </summary>
+        int MinBitsInHashForMemory { get; }
+
+        /// <summary>
+        ///     Верхний предел количества воспоминаний (для кэширования)
+        /// </summary>
+        int MemoriesMaxCount { get; }
+
+        /// <summary>
+        ///     Порог для кластеризации воспоминаний
+        /// </summary>
+        float MemoryClustersThreshold { get; }
+
+        int Angle_SmallPoints_Count { get; }
+
+        float Angle_SmallPoints_Radius { get; }
+
+        int Angle_BigPoints_Count { get; }
+
+        float Angle_BigPoints_Radius { get; }
+
+        /// <summary>
+        ///     Порог косинусного расстояния для учета 
+        /// </summary>
+        float K1 { get; set; }
+
+        /// <summary>
+        ///     Сигмы значимости соседей
+        /// </summary>
+        float[] K3 { get; set; }
+
+        /// <summary>
+        ///     Коэффициент для расчета диапазона угла чувствительности детектора
+        /// </summary>
+        float K5 { get; set; }
+    }
+
     public class Cortex : ISerializableModelObject
     {
         /// <summary>
@@ -65,7 +140,7 @@ namespace Ssz.AI.Models
             double deltaCenterYPixels = (maxCenterYPixels - minCenterYPixels) / (constants.CortexHeight_MiniColumns - 1);
 
             if (constants.CalculationsSubAreaRadius_MiniColumns is not null)
-                CalculationSubAreaRadius_MiniColumns_Value = ((IConstants)constants).CalculationsSubArea_MiniColumns_Count;
+                CalculationSubAreaRadius_MiniColumns_Value = ((IConstantsObsolete)constants).CalculationsSubArea_MiniColumns_Count;
             else
                 CalculationSubAreaRadius_MiniColumns_Value = Math.Sqrt(MiniColumns.Data.Length / Math.PI) * 2.0f;
 
@@ -115,7 +190,7 @@ namespace Ssz.AI.Models
                 }
 
             HashSet<Detector> subAreaOrAll_DetectorsHashSet = new(2 * leftEye.Retina.Detectors.Dimensions[0] * leftEye.Retina.Detectors.Dimensions[1]);
-            List<MiniColumn> subAreaOrAll_MiniColumns = new(constants.CalculationsSubAreaRadius_MiniColumns is not null ? ((IConstants)constants).CalculationsSubArea_MiniColumns_Count : (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
+            List<MiniColumn> subAreaOrAll_MiniColumns = new(constants.CalculationsSubAreaRadius_MiniColumns is not null ? ((IConstantsObsolete)constants).CalculationsSubArea_MiniColumns_Count : (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
 
             foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
                 foreach (int mcx in Enumerable.Range(0, MiniColumns.Dimensions[0]))
@@ -368,7 +443,7 @@ namespace Ssz.AI.Models
 
         public class MiniColumn : IMiniColumn, IMiniColumnActivity, ISerializableModelObject
         {
-            public MiniColumn(IConstants constants, int mcx, int mcy, List<Detector> detectors, double centerXPixels, double centerYPixels)
+            public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<Detector> detectors, double centerXPixels, double centerYPixels)
             {
                 Constants = constants;
                 Detectors = detectors;
@@ -387,7 +462,7 @@ namespace Ssz.AI.Models
                     constants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns) + 10);
             }
 
-            public readonly IConstants Constants;
+            public readonly IConstantsObsolete Constants;
 
             public readonly List<Detector> Detectors;
 
@@ -408,7 +483,7 @@ namespace Ssz.AI.Models
             public readonly FastList<(float, float, IMiniColumnActivity)> K_ForNearestMiniColumns;
 
             /// <summary>
-            ///     Minicolums in field of radius of <see cref="IConstants.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns"/>
+            ///     Minicolums in field of radius of <see cref="IConstantsObsolete.HyperColumnSupposedRadius_ForMemorySaving_MiniColumns"/>
             /// </summary>
             public readonly List<MiniColumn> NearestMiniColumnsAndSelf_ForMemorySaving;
 

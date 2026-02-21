@@ -545,7 +545,7 @@ public partial class Model01View : UserControl
             ColorHighScrollBar.Value);
     }
 
-    private const bool OnlyCenterHyperColumn = false;
+    private const bool OnlyCenterHyperColumn = true;
 
     private Random _random = null!;
 

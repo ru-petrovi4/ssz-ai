@@ -11,12 +11,12 @@ namespace Ssz.AI.Models
 
         public Retina Retina = null!;
 
-        public float RetinaUpperLeftXRadians;
+        public float RetinaUpperLeftXAngle;
 
-        public float RetinaUpperLeftYRadians;
+        public float RetinaUpperLeftYAngle;
 
-        public float RetinaBottomRightXRadians;
+        public float RetinaBottomRightXAngle;
 
-        public float RetinaBottomRightYRadians;
+        public float RetinaBottomRightYAngle;
     }
 }

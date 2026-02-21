@@ -36,9 +36,11 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />    
     <PackageReference Include="OpenCvSharp4.Windows" Version="4.13.0.20260214" />    
+    <PackageReference Include="SciSharp.TensorFlow.Redist-Windows-GPU" Version="2.10.3" />    
     <PackageReference Include="Silk.NET.OpenGL" Version="2.23.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.3" />
     <PackageReference Include="System.Numerics.Tensors" Version="10.0.3" />
+    <PackageReference Include="TensorFlow.NET" Version="0.150.0" />
     <PackageReference Include="TorchSharp" Version="0.106.0" />
   </ItemGroup>
 
@@ -49,8 +51,6 @@
     <ProjectReference Include="..\..\Ssz.Utils\ThirdParties\OxyPlot\OxyPlot.Avalonia\OxyPlot.Avalonia.csproj" />
     <ProjectReference Include="..\..\Ssz.Utils\ThirdParties\OxyPlot\OxyPlot.Core\OxyPlot.Core.csproj" />
     <ProjectReference Include="..\Ssz.AI.Core\Ssz.AI.Core.csproj" />
-    <ProjectReference Include="..\ThirdParties\TensorFlow.NET\src\TensorFlowNET.Core\Tensorflow.Binding.csproj" />
-    <ProjectReference Include="..\ThirdParties\TensorFlow.NET\src\TensorFlowNET.Keras\Tensorflow.Keras.csproj" />
   </ItemGroup>
 
   <ItemGroup>

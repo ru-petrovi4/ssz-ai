@@ -83,7 +83,7 @@ public partial class Model11View : UserControl
         ((SlidersViewModel)NegativeSliders.DataContext!).SlidersItems[3].Value = constants.NegativeK[3];
     }
 
-    private void GetDataFromControls(IConstants constants)
+    private void GetDataFromControls(IConstantsObsolete constants)
     {        
         constants.K0 = (float)LevelScrollBar0.Value;
         constants.K1 = (float)LevelScrollBar1.Value;

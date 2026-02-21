@@ -17,18 +17,11 @@ using System.Threading.Tasks;
 
 namespace Ssz.AI.Models.ImageProcessingModel;
 
-public interface ICortexConstants
+public interface ICortexConstants : IRetinaConstants
 {
     int CotrexWidth_MiniColumns { get; }
 
-    int CotrexHeight_MiniColumns { get; }
-
-    float HyperColumnDiameter_Retina { get; }
-
-    /// <summary>
-    ///     Олпределенный зараниие радиус гиперколонки в миниколонках.
-    /// </summary>
-    int HyperColumnDefinedRadius_MiniColumns { get; }
+    int CotrexHeight_MiniColumns { get; }    
 
     /// <summary>
     ///     Уровень подобия для нулевой активности
@@ -80,9 +73,9 @@ public partial class Cortex : ISerializableModelObject
         Logger = logger;
         InputItems = new(10000);
 
-        MiniColumnX_Retina = constants.HyperColumnDiameter_Retina / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
-        MiniColumnY_Retina = constants.HyperColumnDiameter_Retina / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
-        HyperColumnDiameter_Retina2 = constants.HyperColumnDiameter_Retina * constants.HyperColumnDiameter_Retina;
+        MiniColumn_XAngle = constants.MiniColumnFieldOfViewDiameter_Angle / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
+        MiniColumn_YAngle = constants.MiniColumnFieldOfViewDiameter_Angle / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
+        HyperColumnDiameter_Retina2 = constants.MiniColumnFieldOfViewDiameter_Angle * constants.MiniColumnFieldOfViewDiameter_Angle;
     }
 
     #region public functions
@@ -91,9 +84,9 @@ public partial class Cortex : ISerializableModelObject
 
     public readonly ILogger Logger;
 
-    public readonly float MiniColumnX_Retina;
+    public readonly float MiniColumn_XAngle;
 
-    public readonly float MiniColumnY_Retina;
+    public readonly float MiniColumn_YAngle;
 
     public readonly float HyperColumnDiameter_Retina2;
 
@@ -419,28 +412,28 @@ public partial class Cortex : ISerializableModelObject
 
         InputItem inputItem = new();
         inputItem.Index = InputItems.Count;
-        inputItem.Angle = angle;
-        inputItem.Magnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
+        inputItem.GradientAngle = angle;
+        inputItem.GradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
-        inputItem.MainXY_MiniColumnIndex = mainXY_MiniColumn.Index;
-        inputItem.X_Retina = mainXY_MiniColumn.MCX * MiniColumnX_Retina;
-        inputItem.Y_Retina = mainXY_MiniColumn.MCY * MiniColumnY_Retina;
+        inputItem.MainRetinaXYAngle_MiniColumnIndex = mainXY_MiniColumn.Index;
+        inputItem.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle;
+        inputItem.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle;
               
         inputItem.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
-        inputItem.X_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCX * MiniColumnX_Retina;
-        inputItem.Y_HyperColumnCenter_Retina = hyperColumnCenter_MiniColumn.MCY * MiniColumnY_Retina;        
+        inputItem.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle;
+        inputItem.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle;        
 
-        var distanceFromCenterNormalized = inputItem.Magnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
+        var distanceFromCenterNormalized = inputItem.GradientMagnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
         if (distanceFromCenterNormalized > 1.0f)
             distanceFromCenterNormalized = 1.0f;
-        inputItem.ColorAngleMagnitude = Visualisation.ColorFromHSV((double)(inputItem.Angle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
+        inputItem.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(inputItem.GradientAngle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
 
-        float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(inputItem.Y_HyperColumnCenter_Retina, inputItem.X_HyperColumnCenter_Retina));
+        float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(inputItem.HyperColumnCenter_RetinaYAngle, inputItem.HyperColumnCenter_RetinaXAngle));
         var sXY = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f / 
             MathF.Sqrt(Constants.CotrexWidth_MiniColumns * Constants.CotrexWidth_MiniColumns + Constants.CotrexHeight_MiniColumns * Constants.CotrexHeight_MiniColumns);
-        inputItem.ColorXY = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
+        inputItem.RetinaXYAngle_Color = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
 
-        inputItem.DistanceFromCenter = inputItem.Magnitude;        
+        inputItem.DistanceFromCenter = inputItem.GradientMagnitude;        
 
         InputItems.Add(inputItem);
         return inputItem;

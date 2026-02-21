@@ -40,7 +40,7 @@ public class MonoInput_Simplified : ISerializableModelObject
     /// </summary>
     public void GenerateOwnedData(
         Random random,
-        IConstants constants,            
+        IConstantsObsolete constants,            
         GradientDistribution? gradientDistribution,
         byte[] labels, 
         byte[][] images)
@@ -80,7 +80,7 @@ public class MonoInput_Simplified : ISerializableModelObject
 
     public void GenerateOwnedData_Simplified(
         Random random,
-        IConstants constants,            
+        IConstantsObsolete constants,            
         GradientDistribution? gradientDistribution,
         byte[] labels,
         byte[][] images)
@@ -121,7 +121,7 @@ public class MonoInput_Simplified : ISerializableModelObject
 
     public void GenerateOwnedData_Simplified2(
         Random random,
-        IConstants constants,            
+        IConstantsObsolete constants,            
         GradientDistribution? gradientDistribution,
         byte[] labels,
         byte[][] images)
@@ -171,7 +171,7 @@ public class MonoInput_Simplified : ISerializableModelObject
 
     public void GenerateOwnedData_Simplified_WithAngle(
         Random random,
-        IConstants constants,            
+        IConstantsObsolete constants,            
         GradientDistribution? gradientDistribution,
         byte[] labels,
         byte[][] images)
