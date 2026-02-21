@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;
@@ -329,7 +330,7 @@ namespace Ssz.AI.Models
         }
 
         public void Calculate(
-            StereoInput stereoInput, 
+            StereoInputObsolete stereoInput, 
             Eye leftEye,
             Eye rightEye)
         {

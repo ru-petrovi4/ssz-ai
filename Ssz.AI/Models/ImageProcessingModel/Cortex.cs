@@ -73,9 +73,8 @@ public partial class Cortex : ISerializableModelObject
         Logger = logger;
         InputItems = new(10000);
 
-        MiniColumn_XAngle = constants.MiniColumnFieldOfViewDiameter_Angle / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
-        MiniColumn_YAngle = constants.MiniColumnFieldOfViewDiameter_Angle / (2.0f * constants.HyperColumnDefinedRadius_MiniColumns);
-        HyperColumnDiameter_Retina2 = constants.MiniColumnFieldOfViewDiameter_Angle * constants.MiniColumnFieldOfViewDiameter_Angle;
+        MiniColumn_XAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;
+        MiniColumn_YAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;        
     }
 
     #region public functions
@@ -84,11 +83,9 @@ public partial class Cortex : ISerializableModelObject
 
     public readonly ILogger Logger;
 
-    public readonly float MiniColumn_XAngle;
+    public readonly float MiniColumn_XAngle_K;
 
-    public readonly float MiniColumn_YAngle;
-
-    public readonly float HyperColumnDiameter_Retina2;
+    public readonly float MiniColumn_YAngle_K;
 
     /// <summary>
     ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
@@ -416,12 +413,12 @@ public partial class Cortex : ISerializableModelObject
         inputItem.GradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
         inputItem.MainRetinaXYAngle_MiniColumnIndex = mainXY_MiniColumn.Index;
-        inputItem.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle;
-        inputItem.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle;
+        inputItem.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle_K;
+        inputItem.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle_K;
               
         inputItem.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
-        inputItem.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle;
-        inputItem.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle;        
+        inputItem.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
+        inputItem.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;        
 
         var distanceFromCenterNormalized = inputItem.GradientMagnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
         if (distanceFromCenterNormalized > 1.0f)

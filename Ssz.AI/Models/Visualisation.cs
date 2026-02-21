@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.JsonPatch.Internal;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using System;

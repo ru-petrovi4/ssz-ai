@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.Utils.Serialization;
 using System;
 using System.Drawing;
@@ -8,11 +9,11 @@ using System.Linq;
 
 namespace Ssz.AI.Models
 {
-    public class StereoInput : ISerializableModelObject
+    public class StereoInputObsolete : ISerializableModelObject
     {
         #region construction and destruction
 
-        public StereoInput()
+        public StereoInputObsolete()
         { 
         }
 

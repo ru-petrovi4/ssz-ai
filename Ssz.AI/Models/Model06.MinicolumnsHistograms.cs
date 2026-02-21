@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.AI.Views;
 using Ssz.Utils;
 using System;

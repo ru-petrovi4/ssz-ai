@@ -1,4 +1,5 @@
 ﻿using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.Utils;
 using Ssz.Utils.Serialization;
 using System;

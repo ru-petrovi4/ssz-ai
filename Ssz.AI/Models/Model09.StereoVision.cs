@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.ImageProcessingModel;
 using Ssz.AI.Views;
 using Ssz.Utils;
 using Ssz.Utils.Serialization;
@@ -53,7 +54,7 @@ namespace Ssz.AI.Models
             GradientDistribution leftEye_GradientDistribution = new();
             GradientDistribution rightEye_GradientDistribution = new();
 
-            StereoInput = new StereoInput();
+            StereoInput = new StereoInputObsolete();
             //StereoInput.GenerateOwnedData(
             //    random,
             //    Constants,
@@ -99,7 +100,7 @@ namespace Ssz.AI.Models
 
         public int CurrentInputIndex = 0;
 
-        public StereoInput StereoInput { get; set; } = null!;
+        public StereoInputObsolete StereoInput { get; set; } = null!;
 
         public readonly Eye LeftEye;
 

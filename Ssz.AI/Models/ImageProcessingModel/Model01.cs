@@ -710,12 +710,13 @@ public class Model01
         InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
         InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
 
+        float hyperColumnDiameter_Retina2 = Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle * Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle;
         var r2 = (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle) * (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle)
             + (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle) * (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle);
         double k;
-        if (r2 > Cortex.HyperColumnDiameter_Retina2 * 1.5f)
+        if (r2 > hyperColumnDiameter_Retina2 * 1.5f)
             k = 0.0;
-        else if (r2 > Cortex.HyperColumnDiameter_Retina2 * 0.5f)
+        else if (r2 > hyperColumnDiameter_Retina2 * 0.5f)
             k = 0.3; //0.00005; // 0.3;
         else
             k = 1.0;
