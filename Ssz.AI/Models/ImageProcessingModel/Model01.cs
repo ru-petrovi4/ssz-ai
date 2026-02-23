@@ -776,9 +776,9 @@ public class Model01
 
         public double DetectorMinGradientMagnitude => 42;
 
-        public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
+        public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
-        public Size2DFloat PhysicalImageSize => new Size2DFloat(0.25f * MathHelper.DegreesToRadians(0.5f), 0.25f * MathHelper.DegreesToRadians(0.5f));
+        public Size2DFloat PhysicalImageSize => new Size2DFloat(PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle), PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle));
 
         public float DistanceBetweenEyes => 0.064f;
 
@@ -802,9 +802,9 @@ public class Model01
 
         public int HashLength => 300;
 
-        public int CotrexWidth_MiniColumns => 100;
+        public int CortexWidth_MiniColumns => 100;
 
-        public int CotrexHeight_MiniColumns => 100;
+        public int CortexHeight_MiniColumns => 100;
 
         /// <summary>
         ///     Уровень подобия для нулевой активности

@@ -21,8 +21,8 @@ public static class Visualisation
         double filterColorHigh = 1.0)
     {
         float miniColumnRadius_Pixels = 5.0f;
-        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
-        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float width_Pixels = (cortex.Constants.CortexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CortexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
 
         double low = filterColorLow * 360.0;
@@ -94,8 +94,8 @@ public static class Visualisation
             valueMax_Final = valueMax_Local;
 
         float miniColumnRadius_Pixels = 5.0f;
-        float width_Pixels = (cortex.Constants.CotrexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
-        float height_Pixels = (cortex.Constants.CotrexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float width_Pixels = (cortex.Constants.CortexWidth_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
+        float height_Pixels = (cortex.Constants.CortexHeight_MiniColumns + 1) * miniColumnRadius_Pixels * 2.0f;
         Bitmap bitmap = new Bitmap((int)width_Pixels, (int)height_Pixels);
 
         using (Graphics g = Graphics.FromImage(bitmap))

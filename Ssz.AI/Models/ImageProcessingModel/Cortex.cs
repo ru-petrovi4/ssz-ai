@@ -19,9 +19,9 @@ namespace Ssz.AI.Models.ImageProcessingModel;
 
 public interface ICortexConstants : IRetinaConstants
 {
-    int CotrexWidth_MiniColumns { get; }
+    int CortexWidth_MiniColumns { get; }
 
-    int CotrexHeight_MiniColumns { get; }    
+    int CortexHeight_MiniColumns { get; }    
 
     /// <summary>
     ///     Уровень подобия для нулевой активности
@@ -117,7 +117,7 @@ public partial class Cortex : ISerializableModelObject
 
     public void GenerateOwnedData(Random random, bool onlyCeneterHypercolumn)
     {
-        MiniColumns = new FastList<MiniColumn>(Constants.CotrexWidth_MiniColumns * Constants.CotrexHeight_MiniColumns);
+        MiniColumns = new FastList<MiniColumn>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
 
         float delta_MCX = 1.0f;
         float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
@@ -158,10 +158,10 @@ public partial class Cortex : ISerializableModelObject
         }
         else
         {
-            float maxRadius = Math.Min(Constants.CotrexWidth_MiniColumns / 2.0f, Constants.CotrexHeight_MiniColumns / 2.0f) + 0.00001f;
+            float maxRadius = Math.Min(Constants.CortexWidth_MiniColumns / 2.0f, Constants.CortexHeight_MiniColumns / 2.0f) + 0.00001f;
 
-            for (int mcj = -(int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
-                for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci <= (int)(Constants.CotrexWidth_MiniColumns / 2.0f); mci += 1)
+            for (int mcj = -(int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
+                for (int mci = -(int)(Constants.CortexWidth_MiniColumns / 2.0f); mci <= (int)(Constants.CortexWidth_MiniColumns / 2.0f); mci += 1)
                 {
                     float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
                     float mcy = mcj * delta_MCY;
@@ -183,14 +183,14 @@ public partial class Cortex : ISerializableModelObject
                     }
                 }
 
-            int x_Limit_MiniColumns = Constants.CotrexWidth_MiniColumns / 2 - 1;
-            int y_Limit_MiniColumns = Constants.CotrexHeight_MiniColumns / 2 - 1;
+            int x_Limit_MiniColumns = Constants.CortexWidth_MiniColumns / 2 - 1;
+            int y_Limit_MiniColumns = Constants.CortexHeight_MiniColumns / 2 - 1;
 
             HyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
             delta_MCX = Constants.HyperColumnDefinedRadius_MiniColumns * 2.0f;
             delta_MCY = MathF.Sqrt(3.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns);
-            for (int mcj = -(int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CotrexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
-                for (int mci = -(int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CotrexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
+            for (int mcj = -(int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
+                for (int mci = -(int)(Constants.CortexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CortexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
                     bool r = mcj % 2 == 0;
                     if ((30000 + mci + (r ? 0 : 2)) % 3 == 2)
@@ -427,7 +427,7 @@ public partial class Cortex : ISerializableModelObject
 
         float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(inputItem.HyperColumnCenter_RetinaYAngle, inputItem.HyperColumnCenter_RetinaXAngle));
         var sXY = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f / 
-            MathF.Sqrt(Constants.CotrexWidth_MiniColumns * Constants.CotrexWidth_MiniColumns + Constants.CotrexHeight_MiniColumns * Constants.CotrexHeight_MiniColumns);
+            MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
         inputItem.RetinaXYAngle_Color = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
 
         inputItem.DistanceFromCenter = inputItem.GradientMagnitude;        
