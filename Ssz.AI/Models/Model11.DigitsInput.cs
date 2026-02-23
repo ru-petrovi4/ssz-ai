@@ -1190,11 +1190,11 @@ namespace Ssz.AI.Models
 
             public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
-            public double DetectorMinGradientMagnitude => 42;
+            public double DetectorMinGradientMagnitudeInclusive => 42;
 
-            public int GeneratedMinGradientMagnitude => 5;
+            
 
-            public int GeneratedMaxGradientMagnitude => 1200;            
+            public int MaxGradientMagnitudeExclusive => 1200;            
 
             public int MagnitudeRangesCount => 3;            
 

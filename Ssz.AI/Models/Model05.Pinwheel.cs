@@ -436,8 +436,7 @@ namespace Ssz.AI.Models
                 var dx = currentMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
                 var dy = currentMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
 
-                double magnitude = Constants.GeneratedMinGradientMagnitude +
-                    (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
+                double magnitude = Constants.MaxGradientMagnitudeExclusive * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
                 double angle = MathHelper.NormalizeAngle(MathF.Atan2(dy, dx));
 
                 int gradX = (int)Math.Round(Math.Cos(angle) * magnitude, 0);
@@ -519,8 +518,7 @@ namespace Ssz.AI.Models
                 var dx = winnerMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
                 var dy = winnerMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
 
-                double magnitude = Constants.GeneratedMinGradientMagnitude + 
-                    (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
+                double magnitude = Constants.MaxGradientMagnitudeExclusive * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
                 double angle = MathHelper.NormalizeAngle(MathF.Atan2(dy, dx));
 
                 int gradX = (int)Math.Round(Math.Cos(angle) * magnitude, 0);
@@ -580,7 +578,7 @@ namespace Ssz.AI.Models
                     if (inputIndex >= MonoInput.MonoInputItems.Length)
                         continue;
 
-                    magnitude = Constants.GeneratedMinGradientMagnitude;
+                    magnitude = Constants.DetectorMinGradientMagnitudeInclusive;
                     angle = -MathF.PI;
 
                     gradX = (int)Math.Round(Math.Cos(angle) * magnitude, 0);
@@ -652,8 +650,7 @@ namespace Ssz.AI.Models
                 var dx = winnerMiniColumn.MCX - Cortex.CenterMiniColumn!.MCX;
                 var dy = winnerMiniColumn.MCY - Cortex.CenterMiniColumn!.MCY;
 
-                double magnitude = Constants.GeneratedMinGradientMagnitude +
-                    (Constants.GeneratedMaxGradientMagnitude - Constants.GeneratedMinGradientMagnitude) * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
+                double magnitude = Constants.MaxGradientMagnitudeExclusive * Math.Sqrt(dx * dx + dy * dy) / Cortex.SubArea_MiniColumns_Radius;
                 double angle = MathHelper.NormalizeAngle(MathF.Atan2(dy, dx));
 
                 int gradX = (int)Math.Round(Math.Cos(angle) * magnitude, 0);
@@ -1291,11 +1288,11 @@ namespace Ssz.AI.Models
 
             public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
-            public double DetectorMinGradientMagnitude => 5;
+            public double DetectorMinGradientMagnitudeInclusive => 5;
 
-            public int GeneratedMinGradientMagnitude => 5;
+            
 
-            public int GeneratedMaxGradientMagnitude => 1200;            
+            public int MaxGradientMagnitudeExclusive => 1200;            
 
             public int MagnitudeRangesCount => 3;
 

@@ -107,7 +107,7 @@ namespace Ssz.AI.Models
                     double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
                     double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
 
-                    double normalizedMagnitude = magnitude / cortex.Constants.GeneratedMaxGradientMagnitude; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
+                    double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
                     double saturation = 0.3 + normalizedMagnitude;
                     if (saturation > 1)
                         saturation = 1;
@@ -173,7 +173,7 @@ namespace Ssz.AI.Models
                     double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
                     double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
 
-                    double normalizedMagnitude = magnitude / cortex.Constants.GeneratedMaxGradientMagnitude; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
+                    double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
                     double saturation = 0.3 + normalizedMagnitude;
                     if (saturation > 1)
                         saturation = 1;

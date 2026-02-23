@@ -10,18 +10,19 @@ public interface IRetinaConstants
 {
     PixelSize RetinaImagePixelSize { get; set; }
 
-    float RetinaImageVerticalAngle { get; set; }
+    float RetinaImageVerticalAngle { get; set; }    
 
-    int GeneratedMinGradientMagnitude { get; }
-
-    int GeneratedMaxGradientMagnitude { get; }
+    /// <summary>
+    ///     Оценочный максимальный градиент.
+    /// </summary>
+    int MaxGradientMagnitudeExclusive { get; }
 
     int MagnitudeRangesCount { get; }
 
     /// <summary>
     ///     Минимальная чувствительность к модулю градиента
     /// </summary>
-    double DetectorMinGradientMagnitude { get; }
+    double DetectorMinGradientMagnitudeInclusive { get; }
 
     Vector3DFloat PhysicalImageCenter { get; }
 

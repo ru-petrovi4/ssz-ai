@@ -135,8 +135,7 @@ public class MonoInput_Simplified : ISerializableModelObject
         foreach (int i in Enumerable.Range(0, images.Length))
         {
             // Вычисляем магнитуду и угол градиента
-            double magnitude = constants.GeneratedMinGradientMagnitude +
-                (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) * random.NextDouble();
+            double magnitude = constants.MaxGradientMagnitudeExclusive * random.NextDouble();
             // [-pi, pi]
             double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
 
@@ -182,7 +181,7 @@ public class MonoInput_Simplified : ISerializableModelObject
         foreach (int i in Enumerable.Range(0, images.Length))
         {
             // Вычисляем магнитуду и угол градиента
-            double magnitude = constants.GeneratedMaxGradientMagnitude * random.NextDouble();
+            double magnitude = constants.MaxGradientMagnitudeExclusive * random.NextDouble();
             // [-pi, pi]
             double angle = -Math.PI + random.NextDouble() * 2 * Math.PI; // Угол в радианах
 

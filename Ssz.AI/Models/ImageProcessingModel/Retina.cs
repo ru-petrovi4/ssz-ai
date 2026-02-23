@@ -56,20 +56,17 @@ public class Retina : ISerializableModelObject
     public void GenerateOwnedData(Random initializationRandom, IRetinaConstants constants, GradientDistribution gradientDistribution)
     {
         // TODO gradientDistribution -> DetectorRanges            
-        int gradientMagnitudeRange = constants.GeneratedMaxGradientMagnitude / constants.MagnitudeRangesCount;
+        int gradientMagnitudeRange = constants.MaxGradientMagnitudeExclusive / (constants.MagnitudeRangesCount - 1);
 
-        DetectorsRanges = new DenseMatrix<DetectorRange>(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange, 360);                                  
+        DetectorsRanges = new DenseMatrix<DetectorRange>(constants.MaxGradientMagnitudeExclusive, 360);                                  
 
-        float gmIn1 = (constants.GeneratedMaxGradientMagnitude - constants.GeneratedMinGradientMagnitude) / constants.HyperColumnDefinedRadius_MiniColumns;
+        float gmIn1 = constants.MaxGradientMagnitudeExclusive / constants.HyperColumnDefinedRadius_MiniColumns;
 
         //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
         //float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
         //float angleRange1 = constants.AngleRangeDegreeMax * MathF.PI / 180;
-        foreach (int gradientMagnitudeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[0]))
-        {
-            int gradientMagnitude = gradientMagnitudeIdx;
-            if (gradientMagnitude < constants.GeneratedMinGradientMagnitude)
-                gradientMagnitude = constants.GeneratedMinGradientMagnitude;
+        foreach (int gradientMagnitude in Enumerable.Range(0, DetectorsRanges.Dimensions[0]))
+        {            
             float angleRange;
             //if (gradientMagnitude < constants.AngleRangeDegree_LimitMagnitude)
             //    angleRange = angleRange0 + (angleRange1 - angleRange0) * (constants.AngleRangeDegree_LimitMagnitude - gradientMagnitude) / (constants.AngleRangeDegree_LimitMagnitude - constants.GeneratedMinGradientMagnitude);
@@ -80,12 +77,12 @@ public class Retina : ISerializableModelObject
             if (angleRange > 2 * MathF.PI)
                 angleRange = 2 * MathF.PI;
 
-            foreach (int gradientAngleDegreeIdx in Enumerable.Range(0, DetectorsRanges.Dimensions[1]))
+            foreach (int gradientAngleDegree in Enumerable.Range(0, DetectorsRanges.Dimensions[1]))
             {
-                DetectorsRanges[gradientMagnitudeIdx, gradientAngleDegreeIdx] = new DetectorRange
+                DetectorsRanges[gradientMagnitude, gradientAngleDegree] = new DetectorRange
                 {
-                    GradientMagnitudeHalfRange = gradientMagnitudeRange,
-                    GradientAngleHalfRange = angleRange
+                    GradientMagnitudeHalfRange = gradientMagnitudeRange / 2,
+                    GradientAngleHalfRange = angleRange / 2
                 };
             }
         }
@@ -129,7 +126,7 @@ public class Retina : ISerializableModelObject
         {
             int rawIndex = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative.Data);
             //var indices = detectorDensities_Accumulative.GetIndices(rawIndex);                
-            var indices = (initializationRandom.Next(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange), initializationRandom.Next(360));
+            var indices = (initializationRandom.Next(constants.MaxGradientMagnitudeExclusive + gradientMagnitudeRange), initializationRandom.Next(360));
 
             Detector detector = Detectors.Data[d_index];
 
@@ -222,7 +219,7 @@ public class Detector
     {
         Temp_GradientInPoint = MathHelper.GetInterpolatedGradient(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
-        if (Temp_GradientInPoint.Magnitude < constants.DetectorMinGradientMagnitude)
+        if (Temp_GradientInPoint.Magnitude < constants.DetectorMinGradientMagnitudeInclusive)
         {
             Temp_IsActivated = false;
             return;
@@ -252,7 +249,7 @@ public class Detector
     {
         (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
-        if (magnitude < constants.DetectorMinGradientMagnitude)
+        if (magnitude < constants.DetectorMinGradientMagnitudeInclusive)
             return false;
 
         //bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeMax);

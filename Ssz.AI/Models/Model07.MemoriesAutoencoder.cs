@@ -627,11 +627,11 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
-            public double DetectorMinGradientMagnitude => 5;
+            public double DetectorMinGradientMagnitudeInclusive => 5;
 
-            public int GeneratedMinGradientMagnitude => 5;
+            
 
-            public int GeneratedMaxGradientMagnitude => 1200;
+            public int MaxGradientMagnitudeExclusive => 1200;
 
             public int AngleRangeDegreeMin { get; set; } = 60;
 

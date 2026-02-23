@@ -768,13 +768,11 @@ public class Model01
 
         public float RetinaImageVerticalAngle { get; set; } = MathHelper.DegreesToRadians(0.5f);
 
-        public int GeneratedMinGradientMagnitude => 5;
-
-        public int GeneratedMaxGradientMagnitude => 1200;
+        public int MaxGradientMagnitudeExclusive => 1200;
 
         public int MagnitudeRangesCount => 3;
 
-        public double DetectorMinGradientMagnitude => 42;
+        public double DetectorMinGradientMagnitudeInclusive => 42;
 
         public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
