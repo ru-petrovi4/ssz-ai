@@ -102,13 +102,13 @@ public class Model01
         LeftEye.Retina = new Retina(Constants);
         LeftEye.Retina.GenerateOwnedData(initialization_Random, Constants, leftEye_GradientDistribution);
         //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
-        LeftEye.Retina.Prepare();
+        LeftEye.Retina.Prepare(); // Does nothing.
         //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
         RightEye.Retina = new Retina(Constants);
         RightEye.Retina.GenerateOwnedData(initialization_Random, Constants, rightEye_GradientDistribution);
         //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
-        RightEye.Retina.Prepare();
+        RightEye.Retina.Prepare(); // Does nothing.
         //Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);
 
 

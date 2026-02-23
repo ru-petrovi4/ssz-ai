@@ -319,10 +319,10 @@ namespace Ssz.AI.Models
                         Parallel.For(
                             fromInclusive: 0,
                             toExclusive: Retina.Detectors.Data.Length,
-                            di =>
+                            d_index =>
                             {
-                                var d = Retina.Detectors.Data[di];
-                                input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
+                                var d = Retina.Detectors.Data[d_index];
+                                input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                             });
 
                         cosineSimilarity = Cortex.InputAutoencoder.Calculate(input_Hash, learningRate: 0.01f);
@@ -362,10 +362,10 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Retina.Detectors.Data.Length,
-                    di =>
+                    d_index =>
                     {
-                        var d = Retina.Detectors.Data[di];
-                        input_Hash[di] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
+                        var d = Retina.Detectors.Data[d_index];
+                        input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                     });
 
                 Cortex.InputAutoencoder.Calculate_ForwardPass(input_Hash);
@@ -565,9 +565,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
                     mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);

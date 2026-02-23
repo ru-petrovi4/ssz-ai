@@ -194,9 +194,9 @@ public static class MiniColumnsActivityHelper
 
     public static void CalculateActivityAndSuperActivity(float[] discreteVector, IDenseMatrix<IMiniColumnActivity> miniColumnActivities, ActivitiyMaxInfo? activitiyMaxInfo, IMiniColumnsActivityConstants constants)
     {
-        for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+        for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
         {
-            var miniColumnActivity = miniColumnActivities.Data[mci];
+            var miniColumnActivity = miniColumnActivities.Data[mc_index];
             miniColumnActivity.Activity = GetActivity(miniColumnActivity.MiniColumn, discreteVector, constants);
         };
 
@@ -211,9 +211,9 @@ public static class MiniColumnsActivityHelper
             activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
 
-            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
             {
-                var miniColumnActivity = miniColumnActivities.Data[mci];
+                var miniColumnActivity = miniColumnActivities.Data[mc_index];
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
 
                 float a = miniColumnActivity.Activity.PositiveActivity + miniColumnActivity.Activity.NegativeActivity;
@@ -242,9 +242,9 @@ public static class MiniColumnsActivityHelper
         }
         else
         {
-            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
             {
-                var miniColumnActivity = miniColumnActivities.Data[mci];
+                var miniColumnActivity = miniColumnActivities.Data[mc_index];
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
             }
         }   
@@ -311,9 +311,9 @@ public static class MiniColumnsActivityHelper
 
     public static void ClearActivityAndSuperActivity(IDenseMatrix<IMiniColumnActivity> miniColumnActivities, ActivitiyMaxInfo? activitiyMaxInfo, IMiniColumnsActivityConstants constants)
     {
-        for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+        for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
         {
-            var miniColumnActivity = miniColumnActivities.Data[mci];
+            var miniColumnActivity = miniColumnActivities.Data[mc_index];
             miniColumnActivity.Activity = (0.0f, 0.0f, 0);
             miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
         };
@@ -329,9 +329,9 @@ public static class MiniColumnsActivityHelper
             activitiyMaxInfo.MaxSuperActivity = float.MinValue;
             activitiyMaxInfo.SuperActivityMax_MiniColumns.Clear();
 
-            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
             {
-                var miniColumnActivity = miniColumnActivities.Data[mci];
+                var miniColumnActivity = miniColumnActivities.Data[mc_index];
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
 
                 float a = miniColumnActivity.Activity.PositiveActivity + miniColumnActivity.Activity.NegativeActivity;
@@ -360,9 +360,9 @@ public static class MiniColumnsActivityHelper
         }
         else
         {
-            for (int mci = 0; mci < miniColumnActivities.Data.Length; mci += 1)
+            for (int mc_index = 0; mc_index < miniColumnActivities.Data.Length; mc_index += 1)
             {
-                var miniColumnActivity = miniColumnActivities.Data[mci];
+                var miniColumnActivity = miniColumnActivities.Data[mc_index];
                 miniColumnActivity.SuperActivity = GetSuperActivity(miniColumnActivity, constants);
             }
         }

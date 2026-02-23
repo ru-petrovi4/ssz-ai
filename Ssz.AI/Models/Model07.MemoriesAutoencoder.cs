@@ -242,9 +242,9 @@ namespace Ssz.AI.Models
 
             Helpers.SerializationHelper.LoadFromFileIfExists(fileName, Cortex, "autoencoders", null);
 
-            foreach (int mci in Enumerable.Range(0, Cortex.MiniColumns.Data.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.MiniColumns.Data.Length))
             {
-                Cortex.MiniColumns.Data[mci]?.Autoencoder?.Prepare();
+                Cortex.MiniColumns.Data[mc_index]?.Autoencoder?.Prepare();
             }
 
             var miniColumnsToProcess = Cortex.SubArea_MiniColumns.Where(mc => mc.Autoencoder is null).ToArray();
@@ -318,9 +318,9 @@ namespace Ssz.AI.Models
         private void FindHyperColumn()
         {
             MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[0];
-            foreach (int mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
-                var mc = Cortex.SubArea_MiniColumns[mci];                
+                var mc = Cortex.SubArea_MiniColumns[mc_index];                
                 mc.Temp_IsShortHashMustBeCalculated = false;
                 if (mc.Memories.Count > winnerMiniColumn.Memories.Count)
                     winnerMiniColumn = mc;
@@ -461,9 +461,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
-                    di =>
+                    d_index =>
                     {
-                        var d = Cortex.SubArea_Detectors[di];
+                        var d = Cortex.SubArea_Detectors[d_index];
                         d.Temp_IsActivated = d.GetIsActivated_Obsolete(gradientMatrix, Constants);
                     });
 
@@ -483,9 +483,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
                     mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);

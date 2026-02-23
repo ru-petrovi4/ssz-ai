@@ -173,9 +173,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
-                    di =>
+                    d_index =>
                     {
-                        var d = Cortex.SubArea_Detectors[di];
+                        var d = Cortex.SubArea_Detectors[d_index];
                         d.CalculateIsActivated(Retina, gradientMatrix, Constants);
                         if (d.Temp_IsActivated)
                         {                            

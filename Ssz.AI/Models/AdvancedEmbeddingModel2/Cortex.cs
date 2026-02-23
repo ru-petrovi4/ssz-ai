@@ -70,16 +70,16 @@ public partial class Cortex : ISerializableModelObject
                 discreteOptimizedVectorIndices[i] = i;
             }
             random.Shuffle(discreteOptimizedVectorIndices);
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            foreach (int mc_index in Enumerable.Range(0, MiniColumns.Data.Length))
             {
-                MiniColumns.Data[mci].DiscreteOptimizedVector_ProjectionIndex = discreteOptimizedVectorIndices[mci];
+                MiniColumns.Data[mc_index].DiscreteOptimizedVector_ProjectionIndex = discreteOptimizedVectorIndices[mc_index];
             }
         }
         else
         {
-            foreach (var mci in Enumerable.Range(0, MiniColumns.Data.Length))
+            foreach (int mc_index in Enumerable.Range(0, MiniColumns.Data.Length))
             {
-                MiniColumns.Data[mci].DiscreteOptimizedVector_ProjectionIndex = random.Next(Constants.DiscreteVectorLength);
+                MiniColumns.Data[mc_index].DiscreteOptimizedVector_ProjectionIndex = random.Next(Constants.DiscreteVectorLength);
             }
         }
     }
@@ -93,9 +93,9 @@ public partial class Cortex : ISerializableModelObject
         Parallel.For(
             fromInclusive: 0,
             toExclusive: MiniColumns.Data.Length,
-            mci =>
+            mc_index =>
             {
-                MiniColumn miniColumn = MiniColumns.Data[mci];
+                MiniColumn miniColumn = MiniColumns.Data[mc_index];
                 miniColumn.Prepare();
                 miniColumn.Temp_K_ForNearestMiniColumns.Add((Constants.PositiveK[0], Constants.NegativeK[0], miniColumn));                
 

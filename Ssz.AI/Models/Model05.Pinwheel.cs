@@ -140,9 +140,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
                     mc.Memories.Clear();
                 });
 
@@ -201,9 +201,9 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_MiniColumns.Length,
-                    mci =>
+                    mc_index =>
                     {
-                        var mc = Cortex.SubArea_MiniColumns[mci];
+                        var mc = Cortex.SubArea_MiniColumns[mc_index];
                         float r = MathF.Sqrt((mc.MCX - maxPinwheelIndex_MiniColumn.MCX) * (mc.MCX - maxPinwheelIndex_MiniColumn.MCX) +
                             (mc.MCY - maxPinwheelIndex_MiniColumn.MCY) * (mc.MCY - maxPinwheelIndex_MiniColumn.MCY));
                         if (r > floodRadius)
@@ -284,10 +284,10 @@ namespace Ssz.AI.Models
             CalculateDetectorsAndActivityAndSuperActivity(gradientMatrix, activitiyMaxInfo);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            foreach (int dJ in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
                 {
-                    Detector d = Retina.Detectors[dx, dy];
+                    Detector d = Retina.Detectors[dI, dJ];
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
@@ -423,13 +423,13 @@ namespace Ssz.AI.Models
 
         public void PreparePinwheelIndexConstantMemories()
         {
-            foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
-                int inputIndex = MonoInput.Images.Length + mci;
+                int inputIndex = MonoInput.Images.Length + mc_index;
                 if (inputIndex >= MonoInput.MonoInputItems.Length)
                     continue;
 
-                MiniColumn currentMiniColumn = Cortex.SubArea_MiniColumns[mci];
+                MiniColumn currentMiniColumn = Cortex.SubArea_MiniColumns[mc_index];
 
                 currentMiniColumn.Temp_Memories.Clear();
 
@@ -506,13 +506,13 @@ namespace Ssz.AI.Models
         public void GeneratePinwheel(Random random)
         {
             int inputIndex = MonoInput.Images.Length - 1;
-            foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
                 inputIndex += 1;
                 if (inputIndex >= MonoInput.MonoInputItems.Length)
                     continue;
 
-                MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[mci];
+                MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[mc_index];
 
                 winnerMiniColumn.Temp_Memories.Clear();
 
@@ -639,13 +639,13 @@ namespace Ssz.AI.Models
 
         public void GeneratePinwheel2(Random random)
         {
-            foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
-                int inputIndex = MonoInput.Images.Length + mci;
+                int inputIndex = MonoInput.Images.Length + mc_index;
                 if (inputIndex >= MonoInput.MonoInputItems.Length)
                     continue;
 
-                MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[mci];
+                MiniColumn winnerMiniColumn = Cortex.SubArea_MiniColumns[mc_index];
 
                 winnerMiniColumn.Temp_Memories.Clear();
 
@@ -733,8 +733,8 @@ namespace Ssz.AI.Models
 
             for (; ; )
             {
-                var mci = random.Next(Cortex.SubArea_MiniColumns.Length);
-                MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+                int mc_index = random.Next(Cortex.SubArea_MiniColumns.Length);
+                MiniColumn mc = Cortex.SubArea_MiniColumns[mc_index];
 
                 if (mc.Memories.Count == 0)
                     break;
@@ -773,9 +773,9 @@ namespace Ssz.AI.Models
                 break;
             }
 
-            foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
             {
-                MiniColumn mc = Cortex.SubArea_MiniColumns[mci];                
+                MiniColumn mc = Cortex.SubArea_MiniColumns[mc_index];                
 
                 foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                 {
@@ -804,9 +804,9 @@ namespace Ssz.AI.Models
                 sw.Restart();
 
                 int changedCount = 0;
-                foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+                foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
                 {
-                    MiniColumn mc = Cortex.SubArea_MiniColumns[mci];
+                    MiniColumn mc = Cortex.SubArea_MiniColumns[mc_index];
 
                     foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                     {
@@ -862,9 +862,9 @@ namespace Ssz.AI.Models
                     }
                 }
 
-                foreach (var mci in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
+                foreach (int mc_index in Enumerable.Range(0, Cortex.SubArea_MiniColumns.Length))
                 {
-                    MiniColumn mc = Cortex.SubArea_MiniColumns[mci];                    
+                    MiniColumn mc = Cortex.SubArea_MiniColumns[mc_index];                    
 
                     foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                     {
@@ -929,9 +929,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
                     mc.GetHash(mc.Temp_Hash);
                     mc.Temp_Activity = MiniColumnsActivityHelper.GetActivity(mc, mc.Temp_Hash, Constants);
 

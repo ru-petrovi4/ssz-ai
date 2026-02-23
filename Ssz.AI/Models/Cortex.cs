@@ -157,19 +157,19 @@ namespace Ssz.AI.Models
 
                         List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                        for (int detectorY = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorY < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorY < leftEye.Retina.Detectors.Dimensions[1]; detectorY += 1)
-                            for (int detectorX = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorX < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorX < leftEye.Retina.Detectors.Dimensions[0]; detectorX += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.Detectors.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.Detectors.Dimensions[0]; dI += 1)
                             {
-                                Detector detector = leftEye.Retina.Detectors[detectorX, detectorY];
+                                Detector detector = leftEye.Retina.Detectors[dI, dJ];
                                 double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                                 if (rPixels < DetectorsVisibleRadiusPixels)
                                     miniColumnDetectors.Add(detector);
                             }
 
-                        for (int detectorY = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorY < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorY < rightEye.Retina.Detectors.Dimensions[1]; detectorY += 1)
-                            for (int detectorX = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); detectorX < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && detectorX < rightEye.Retina.Detectors.Dimensions[0]; detectorX += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.Detectors.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.Detectors.Dimensions[0]; dI += 1)
                             {
-                                Detector detector = rightEye.Retina.Detectors[detectorX, detectorY];
+                                Detector detector = rightEye.Retina.Detectors[dI, dJ];
                                 double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                                 if (rPixels < DetectorsVisibleRadiusPixels)
                                     miniColumnDetectors.Add(detector);
@@ -216,9 +216,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: SubAreaOrAll_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    MiniColumn mc = SubAreaOrAll_MiniColumns[mci];
+                    MiniColumn mc = SubAreaOrAll_MiniColumns[mc_index];
                     
                     mc.K0 = (constants.PositiveK[0], constants.NegativeK[0]);
 

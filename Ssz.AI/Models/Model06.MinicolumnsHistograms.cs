@@ -90,10 +90,10 @@ namespace Ssz.AI.Models
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            foreach (int dJ in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
                 {
-                    Detector d = Retina.Detectors[dx, dy];
+                    Detector d = Retina.Detectors[dI, dJ];
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
@@ -187,10 +187,10 @@ namespace Ssz.AI.Models
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dy in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dx in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            foreach (int dJ in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
                 {
-                    Detector d = Retina.Detectors[dx, dy];
+                    Detector d = Retina.Detectors[dI, dJ];
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
@@ -260,9 +260,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
                     mc.GetHash(mc.Temp_Hash);
 
                     int bitsCountInHash = (int)TensorPrimitives.Sum(mc.Temp_Hash);
@@ -281,10 +281,10 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubArea_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubArea_MiniColumns[mci];
-                    mc.Temp_Activity = MiniColumnsActivityHelper.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mci], Constants);
+                    var mc = Cortex.SubArea_MiniColumns[mc_index];
+                    mc.Temp_Activity = MiniColumnsActivityHelper.GetActivity(mc, visualizationTableItem.SubArea_MiniColumns_Hashes[mc_index], Constants);
                 });
 
             GetSuperActivitiyMaxInfo(activitiyMaxInfo);

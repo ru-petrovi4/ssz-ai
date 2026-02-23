@@ -31,9 +31,9 @@ namespace Ssz.AI.Models
             int mcyMin = Int32.MaxValue;
             int mcyMax = Int32.MinValue;
 
-            foreach (var mci in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
+            foreach (int mc_index in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
             {
-                var mc = cortex.MiniColumns.Data[mci];
+                var mc = cortex.MiniColumns.Data[mc_index];
                 if (mc.MCX > mcxMax)
                     mcxMax = mc.MCX;
                 if (mc.MCX < mcxMin)
@@ -83,9 +83,9 @@ namespace Ssz.AI.Models
             int mcyMin = Int32.MaxValue;
             int mcyMax = Int32.MinValue;
 
-            foreach (var mci in Enumerable.Range(0, cortex.SubArea_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, cortex.SubArea_MiniColumns.Length))
             {
-                Cortex_Simplified.MiniColumn mc = cortex.SubArea_MiniColumns[mci];
+                Cortex_Simplified.MiniColumn mc = cortex.SubArea_MiniColumns[mc_index];
                 if (mc.MCX > mcxMax)
                     mcxMax = mc.MCX;
                 if (mc.MCX < mcxMin)
@@ -149,9 +149,9 @@ namespace Ssz.AI.Models
             int mcyMin = Int32.MaxValue;
             int mcyMax = Int32.MinValue;
 
-            foreach (var mci in Enumerable.Range(0, cortex.SubAreaOrAll_MiniColumns.Length))
+            foreach (int mc_index in Enumerable.Range(0, cortex.SubAreaOrAll_MiniColumns.Length))
             {
-                Cortex.MiniColumn mc = cortex.SubAreaOrAll_MiniColumns[mci];
+                Cortex.MiniColumn mc = cortex.SubAreaOrAll_MiniColumns[mc_index];
                 if (mc.MCX > mcxMax)
                     mcxMax = mc.MCX;
                 if (mc.MCX < mcxMin)

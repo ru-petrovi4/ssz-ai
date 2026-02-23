@@ -296,9 +296,9 @@ public partial class Cortex : ISerializableModelObject
         Parallel.For(
             fromInclusive: 0,
             toExclusive: MiniColumns.Count,
-            (Action<int>)(mci =>
+            (Action<int>)(mc_index =>
             {
-                MiniColumn miniColumn = MiniColumns[mci];
+                MiniColumn miniColumn = MiniColumns[mc_index];
                 miniColumn.Temp_SameFieldOfViewMiniColumns.Add(miniColumn);
 
                 if (miniColumn.Temp_HyperColumn_MiniColumns is not null)
@@ -306,7 +306,7 @@ public partial class Cortex : ISerializableModelObject
 
                 for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)                    
                 {
-                    if (mc_index2 == mci)                        
+                    if (mc_index2 == mc_index)                        
                         continue;
 
                     MiniColumn nearestMc = MiniColumns[mc_index2];                    

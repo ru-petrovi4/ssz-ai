@@ -25,9 +25,9 @@ namespace Ssz.AI.Models
 
             DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.Detectors.Data.Length];
 
-            foreach (var di in Enumerable.Range(0, rightEye.Retina.Detectors.Data.Length))
+            foreach (var d_index in Enumerable.Range(0, rightEye.Retina.Detectors.Data.Length))
             {
-                Detector detetctor = rightEye.Retina.Detectors.Data[di];
+                Detector detetctor = rightEye.Retina.Detectors.Data[d_index];
                 DetectorCorrelation detectorCorrelation = new();
 
                 detectorCorrelation.RangeLeftUpperX = detetctor.DI - Constants.DependantDetectorsRangeWidthCount / 2;
@@ -50,7 +50,7 @@ namespace Ssz.AI.Models
                     detectorCorrelation.RangeRightBottomX - detectorCorrelation.RangeLeftUpperX,
                     detectorCorrelation.RangeRightBottomY - detectorCorrelation.RangeLeftUpperY);
 
-                DetectorCorrelations[di] = detectorCorrelation;
+                DetectorCorrelations[d_index] = detectorCorrelation;
             }
         }
        
@@ -104,9 +104,9 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: leftEye_Detectors.Data.Length,
-                    di =>
+                    d_index =>
                     {
-                        var d = leftEye_Detectors.Data[di];
+                        var d = leftEye_Detectors.Data[d_index];
                         d.CalculateIsActivated(leftEye.Retina, leftEye_GradientMatrix, Constants);
                     });
                 
@@ -115,19 +115,19 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: rightEye_Detectors.Data.Length,
-                    di =>
+                    d_index =>
                     {
-                        var d = rightEye_Detectors.Data[di];
+                        var d = rightEye_Detectors.Data[d_index];
                         d.CalculateIsActivated(rightEye.Retina, rightEye_GradientMatrix, Constants);
                     });
 
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: rightEye_Detectors.Data.Length,
-                    di =>
+                    d_index =>
                     {
-                        var rightEye_Detector = rightEye_Detectors.Data[di];
-                        var detectorCorrelation = DetectorCorrelations[di];
+                        var rightEye_Detector = rightEye_Detectors.Data[d_index];
+                        var detectorCorrelation = DetectorCorrelations[d_index];
                         for (int dy = detectorCorrelation.RangeLeftUpperY; dy < detectorCorrelation.RangeRightBottomY; dy += 1)
                         {
                             for (int dx = detectorCorrelation.RangeLeftUpperX; dx < detectorCorrelation.RangeRightBottomX; dx += 1)

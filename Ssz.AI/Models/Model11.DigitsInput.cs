@@ -175,9 +175,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                    var mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                     mc.Memories.Clear();
                 });
 
@@ -236,9 +236,9 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                    mci =>
+                    mc_index =>
                     {
-                        var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                        var mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                         float r = MathF.Sqrt((mc.MCX - maxMemoryMiniColumn.MCX) * (mc.MCX - maxMemoryMiniColumn.MCX) +
                             (mc.MCY - maxMemoryMiniColumn.MCY) * (mc.MCY - maxMemoryMiniColumn.MCY));
                         if (r > floodRadius)
@@ -829,9 +829,9 @@ namespace Ssz.AI.Models
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                    mci =>
+                    mc_index =>
                     {
-                        MiniColumn mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                        MiniColumn mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                         
                         foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
                         {
@@ -884,9 +884,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: leftEye_Detectors.Data.Length,
-                di =>
+                d_index =>
                 {
-                    var d = leftEye_Detectors.Data[di];
+                    var d = leftEye_Detectors.Data[d_index];
                     d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
                 });
 
@@ -905,9 +905,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                    var mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                     mc.GetHash(mc.Temp_Hash);
                     mc.Temp_MemoryCanBeStored = TensorPrimitives.Sum(mc.Temp_Hash) >= Constants.MinBitsInHashForMemory;
                     if (mc.Temp_MemoryCanBeStored)
@@ -925,9 +925,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                    var mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                     if (mc.Temp_MemoryCanBeStored)
                         mc.Temp_SuperActivity = MiniColumnsActivityHelper.GetSuperActivity(mc, Constants);
                     else
@@ -938,9 +938,9 @@ namespace Ssz.AI.Models
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: Cortex.SubAreaOrAll_MiniColumns.Length,
-                mci =>
+                mc_index =>
                 {
-                    var mc = Cortex.SubAreaOrAll_MiniColumns[mci];
+                    var mc = Cortex.SubAreaOrAll_MiniColumns[mc_index];
                     mc.Temp_Activity = (0.0f, 0.0f, 0);
                 });
         }        

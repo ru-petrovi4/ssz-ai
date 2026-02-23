@@ -54,10 +54,10 @@ public class Cortex_Simplified : ISerializableModelObject
 
                     List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                    for (int dy = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dy < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dy < retina.Detectors.Dimensions[1]; dy += 1)
-                        for (int dx = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dx < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dx < retina.Detectors.Dimensions[0]; dx += 1)
+                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.Detectors.Dimensions[1]; dJ += 1)
+                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.Detectors.Dimensions[0]; dI += 1)
                         {
-                            Detector detector = retina.Detectors[dx, dy];
+                            Detector detector = retina.Detectors[dI, dJ];
                             double r = Math.Sqrt((detector.CenterXPixels - centerX) * (detector.CenterXPixels - centerX) + (detector.CenterYPixels - centerY) * (detector.CenterYPixels - centerY));
                             if (r < DetectorsVisibleRadiusPixels)
                                 miniColumnDetectors.Add(detector);
@@ -109,9 +109,9 @@ public class Cortex_Simplified : ISerializableModelObject
         Parallel.For(
             fromInclusive: 0,
             toExclusive: SubArea_MiniColumns.Length,
-            mci =>
+            mc_index =>
             {
-                MiniColumn mc = SubArea_MiniColumns[mci];
+                MiniColumn mc = SubArea_MiniColumns[mc_index];
 
                 //float k00 = GetNormalDistributionValue(sigma0, 0.0f);
                 //float k01 = GetNormalDistributionValue(sigma1, 0.0f);

@@ -84,8 +84,8 @@ public class Retina : ISerializableModelObject
             {
                 DetectorsRanges[gradientMagnitudeIdx, gradientAngleDegreeIdx] = new DetectorRange
                 {
-                    GradientMagnitudeRange = gradientMagnitudeRange,
-                    GradientAngleRange = angleRange
+                    GradientMagnitudeHalfRange = gradientMagnitudeRange,
+                    GradientAngleHalfRange = angleRange
                 };
             }
         }
@@ -125,16 +125,16 @@ public class Retina : ISerializableModelObject
         //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         //dataToDisplayHolder.Distribution = new ulong[360];
 
-        foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+        foreach (int d_index in Enumerable.Range(0, Detectors.Data.Length))
         {
             int rawIndex = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative.Data);
             //var indices = detectorDensities_Accumulative.GetIndices(rawIndex);                
             var indices = (initializationRandom.Next(constants.GeneratedMaxGradientMagnitude + gradientMagnitudeRange), initializationRandom.Next(360));
 
-            Detector detector = Detectors.Data[di];
+            Detector detector = Detectors.Data[d_index];
 
-            detector.GradientMagnitudeMax = indices.Item1;                
-            detector.GradientAngleMax = (float)MathHelper.DegreesToRadians(indices.Item2);                
+            detector.AverageGradientMagnitude = indices.Item1;                
+            detector.AverageGradientAngle = (float)MathHelper.DegreesToRadians(indices.Item2);                
             detector.BitIndexInHash = initializationRandom.Next(constants.HashLength);
             //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
         }            
@@ -151,12 +151,12 @@ public class Retina : ISerializableModelObject
     {
         using (writer.EnterBlock(1))
         {
-            foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+            foreach (int d_index in Enumerable.Range(0, Detectors.Data.Length))
             {
-                Detector detector = Detectors.Data[di];
+                Detector detector = Detectors.Data[d_index];
 
-                writer.Write(detector.GradientMagnitudeMax);                    
-                writer.Write(detector.GradientAngleMax);                    
+                writer.Write(detector.AverageGradientMagnitude);                    
+                writer.Write(detector.AverageGradientAngle);                    
                 writer.Write(detector.BitIndexInHash);
             }
 
@@ -171,12 +171,12 @@ public class Retina : ISerializableModelObject
             switch (block.Version)
             { 
                 case 1:
-                    foreach (int di in Enumerable.Range(0, Detectors.Data.Length))
+                    foreach (int d_index in Enumerable.Range(0, Detectors.Data.Length))
                     {
-                        Detector detector = Detectors.Data[di];
+                        Detector detector = Detectors.Data[d_index];
 
-                        detector.GradientMagnitudeMax = reader.ReadSingle();                            
-                        detector.GradientAngleMax = reader.ReadSingle();                            
+                        detector.AverageGradientMagnitude = reader.ReadSingle();                            
+                        detector.AverageGradientAngle = reader.ReadSingle();                            
                         detector.BitIndexInHash = reader.ReadInt32();
                     }
                     
@@ -205,12 +205,12 @@ public class Detector
     /// </summary>
     public double CenterYPixels { get; init; }
     
-    public float GradientMagnitudeMax;        
+    public float AverageGradientMagnitude;        
 
     /// <summary>
     ///     [-pi, pi]
     /// </summary>
-    public float GradientAngleMax;        
+    public float AverageGradientAngle;        
 
     public int BitIndexInHash;
 
@@ -228,28 +228,23 @@ public class Detector
             return;
         }
         
-        DetectorRange detectorRange = retina.DetectorsRanges[(int)GradientMagnitudeMax, 0];
-
-        float gradientMagnitudeMin = GradientMagnitudeMax - detectorRange.GradientMagnitudeRange;
-        if (gradientMagnitudeMin < 0.0f)
-            gradientMagnitudeMin = 0.0f;
-
-        bool activated = (Temp_GradientInPoint.Magnitude >= gradientMagnitudeMin) && (Temp_GradientInPoint.Magnitude < GradientMagnitudeMax);
+        DetectorRange detectorRange = retina.DetectorsRanges[(int)Temp_GradientInPoint.Magnitude, (int)Temp_GradientInPoint.Angle];
+        
+        bool activated = (Temp_GradientInPoint.Magnitude >= AverageGradientMagnitude - detectorRange.GradientMagnitudeHalfRange) && 
+            (Temp_GradientInPoint.Magnitude < AverageGradientMagnitude + detectorRange.GradientMagnitudeHalfRange);
         if (!activated)
         {
             Temp_IsActivated = false;
             return;
         }
 
-        DetectorRange detectorRange2 = retina.DetectorsRanges[(int)MathF.Round((GradientMagnitudeMax + gradientMagnitudeMin) / 2.0f, 0), 0];
-
         // [-pi, pi)
-        float gradientAngleMin = MathHelper.NormalizeAngle(GradientAngleMax - detectorRange2.GradientAngleRange);            
-            
-        if (GradientAngleMax > gradientAngleMin + 0.01f)
-            activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) && (Temp_GradientInPoint.Angle < GradientAngleMax);
+        float gradientAngleMin = MathHelper.NormalizeAngle(AverageGradientAngle - detectorRange.GradientAngleHalfRange);
+        float gradientAngleMax = MathHelper.NormalizeAngle(AverageGradientAngle + detectorRange.GradientAngleHalfRange);
+        if (gradientAngleMax > gradientAngleMin + 0.01f)
+            activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) && (Temp_GradientInPoint.Angle < gradientAngleMax);
         else
-            activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) || (Temp_GradientInPoint.Angle < GradientAngleMax);
+            activated = (Temp_GradientInPoint.Angle >= gradientAngleMin) || (Temp_GradientInPoint.Angle < gradientAngleMax);
         Temp_IsActivated = activated;
     }
 
@@ -278,24 +273,24 @@ public class Detector
 public class DetectorRange : IOwnedDataSerializable
 {
     /// <summary>
-    ///     Диапазоны модуля градиента.
+    ///     Половина диапазона модуля градиента.
     /// </summary>
-    public float GradientMagnitudeRange;
+    public float GradientMagnitudeHalfRange;
 
     /// <summary>
-    ///     Диапазоны угла градиента.
+    ///     Половина диапазона угла градиента.
     /// </summary>
-    public float GradientAngleRange;
+    public float GradientAngleHalfRange;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
-        writer.Write(GradientMagnitudeRange);
-        writer.Write(GradientAngleRange);
+        writer.Write(GradientMagnitudeHalfRange);
+        writer.Write(GradientAngleHalfRange);
     }
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        GradientMagnitudeRange = reader.ReadSingle();
-        GradientAngleRange = reader.ReadSingle();
+        GradientMagnitudeHalfRange = reader.ReadSingle();
+        GradientAngleHalfRange = reader.ReadSingle();
     }
 }
