@@ -17,8 +17,6 @@ public interface IRetinaConstants
     /// </summary>
     int MaxGradientMagnitudeExclusive { get; }
 
-    int MagnitudeRangesCount { get; }
-
     /// <summary>
     ///     Минимальная чувствительность к модулю градиента
     /// </summary>

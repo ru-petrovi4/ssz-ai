@@ -770,8 +770,6 @@ public class Model01
 
         public int MaxGradientMagnitudeExclusive => 1200;
 
-        public int MagnitudeRangesCount => 3;
-
         public double DetectorMinGradientMagnitudeInclusive => 42;
 
         public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
