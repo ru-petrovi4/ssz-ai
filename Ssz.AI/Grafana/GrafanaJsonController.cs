@@ -339,7 +339,7 @@ namespace Ssz.AI.Grafana
             List<object[]> rows = new List<object[]>(data.Length);
             for (int i = 0; i < data.Length; i += 1)
             {
-                rows.Add([_dataToDisplayHolder.DistributionMin + (_dataToDisplayHolder.DistributionMax - _dataToDisplayHolder.DistributionMin) * i / data.Length, data[i]]);
+                rows.Add([_dataToDisplayHolder.DistributionXMin + (_dataToDisplayHolder.DistributionXMax - _dataToDisplayHolder.DistributionXMin) * i / data.Length, data[i]]);
             }
 
             var queryResponse =

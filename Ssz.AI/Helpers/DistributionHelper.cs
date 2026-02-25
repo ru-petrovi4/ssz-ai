@@ -45,7 +45,7 @@ namespace Ssz.AI.Helpers
         public static int GetRandom(Random random, float[] accumulativeDistribution)
         {
             // Можно использовать Array.BinarySearch()
-            float value = random.NextSingle() * accumulativeDistribution[^1]; // ^1 Последний элемент массиваж
+            float value = random.NextSingle() * accumulativeDistribution[^1]; // ^1 Последний элемент массива
 
             int left = 0;
             int right = accumulativeDistribution.Length;

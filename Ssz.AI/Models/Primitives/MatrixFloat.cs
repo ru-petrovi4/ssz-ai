@@ -77,7 +77,7 @@ public class MatrixFloat : IOwnedDataSerializable
         return new Span<float>(column);
     }
 
-    public virtual (int, int) GetIndices(int dataIndex)
+    public virtual (int I, int J) GetIndices(int dataIndex)
     {
         var columnsCount = Dimensions[1];
         return (dataIndex % columnsCount, dataIndex / columnsCount);
@@ -189,7 +189,7 @@ public class MatrixFloat_ColumnMajor : MatrixFloat
         return new Span<float>(Data, j * rowsCount, rowsCount);
     }
 
-    public override (int, int) GetIndices(int dataIndex)
+    public override (int I, int J) GetIndices(int dataIndex)
     {
         var rowsCount = Dimensions[0];
         return (dataIndex % rowsCount, dataIndex / rowsCount);

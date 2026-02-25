@@ -2,6 +2,8 @@
 using Avalonia.Layout;
 using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
@@ -47,7 +49,7 @@ namespace Ssz.AI.Models
             Random random = new(1);
 
             //_retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
-            Retina = new Retina(Constants);
+            Retina = new Retina(Constants, NullLogger.Instance);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
             Retina.Prepare();
 

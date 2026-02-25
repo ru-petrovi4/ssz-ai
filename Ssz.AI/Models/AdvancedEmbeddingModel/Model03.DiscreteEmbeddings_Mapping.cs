@@ -311,13 +311,13 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 2.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 2.0f;
 
         foreach (var i in Enumerable.Range(0, clustersCosineSimilarityMatrix.Data.Length))
         {
             var v = 1 - clustersCosineSimilarityMatrix.Data[i];            
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_GetСlustersCosineSimilarityMatrix() Done.");
@@ -344,13 +344,13 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 10.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 10.0f;
 
         foreach (var i in Enumerable.Range(0, primaryBitsEnergy_Matrix.Data.Length))
         {
             var v = primaryBitsEnergy_Matrix.Data[i];            
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_СlustersEnergyMatrix() Done.");
@@ -408,13 +408,13 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 10.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 10.0f;
         
         foreach (var i in Enumerable.Range(0, clustersEnergy_Matrix.Data.Length))
         {
             var v = clustersEnergy_Matrix.Data[i];
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_СlustersEnergyMatrix_MappingLinear() Done.");
@@ -444,14 +444,14 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 150.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 150.0f;
 
         int wordsCount = languageDiscreteEmbeddings_EN.Words.Count;
         foreach (var wordIndex in Enumerable.Range(0, wordsCount))
         {
             var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordIndex].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix);
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_WordsEnergy() Done.");
@@ -480,8 +480,8 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 150.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 150.0f;
 
         int wordsCount = languageDiscreteEmbeddings_RU.Words.Count;
         foreach (var wordIndex in Enumerable.Range(0, wordsCount))
@@ -493,7 +493,7 @@ public partial class Model03
             var v = ModelHelper.GetWord_PrimaryBitsOnly_Energy(
                 discreteVector_PrimaryBitsOnly_Mapped,
                 primaryBitsEnergy_Matrix_EN);
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_WordsEnergy_MappingLinear() Done.");
@@ -519,8 +519,8 @@ public partial class Model03
         int n = 500;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = -5000.0f;
-        dataToDisplayHolder.DistributionMax = 5000.0f;
+        dataToDisplayHolder.DistributionXMin = -5000.0f;
+        dataToDisplayHolder.DistributionXMax = 5000.0f;
         
         foreach (var index in Enumerable.Range(0, wordTranslationsCollection.WordTranslations.Count))
         {
@@ -530,7 +530,7 @@ public partial class Model03
             var energy_RU = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_RU.Words[wordTranslation.IndexA].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix_RU);
             var energy_EN = ModelHelper.GetWord_PrimaryBitsOnly_Energy(languageDiscreteEmbeddings_EN.Words[wordTranslation.IndexB].DiscreteVector_PrimaryBitsOnly, primaryBitsEnergy_Matrix_EN);
             float v = energy_EN - energy_RU;
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_V5() Done.");
@@ -576,8 +576,8 @@ public partial class Model03
         int n = 1000;
         var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
         dataToDisplayHolder.Distribution = new ulong[n];
-        dataToDisplayHolder.DistributionMin = 0.0f;
-        dataToDisplayHolder.DistributionMax = 70.0f;
+        dataToDisplayHolder.DistributionXMin = 0.0f;
+        dataToDisplayHolder.DistributionXMax = 70.0f;
 
         foreach (var clusterIndex in Enumerable.Range(0, languageDiscreteEmbeddings_RU.ClusterInfos.Count))
         {
@@ -590,7 +590,7 @@ public partial class Model03
                 primaryBitsNearest_EN,
                 nearestCount);
             
-            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionMin) * n / (dataToDisplayHolder.DistributionMax - dataToDisplayHolder.DistributionMin))] += 1;
+            dataToDisplayHolder.Distribution[(int)((v - dataToDisplayHolder.DistributionXMin) * n / (dataToDisplayHolder.DistributionXMax - dataToDisplayHolder.DistributionXMin))] += 1;
         }
 
         _loggersSet.UserFriendlyLogger.LogInformation($"VisualizeData_СlustersLocalSimilarity() Done.");

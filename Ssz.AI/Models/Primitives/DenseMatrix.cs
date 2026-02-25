@@ -42,10 +42,10 @@ namespace Ssz.AI.Models
 
         public T[] Data { get; private set; } = null!;
 
-        public T this[params int[] indices]
+        public T this[int i, int j]
         {
-            get => Data[indices[0] + indices[1] * Dimensions[0]];
-            set => Data[indices[0] + indices[1] * Dimensions[0]] = value;
+            get => Data[i * Dimensions[1] + j];
+            set => Data[i * Dimensions[1] + j] = value;
         }
 
         public void CreateElementInstances(Func<int, int, T> func)
@@ -103,7 +103,7 @@ namespace Ssz.AI.Models
 
         T[] Data { get; }
 
-        T this[params int[] indices] { get; }
+        T this[int i, int j] { get; }
 
         #endregion
     }

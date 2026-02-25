@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
@@ -47,7 +48,7 @@ namespace Ssz.AI.Models
 
             Random random = new();
 
-            Retina = new Retina(Constants);
+            Retina = new Retina(Constants, NullLogger.Instance);
             Retina.GenerateOwnedData(random, Constants, gradientDistribution);
 
             Cortex = new Cortex_Simplified(Constants, Retina);            

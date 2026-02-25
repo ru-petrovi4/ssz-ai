@@ -2,6 +2,7 @@
 using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using OpenCvSharp;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
@@ -68,13 +69,13 @@ namespace Ssz.AI.Models
             StereoInput.Prepare();
             //Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null);            
 
-            LeftEye.Retina = new Retina(Constants);
+            LeftEye.Retina = new Retina(Constants, NullLogger.Instance);
             LeftEye.Retina.GenerateOwnedData(random, Constants, leftEye_GradientDistribution);            
             //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
             LeftEye.Retina.Prepare();
             //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
-            RightEye.Retina = new Retina(Constants);
+            RightEye.Retina = new Retina(Constants, NullLogger.Instance);
             RightEye.Retina.GenerateOwnedData(random, Constants, rightEye_GradientDistribution);            
             //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
             RightEye.Retina.Prepare();

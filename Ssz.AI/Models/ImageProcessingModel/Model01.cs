@@ -1,4 +1,4 @@
-﻿#define GENERATE_INPUT_DATA
+﻿//#define GENERATE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -91,7 +91,7 @@ public class Model01
                 LeftEye,
                 RightEye);
 #else
-        Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null);
+        Helpers.SerializationHelper.LoadFromFileIfExists("StereoInput.bin", StereoInput, null, Logger);
 #endif
         StereoInput.Prepare(); // Does nothing.
 
@@ -99,13 +99,13 @@ public class Model01
         Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null, null);
 #endif
 
-        LeftEye.Retina = new Retina(Constants);
+        LeftEye.Retina = new Retina(Constants, Logger);
         LeftEye.Retina.GenerateOwnedData(initialization_Random, Constants, leftEye_GradientDistribution);
         //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
         LeftEye.Retina.Prepare(); // Does nothing.
         //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
-        RightEye.Retina = new Retina(Constants);
+        RightEye.Retina = new Retina(Constants, Logger);
         RightEye.Retina.GenerateOwnedData(initialization_Random, Constants, rightEye_GradientDistribution);
         //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
         RightEye.Retina.Prepare(); // Does nothing.
