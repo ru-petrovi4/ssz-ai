@@ -70,8 +70,7 @@ public partial class Cortex : ISerializableModelObject
         ILogger logger)
     {
         Constants = constants;
-        Logger = logger;
-        InputItems = new(10000);
+        Logger = logger;        
 
         MiniColumn_XAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;
         MiniColumn_YAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;        
@@ -90,8 +89,6 @@ public partial class Cortex : ISerializableModelObject
     /// <summary>
     ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
     /// </summary>
-    public FastList<InputItem> InputItems { get; private set; } = null!;
-
     public FastList<Memory> IdealPinwheelMemories { get; private set; } = null!;
 
     //public static readonly Memory IdealPinwheelCenterMemory = new Memory()
@@ -229,7 +226,7 @@ public partial class Cortex : ISerializableModelObject
 
         IdealPinwheelMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
 
-        var newHyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
+        var hyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
 
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
@@ -237,9 +234,9 @@ public partial class Cortex : ISerializableModelObject
 
             var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
 
-            // Воспоминания для оценки качества вертушки
-            var inputItem = AddInputItem(random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn);
-            hyperColumnIdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
+            // Воспоминания для оценки качества вертушки TODO
+            var idealCortexMemory = GetIdealCortexMemory(random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn);
+            hyperColumnIdealPinwheelMemories.Add(idealCortexMemory);
 
             FastList<MiniColumn> adjacentMiniColumns = new(6);
             for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)
@@ -260,18 +257,18 @@ public partial class Cortex : ISerializableModelObject
             foreach (var adjacentMiniColumn in adjacentMiniColumns
                 .OrderBy(mc => MathF.Atan2(mc.MCY - hyperColumnCenter_MiniColumn.MCY, mc.MCX - hyperColumnCenter_MiniColumn.MCX)))
             {
-                inputItem = AddInputItem(random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn);
-                hyperColumnIdealPinwheelMemories.Add(Memory.FromInputItem(inputItem));
+                idealCortexMemory = GetIdealCortexMemory(random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn);
+                hyperColumnIdealPinwheelMemories.Add(idealCortexMemory);
             }
 
             if (hyperColumnIdealPinwheelMemories.Count == 7)
             {
-                newHyperColumnCenters_MiniColumnIndices.Add(mc_index);
+                hyperColumnCenters_MiniColumnIndices.Add(mc_index);
                 IdealPinwheelMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);                
             }
         }
 
-        HyperColumnCenters_MiniColumnIndices.Swap(newHyperColumnCenters_MiniColumnIndices);
+        HyperColumnCenters_MiniColumnIndices.Swap(hyperColumnCenters_MiniColumnIndices);
     }
 
     public void Prepare()
@@ -370,7 +367,7 @@ public partial class Cortex : ISerializableModelObject
     /// <param name="idealAngleMagnitude_MiniColumn">For Angle and Magnitude</param>
     /// <param name="mainXY_MiniColumn">For X_Retina and Y_Retina</param>
     /// <returns></returns>
-    public InputItem AddInputItem(
+    public Memory GetIdealCortexMemory(
         Random random, 
         MiniColumn hyperColumnCenter_MiniColumn, 
         MiniColumn idealAngleMagnitude_MiniColumn, 
@@ -407,40 +404,37 @@ public partial class Cortex : ISerializableModelObject
         }
         angle = MathHelper.NormalizeAngle(angle);
 
-        InputItem inputItem = new();
-        inputItem.Index = InputItems.Count;
-        inputItem.GradientAngle = angle;
-        inputItem.GradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
+        Memory memory = new();        
+        memory.GradientAngle = angle;
+        memory.GradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
-        inputItem.MainRetinaXYAngle_MiniColumnIndex = mainXY_MiniColumn.Index;
-        inputItem.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle_K;
-        inputItem.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle_K;
+        memory.MainRetinaXYAngle_MiniColumnIndex = mainXY_MiniColumn.Index;
+        memory.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle_K;
               
-        inputItem.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
-        inputItem.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
-        inputItem.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;        
+        memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
+        memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;        
 
-        var distanceFromCenterNormalized = inputItem.GradientMagnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
+        var distanceFromCenterNormalized = memory.GradientMagnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
         if (distanceFromCenterNormalized > 1.0f)
             distanceFromCenterNormalized = 1.0f;
-        inputItem.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(inputItem.GradientAngle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
+        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
 
-        float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(inputItem.HyperColumnCenter_RetinaYAngle, inputItem.HyperColumnCenter_RetinaXAngle));
+        float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
         var sXY = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f / 
             MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
-        inputItem.RetinaXYAngle_Color = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
+        memory.RetinaXYAngle_Color = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
 
-        inputItem.DistanceFromCenter = inputItem.GradientMagnitude;        
+        memory.DistanceFromCenter = memory.GradientMagnitude;
 
-        InputItems.Add(inputItem);
-        return inputItem;
+        return memory;
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
-        {
-            writer.WriteFastListOfOwnedDataSerializable(InputItems, context);
+        {            
             writer.WriteFastListOfOwnedDataSerializable(IdealPinwheelMemories, context);
             writer.WriteFastListOfOwnedDataSerializable(MiniColumns, context);
             HyperColumnCenters_MiniColumnIndices.SerializeOwnedData(writer, context);            
@@ -453,8 +447,7 @@ public partial class Cortex : ISerializableModelObject
         {
             switch (block.Version)
             {
-                case 1:
-                    InputItems = reader.ReadFastListOfOwnedDataSerializable(idx => new InputItem(), context);
+                case 1:                    
                     IdealPinwheelMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
                     MiniColumns = reader.ReadFastListOfOwnedDataSerializable(idx => new MiniColumn(Constants), context);
                     HyperColumnCenters_MiniColumnIndices = new FastList<int>();
@@ -607,44 +600,99 @@ public partial class Cortex : ISerializableModelObject
     }
 
     public class Memory : IOwnedDataSerializable
-    {   
-        public int InputItemIndex;
+    {
+        public readonly float[] Hash = null!;
+
+        public int StereoInputSample_Index;
+
+        public bool RetinaImageData_IsRightEye;
+
+        public float RetinaImageData_CenterXPixels;
+
+        public float RetinaImageData_CenterYPixels;
 
         /// <summary>
-        ///    Distance from center in ideal pinwheel in minicolumns
+        /// [-pi, pi)
         /// </summary>
-        public float DistanceFromCenter;
+        public float GradientAngle;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public float GradientMagnitude;
+
+        public int MainRetinaXYAngle_MiniColumnIndex;
+
+        public float RetinaXAngle;
+
+        public float RetinaYAngle;
+
+        public int HyperColumnCenter_MiniColumnIndex;
+
+        public float HyperColumnCenter_RetinaXAngle;
+
+        public float HyperColumnCenter_RetinaYAngle;
+
+        public Color GradientAngleMagnitude_Color;
+
+        public Color RetinaXYAngle_Color;
+
+        /// <summary>
+        ///     Distance from center in ideal pinwheel in minicolumns
+        /// </summary>
+        public float DistanceFromCenter = Single.MinValue;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
-            using (writer.EnterBlock(1))
+            for (long i = 0; i < Hash.Length; i += 1)
             {
-                writer.Write(InputItemIndex);
-                writer.Write(DistanceFromCenter);
+                writer.Write(Hash[i]);
             }
+            writer.Write(StereoInputSample_Index);
+            writer.Write(RetinaImageData_IsRightEye);
+            writer.Write(RetinaImageData_CenterXPixels);
+            writer.Write(RetinaImageData_CenterYPixels);
+
+            writer.Write(GradientAngle);
+            writer.Write(GradientMagnitude);
+            writer.Write(MainRetinaXYAngle_MiniColumnIndex);
+            writer.Write(RetinaXAngle);
+            writer.Write(RetinaYAngle);
+            writer.Write(HyperColumnCenter_MiniColumnIndex);
+            writer.Write(HyperColumnCenter_RetinaXAngle);
+            writer.Write(HyperColumnCenter_RetinaYAngle);
+            writer.Write(GradientAngleMagnitude_Color);
+            writer.Write(RetinaXYAngle_Color);
+            writer.Write(DistanceFromCenter);
         }
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
         {
-            using (Block block = reader.EnterBlock())
+            for (long i = 0; i < Hash.Length; i += 1)
             {
-                switch (block.Version)
-                {
-                    case 1:
-                        InputItemIndex = reader.ReadInt32();
-                        DistanceFromCenter = reader.ReadSingle();
-                        break;
-                }
+                Hash[i] = reader.ReadSingle();
             }
+            StereoInputSample_Index = reader.ReadInt32();
+            RetinaImageData_IsRightEye = reader.ReadBoolean();
+            RetinaImageData_CenterXPixels = reader.ReadSingle();
+            RetinaImageData_CenterYPixels = reader.ReadSingle();
+
+            GradientAngle = reader.ReadSingle();
+            GradientMagnitude = reader.ReadSingle();
+            MainRetinaXYAngle_MiniColumnIndex = reader.ReadInt32();
+            RetinaXAngle = reader.ReadSingle();
+            RetinaYAngle = reader.ReadSingle();
+            HyperColumnCenter_MiniColumnIndex = reader.ReadInt32();
+            HyperColumnCenter_RetinaXAngle = reader.ReadSingle();
+            HyperColumnCenter_RetinaYAngle = reader.ReadSingle();
+            GradientAngleMagnitude_Color = reader.ReadColor();
+            RetinaXYAngle_Color = reader.ReadColor();
+            DistanceFromCenter = reader.ReadSingle();
         }
 
-        public static Memory FromInputItem(InputItem inputItem)
+        public override string ToString()
         {
-            return new Memory()
-            {
-                InputItemIndex = inputItem.Index,
-                DistanceFromCenter = inputItem.DistanceFromCenter
-            };
+            return $"Angle: {GradientAngle:F1}; Magnitude: {GradientMagnitude:F03}; XRetina: {RetinaXAngle:F03}; YRetina: {RetinaYAngle:F03}";
         }
-    }    
+    }
 }

@@ -169,7 +169,7 @@ namespace Ssz.AI.Models
         public double Generated_AngleDelta { get; set; }
         public double Generated_Angle { get; set; }
 
-        public Memory[,] PinwheelIndexConstantMemories { get; set; } = new Memory[5, 5];
+        public Cortex_Simplified.Memory[,] PinwheelIndexConstantMemories { get; set; } = new Cortex_Simplified.Memory[5, 5];
 
         public void ResetMemories()
         {

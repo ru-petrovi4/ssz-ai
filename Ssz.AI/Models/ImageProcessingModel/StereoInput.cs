@@ -20,7 +20,7 @@ public class StereoInput : ISerializableModelObject
 
     #region public functions
 
-    public StereoInputImage[] StereoInputImages = null!;
+    public StereoInputSample[] StereoInputSamples = null!;
 
     /// <summary>
     ///     Generates model data after construction.
@@ -36,27 +36,27 @@ public class StereoInput : ISerializableModelObject
         Eye leftEye,
         Eye rightEye)
     {
-        StereoInputImages = new StereoInputImage[inputImageDatas.Length];            
+        StereoInputSamples = new StereoInputSample[inputImageDatas.Length];            
         foreach (int i in Enumerable.Range(0, inputImageDatas.Length))
         {
-            StereoInputImage stereoInputImage = new();
-            StereoInputImages[i] = stereoInputImage;
+            StereoInputSample stereoInputSample = new();
+            StereoInputSamples[i] = stereoInputSample;
             byte[] inputImageData = inputImageDatas[i];
-            stereoInputImage.Label = inputImagesLabels[i];
-            stereoInputImage.InputImageData = inputImageData;
-            stereoInputImage.ImageNormalDirection = new Direction();
-            stereoInputImage.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
-            stereoInputImage.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
+            stereoInputSample.Label = inputImagesLabels[i];
+            stereoInputSample.InputImageData = inputImageData;
+            stereoInputSample.ImageNormalDirection = new Direction();
+            stereoInputSample.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
+            stereoInputSample.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
 
-            stereoInputImage.LeftRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputImage.ImageNormalDirection, leftEye);
-            stereoInputImage.RightRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputImage.ImageNormalDirection, rightEye);
+            stereoInputSample.LeftRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, leftEye);
+            stereoInputSample.RightRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, rightEye);
 
             // Применяем оператор Собеля
-            stereoInputImage.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputImage.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-            SobelOperator.CalculateDistribution(stereoInputImage.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
+            stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
+            SobelOperator.CalculateDistribution(stereoInputSample.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
 
-            stereoInputImage.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputImage.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-            SobelOperator.CalculateDistribution(stereoInputImage.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
+            stereoInputSample.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
+            SobelOperator.CalculateDistribution(stereoInputSample.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
         }
     }
 
@@ -71,7 +71,7 @@ public class StereoInput : ISerializableModelObject
     {
         using (writer.EnterBlock(1))
         {
-            writer.WriteArrayOfOwnedDataSerializable(StereoInputImages, null);
+            writer.WriteArrayOfOwnedDataSerializable(StereoInputSamples, null);
         }
     }
 
@@ -82,7 +82,7 @@ public class StereoInput : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:
-                    StereoInputImages = reader.ReadArrayOfOwnedDataSerializable(() => new StereoInputImage(), null);
+                    StereoInputSamples = reader.ReadArrayOfOwnedDataSerializable(() => new StereoInputSample(), null);
                     break;                    
             }
         }
@@ -200,7 +200,7 @@ public class StereoInput : ISerializableModelObject
     }
 }
 
-public class StereoInputImage : IOwnedDataSerializable
+public class StereoInputSample : IOwnedDataSerializable
 {
     public byte Label;
 

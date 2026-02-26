@@ -16,7 +16,7 @@ public static class Visualisation
 {
     public static Bitmap GetBitmapFromMiniColumsMemoriesColor(
         ImageProcessingModel.Cortex cortex,
-        Func<ImageProcessingModel.InputItem, Color> getColor,
+        Func<ImageProcessingModel.Cortex.Memory, Color> getColor,
         double filterColorLow = 0.0,
         double filterColorHigh = 1.0)
     {
@@ -39,9 +39,8 @@ public static class Visualisation
                 if (miniColumn.CortexMemories.Count > 0)
                 {
                     Color color = GetAverageLABColor(miniColumn.CortexMemories
-                        .Where(cm => cm is not null)
-                        .Select(cm => cortex.InputItems[cm!.InputItemIndex])
-                        .Select(ii => getColor(ii))
+                        .Where(cm => cm is not null)                        
+                        .Select(ii => getColor(ii!))
                         .Where(c => c != Color.Black));
 
                     float hue = color.GetHue();

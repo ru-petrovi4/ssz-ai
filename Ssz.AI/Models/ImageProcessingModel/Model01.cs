@@ -174,13 +174,11 @@ public class Model01
             //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
             //    continue;
 
-            InputItem inputItem = Cortex.AddInputItem(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn);                  
-
-            var cortexMemory = Memory.FromInputItem(inputItem);
+            var idealCortexMemory = Cortex.GetIdealCortexMemory(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn);
             
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
-                miniColumn.CortexMemories.Add(cortexMemory);
+                miniColumn.CortexMemories.Add(idealCortexMemory);
             }
         }
     }
@@ -244,13 +242,13 @@ public class Model01
         MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns
             [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Count)];
 
-        InputItem inputItem = Cortex.AddInputItem(
+        Cortex.Memory idealCortexMemory = Cortex.GetIdealCortexMemory(
             random,
             nearest_HyperColumnCenter_MiniColumn,
             idealAngleMagnitude_MiniColumn,
             nearest_HyperColumnCenter_MiniColumn
             );
-        return (Memory.FromInputItem(inputItem), nearest_HyperColumnCenter_MiniColumn);
+        return (idealCortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
     public async Task ProcessNAsync(float cortexMemoriesCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -705,14 +703,11 @@ public class Model01
         return 0.0;
     }
 
-    private double GetSimilarity(Memory memory1, Memory memory2)
+    private double GetSimilarity(Memory cortexMemory1, Memory cortexMemory2)
     {
-        InputItem inpitItem1 = Cortex.InputItems[memory1.InputItemIndex];
-        InputItem inpitItem2 = Cortex.InputItems[memory2.InputItemIndex];
-
         float hyperColumnDiameter_Retina2 = Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle * Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle;
-        var r2 = (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle) * (inpitItem1.HyperColumnCenter_RetinaXAngle - inpitItem2.HyperColumnCenter_RetinaXAngle)
-            + (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle) * (inpitItem1.HyperColumnCenter_RetinaYAngle - inpitItem2.HyperColumnCenter_RetinaYAngle);
+        var r2 = (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle) * (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle)
+            + (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle) * (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle);
         double k;
         if (r2 > hyperColumnDiameter_Retina2 * 1.5f)
             k = 0.0;
@@ -721,13 +716,13 @@ public class Model01
         else
             k = 1.0;
 
-        double radialDistance1 = inpitItem1.GradientMagnitude;
-        double radialDistance2 = inpitItem2.GradientMagnitude;
+        double radialDistance1 = cortexMemory1.GradientMagnitude;
+        double radialDistance2 = cortexMemory2.GradientMagnitude;
 
-        double gx1 = radialDistance1 * Math.Cos(inpitItem1.GradientAngle);
-        double gy1 = radialDistance1 * Math.Sin(inpitItem1.GradientAngle);
-        double gx2 = radialDistance2 * Math.Cos(inpitItem2.GradientAngle);
-        double gy2 = radialDistance2 * Math.Sin(inpitItem2.GradientAngle);
+        double gx1 = radialDistance1 * Math.Cos(cortexMemory1.GradientAngle);
+        double gy1 = radialDistance1 * Math.Sin(cortexMemory1.GradientAngle);
+        double gx2 = radialDistance2 * Math.Cos(cortexMemory2.GradientAngle);
+        double gy2 = radialDistance2 * Math.Sin(cortexMemory2.GradientAngle);
 
         var gr2 = (gx1 - gx2) * (gx1 - gx2) + (gy1 - gy2) * (gy1 - gy2);
 
@@ -738,7 +733,7 @@ public class Model01
         //double activity = similarity - Cortex.Constants.K0;
         //activity = activity * k;
         //similarity = activity + Cortex.Constants.K0;
-        //if (similarity < inpitItem1.SimilarityThreshold)
+        //if (similarity < cortexMemory1.SimilarityThreshold)
         //    return Single.NaN;
 
         return similarity;
