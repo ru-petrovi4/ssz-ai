@@ -22,6 +22,10 @@ public interface IRetinaConstants
     /// </summary>
     double DetectorMinGradientMagnitudeInclusive { get; }
 
+    float GradientMagnitudeDelta { get; }
+
+    float GradientAngleDegreeDelta { get; }
+
     Vector3DFloat PhysicalImageCenter { get; }
 
     Size2DFloat PhysicalImageSize { get; }

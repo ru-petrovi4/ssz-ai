@@ -772,6 +772,10 @@ public class Model01
 
         public double DetectorMinGradientMagnitudeInclusive => 42;
 
+        public float GradientMagnitudeDelta => 10;
+
+        public float GradientAngleDegreeDelta => 10;
+
         public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
         public Size2DFloat PhysicalImageSize => new Size2DFloat(PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle), PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle));
@@ -794,7 +798,7 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 300;
+        public int MiniColumnVisibleDetectorsCount => 600;
 
         public int HashLength => 300;
 

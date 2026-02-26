@@ -650,7 +650,9 @@ namespace Ssz.AI.Models
 
             public double DetectorMinGradientMagnitudeInclusive => 5;
 
-            
+            public float GradientMagnitudeDelta => 10;
+
+            public float GradientAngleDegreeDelta => 10;
 
             public int MaxGradientMagnitudeExclusive => 1200;
 
