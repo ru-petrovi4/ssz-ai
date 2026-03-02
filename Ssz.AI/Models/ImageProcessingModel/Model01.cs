@@ -95,16 +95,26 @@ public class Model01
 #endif
 
         LeftEye.Retina = new Retina(Constants, Logger);
+#if GENERATE_INPUT_DATA
         LeftEye.Retina.GenerateOwnedData(initialization_Random, Constants, leftEye_GradientDistribution);
-        //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
+#else
+        Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
+#endif
         LeftEye.Retina.Prepare(); // Does nothing.
-        //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
+#if GENERATE_INPUT_DATA
+        Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
+#endif
 
         RightEye.Retina = new Retina(Constants, Logger);
+#if GENERATE_INPUT_DATA
         RightEye.Retina.GenerateOwnedData(initialization_Random, Constants, rightEye_GradientDistribution);
-        //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
+#else
+        Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null, Logger);
+#endif
         RightEye.Retina.Prepare(); // Does nothing.
-        //Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);
+#if GENERATE_INPUT_DATA
+        Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null, Logger);
+#endif
 
 
         Cortex = new Cortex(Constants, Logger);
@@ -115,7 +125,7 @@ public class Model01
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
 
-    #endregion
+#endregion
 
     #region public functions       
 
@@ -226,7 +236,7 @@ public class Model01
 
         for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Count; miniColumns_Index += 1)
         {   
-            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory_Obsolete(random); 
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random); 
 
             var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns;
             for (int i = 0; i < cortexMemoriesCount; i += 1)
@@ -237,7 +247,7 @@ public class Model01
         }
     }
 
-    private (Memory, MiniColumn) GetRandomCortexMemory_Obsolete(Random random)
+    private (Memory, MiniColumn) GetRandomIdealCortexMemory(Random random)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
 
@@ -254,6 +264,51 @@ public class Model01
         return (idealCortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
+    public async Task ProcessSomIdealNAsync(float epochs, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    {
+        if (Cortex.MiniColumns is null)
+            return;
+
+        int totalIterations = (int)epochs * StereoInput.StereoInputSamples.Length;
+        int currentIteration = 0;
+
+        var miniColumns = Cortex.MiniColumns;
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        for (int epoch = 0; epoch < epochs; epoch += 1)
+        {
+            StereoInputSample[] shuffledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
+            random.Shuffle(shuffledStereoInputSamples);
+
+            for (int sample_Index = 0; sample_Index < shuffledStereoInputSamples.Length; sample_Index += 1)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var stereoInputSample = shuffledStereoInputSamples[sample_Index];
+
+                var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
+
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
+                //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
+
+                UpdateWeights(bestForMemoryMiniColumn, cortexMemory, currentIteration, totalIterations);
+
+                currentIteration += 1;
+
+                if (sw.ElapsedMilliseconds > 1000)
+                {
+                    Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
+
+                    await refreshAction();
+                    sw.Restart();
+                }
+            }
+        }
+
+        await refreshAction();
+    }
+
     public async Task ProcessSomNAsync(float epochs, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
         if (Cortex.MiniColumns is null)
@@ -268,14 +323,14 @@ public class Model01
 
         for (int epoch = 0; epoch < epochs; epoch += 1)
         {
-            StereoInputSample[] shuffeledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
-            random.Shuffle(shuffeledStereoInputSamples);
+            StereoInputSample[] shuffledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
+            random.Shuffle(shuffledStereoInputSamples);
 
-            for (int sample_Index = 0; sample_Index < shuffeledStereoInputSamples.Length; sample_Index += 1)
+            for (int sample_Index = 0; sample_Index < shuffledStereoInputSamples.Length; sample_Index += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var stereoInputSample = shuffeledStereoInputSamples[sample_Index];
+                var stereoInputSample = shuffledStereoInputSamples[sample_Index];
 
                 var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
 
@@ -307,38 +362,57 @@ public class Model01
         if (bestForMemoryMiniColumn is null)
             return;
 
-        const float initialLearningRate = 0.3f;
-        const float initialRadius_MiniColumns = 5.0f;
-
-        // Вычисление текущих параметров обучения
-        float currentLearningRate = initialLearningRate * MathF.Exp(-(float)currentIteration / totalIterations);
-        float currentRadius = initialRadius_MiniColumns * MathF.Exp(-(float)currentIteration / totalIterations);
+        float alpha = GetLearningRate(currentIteration, totalIterations);    // α(t)
+        float sigma = GetNeighborhoodRadius(currentIteration, totalIterations); // σ(t)
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
         {
             var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns[index];
-            float distance_MiniColumns = (float)it.Item1;
+            float distance_MiniColumns_Squared = (float)it.Item1;
 
-            // Если нейрон в радиусе влияния
-            if (distance_MiniColumns <= currentRadius * 2)
-            {
-                float influence = NeighborhoodFunction(distance_MiniColumns, currentRadius, currentLearningRate);
+            float h = Neighborhood(distance_MiniColumns_Squared, sigma); // h_{ci}(t)
 
-                var somWeights = it.Item2.Temp_SomWeights;
+            if (h < 1e-6f) 
+                continue; // мелкий порог, чтобы не считать лишнее
 
-                TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
-                TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, influence, somWeights, somWeights);                
-            }
+            float coeff = alpha * h; // общий скалярный множитель шага
+
+            var somWeights = it.Item2.Temp_SomWeights;
+
+            TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
+            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, somWeights, somWeights);
         }
+    }
+
+    private float GetLearningRate(int currentIteration, int totalIterations)
+    {
+        const float alpha0 = 0.3f;    // α0
+        const float alphaMin = 0.01f; // α_min
+                                             
+        float fraction = (float)currentIteration / totalIterations;
+        float ratio = alphaMin / alpha0;
+        return alpha0 * MathF.Pow(ratio, fraction);
+    }
+
+    private float GetNeighborhoodRadius(int currentIteration, int totalIterations)
+    {
+        const float sigma0 = 14.0f;    // σ0
+        const float sigmaMin = 1.0f;  // σ_min
+
+        float fraction = (float)currentIteration / totalIterations;
+        float ratio = sigmaMin / sigma0;
+        return sigma0 * MathF.Pow(ratio, fraction);
     }
 
     /// <summary>
     /// Вычисление функции соседства (Gaussian)
     /// </summary>
-    private float NeighborhoodFunction(float distance_MiniColumns, float radius, float learningRate)
+    private float Neighborhood(float distance_MiniColumns_Squared, float sigma)
     {
-        return learningRate * MathF.Exp(-distance_MiniColumns * distance_MiniColumns / (2 * radius * radius));
+        // h = exp( - d_grid^2 / (2 σ^2) )
+        float denom = 2.0f * sigma * sigma;
+        return MathF.Exp(-distance_MiniColumns_Squared / denom);
     }
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
@@ -377,7 +451,7 @@ public class Model01
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory_Obsolete(random);
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
 
             MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
@@ -731,7 +805,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash);
+                    miniColumn.Temp_SomActivity = TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash);
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
@@ -741,7 +815,7 @@ public class Model01
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            miniColumn.Temp_TotalEnergy = miniColumn.Temp_SomActivity;
+            miniColumn.Temp_TotalEnergy = -miniColumn.Temp_SomActivity;
 
             if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
             {

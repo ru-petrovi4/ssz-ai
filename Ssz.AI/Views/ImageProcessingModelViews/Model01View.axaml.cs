@@ -231,6 +231,49 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
     }
 
+    private async void StartProcessSomIdeal1_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Model.ProcessSomIdealNAsync(0.01f, _random, CancellationToken.None, () => Task.CompletedTask);
+
+        Refresh_ImagesSet();
+    }
+
+    private async void StartProcessSomIdealN_OnClick(object? sender, RoutedEventArgs args)
+    {
+        if (_curentLongRunningTask is not null)
+            return;
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"1")).ValueAsSingle(false);
+
+        _curentLongRunningTask = Task.Run(async () =>
+        {
+            try
+            {
+                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+
+                await Model.ProcessSomIdealNAsync(epochs, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+            }
+            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+        });
+        await _curentLongRunningTask;
+        _curentLongRunningTask = null;
+
+        Refresh_ImagesSet();
+    }
+
     private async void StartProcessSom1_OnClick(object? sender, RoutedEventArgs args)
     {
         await Model.ProcessSomNAsync(0.01f, _random, CancellationToken.None, () => Task.CompletedTask);
@@ -251,7 +294,7 @@ public partial class Model01View : UserControl
         {
             try
             {
-                Model.Logger.LogInformation("StartProcessSomNN Started.");
+                Model.Logger.LogInformation("StartProcessSomN Started.");
 
                 await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
                 {

@@ -228,9 +228,9 @@ public partial class Cortex : ISerializableModelObject
 
                 MiniColumn nearestMc = MiniColumns[mc_index2];
 
-                float r2 = (nearestMc.MCX - hyperColumnCenter_MiniColumn.MCX) * (nearestMc.MCX - hyperColumnCenter_MiniColumn.MCX) + 
+                float r_Squared = (nearestMc.MCX - hyperColumnCenter_MiniColumn.MCX) * (nearestMc.MCX - hyperColumnCenter_MiniColumn.MCX) + 
                     (nearestMc.MCY - hyperColumnCenter_MiniColumn.MCY) * (nearestMc.MCY - hyperColumnCenter_MiniColumn.MCY);
-                float r = MathF.Sqrt(r2);                
+                float r = MathF.Sqrt(r_Squared);                
 
                 if (r < 1.00001f)
                     adjacentMiniColumns.Add(nearestMc);
@@ -317,8 +317,8 @@ public partial class Cortex : ISerializableModelObject
 
                     MiniColumn nearestMc = MiniColumns[mc_index2];                    
 
-                    float r2 = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
-                    float r = MathF.Sqrt(r2);
+                    float r_Squared = (nearestMc.MCX - miniColumn.MCX) * (nearestMc.MCX - miniColumn.MCX) + (nearestMc.MCY - miniColumn.MCY) * (nearestMc.MCY - miniColumn.MCY);
+                    float r = MathF.Sqrt(r_Squared);
 
                     if (r < 2.00001f)
                         miniColumn.Temp_K_SuperActivityMiniColumns.Add(
@@ -343,7 +343,7 @@ public partial class Cortex : ISerializableModelObject
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
 
                     if (r < nearestRadius_MiniColumns)
-                        miniColumn.Temp_NearestMiniColumns.Add((r, nearestMc));
+                        miniColumn.Temp_NearestMiniColumns.Add((r_Squared, nearestMc));
                 }
 
                 miniColumn.Temp_AdjacentMiniColumns = miniColumn.Temp_AdjacentMiniColumns
@@ -705,7 +705,7 @@ public partial class Cortex : ISerializableModelObject
 
         /// <summary>
         ///     !!! Сама миниколонка !!! Миниколонки - ближайшие соседи в радиусе примерно 0.5 * HyperColumnDefinedRadius_MiniColumns.
-        ///     <para>(r, MiniColumn)</para>        
+        ///     <para>(r^2, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_NearestMiniColumns = null!;
 

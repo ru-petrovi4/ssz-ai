@@ -140,7 +140,7 @@ public class Retina : ISerializableModelObject
                 writer.Write(detector.BitIndexInHash);
             }
 
-            writer.WriteOwnedDataSerializable(Detectors, null);                
+            writer.WriteOwnedDataSerializable(DetectorsRanges, null);
         }
     }
 
@@ -159,8 +159,8 @@ public class Retina : ISerializableModelObject
                         detector.AverageGradientAngle = reader.ReadSingle();                            
                         detector.BitIndexInHash = reader.ReadInt32();
                     }
-                    
-                    reader.ReadOwnedDataSerializable(Detectors, null);                                           
+
+                    reader.ReadOwnedDataSerializable(DetectorsRanges, null);
                     break;
             }
         }
