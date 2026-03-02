@@ -251,7 +251,7 @@ public partial class Model01View : UserControl
         {
             try
             {
-                Model.Logger.LogInformation("StartProcessN Started.");
+                Model.Logger.LogInformation("StartProcessSomNN Started.");
 
                 await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
                 {
@@ -264,9 +264,9 @@ public partial class Model01View : UserControl
             }
             catch (OperationCanceledException)
             {
-                Model.Logger.LogInformation("StartProcessN Cancelled.");
+                Model.Logger.LogInformation("StartProcessSomN Cancelled.");
             }
-            Model.Logger.LogInformation("StartProcessN Finished.");
+            Model.Logger.LogInformation("StartProcessSomN Finished.");
         });
         await _curentLongRunningTask;
         _curentLongRunningTask = null;

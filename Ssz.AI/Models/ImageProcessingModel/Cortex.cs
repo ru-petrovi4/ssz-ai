@@ -84,41 +84,26 @@ public partial class Cortex : ISerializableModelObject
 
     public readonly float MiniColumn_XAngle_K;
 
-    public readonly float MiniColumn_YAngle_K;
-
-    /// <summary>
-    ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
-    ///     И так для каждой гиперколонки.
-    /// </summary>
-    public FastList<Memory> IdealPinwheelCenterMemories { get; private set; } = null!;
-
-    /// <summary>
-    ///     Набор идеальных воспоминаний.
-    /// </summary>
-    public FastList<Memory> IdealPinwheelMemories { get; private set; } = null!;
-
-    //public static readonly Memory IdealPinwheelCenterMemory = new Memory()
-    //{
-    //    InputItemIndex = 0,
-    //    DistanceFromCenter = 0
-    //};
-
-    //public static readonly Memory[] IdealPinwheelMemories = [
-    //    new Memory() { InputItemIndex = 1, DistanceFromCenter = 1 },
-    //        new Memory() { InputItemIndex = 2, DistanceFromCenter = 1 },
-    //        new Memory() { InputItemIndex = 3, DistanceFromCenter = 1 },
-    //        new Memory() { InputItemIndex = 4, DistanceFromCenter = 1 },
-    //        new Memory() { InputItemIndex = 5, DistanceFromCenter = 1 },
-    //        new Memory() { InputItemIndex = 6, DistanceFromCenter = 1 },
-    //        ];
+    public readonly float MiniColumn_YAngle_K;    
 
     public FastList<MiniColumn> MiniColumns { get; private set; } = null!;
 
     public FastList<int> HyperColumnCenters_MiniColumnIndices { get; private set; } = null!;
 
+    /// <summary>
+    ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
+    ///     И так для каждой гиперколонки.
+    /// </summary>
+    public FastList<Memory> Temp_IdealPinwheelCenterMemories { get; private set; } = null!;
+
+    /// <summary>
+    ///     Набор идеальных воспоминаний.
+    /// </summary>
+    public FastList<Memory> Temp_IdealPinwheelMemories { get; private set; } = null!;
+
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(Eye leftEye, Eye rightEye, Random initialization_Random, bool onlyCenterHypercolumn)
+    public void GenerateOwnedData(Random initialization_Random, bool onlyCenterHypercolumn)
     {
         MiniColumns = new FastList<MiniColumn>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
 
@@ -228,28 +213,12 @@ public partial class Cortex : ISerializableModelObject
                         HyperColumnCenters_MiniColumnIndices.Add(nearestMiniColumn.Index);
                     }
                 }
-        }
-
-        IdealPinwheelCenterMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
-        IdealPinwheelMemories = new FastList<Memory>(MiniColumns.Count);
+        }        
 
         var filteredHyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
-
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
-            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
-
-            var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
-
-            // Воспоминания для оценки качества вертушки TODO            
-            hyperColumnIdealPinwheelMemories.Add(
-                GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, leftEye));            
-
-            foreach (var hyperColumn_MiniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
-            {                
-                IdealPinwheelMemories.Add(
-                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumn_MiniColumn, hyperColumn_MiniColumn, leftEye));
-            }
+            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];            
 
             FastList<MiniColumn> adjacentMiniColumns = new(6);
             for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)
@@ -267,20 +236,9 @@ public partial class Cortex : ISerializableModelObject
                     adjacentMiniColumns.Add(nearestMc);
             }
 
-            foreach (var adjacentMiniColumn in adjacentMiniColumns
-                .OrderBy(mc => MathF.Atan2(mc.MCY - hyperColumnCenter_MiniColumn.MCY, mc.MCX - hyperColumnCenter_MiniColumn.MCX)))
-            {                
-                hyperColumnIdealPinwheelMemories.Add(
-                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn, leftEye));
-            }
-
-            if (hyperColumnIdealPinwheelMemories.Count == 7)
-            {
+            if (adjacentMiniColumns.Count == 6)
                 filteredHyperColumnCenters_MiniColumnIndices.Add(mc_index);
-                IdealPinwheelCenterMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);                
-            }
         }
-
         HyperColumnCenters_MiniColumnIndices.Swap(filteredHyperColumnCenters_MiniColumnIndices);
     }
 
@@ -317,6 +275,9 @@ public partial class Cortex : ISerializableModelObject
             for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.Detectors.Dimensions[1]; dJ += 1)
                 for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.Detectors.Dimensions[0]; dI += 1)
                 {
+                    if (dI < 0 || dJ < 0)
+                        continue;
+
                     Detector detector = leftEye.Retina.Detectors[dI, dJ];
                     double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                     if (rPixels < detectorsVisibleRadiusPixels)
@@ -326,6 +287,9 @@ public partial class Cortex : ISerializableModelObject
             for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.Detectors.Dimensions[1]; dJ += 1)
                 for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.Detectors.Dimensions[0]; dI += 1)
                 {
+                    if (dI < 0 || dJ < 0)
+                        continue;
+
                     Detector detector = rightEye.Retina.Detectors[dI, dJ];
                     double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                     if (rPixels < detectorsVisibleRadiusPixels)
@@ -386,6 +350,34 @@ public partial class Cortex : ISerializableModelObject
                     .OrderBy(it => MathF.Atan2(miniColumn.MCY - it.Item2.MCY, miniColumn.MCX - it.Item2.MCX))
                     .ToFastList();
             }));
+
+        Temp_IdealPinwheelCenterMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
+        Temp_IdealPinwheelMemories = new FastList<Memory>(MiniColumns.Count);
+        foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
+        {
+            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
+
+            var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
+
+            // Воспоминания для оценки качества вертушки TODO            
+            hyperColumnIdealPinwheelMemories.Add(
+                GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, leftEye));
+
+            foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
+            {
+                Temp_IdealPinwheelMemories.Add(
+                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, miniColumn, miniColumn, leftEye));
+            }            
+
+            foreach (var it in hyperColumnCenter_MiniColumn.Temp_AdjacentMiniColumns)
+            {
+                hyperColumnIdealPinwheelMemories.Add(
+                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, it.Item2, it.Item2, leftEye));
+            }
+
+            if (hyperColumnIdealPinwheelMemories.Count == 7)
+                Temp_IdealPinwheelCenterMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);
+        }
     }
 
     public MiniColumn GetNearest_HyperColumnCenter_MiniColumn(MiniColumn miniColumn)
@@ -578,8 +570,8 @@ public partial class Cortex : ISerializableModelObject
     {
         using (writer.EnterBlock(1))
         {            
-            writer.WriteFastListOfOwnedDataSerializable(IdealPinwheelCenterMemories, context);
-            writer.WriteFastListOfOwnedDataSerializable(IdealPinwheelMemories, context);
+            writer.WriteFastListOfOwnedDataSerializable(Temp_IdealPinwheelCenterMemories, context);
+            writer.WriteFastListOfOwnedDataSerializable(Temp_IdealPinwheelMemories, context);
             writer.WriteFastListOfOwnedDataSerializable(MiniColumns, context);
             HyperColumnCenters_MiniColumnIndices.SerializeOwnedData(writer, context);            
         }
@@ -592,8 +584,8 @@ public partial class Cortex : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:                    
-                    IdealPinwheelCenterMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
-                    IdealPinwheelMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
+                    Temp_IdealPinwheelCenterMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
+                    Temp_IdealPinwheelMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
                     MiniColumns = reader.ReadFastListOfOwnedDataSerializable(idx => new MiniColumn(Constants), context);
                     HyperColumnCenters_MiniColumnIndices = new FastList<int>();
                     HyperColumnCenters_MiniColumnIndices.DeserializeOwnedData(reader, context);
@@ -615,9 +607,9 @@ public partial class Cortex : ISerializableModelObject
 
                 float min = Single.MaxValue;
                 Memory? idealPinwheelMemory_Best = null;
-                for (int m_index = 0; m_index < IdealPinwheelMemories.Count; m_index += 1)
+                for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
                 {
-                    var idealPinwheelMemory = IdealPinwheelMemories[m_index];
+                    var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
                     float f = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
                     if (f < min)
                     {
@@ -706,7 +698,7 @@ public partial class Cortex : ISerializableModelObject
         public FastList<MiniColumn> Temp_SameFieldOfViewMiniColumns = null!;
 
         /// <summary>
-        ///     Миниколонки - смежные соседи.
+        ///     Миниколонки - смежные соседи. Отсортированы по углу.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_AdjacentMiniColumns = null!;

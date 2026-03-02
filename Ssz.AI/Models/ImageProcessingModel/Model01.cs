@@ -1,4 +1,4 @@
-﻿//#define GENERATE_INPUT_DATA
+﻿#define GENERATE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -108,7 +108,7 @@ public class Model01
 
 
         Cortex = new Cortex(Constants, Logger);
-        Cortex.GenerateOwnedData(LeftEye, RightEye, initialization_Random, onlyCenterHypercolumn);
+        Cortex.GenerateOwnedData(initialization_Random, onlyCenterHypercolumn);
         Cortex.Prepare(LeftEye, RightEye, random);
 
 
@@ -288,6 +288,8 @@ public class Model01
 
                 if (sw.ElapsedMilliseconds > 1000)
                 {
+                    Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
+
                     await refreshAction();
                     sw.Restart();
                 }
@@ -529,7 +531,7 @@ public class Model01
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
+            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.Temp_IdealPinwheelCenterMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
 
             float a = activity.PositiveActivity + activity.NegativeActivity;
             if (a > stateInfo.MaxActivity)
@@ -560,7 +562,7 @@ public class Model01
             float pinwheelIndex = 0.0f;
             for (int j = 1; j < 7; j += 1)
             {
-                var idealPinwheelMemory = Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7 + j];
+                var idealPinwheelMemory = Cortex.Temp_IdealPinwheelCenterMemories[hypercolumnIndex * 7 + j];
 
                 MiniColumn miniColumn = pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns[(adjacentMiniColumns_StartIndex + j) % 6].Item2;
                 int cortexMemoriesCount = 0;
@@ -618,7 +620,7 @@ public class Model01
             //}
 
             MiniColumn? pinwheelCenterMiniColumn = FindBestForMemoryMiniColumn(
-                Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7],
+                Cortex.Temp_IdealPinwheelCenterMemories[hypercolumnIndex * 7],
                 random,
                 CancellationToken.None,
                 candidateMiniColumns);

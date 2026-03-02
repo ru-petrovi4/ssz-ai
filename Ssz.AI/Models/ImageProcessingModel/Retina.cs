@@ -385,7 +385,8 @@ public class Detector
     {
         Temp_GradientInPoint = gradientInPoint;
 
-        if (gradientInPoint.Magnitude < constants.DetectorMinGradientMagnitudeInclusive)
+        if (gradientInPoint.Magnitude < constants.DetectorMinGradientMagnitudeInclusive || 
+                gradientInPoint.Magnitude >= constants.MaxGradientMagnitudeExclusive)
         {
             Temp_IsActivated = false;
             return;
