@@ -169,10 +169,10 @@ namespace Ssz.AI.Models
             float kY = (float)Constants.RetinaImagePixelSize.Height / (float)MNISTHelper.MNISTImageHeightPixels;
             Eye eye = new();
             eye.Pupil = pupil;            
-            eye.RetinaUpperLeftXAngle = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaUpperLeftYAngle = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightXAngle = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
-            eye.RetinaBottomRightYAngle = MathF.Atan2(Constants.ImageCenter.Y + kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftXAbsoluteAngle = MathF.Atan2(Constants.ImageCenter.X - kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaUpperLeftYAbsoluteAngle = MathF.Atan2(Constants.ImageCenter.Y - kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightXAbsoluteAngle = MathF.Atan2(Constants.ImageCenter.X + kX * Constants.ImageWidth / 2 - pupil.X, Constants.ImageCenter.Z - pupil.Z);
+            eye.RetinaBottomRightYAbsoluteAngle = MathF.Atan2(Constants.ImageCenter.Y + kY * Constants.ImageHeight / 2 - pupil.Y, Constants.ImageCenter.Z - pupil.Z);
             return eye;
         }                              
 
@@ -338,9 +338,9 @@ namespace Ssz.AI.Models
 
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 
-            public float MiniColumnFieldOfViewDiameter_Angle => throw new NotImplementedException();
+            public float FullFieldOfViewDiameter_MiniColumn_Angle => throw new NotImplementedException();
 
-            public float RetinaImageVerticalAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public float RetinaImageAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         }        
     }
 }

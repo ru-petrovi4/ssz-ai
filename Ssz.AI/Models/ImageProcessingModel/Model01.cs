@@ -41,7 +41,7 @@ public class Model01
 
     #region construction and destruction
 
-    public Model01(Random random, bool onlyCeneterHypercolumn)
+    public Model01(Random random, bool onlyCenterHypercolumn)
     {
         Random initialization_Random = new(6);
 
@@ -59,15 +59,10 @@ public class Model01
 
         DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
-        // Constants init.
-        Rect2DFloat subImageRect = new Rect2DFloat(x: 0.45f, y: 0.45f, width: 0.1f, height: 0.1f);
-        Constants.RetinaImagePixelSize = new PixelSize(
-            (int)(Constants.RetinaImagePixelSize.Width * subImageRect.Width), 
-            (int)(Constants.RetinaImagePixelSize.Height * subImageRect.Height));
-        Constants.RetinaImageVerticalAngle = Constants.RetinaImageVerticalAngle * subImageRect.Height;
-
-        LeftEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f }, subImageRect);
-        RightEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f }, subImageRect);
+        LeftEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
+        LeftEye.IsRightEye = false;
+        RightEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
+        RightEye.IsRightEye = true;
 
         GradientDistribution leftEye_GradientDistribution = new();
         GradientDistribution rightEye_GradientDistribution = new();
@@ -113,8 +108,8 @@ public class Model01
 
 
         Cortex = new Cortex(Constants, Logger);
-        Cortex.GenerateOwnedData(random, onlyCeneterHypercolumn);
-        Cortex.Prepare();
+        Cortex.GenerateOwnedData(LeftEye, RightEye, initialization_Random, onlyCenterHypercolumn);
+        Cortex.Prepare(LeftEye, RightEye, random);
 
 
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
@@ -145,14 +140,21 @@ public class Model01
         double filterColorLow,
         double filterColorHigh)
     {
+        //var r0 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
+        //                (MiniColumn mc) => (double)(mc.Temp_SomWeights), valueMin: -1.0, valueMax: 1.0);
         var r1 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0);
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
+
+        Cortex.CalculateSomCortexMemories();
+
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
+                    Desc = $"SOM в миниколонках (Модуль и угол)." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns, hypercolumnIndex: 0)}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, ii => ii.RetinaXYAngle_Color)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.HyperColumnCenter_Color)),
                     Desc = $"Воспоминания в миниколонках (XY)." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r1.Image),
                     Desc = $"Активность миниколонок; Min: {r1.ValueMin:F03}; Max: {r1.ValueMax:F03}" },
@@ -174,7 +176,7 @@ public class Model01
             //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
             //    continue;
 
-            var idealCortexMemory = Cortex.GetIdealCortexMemory(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn);
+            var idealCortexMemory = Cortex.GetIdealCortexMemory(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn, LeftEye);
             
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
@@ -224,9 +226,9 @@ public class Model01
 
         for (int miniColumns_Index = 0; miniColumns_Index < Cortex.MiniColumns.Count; miniColumns_Index += 1)
         {   
-            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory(random); 
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory_Obsolete(random); 
 
-            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns;
+            var forMemoryMiniColumns = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns;
             for (int i = 0; i < cortexMemoriesCount; i += 1)
             {
                 var cortexMemories = forMemoryMiniColumns[random.Next(forMemoryMiniColumns.Count)].CortexMemories;                
@@ -235,20 +237,129 @@ public class Model01
         }
     }
 
-    private (Memory, MiniColumn) GetRandomCortexMemory(Random random)
+    private (Memory, MiniColumn) GetRandomCortexMemory_Obsolete(Random random)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
 
-        MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns
-            [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Count)];
+        MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns
+            [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns.Count)];
 
         Cortex.Memory idealCortexMemory = Cortex.GetIdealCortexMemory(
             random,
             nearest_HyperColumnCenter_MiniColumn,
             idealAngleMagnitude_MiniColumn,
-            nearest_HyperColumnCenter_MiniColumn
+            nearest_HyperColumnCenter_MiniColumn, 
+            LeftEye
             );
         return (idealCortexMemory, nearest_HyperColumnCenter_MiniColumn);
+    }
+
+    public async Task ProcessSomNAsync(float epochs, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    {
+        if (Cortex.MiniColumns is null)
+            return;
+
+        int totalIterations = (int)epochs * StereoInput.StereoInputSamples.Length;
+        int currentIteration = 0;
+
+        var miniColumns = Cortex.MiniColumns;
+
+        Stopwatch sw = Stopwatch.StartNew();
+
+        for (int epoch = 0; epoch < epochs; epoch += 1)
+        {
+            StereoInputSample[] shuffeledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
+            random.Shuffle(shuffeledStereoInputSamples);
+
+            for (int sample_Index = 0; sample_Index < shuffeledStereoInputSamples.Length; sample_Index += 1)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var stereoInputSample = shuffeledStereoInputSamples[sample_Index];
+
+                var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
+
+                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
+                //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
+
+                UpdateWeights(bestForMemoryMiniColumn, cortexMemory, currentIteration, totalIterations);
+
+                currentIteration += 1;
+
+                if (sw.ElapsedMilliseconds > 1000)
+                {
+                    await refreshAction();
+                    sw.Restart();
+                }
+            }            
+        }
+
+        await refreshAction();
+    }
+
+    /// <summary>
+    /// Обновление весов нейронов после нахождения BMU
+    /// </summary>
+    private void UpdateWeights(MiniColumn? bestForMemoryMiniColumn, Memory cortexMemory, int currentIteration, int totalIterations)
+    {
+        if (bestForMemoryMiniColumn is null)
+            return;
+
+        const float initialLearningRate = 0.3f;
+        const float initialRadius_MiniColumns = 5.0f;
+
+        // Вычисление текущих параметров обучения
+        float currentLearningRate = initialLearningRate * MathF.Exp(-(float)currentIteration / totalIterations);
+        float currentRadius = initialRadius_MiniColumns * MathF.Exp(-(float)currentIteration / totalIterations);
+
+        // Обновление весов всех нейронов с учетом функции соседства
+        for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
+        {
+            var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns[index];
+            float distance_MiniColumns = (float)it.Item1;
+
+            // Если нейрон в радиусе влияния
+            if (distance_MiniColumns <= currentRadius * 2)
+            {
+                float influence = NeighborhoodFunction(distance_MiniColumns, currentRadius, currentLearningRate);
+
+                var somWeights = it.Item2.Temp_SomWeights;
+
+                TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
+                TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, influence, somWeights, somWeights);                
+            }
+        }
+    }
+
+    /// <summary>
+    /// Вычисление функции соседства (Gaussian)
+    /// </summary>
+    private float NeighborhoodFunction(float distance_MiniColumns, float radius, float learningRate)
+    {
+        return learningRate * MathF.Exp(-distance_MiniColumns * distance_MiniColumns / (2 * radius * radius));
+    }
+
+    private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
+    {   
+        var leftEye_GradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
+        var leftEye_Detectors = LeftEye.Retina.Detectors;
+        Parallel.For(
+            fromInclusive: 0,
+            toExclusive: leftEye_Detectors.Data.Length,
+            d_index =>
+            {
+                var d = leftEye_Detectors.Data[d_index];
+                d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
+            });
+
+        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
+        Cortex.Memory cortexMemory = Cortex.GetCortexMemory(
+            LeftEye,
+            stereoInputSample,
+            nearest_HyperColumnCenter_MiniColumn,
+            nearest_HyperColumnCenter_MiniColumn
+            );
+        return (cortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
     public async Task ProcessNAsync(float cortexMemoriesCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
@@ -264,7 +375,7 @@ public class Model01
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory(random);
+            var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomCortexMemory_Obsolete(random);
 
             MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
             bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
@@ -418,7 +529,7 @@ public class Model01
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.IdealPinwheelMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
+            var activity = MiniColumnsEnergyHelper.GetActivity(miniColumn, Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7], GetSimilarity, Constants);
 
             float a = activity.PositiveActivity + activity.NegativeActivity;
             if (a > stateInfo.MaxActivity)
@@ -449,7 +560,7 @@ public class Model01
             float pinwheelIndex = 0.0f;
             for (int j = 1; j < 7; j += 1)
             {
-                var idealPinwheelMemory = Cortex.IdealPinwheelMemories[hypercolumnIndex * 7 + j];
+                var idealPinwheelMemory = Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7 + j];
 
                 MiniColumn miniColumn = pinwheelCenterMiniColumn.Temp_AdjacentMiniColumns[(adjacentMiniColumns_StartIndex + j) % 6].Item2;
                 int cortexMemoriesCount = 0;
@@ -507,7 +618,7 @@ public class Model01
             //}
 
             MiniColumn? pinwheelCenterMiniColumn = FindBestForMemoryMiniColumn(
-                Cortex.IdealPinwheelMemories[hypercolumnIndex * 7],
+                Cortex.IdealPinwheelCenterMemories[hypercolumnIndex * 7],
                 random,
                 CancellationToken.None,
                 candidateMiniColumns);
@@ -531,27 +642,18 @@ public class Model01
 
     #region private functions 
 
-    private Eye CreateEye_ExceptRetina(Vector3DFloat pupil, Rect2DFloat subImageRect)
+    private Eye CreateEye_ExceptRetina(Vector3DFloat pupil)
     {
         Eye eye = new();
         eye.Pupil = pupil;
-        eye.RetinaUpperLeftXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X - Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaUpperLeftYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y - Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaBottomRightXAngle = MathF.Atan2(Constants.PhysicalImageCenter.X + Constants.PhysicalImageSize.Width / 2 - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
-        eye.RetinaBottomRightYAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y + Constants.PhysicalImageSize.Height / 2 - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);
 
-        float widthAngle = eye.RetinaBottomRightXAngle - eye.RetinaUpperLeftXAngle;
-        float heightAngle = eye.RetinaBottomRightYAngle - eye.RetinaUpperLeftYAngle;
+        float retinaCenterXAbsoluteAngle = MathF.Atan2(Constants.PhysicalImageCenter.X - pupil.X, Constants.PhysicalImageCenter.Z - pupil.Z);
+        float retinaCenterYAbsoluteAngle = MathF.Atan2(Constants.PhysicalImageCenter.Y - pupil.Y, Constants.PhysicalImageCenter.Z - pupil.Z);        
 
-        float subImageWidthAngle = widthAngle * subImageRect.Width;
-        float subImageHeightAngle = heightAngle * subImageRect.Height;
-        float subImageBiasXAngle = widthAngle * subImageRect.X;
-        float subImageBiasYAngle = heightAngle * subImageRect.Y;
-
-        eye.RetinaUpperLeftXAngle = eye.RetinaUpperLeftXAngle + subImageBiasXAngle;
-        eye.RetinaUpperLeftYAngle = eye.RetinaUpperLeftYAngle + subImageBiasYAngle;
-        eye.RetinaBottomRightXAngle = eye.RetinaUpperLeftXAngle + subImageWidthAngle;
-        eye.RetinaBottomRightYAngle = eye.RetinaUpperLeftYAngle + subImageHeightAngle;
+        eye.RetinaUpperLeftXAbsoluteAngle = retinaCenterXAbsoluteAngle - Constants.RetinaImageAngle / 2.0f;
+        eye.RetinaUpperLeftYAbsoluteAngle = retinaCenterYAbsoluteAngle - Constants.RetinaImageAngle / 2.0f;
+        eye.RetinaBottomRightXAbsoluteAngle = retinaCenterXAbsoluteAngle + Constants.RetinaImageAngle / 2.0f;
+        eye.RetinaBottomRightYAbsoluteAngle = retinaCenterYAbsoluteAngle + Constants.RetinaImageAngle / 2.0f;
 
         return eye;
     }
@@ -598,6 +700,46 @@ public class Model01
             {
                 StateInfo.ActivityMax_MiniColumns.Add(miniColumn);
             }
+
+            if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
+            {
+                StateInfo.MinTotalEnergy = miniColumn.Temp_TotalEnergy;
+                StateInfo.TotalEnergyMin_MiniColumns.Clear();
+                StateInfo.TotalEnergyMin_MiniColumns.Add(miniColumn);
+            }
+            else if (miniColumn.Temp_TotalEnergy == StateInfo.MinTotalEnergy)
+            {
+                StateInfo.TotalEnergyMin_MiniColumns.Add(miniColumn);
+            }
+        }
+
+        return StateInfo.GetTotalEnergyMin_MiniColumn(random);
+    }
+
+    private MiniColumn? FindBestForMemoryMiniColumn_Som(
+        Memory cortexMemory,
+        Random random,
+        CancellationToken cancellationToken,
+        FastList<MiniColumn> candidateMiniColumns)
+    {
+        Parallel.For(
+                fromInclusive: 0,
+                toExclusive: candidateMiniColumns.Count,
+                miniColumns_Index =>
+                {
+                    var miniColumn = candidateMiniColumns[miniColumns_Index];
+
+                    miniColumn.Temp_SomActivity = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash);
+                });
+
+        StateInfo.MinTotalEnergy = float.MaxValue;
+        StateInfo.TotalEnergyMin_MiniColumns.Clear();
+
+        for (int miniColumns_Index = 0; miniColumns_Index < candidateMiniColumns.Count; miniColumns_Index += 1)
+        {
+            var miniColumn = candidateMiniColumns[miniColumns_Index];
+
+            miniColumn.Temp_TotalEnergy = miniColumn.Temp_SomActivity;
 
             if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
             {
@@ -705,7 +847,7 @@ public class Model01
 
     private double GetSimilarity(Memory cortexMemory1, Memory cortexMemory2)
     {
-        float hyperColumnDiameter_Retina2 = Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle * Cortex.Constants.MiniColumnFieldOfViewDiameter_Angle;
+        float hyperColumnDiameter_Retina2 = Cortex.Constants.FullFieldOfViewDiameter_MiniColumn_Angle * Cortex.Constants.FullFieldOfViewDiameter_MiniColumn_Angle;
         var r2 = (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle) * (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle)
             + (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle) * (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle);
         double k;
@@ -759,9 +901,9 @@ public class Model01
 
     public class ModelConstants : ICortexConstants
     {
-        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(200, 200);
+        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(20, 20); // Full image: new PixelSize(200, 200);
 
-        public float RetinaImageVerticalAngle { get; set; } = MathHelper.DegreesToRadians(0.5f);
+        public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.05f); // Full image: MathHelper.DegreesToRadians(0.5f);
 
         public int MaxGradientMagnitudeExclusive => 1200;
 
@@ -773,7 +915,7 @@ public class Model01
 
         public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
-        public Size2DFloat PhysicalImageSize => new Size2DFloat(PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle), PhysicalImageCenter.Z * MathF.Sin(RetinaImageVerticalAngle));
+        public Size2DFloat PhysicalImageSize => new Size2DFloat(PhysicalImageCenter.Z * MathF.Sin(RetinaImageAngle), PhysicalImageCenter.Z * MathF.Sin(RetinaImageAngle));
 
         public float DistanceBetweenEyes => 0.064f;
 
@@ -784,18 +926,18 @@ public class Model01
 
         /// <summary>
         ///     Полное поле зрения (измеренное в миниколонках).
-        ///     <para>При смечщении на такое число миниколонок, поле зрения смещается на 100%.</para>
+        ///     <para>При смещении на такое число миниколонок, поле зрения смещается на 100%.</para>
         /// </summary>
-        public int FullFieldOfView_MiniColumns => 20;
+        public int FullFieldOfView_MiniColumns => 40;
 
-        public float MiniColumnFieldOfViewDiameter_Angle => MathHelper.DegreesToRadians(0.1f);
+        public float FullFieldOfViewDiameter_MiniColumn_Angle => MathHelper.DegreesToRadians(0.1f);
 
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
         public int MiniColumnVisibleDetectorsCount => 600;
 
-        public int HashLength => 300;
+        public int HashLength => 200;
 
         public int CortexWidth_MiniColumns => 100;
 

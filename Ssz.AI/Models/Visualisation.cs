@@ -16,6 +16,7 @@ public static class Visualisation
 {
     public static Bitmap GetBitmapFromMiniColumsMemoriesColor(
         ImageProcessingModel.Cortex cortex,
+        Func<ImageProcessingModel.Cortex.MiniColumn, FastList<ImageProcessingModel.Cortex.Memory?>> getCortexMemories,
         Func<ImageProcessingModel.Cortex.Memory, Color> getColor,
         double filterColorLow = 0.0,
         double filterColorHigh = 1.0)
@@ -34,11 +35,12 @@ public static class Visualisation
             g.Clear(Color.Black);
 
             for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
-            {
+            {                
                 var miniColumn = cortex.MiniColumns[mc_index];
-                if (miniColumn.CortexMemories.Count > 0)
+                FastList<ImageProcessingModel.Cortex.Memory?> cortexMemories = getCortexMemories(miniColumn);
+                if (cortexMemories.Count > 0)
                 {
-                    Color color = GetAverageLABColor(miniColumn.CortexMemories
+                    Color color = GetAverageLABColor(cortexMemories
                         .Where(cm => cm is not null)                        
                         .Select(ii => getColor(ii!))
                         .Where(c => c != Color.Black));
@@ -1925,7 +1927,7 @@ public static class Visualisation
         }
 
         return (bitmap, valueMin_Local, valueMax_Local);
-    }
+    }    
 }
 
 

@@ -91,8 +91,8 @@ namespace Ssz.AI.Models
 
         public static byte[] GetRetinaImageData(Model11.ModelConstants constants, byte[] inputImageData, PixelSize inputImageSize, Direction imageNormalDirection, Eye eye)
         {
-            float widthRadians = eye.RetinaBottomRightXAngle - eye.RetinaUpperLeftXAngle;
-            float heightRadians = eye.RetinaBottomRightYAngle - eye.RetinaUpperLeftYAngle;
+            float widthRadians = eye.RetinaBottomRightXAbsoluteAngle - eye.RetinaUpperLeftXAbsoluteAngle;
+            float heightRadians = eye.RetinaBottomRightYAbsoluteAngle - eye.RetinaUpperLeftYAbsoluteAngle;
 
             byte[] retinaImageData = new byte[constants.RetinaImagePixelSize.Width * constants.RetinaImagePixelSize.Height];
             for (int y = 0; y < constants.RetinaImagePixelSize.Height; y += 1)
@@ -100,8 +100,8 @@ namespace Ssz.AI.Models
                 for (int x = 0; x < constants.RetinaImagePixelSize.Width; x += 1)
                 {
                     Direction currentDirection = new();
-                    currentDirection.XRadians = eye.RetinaUpperLeftXAngle + widthRadians * x / constants.RetinaImagePixelSize.Width;
-                    currentDirection.YRadians = eye.RetinaUpperLeftYAngle + heightRadians * y / constants.RetinaImagePixelSize.Height;
+                    currentDirection.XRadians = eye.RetinaUpperLeftXAbsoluteAngle + widthRadians * x / constants.RetinaImagePixelSize.Width;
+                    currentDirection.YRadians = eye.RetinaUpperLeftYAbsoluteAngle + heightRadians * y / constants.RetinaImagePixelSize.Height;
                     (float centerX, float centerY) = GetPointOnImage(constants, eye.Pupil, currentDirection, imageNormalDirection, inputImageSize);
                     // Значение пикселя из массива байтов
                     byte pixelValue = BitmapHelper.GetInterpolatedValue(inputImageData, inputImageSize, centerX, centerY);

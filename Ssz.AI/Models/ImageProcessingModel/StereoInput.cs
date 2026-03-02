@@ -37,12 +37,13 @@ public class StereoInput : ISerializableModelObject
         Eye rightEye)
     {
         StereoInputSamples = new StereoInputSample[inputImageDatas.Length];            
-        foreach (int i in Enumerable.Range(0, inputImageDatas.Length))
+        for (int index = 0; index < inputImageDatas.Length; index += 1)
         {
             StereoInputSample stereoInputSample = new();
-            StereoInputSamples[i] = stereoInputSample;
-            byte[] inputImageData = inputImageDatas[i];
-            stereoInputSample.Label = inputImagesLabels[i];
+            StereoInputSamples[index] = stereoInputSample;
+            stereoInputSample.Index = index;
+            byte[] inputImageData = inputImageDatas[index];
+            stereoInputSample.Label = inputImagesLabels[index];
             stereoInputSample.InputImageData = inputImageData;
             stereoInputSample.ImageNormalDirection = new Direction();
             stereoInputSample.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
@@ -90,8 +91,8 @@ public class StereoInput : ISerializableModelObject
 
     public static byte[] GetRetinaImageData(IRetinaConstants constants, byte[] inputImageData, PixelSize inputImageSize, Direction imageNormalDirection, Eye eye)
     {
-        float widthRadians = eye.RetinaBottomRightXAngle - eye.RetinaUpperLeftXAngle;
-        float heightRadians = eye.RetinaBottomRightYAngle - eye.RetinaUpperLeftYAngle;
+        float widthRadians = eye.RetinaBottomRightXAbsoluteAngle - eye.RetinaUpperLeftXAbsoluteAngle;
+        float heightRadians = eye.RetinaBottomRightYAbsoluteAngle - eye.RetinaUpperLeftYAbsoluteAngle;
 
         byte[] retinaImageData = new byte[constants.RetinaImagePixelSize.Width * constants.RetinaImagePixelSize.Height];
         for (int y = 0; y < constants.RetinaImagePixelSize.Height; y += 1)
@@ -99,8 +100,8 @@ public class StereoInput : ISerializableModelObject
             for (int x = 0; x < constants.RetinaImagePixelSize.Width; x += 1)
             {
                 Direction currentDirection = new();
-                currentDirection.XRadians = eye.RetinaUpperLeftXAngle + widthRadians * x / constants.RetinaImagePixelSize.Width;
-                currentDirection.YRadians = eye.RetinaUpperLeftYAngle + heightRadians * y / constants.RetinaImagePixelSize.Height;
+                currentDirection.XRadians = eye.RetinaUpperLeftXAbsoluteAngle + widthRadians * x / constants.RetinaImagePixelSize.Width;
+                currentDirection.YRadians = eye.RetinaUpperLeftYAbsoluteAngle + heightRadians * y / constants.RetinaImagePixelSize.Height;
                 (float centerX, float centerY) = GetPointOnImage(constants, eye.Pupil, currentDirection, imageNormalDirection, inputImageSize);
                 // Значение пикселя из массива байтов
                 byte pixelValue = BitmapHelper.GetInterpolatedValue(inputImageData, inputImageSize, centerX, centerY);
@@ -202,6 +203,8 @@ public class StereoInput : ISerializableModelObject
 
 public class StereoInputSample : IOwnedDataSerializable
 {
+    public int Index;
+
     public byte Label;
 
     public byte[] InputImageData = null!;
@@ -220,6 +223,7 @@ public class StereoInputSample : IOwnedDataSerializable
     {
         using (writer.EnterBlock(1))
         {
+            writer.Write(Index);
             writer.Write(Label);
             writer.WriteArray(InputImageData);
             writer.Write(ImageNormalDirection.XRadians);
@@ -238,6 +242,7 @@ public class StereoInputSample : IOwnedDataSerializable
             switch (block.Version)
             {
                 case 1:
+                    Index = reader.ReadInt32();
                     Label = reader.ReadByte();
                     InputImageData = reader.ReadByteArray();
                     ImageNormalDirection.XRadians = reader.ReadSingle();

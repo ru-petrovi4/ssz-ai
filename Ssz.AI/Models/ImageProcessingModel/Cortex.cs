@@ -72,8 +72,8 @@ public partial class Cortex : ISerializableModelObject
         Constants = constants;
         Logger = logger;        
 
-        MiniColumn_XAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;
-        MiniColumn_YAngle_K = constants.MiniColumnFieldOfViewDiameter_Angle / constants.FullFieldOfView_MiniColumns;        
+        MiniColumn_XAngle_K = constants.FullFieldOfViewDiameter_MiniColumn_Angle / constants.FullFieldOfView_MiniColumns;
+        MiniColumn_YAngle_K = constants.FullFieldOfViewDiameter_MiniColumn_Angle / constants.FullFieldOfView_MiniColumns;        
     }
 
     #region public functions
@@ -88,6 +88,12 @@ public partial class Cortex : ISerializableModelObject
 
     /// <summary>
     ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
+    ///     И так для каждой гиперколонки.
+    /// </summary>
+    public FastList<Memory> IdealPinwheelCenterMemories { get; private set; } = null!;
+
+    /// <summary>
+    ///     Набор идеальных воспоминаний.
     /// </summary>
     public FastList<Memory> IdealPinwheelMemories { get; private set; } = null!;
 
@@ -112,14 +118,14 @@ public partial class Cortex : ISerializableModelObject
 
     public string Temp_InputCurrentDesc = null!;
 
-    public void GenerateOwnedData(Random random, bool onlyCeneterHypercolumn)
+    public void GenerateOwnedData(Eye leftEye, Eye rightEye, Random initialization_Random, bool onlyCenterHypercolumn)
     {
         MiniColumns = new FastList<MiniColumn>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
 
         float delta_MCX = 1.0f;
         float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
 
-        if (onlyCeneterHypercolumn)
+        if (onlyCenterHypercolumn)
         {
             float maxRadius = Constants.HyperColumnDefinedRadius_MiniColumns + 0.00001f;
 
@@ -224,9 +230,10 @@ public partial class Cortex : ISerializableModelObject
                 }
         }
 
-        IdealPinwheelMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
+        IdealPinwheelCenterMemories = new FastList<Memory>(HyperColumnCenters_MiniColumnIndices.Count * 7);
+        IdealPinwheelMemories = new FastList<Memory>(MiniColumns.Count);
 
-        var hyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
+        var filteredHyperColumnCenters_MiniColumnIndices = new FastList<int>(20);
 
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
@@ -234,9 +241,15 @@ public partial class Cortex : ISerializableModelObject
 
             var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
 
-            // Воспоминания для оценки качества вертушки TODO
-            var idealCortexMemory = GetIdealCortexMemory(random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn);
-            hyperColumnIdealPinwheelMemories.Add(idealCortexMemory);
+            // Воспоминания для оценки качества вертушки TODO            
+            hyperColumnIdealPinwheelMemories.Add(
+                GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, leftEye));            
+
+            foreach (var hyperColumn_MiniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
+            {                
+                IdealPinwheelMemories.Add(
+                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumn_MiniColumn, hyperColumn_MiniColumn, leftEye));
+            }
 
             FastList<MiniColumn> adjacentMiniColumns = new(6);
             for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)
@@ -256,37 +269,68 @@ public partial class Cortex : ISerializableModelObject
 
             foreach (var adjacentMiniColumn in adjacentMiniColumns
                 .OrderBy(mc => MathF.Atan2(mc.MCY - hyperColumnCenter_MiniColumn.MCY, mc.MCX - hyperColumnCenter_MiniColumn.MCX)))
-            {
-                idealCortexMemory = GetIdealCortexMemory(random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn);
-                hyperColumnIdealPinwheelMemories.Add(idealCortexMemory);
+            {                
+                hyperColumnIdealPinwheelMemories.Add(
+                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, adjacentMiniColumn, adjacentMiniColumn, leftEye));
             }
 
             if (hyperColumnIdealPinwheelMemories.Count == 7)
             {
-                hyperColumnCenters_MiniColumnIndices.Add(mc_index);
-                IdealPinwheelMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);                
+                filteredHyperColumnCenters_MiniColumnIndices.Add(mc_index);
+                IdealPinwheelCenterMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);                
             }
         }
 
-        HyperColumnCenters_MiniColumnIndices.Swap(hyperColumnCenters_MiniColumnIndices);
+        HyperColumnCenters_MiniColumnIndices.Swap(filteredHyperColumnCenters_MiniColumnIndices);
     }
 
-    public void Prepare()
+    public void Prepare(Eye leftEye, Eye rightEye, Random initialization_Random)
     {
-        float hypercolumnRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns / MathF.Cos(MathHelper.DegreesToRadians(60)) + 0.000001f;        
-        float sameFieldOfViewRadius_MiniColumns = 2.0f * hypercolumnRadius_MiniColumns;
+        float hyperColumnMaxRadius_MiniColumns = 2.0f * Constants.HyperColumnDefinedRadius_MiniColumns + 0.000001f;
+        float nearestRadius_MiniColumns = Constants.HyperColumnDefinedRadius_MiniColumns / 2.0f;
+        float sameFieldOfViewRadius_MiniColumns = Constants.FullFieldOfView_MiniColumns / 2.0f;
 
         for (int mc_index = 0; mc_index < MiniColumns.Count; mc_index += 1)            
         {
             MiniColumn miniColumn = MiniColumns[mc_index];
-            miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns);
+            miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns, nearestRadius_MiniColumns);
+            miniColumn.Temp_SomWeights = new float[Constants.HashLength];
+            miniColumn.Temp_SomWeightsDiff = new float[Constants.HashLength];
+            for (int bit_Index = 0; bit_Index < Constants.HashLength; bit_Index += 1)
+            {
+                // Инициализация малыми случайными значениями
+                miniColumn.Temp_SomWeights[bit_Index] = initialization_Random.NextSingle() * 0.1f;
+            }
 
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
-            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns is null)
-                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            if (nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns is null)
-                nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
-            nearest_HyperColumnCenter_MiniColumn.Temp_Strict_HyperColumn_MiniColumns.Add(miniColumn);
+            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns is null)
+                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            if (nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns is null)
+                nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns = new FastList<MiniColumn>((int)(Math.PI * 25.0f * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
+            nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns.Add(miniColumn);
+
+            float yPixels_K = Constants.RetinaImagePixelSize.Height / Constants.RetinaImageAngle;
+            float detectorsVisibleRadiusPixels = Constants.FullFieldOfViewDiameter_MiniColumn_Angle * yPixels_K / 2.0f;            
+            float centerXPixels = Constants.RetinaImagePixelSize.Width / 2.0f + miniColumn.MCX * MiniColumn_XAngle_K * yPixels_K;
+            float centerYPixels = Constants.RetinaImagePixelSize.Height / 2.0f + miniColumn.MCY * MiniColumn_YAngle_K * yPixels_K;
+            miniColumn.Temp_LeftEye_Detectors = new FastList<Detector>(Constants.MiniColumnVisibleDetectorsCount);
+            for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.Detectors.Dimensions[1]; dJ += 1)
+                for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.Detectors.Dimensions[0]; dI += 1)
+                {
+                    Detector detector = leftEye.Retina.Detectors[dI, dJ];
+                    double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                    if (rPixels < detectorsVisibleRadiusPixels)
+                        miniColumn.Temp_LeftEye_Detectors.Add(detector);
+                }
+            miniColumn.Temp_RightEye_Detectors = new FastList<Detector>(Constants.MiniColumnVisibleDetectorsCount);
+            for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.Detectors.Dimensions[1]; dJ += 1)
+                for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.Detectors.Dimensions[0]; dI += 1)
+                {
+                    Detector detector = rightEye.Retina.Detectors[dI, dJ];
+                    double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                    if (rPixels < detectorsVisibleRadiusPixels)
+                        miniColumn.Temp_RightEye_Detectors.Add(detector);
+                }
         }
 
         // Находим ближайшие миниколонки для каждой миниколонки
@@ -297,9 +341,10 @@ public partial class Cortex : ISerializableModelObject
             {
                 MiniColumn miniColumn = MiniColumns[mc_index];
                 miniColumn.Temp_SameFieldOfViewMiniColumns.Add(miniColumn);
+                miniColumn.Temp_NearestMiniColumns.Add((0.0, miniColumn));
 
-                if (miniColumn.Temp_HyperColumn_MiniColumns is not null)
-                    miniColumn.Temp_HyperColumn_MiniColumns.Add(miniColumn);
+                if (miniColumn.Temp_HyperColumnMax_MiniColumns is not null)
+                    miniColumn.Temp_HyperColumnMax_MiniColumns.Add(miniColumn);
 
                 for (int mc_index2 = 0; mc_index2 < MiniColumns.Count; mc_index2 += 1)                    
                 {
@@ -317,11 +362,11 @@ public partial class Cortex : ISerializableModelObject
                             MathHelper.GetInterpolatedValue(Constants.NegativeK, r),
                             nearestMc));
 
-                    if (r < hypercolumnRadius_MiniColumns)
+                    if (r < hyperColumnMaxRadius_MiniColumns)
                     {
                         //miniColumn.Temp_K_HyperColumnMiniColumns.Add((r, nearestMc));
-                        if (miniColumn.Temp_HyperColumn_MiniColumns is not null)
-                            miniColumn.Temp_HyperColumn_MiniColumns.Add(nearestMc);
+                        if (miniColumn.Temp_HyperColumnMax_MiniColumns is not null)
+                            miniColumn.Temp_HyperColumnMax_MiniColumns.Add(nearestMc);
                     }
 
                     //if (r < _2hypercolumnDefinedRadius_MiniColumns)
@@ -332,6 +377,9 @@ public partial class Cortex : ISerializableModelObject
 
                     if (r < 1.00001f)
                         miniColumn.Temp_AdjacentMiniColumns.Add((r, nearestMc));
+
+                    if (r < nearestRadius_MiniColumns)
+                        miniColumn.Temp_NearestMiniColumns.Add((r, nearestMc));
                 }
 
                 miniColumn.Temp_AdjacentMiniColumns = miniColumn.Temp_AdjacentMiniColumns
@@ -365,15 +413,16 @@ public partial class Cortex : ISerializableModelObject
     /// <param name="random"></param>
     /// <param name="hyperColumnCenter_MiniColumn"></param>
     /// <param name="idealAngleMagnitude_MiniColumn">For Angle and Magnitude</param>
-    /// <param name="mainXY_MiniColumn">For X_Retina and Y_Retina</param>
+    /// <param name="main_MiniColumn">For X_Retina and Y_Retina</param>
     /// <returns></returns>
     public Memory GetIdealCortexMemory(
         Random random, 
         MiniColumn hyperColumnCenter_MiniColumn, 
         MiniColumn idealAngleMagnitude_MiniColumn, 
-        MiniColumn mainXY_MiniColumn)
+        MiniColumn main_MiniColumn,
+        Eye eye)
     {        
-        float angle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
+        float gradientAngle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
         if (MathF.Abs(hyperColumnCenter_MiniColumn.MCX) < 1.0f && MathF.Abs(hyperColumnCenter_MiniColumn.MCY) < 1.0f)
         {   
         }
@@ -400,33 +449,127 @@ public partial class Cortex : ISerializableModelObject
                 default:
                     throw new InvalidOperationException();
             }
-            angle = angleHypercolumn + (c ? angle : MathF.PI - angle);            
+            gradientAngle = angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle);            
         }
-        angle = MathHelper.NormalizeAngle(angle);
+        gradientAngle = MathHelper.NormalizeAngle(gradientAngle);
 
-        Memory memory = new();        
-        memory.GradientAngle = angle;
-        memory.GradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
-            + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
-        memory.MainRetinaXYAngle_MiniColumnIndex = mainXY_MiniColumn.Index;
-        memory.RetinaXAngle = mainXY_MiniColumn.MCX * MiniColumn_XAngle_K;
-        memory.RetinaYAngle = mainXY_MiniColumn.MCY * MiniColumn_YAngle_K;
+        float gradientMagnitude_K = Constants.MaxGradientMagnitudeExclusive / (Constants.HyperColumnDefinedRadius_MiniColumns);
+
+        float gradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
+            + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)) * gradientMagnitude_K;
+
+        Memory memory = new();
+
+        memory.Hash = new float[Constants.HashLength];
+
+        memory.GradientAngle = gradientAngle;
+        memory.GradientMagnitude = gradientMagnitude;
+        memory.Main_MiniColumnIndex = main_MiniColumn.Index;
+        memory.Main_RetinaXAngle = main_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.Main_RetinaYAngle = main_MiniColumn.MCY * MiniColumn_YAngle_K;
               
         memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
         memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
-        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;        
+        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
 
-        var distanceFromCenterNormalized = memory.GradientMagnitude / (Constants.HyperColumnDefinedRadius_MiniColumns + 5);
-        if (distanceFromCenterNormalized > 1.0f)
-            distanceFromCenterNormalized = 1.0f;
-        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), distanceFromCenterNormalized, 1.0);
+        var gradientMagnitudeNormalized = gradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+        if (gradientMagnitudeNormalized > 1.0f)
+            gradientMagnitudeNormalized = 1.0f;
+        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
 
-        float angleXY = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
-        var sXY = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f / 
+        float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
+        var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
             MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
-        memory.RetinaXYAngle_Color = Visualisation.ColorFromHSV((double)(angleXY + MathF.PI) / (2 * MathF.PI), sXY, 1.0);
+        memory.HyperColumnCenter_Color = Visualisation.ColorFromHSV((double)(hyperColumnCenter_A + MathF.PI) / (2 * MathF.PI), hyperColumnCenter_M, 1.0);
 
-        memory.DistanceFromCenter = memory.GradientMagnitude;
+        GradientInPoint gradientInPoint = new()
+        {
+            GradX = gradientMagnitude * Math.Cos(gradientAngle),
+            GradY = gradientMagnitude * Math.Sin(gradientAngle),
+            Magnitude = gradientMagnitude,
+            Angle = gradientAngle
+        };        
+        FastList<Detector> detectors;
+        if (eye.IsRightEye)
+            detectors = main_MiniColumn.Temp_RightEye_Detectors;
+        else
+            detectors = main_MiniColumn.Temp_LeftEye_Detectors;
+        for (int d_index = 0; d_index < detectors.Count; d_index += 1)
+        {
+            var detector = detectors[d_index];
+            detector.CalculateIsActivated(eye.Retina, gradientInPoint, Constants);
+            if (detector.Temp_IsActivated)
+                memory.Hash[detector.BitIndexInHash] = 1.0f;
+        }
+
+        return memory;
+    }
+
+    /// <summary>
+    ///     Precondition: !!! detectors must be Activated !!!
+    /// </summary>
+    /// <param name="eye"></param>
+    /// <param name="stereoInputSample"></param>
+    /// <param name="hyperColumnCenter_MiniColumn"></param>
+    /// <param name="main_MiniColumn"></param>
+    /// <returns></returns>
+    public Memory GetCortexMemory(
+        Eye eye, 
+        StereoInputSample stereoInputSample,
+        MiniColumn hyperColumnCenter_MiniColumn,
+        MiniColumn main_MiniColumn)
+    {
+        Memory memory = new();
+
+        memory.Hash = new float[Constants.HashLength];
+
+        memory.StereoInputSample_Index = stereoInputSample.Index;
+        memory.RetinaImageData_IsRightEye = eye.IsRightEye;       
+
+        memory.Main_MiniColumnIndex = main_MiniColumn.Index;
+        memory.Main_RetinaXAngle = main_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.Main_RetinaYAngle = main_MiniColumn.MCY * MiniColumn_YAngle_K;
+
+        float averageGradientMagnitude_Sum = 0.0f;
+        float averageGradientAngle_Sum = 0.0f;
+        int activatedDetectorsCount = 0;
+        FastList<Detector> detectors;
+        if (eye.IsRightEye)
+            detectors = main_MiniColumn.Temp_RightEye_Detectors;
+        else
+            detectors = main_MiniColumn.Temp_LeftEye_Detectors;
+        for (int d_index = 0; d_index < detectors.Count; d_index += 1)
+        {
+            var detector = detectors[d_index];
+            if (detector.Temp_IsActivated)
+            {
+                memory.Hash[detector.BitIndexInHash] = 1.0f;
+                activatedDetectorsCount += 1;
+                averageGradientMagnitude_Sum += detector.AverageGradientMagnitude;
+                averageGradientAngle_Sum += detector.AverageGradientAngle;
+            }
+        }
+        if (activatedDetectorsCount > 0)
+        {
+            averageGradientMagnitude_Sum /= activatedDetectorsCount;
+            averageGradientAngle_Sum /= activatedDetectorsCount;
+        }
+        memory.GradientMagnitude = averageGradientMagnitude_Sum;
+        memory.GradientAngle = averageGradientAngle_Sum;
+
+        memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
+        memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
+
+        var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+        if (gradientMagnitudeNormalized > 1.0f)
+            gradientMagnitudeNormalized = 1.0f;
+        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+
+        float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
+        var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
+            MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
+        memory.HyperColumnCenter_Color = Visualisation.ColorFromHSV((double)(hyperColumnCenter_A + MathF.PI) / (2 * MathF.PI), hyperColumnCenter_M, 1.0);
 
         return memory;
     }
@@ -435,6 +578,7 @@ public partial class Cortex : ISerializableModelObject
     {
         using (writer.EnterBlock(1))
         {            
+            writer.WriteFastListOfOwnedDataSerializable(IdealPinwheelCenterMemories, context);
             writer.WriteFastListOfOwnedDataSerializable(IdealPinwheelMemories, context);
             writer.WriteFastListOfOwnedDataSerializable(MiniColumns, context);
             HyperColumnCenters_MiniColumnIndices.SerializeOwnedData(writer, context);            
@@ -448,6 +592,7 @@ public partial class Cortex : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:                    
+                    IdealPinwheelCenterMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
                     IdealPinwheelMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
                     MiniColumns = reader.ReadFastListOfOwnedDataSerializable(idx => new MiniColumn(Constants), context);
                     HyperColumnCenters_MiniColumnIndices = new FastList<int>();
@@ -457,7 +602,36 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    #endregion         
+    public void CalculateSomCortexMemories()
+    {
+        Parallel.For(
+            fromInclusive: 0,
+            toExclusive: MiniColumns.Count,
+            (Action<int>)(mc_index =>
+            {
+                MiniColumn miniColumn = MiniColumns[mc_index];
+
+                miniColumn.Temp_SomCortexMemories.Clear();
+
+                float min = Single.MaxValue;
+                Memory? idealPinwheelMemory_Best = null;
+                for (int m_index = 0; m_index < IdealPinwheelMemories.Count; m_index += 1)
+                {
+                    var idealPinwheelMemory = IdealPinwheelMemories[m_index];
+                    float f = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
+                    if (f < min)
+                    {
+                        min = f;
+                        idealPinwheelMemory_Best = idealPinwheelMemory;
+                    }    
+                }
+
+                if (idealPinwheelMemory_Best is not null)
+                    miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
+            }));
+    }
+
+    #endregion
 
     public class MiniColumn : ISerializableModelObject
     {
@@ -508,30 +682,40 @@ public partial class Cortex : ISerializableModelObject
         ///// </summary>
         //public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
 
+        public FastList<Detector> Temp_LeftEye_Detectors = null!;
+
+        public FastList<Detector> Temp_RightEye_Detectors = null!;
+
         /// <summary>
         ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2.0 * HyperColumnDefinedRadius_MiniColumns.</para>
         ///     <para>Круглой формы. Может пересекаться с другими гиперколонками.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
-        public FastList<MiniColumn> Temp_HyperColumn_MiniColumns = null!;
+        public FastList<MiniColumn> Temp_HyperColumnMax_MiniColumns = null!;
 
         /// <summary>
-        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 0.5 гиперколонки.</para>
+        ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно HyperColumnDefinedRadius_MiniColumns.</para>
         ///     <para>Может быть неровной формы. Не пересекается с другими гиперколонками.</para>
         ///     <para>Определено только для центров гиперколонок.</para>
         /// </summary>
-        public FastList<MiniColumn> Temp_Strict_HyperColumn_MiniColumns = null!;
+        public FastList<MiniColumn> Temp_HyperColumnStrict_MiniColumns = null!;
 
         /// <summary>
-        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2 гиперколонок (хотя реально видимость равна 5 гиперколонкам).
+        ///     !!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2.0 * HyperColumnDefinedRadius_MiniColumns.
         /// </summary>
         public FastList<MiniColumn> Temp_SameFieldOfViewMiniColumns = null!;
 
         /// <summary>
-        ///     Миниколонки - ближайшие соседи.
+        ///     Миниколонки - смежные соседи.
         ///     <para>(r, MiniColumn)</para>        
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_AdjacentMiniColumns = null!;
+
+        /// <summary>
+        ///     !!! Сама миниколонка !!! Миниколонки - ближайшие соседи в радиусе примерно 0.5 * HyperColumnDefinedRadius_MiniColumns.
+        ///     <para>(r, MiniColumn)</para>        
+        /// </summary>
+        public FastList<(double, MiniColumn)> Temp_NearestMiniColumns = null!;
 
         public double Temp_MiniColumnEnergy;
 
@@ -552,12 +736,23 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public FastList<Memory?> Temp_CortexMemories = null!;
 
+        /// <summary>
+        ///     Визуализация SOM
+        /// </summary>
+        public FastList<Memory?> Temp_SomCortexMemories = null!;        
+
+        public float[] Temp_SomWeights = null!;
+
+        public float[] Temp_SomWeightsDiff = null!;
+
+        public float Temp_SomActivity;
+
         public void GenerateOwnedData()
         {
             CortexMemories = new(10);            
         }
 
-        public void Prepare(float sameFieldOfViewRadius_MiniColumns)
+        public void Prepare(float sameFieldOfViewRadius_MiniColumns, float nearestRadius_MiniColumns)
         {
             Temp_K_SuperActivityMiniColumns = new FastList<(float, float, MiniColumn)>(18);
             //Temp_K_HyperColumnMiniColumns = new FastList<(float, MiniColumn)>((int)(Math.PI * Constants.HyperColumnDefinedRadius_MiniColumns * Constants.HyperColumnDefinedRadius_MiniColumns));
@@ -565,6 +760,9 @@ public partial class Cortex : ISerializableModelObject
             Temp_SameFieldOfViewMiniColumns = new FastList<MiniColumn>((int)(Math.PI * sameFieldOfViewRadius_MiniColumns * sameFieldOfViewRadius_MiniColumns + 5));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
+            Temp_SomCortexMemories = new(1);
+
+            Temp_NearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * nearestRadius_MiniColumns * nearestRadius_MiniColumns + 5));
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -601,15 +799,11 @@ public partial class Cortex : ISerializableModelObject
 
     public class Memory : IOwnedDataSerializable
     {
-        public readonly float[] Hash = null!;
+        public float[] Hash = null!;
 
         public int StereoInputSample_Index;
 
         public bool RetinaImageData_IsRightEye;
-
-        public float RetinaImageData_CenterXPixels;
-
-        public float RetinaImageData_CenterYPixels;
 
         /// <summary>
         /// [-pi, pi)
@@ -621,11 +815,11 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public float GradientMagnitude;
 
-        public int MainRetinaXYAngle_MiniColumnIndex;
+        public int Main_MiniColumnIndex;
 
-        public float RetinaXAngle;
+        public float Main_RetinaXAngle;
 
-        public float RetinaYAngle;
+        public float Main_RetinaYAngle;
 
         public int HyperColumnCenter_MiniColumnIndex;
 
@@ -635,12 +829,7 @@ public partial class Cortex : ISerializableModelObject
 
         public Color GradientAngleMagnitude_Color;
 
-        public Color RetinaXYAngle_Color;
-
-        /// <summary>
-        ///     Distance from center in ideal pinwheel in minicolumns
-        /// </summary>
-        public float DistanceFromCenter = Single.MinValue;
+        public Color HyperColumnCenter_Color;        
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
@@ -650,20 +839,16 @@ public partial class Cortex : ISerializableModelObject
             }
             writer.Write(StereoInputSample_Index);
             writer.Write(RetinaImageData_IsRightEye);
-            writer.Write(RetinaImageData_CenterXPixels);
-            writer.Write(RetinaImageData_CenterYPixels);
-
             writer.Write(GradientAngle);
             writer.Write(GradientMagnitude);
-            writer.Write(MainRetinaXYAngle_MiniColumnIndex);
-            writer.Write(RetinaXAngle);
-            writer.Write(RetinaYAngle);
+            writer.Write(Main_MiniColumnIndex);
+            writer.Write(Main_RetinaXAngle);
+            writer.Write(Main_RetinaYAngle);
             writer.Write(HyperColumnCenter_MiniColumnIndex);
             writer.Write(HyperColumnCenter_RetinaXAngle);
             writer.Write(HyperColumnCenter_RetinaYAngle);
             writer.Write(GradientAngleMagnitude_Color);
-            writer.Write(RetinaXYAngle_Color);
-            writer.Write(DistanceFromCenter);
+            writer.Write(HyperColumnCenter_Color);
         }
 
         public void DeserializeOwnedData(SerializationReader reader, object? context)
@@ -673,26 +858,28 @@ public partial class Cortex : ISerializableModelObject
                 Hash[i] = reader.ReadSingle();
             }
             StereoInputSample_Index = reader.ReadInt32();
-            RetinaImageData_IsRightEye = reader.ReadBoolean();
-            RetinaImageData_CenterXPixels = reader.ReadSingle();
-            RetinaImageData_CenterYPixels = reader.ReadSingle();
-
+            RetinaImageData_IsRightEye = reader.ReadBoolean();            
             GradientAngle = reader.ReadSingle();
             GradientMagnitude = reader.ReadSingle();
-            MainRetinaXYAngle_MiniColumnIndex = reader.ReadInt32();
-            RetinaXAngle = reader.ReadSingle();
-            RetinaYAngle = reader.ReadSingle();
+            Main_MiniColumnIndex = reader.ReadInt32();
+            Main_RetinaXAngle = reader.ReadSingle();
+            Main_RetinaYAngle = reader.ReadSingle();
             HyperColumnCenter_MiniColumnIndex = reader.ReadInt32();
             HyperColumnCenter_RetinaXAngle = reader.ReadSingle();
             HyperColumnCenter_RetinaYAngle = reader.ReadSingle();
             GradientAngleMagnitude_Color = reader.ReadColor();
-            RetinaXYAngle_Color = reader.ReadColor();
-            DistanceFromCenter = reader.ReadSingle();
+            HyperColumnCenter_Color = reader.ReadColor();
         }
 
         public override string ToString()
         {
-            return $"Angle: {GradientAngle:F1}; Magnitude: {GradientMagnitude:F03}; XRetina: {RetinaXAngle:F03}; YRetina: {RetinaYAngle:F03}";
+            return $"Angle: {GradientAngle:F1}; Magnitude: {GradientMagnitude:F03};";
         }
     }
 }
+
+
+        ///// <summary>
+        /////     Distance from center in ideal pinwheel in minicolumns
+        ///// </summary>
+        //public float DistanceFromCenter_MiniColumns = Single.MinValue;

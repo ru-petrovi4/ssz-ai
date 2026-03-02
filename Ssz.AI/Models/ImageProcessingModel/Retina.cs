@@ -312,7 +312,7 @@ public class Retina : ISerializableModelObject
             for (int gradientAngleDegree = 0; gradientAngleDegree < 360; gradientAngleDegree += (int)constants.GradientAngleDegreeDelta)
             {
                 double angle = MathHelper.DegreesToRadians(gradientAngleDegree);
-                GradientInPoint gradientInPoint = new GradientInPoint
+                GradientInPoint gradientInPoint = new()
                 {
                     GradX = gradientMagnitude * Math.Cos(angle),
                     GradY = gradientMagnitude * Math.Sin(angle),

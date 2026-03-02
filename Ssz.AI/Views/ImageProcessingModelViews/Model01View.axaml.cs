@@ -117,7 +117,7 @@ public partial class Model01View : UserControl
     private void LoadCortex_OnClick(object? sender, RoutedEventArgs args)
     {
         Helpers.SerializationHelper.LoadFromFileIfExists(Model01.FileName_Cortex, Model.Cortex, null, Model.Logger);
-        Model.Cortex.Prepare();
+        Model.Cortex.Prepare(Model.LeftEye, Model.RightEye, _random);
 
         Refresh_ImagesSet();
     }
@@ -224,6 +224,49 @@ public partial class Model01View : UserControl
             }
 
             Model.Logger.LogInformation("ReorderMemories Finished.");
+        });
+        await _curentLongRunningTask;
+        _curentLongRunningTask = null;
+
+        Refresh_ImagesSet();
+    }
+
+    private async void StartProcessSom1_OnClick(object? sender, RoutedEventArgs args)
+    {
+        await Model.ProcessSomNAsync(0.01f, _random, CancellationToken.None, () => Task.CompletedTask);
+
+        Refresh_ImagesSet();
+    }
+
+    private async void StartProcessSomN_OnClick(object? sender, RoutedEventArgs args)
+    {
+        if (_curentLongRunningTask is not null)
+            return;
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
+        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"1")).ValueAsSingle(false);
+
+        _curentLongRunningTask = Task.Run(async () =>
+        {
+            try
+            {
+                Model.Logger.LogInformation("StartProcessN Started.");
+
+                await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                });
+            }
+            catch (OperationCanceledException)
+            {
+                Model.Logger.LogInformation("StartProcessN Cancelled.");
+            }
+            Model.Logger.LogInformation("StartProcessN Finished.");
         });
         await _curentLongRunningTask;
         _curentLongRunningTask = null;
@@ -459,7 +502,7 @@ public partial class Model01View : UserControl
                     int count = 100;
                     for (int it = 0; it < count; it += 1)
                     {
-                        Model = new Model01(_random, onlyCeneterHypercolumn: true);                        
+                        Model = new Model01(_random, onlyCenterHypercolumn: true);                        
 
                         Model.PutMemories_Random_MultiMemory(_random, cortexMemoriesCount: 6);
 

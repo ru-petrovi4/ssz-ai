@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using System;
 
 namespace Ssz.AI.Models.ImageProcessingModel;
 
@@ -11,11 +12,13 @@ public class Eye
 
     public Retina Retina = null!;
 
-    public float RetinaUpperLeftXAngle;
+    public bool IsRightEye;
 
-    public float RetinaUpperLeftYAngle;
+    public float RetinaUpperLeftXAbsoluteAngle;
 
-    public float RetinaBottomRightXAngle;
+    public float RetinaUpperLeftYAbsoluteAngle;
 
-    public float RetinaBottomRightYAngle;
+    public float RetinaBottomRightXAbsoluteAngle;
+
+    public float RetinaBottomRightYAbsoluteAngle;    
 }

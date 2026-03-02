@@ -758,9 +758,9 @@ namespace Ssz.AI.Models
 
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 
-            public float MiniColumnFieldOfViewDiameter_Angle => throw new NotImplementedException();
+            public float FullFieldOfViewDiameter_MiniColumn_Angle => throw new NotImplementedException();
 
-            public float RetinaImageVerticalAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public float RetinaImageAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
         }        

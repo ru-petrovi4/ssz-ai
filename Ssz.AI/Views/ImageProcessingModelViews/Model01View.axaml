@@ -38,6 +38,11 @@
               <CheckBox Name="EnergyThreshold" Content="Energy Threshold" Click="EnergyThreshold_OnClick" />
           </StackPanel>          
           <StackPanel Grid.Row="2" Orientation="Horizontal">        
+              <TextBlock Text="SOM:" VerticalAlignment="Center" />                            
+              <Button Content="Start Process SOM 1" Click="StartProcessSom1_OnClick" /> 
+              <Button Content="Start Process SOM N" Click="StartProcessSomN_OnClick" />               
+          </StackPanel>
+          <StackPanel Grid.Row="3" Orientation="Horizontal">        
               <TextBlock Text="Reorder:" VerticalAlignment="Center" />              
               <Button Content="Put Initial Memories Pinwheel" Click="PutInitialMemoriesPinwheel_OnClick" />  
               <Button Content="Put Initial Memories Random" Click="PutInitialMemoriesRandom_OnClick" /> 

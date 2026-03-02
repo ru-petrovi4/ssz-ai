@@ -10,7 +10,7 @@ public interface IRetinaConstants
 {
     PixelSize RetinaImagePixelSize { get; set; }
 
-    float RetinaImageVerticalAngle { get; set; }    
+    float RetinaImageAngle { get; set; }    
 
     /// <summary>
     ///     Оценочный максимальный градиент.
@@ -43,14 +43,16 @@ public interface IRetinaConstants
     /// </summary>
     int FullFieldOfView_MiniColumns { get; }
 
-    float MiniColumnFieldOfViewDiameter_Angle { get; }
+    float FullFieldOfViewDiameter_MiniColumn_Angle { get; }
 
     /// <summary>
     ///     Количество детекторов, видимых одной миниколонкой
     /// </summary>
     int MiniColumnVisibleDetectorsCount { get; }
 
-    float RetinaDetectorsDeltaPixels => (RetinaImagePixelSize.Height * MiniColumnFieldOfViewDiameter_Angle) / (RetinaImageVerticalAngle * MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI));
+    float RetinaDetectorsDeltaPixels => (RetinaImagePixelSize.Height * FullFieldOfViewDiameter_MiniColumn_Angle) / (RetinaImageAngle * MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI));
+
+    float RetinaDetectorsDeltaAngle => FullFieldOfViewDiameter_MiniColumn_Angle / MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI);
 
     /// <summary>
     ///     Длина хэш-вектора
