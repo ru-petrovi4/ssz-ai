@@ -1,4 +1,4 @@
-﻿#define GENERATE_INPUT_DATA
+﻿//#define GENERATE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -371,12 +371,12 @@ public class Model01
 
         float fraction = (float)currentIteration / totalIterations;
 
-        const float alpha0 = 0.3f;    // α0
-        const float alphaMin = 0.01f; // α_min        
+        const float alpha0 = 0.05f;    // α0
+        const float alphaMin = 0.001f; // α_min        
         float ratio_Alpha = alphaMin / alpha0;
         float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
 
-        const float sigma0 = 14.0f;    // σ0
+        const float sigma0 = 10.0f;    // σ0
         const float sigmaMin = 1.0f;  // σ_min        
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
