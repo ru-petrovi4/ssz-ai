@@ -52,7 +52,7 @@ public class Retina : ISerializableModelObject
 
         DetectorRanges = new DenseMatrix<DetectorRange?>(Constants.MaxGradientMagnitudeExclusive, 360);
         
-        float gradientMagnitudeRange = gmIn1 * 10;
+        float gradientMagnitudeRange = gmIn1 * 3.0f;
         //float angleRange0 = MathF.Atan2(constants.K5, constants.AngleRangeDegree_LimitMagnitude / gmIn1) * 4.0f;            
         //float angleRange0 = constants.AngleRangeDegreeMin * MathF.PI / 180;
         //float angleRange1 = constants.AngleRangeDegreeMax * MathF.PI / 180;

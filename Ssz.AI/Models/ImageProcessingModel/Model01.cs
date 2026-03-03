@@ -1,4 +1,4 @@
-﻿//#define GENERATE_INPUT_DATA
+﻿#define GENERATE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -372,7 +372,7 @@ public class Model01
         float fraction = (float)currentIteration / totalIterations;
 
         const float alpha0 = 0.05f;    // α0
-        const float alphaMin = 0.001f; // α_min        
+        const float alphaMin = 0.01f; // α_min        
         float ratio_Alpha = alphaMin / alpha0;
         float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
 
@@ -909,38 +909,7 @@ public class Model01
 
     private double GetSimilarity(Memory cortexMemory1, Memory cortexMemory2)
     {
-        float hyperColumnDiameter_Retina2 = Cortex.Constants.FullFieldOfViewDiameter_MiniColumn_Angle * Cortex.Constants.FullFieldOfViewDiameter_MiniColumn_Angle;
-        var r2 = (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle) * (cortexMemory1.HyperColumnCenter_RetinaXAngle - cortexMemory2.HyperColumnCenter_RetinaXAngle)
-            + (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle) * (cortexMemory1.HyperColumnCenter_RetinaYAngle - cortexMemory2.HyperColumnCenter_RetinaYAngle);
-        double k;
-        if (r2 > hyperColumnDiameter_Retina2 * 1.5f)
-            k = 0.0;
-        else if (r2 > hyperColumnDiameter_Retina2 * 0.5f)
-            k = 0.3; //0.00005; // 0.3;
-        else
-            k = 1.0;
-
-        double radialDistance1 = cortexMemory1.GradientMagnitude;
-        double radialDistance2 = cortexMemory2.GradientMagnitude;
-
-        double gx1 = radialDistance1 * Math.Cos(cortexMemory1.GradientAngle);
-        double gy1 = radialDistance1 * Math.Sin(cortexMemory1.GradientAngle);
-        double gx2 = radialDistance2 * Math.Cos(cortexMemory2.GradientAngle);
-        double gy2 = radialDistance2 * Math.Sin(cortexMemory2.GradientAngle);
-
-        var gr2 = (gx1 - gx2) * (gx1 - gx2) + (gy1 - gy2) * (gy1 - gy2);
-
-        double similarity = Math.Exp(-gr2 / 8.0) * k; // sigma == 2.0f
-
-        if (similarity < 0.000001)
-            similarity = 0.000001;
-        //double activity = similarity - Cortex.Constants.K0;
-        //activity = activity * k;
-        //similarity = activity + Cortex.Constants.K0;
-        //if (similarity < cortexMemory1.SimilarityThreshold)
-        //    return Single.NaN;
-
-        return similarity;
+        return TensorPrimitives.CosineSimilarity(cortexMemory1.Hash, cortexMemory2.Hash);
     }
 
     private static float NormalPdf(float x2, float sigma)
