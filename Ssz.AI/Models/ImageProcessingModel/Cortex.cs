@@ -257,7 +257,7 @@ public partial class Cortex : ISerializableModelObject
             for (int bit_Index = 0; bit_Index < Constants.HashLength; bit_Index += 1)
             {
                 // Инициализация малыми случайными значениями
-                miniColumn.Temp_SomWeights[bit_Index] = initialization_Random.NextSingle(); // * 0.1f;
+                miniColumn.Temp_SomWeights[bit_Index] = initialization_Random.NextSingle() * 0.1f;
             }
 
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
@@ -441,14 +441,15 @@ public partial class Cortex : ISerializableModelObject
                 default:
                     throw new InvalidOperationException();
             }
-            gradientAngle = angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle);            
+            gradientAngle = MathHelper.NormalizeAngle(angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle));            
         }
-        gradientAngle = MathHelper.NormalizeAngle(gradientAngle);
 
         float gradientMagnitude_K = Constants.MaxGradientMagnitudeExclusive / (Constants.HyperColumnDefinedRadius_MiniColumns);
 
         float gradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)) * gradientMagnitude_K;
+        if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
+            gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
 
         Memory memory = new();
 
@@ -483,6 +484,9 @@ public partial class Cortex : ISerializableModelObject
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }
+
+        if (TensorPrimitives.Sum(memory.Hash) < 5)
+            throw new InvalidOperationException();
 
         CreateCortexMemoryColors(memory, hyperColumnCenter_MiniColumn);
 

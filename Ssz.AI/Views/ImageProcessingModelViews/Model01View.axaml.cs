@@ -233,7 +233,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSomIdeal1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomIdealNAsync(0.01f, _random, CancellationToken.None, () => Task.CompletedTask);
+        await Model.ProcessSomIdealNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask);
 
         Refresh_ImagesSet();
     }
@@ -253,7 +253,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomIdealNAsync(epochs, _random, cancellationToken, () =>
+                await Model.ProcessSomIdealNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -276,7 +276,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSom1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomNAsync(0.01f, _random, CancellationToken.None, () => Task.CompletedTask);
+        await Model.ProcessSomNAsync(0.1f, _random, CancellationToken.None, () => Task.CompletedTask);
 
         Refresh_ImagesSet();
     }
