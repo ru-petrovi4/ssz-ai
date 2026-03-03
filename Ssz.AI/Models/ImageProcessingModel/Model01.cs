@@ -303,9 +303,9 @@ public class Model01
 
                 UpdateWeights(bestForMemoryMiniColumn, cortexMemory, _currentIteration, _totalIterations);
 
-#if DEBUG
-                MiniColumn? bestForMemoryMiniColumn2 = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
-#endif
+//#if DEBUG
+//                MiniColumn? bestForMemoryMiniColumn2 = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
+//#endif
 
                 _currentIteration += 1;
 
@@ -377,13 +377,13 @@ public class Model01
 
         float fraction = (float)currentIteration / totalIterations;
 
-        const float alpha0 = 0.3f;    // α0
-        const float alphaMin = 0.01f; // α_min        
+        const float alpha0 = 0.1f;    // α0
+        const float alphaMin = 0.01f; // α_min   Recommended: 0.01     
         float ratio_Alpha = alphaMin / alpha0;
         float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
 
         const float sigma0 = 7.0f;    // σ0
-        const float sigmaMin = 1.0f;  // σ_min        
+        const float sigmaMin = 1.5f;  // σ_min        // Recommended: 1.0    
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
 
