@@ -96,7 +96,7 @@ public class Model01
 
         LeftEye.Retina = new Retina(Constants, Logger);
 #if GENERATE_INPUT_DATA
-        LeftEye.Retina.GenerateOwnedData(initialization_Random, Constants, leftEye_GradientDistribution);
+        LeftEye.Retina.GenerateOwnedData(initialization_Random, leftEye_GradientDistribution);
 #else
         Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
 #endif
@@ -107,7 +107,7 @@ public class Model01
 
         RightEye.Retina = new Retina(Constants, Logger);
 #if GENERATE_INPUT_DATA
-        RightEye.Retina.GenerateOwnedData(initialization_Random, Constants, rightEye_GradientDistribution);
+        RightEye.Retina.GenerateOwnedData(initialization_Random, rightEye_GradientDistribution);
 #else
         Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null, Logger);
 #endif
@@ -805,7 +805,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash);
+                    miniColumn.Temp_SomActivity = TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash);  //TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash); //
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
@@ -979,7 +979,7 @@ public class Model01
     {
         public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(20, 20); // Full image: new PixelSize(200, 200);
 
-        public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.05f); // Full image: MathHelper.DegreesToRadians(0.5f);
+        public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.5f); // Full image: MathHelper.DegreesToRadians(0.5f);
 
         public int MaxGradientMagnitudeExclusive => 1200;
 

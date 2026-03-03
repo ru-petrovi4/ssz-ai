@@ -60,7 +60,7 @@ namespace Ssz.AI.Models
             //SerializationHelper.SaveToFile("MonoInput.bin", MonoInput, null);             
 
             Retina = new Retina(Constants, NullLogger.Instance);
-            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            Retina.GenerateOwnedData(random, gradientDistribution);
             //SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null);
             Retina.Prepare();
             //SerializationHelper.SaveToFile("Retina.bin", Retina, null);

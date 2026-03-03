@@ -106,13 +106,13 @@ namespace Ssz.AI.Models
 #endif
 
             LeftEye.Retina = new Retina(Constants, NullLogger.Instance);
-            LeftEye.Retina.GenerateOwnedData(initializationRandom, Constants, leftEye_GradientDistribution);            
+            LeftEye.Retina.GenerateOwnedData(initializationRandom, leftEye_GradientDistribution);            
             //Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null);
             LeftEye.Retina.Prepare();
             //Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null);
 
             RightEye.Retina = new Retina(Constants, NullLogger.Instance);
-            RightEye.Retina.GenerateOwnedData(initializationRandom, Constants, rightEye_GradientDistribution);            
+            RightEye.Retina.GenerateOwnedData(initializationRandom, rightEye_GradientDistribution);            
             //Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null);
             RightEye.Retina.Prepare();
             //Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null);

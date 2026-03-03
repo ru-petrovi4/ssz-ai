@@ -50,9 +50,9 @@ public interface IRetinaConstants
     /// </summary>
     int MiniColumnVisibleDetectorsCount { get; }
 
-    float RetinaDetectorsDeltaPixels => (RetinaImagePixelSize.Height * FullFieldOfViewDiameter_MiniColumn_Angle) / (RetinaImageAngle * MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI));
+    float RetinaDetectorsDeltaPixels => RetinaDetectorsDeltaAngle * RetinaImagePixelSize.Height / RetinaImageAngle;
 
-    float RetinaDetectorsDeltaAngle => FullFieldOfViewDiameter_MiniColumn_Angle / MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI);
+    float RetinaDetectorsDeltaAngle => FullFieldOfViewDiameter_MiniColumn_Angle / (2.0f * MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI));
 
     /// <summary>
     ///     Длина хэш-вектора

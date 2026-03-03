@@ -78,7 +78,7 @@ namespace Ssz.AI.Models
             bool generateRetina = true;
             Retina = new Retina(Constants, NullLogger.Instance);
             if (generateRetina)
-                Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+                Retina.GenerateOwnedData(random, gradientDistribution);
             if (!generateRetina)
                 SerializationHelper.LoadFromFileIfExists("Retina.bin", Retina, null, null);
             Retina.Prepare();

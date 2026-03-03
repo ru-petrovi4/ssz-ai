@@ -50,7 +50,7 @@ namespace Ssz.AI.Models
 
             //_retina = new Retina(Constants, gradientDistribution, Constants.AngleRangesCount, Constants.MagnitudeRangesCount, Constants.HashLength);
             Retina = new Retina(Constants, NullLogger.Instance);
-            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            Retina.GenerateOwnedData(random, gradientDistribution);
             Retina.Prepare();
 
             Cortex = new Cortex_Simplified(Constants, Retina);            

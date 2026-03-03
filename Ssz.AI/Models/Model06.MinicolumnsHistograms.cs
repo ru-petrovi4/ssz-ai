@@ -49,7 +49,7 @@ namespace Ssz.AI.Models
             Random random = new();
 
             Retina = new Retina(Constants, NullLogger.Instance);
-            Retina.GenerateOwnedData(random, Constants, gradientDistribution);
+            Retina.GenerateOwnedData(random, gradientDistribution);
 
             Cortex = new Cortex_Simplified(Constants, Retina);            
             
