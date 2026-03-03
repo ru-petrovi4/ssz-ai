@@ -383,7 +383,7 @@ public class Model01
         float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
 
         const float sigma0 = 7.0f;    // σ0
-        const float sigmaMin = 1.5f;  // σ_min        // Recommended: 1.0    
+        const float sigmaMin = 1.0f;  // σ_min        // Recommended: 1.0    
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
 
