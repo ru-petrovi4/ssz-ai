@@ -257,7 +257,7 @@ public partial class Cortex : ISerializableModelObject
             for (int bit_Index = 0; bit_Index < Constants.HashLength; bit_Index += 1)
             {
                 // Инициализация малыми случайными значениями
-                miniColumn.Temp_SomWeights[bit_Index] = initialization_Random.NextSingle() * 0.1f;
+                miniColumn.Temp_SomWeights[bit_Index] = initialization_Random.NextSingle(); // * 0.1f;
             }
 
             MiniColumn nearest_HyperColumnCenter_MiniColumn = GetNearest_HyperColumnCenter_MiniColumn(miniColumn);
@@ -278,7 +278,7 @@ public partial class Cortex : ISerializableModelObject
                     if (dI < 0 || dJ < 0)
                         continue;
 
-                    Detector detector = leftEye.Retina.Detectors[dI, dJ];
+                    Detector detector = leftEye.Retina.Detectors[dI, dJ]!;
                     double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                     if (rPixels < detectorsVisibleRadiusPixels)
                         miniColumn.Temp_LeftEye_Detectors.Add(detector);
@@ -290,7 +290,7 @@ public partial class Cortex : ISerializableModelObject
                     if (dI < 0 || dJ < 0)
                         continue;
 
-                    Detector detector = rightEye.Retina.Detectors[dI, dJ];
+                    Detector detector = rightEye.Retina.Detectors[dI, dJ]!;
                     double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
                     if (rPixels < detectorsVisibleRadiusPixels)
                         miniColumn.Temp_RightEye_Detectors.Add(detector);
