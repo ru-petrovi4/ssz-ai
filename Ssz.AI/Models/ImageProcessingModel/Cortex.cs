@@ -464,10 +464,17 @@ public partial class Cortex : ISerializableModelObject
         memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
         memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
 
-        var gradientMagnitudeNormalized = gradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
-        if (gradientMagnitudeNormalized > 1.0f)
-            gradientMagnitudeNormalized = 1.0f;
-        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+        if (memory.GradientMagnitude < 40)
+        {
+            memory.GradientAngleMagnitude_Color = Color.White;
+        }
+        else
+        {
+            var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+            if (gradientMagnitudeNormalized > 1.0f)
+                gradientMagnitudeNormalized = 1.0f;
+            memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+        }
 
         float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
         var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
@@ -553,10 +560,17 @@ public partial class Cortex : ISerializableModelObject
         memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
         memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
 
-        var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
-        if (gradientMagnitudeNormalized > 1.0f)
-            gradientMagnitudeNormalized = 1.0f;
-        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+        if (memory.GradientMagnitude < 40)
+        {
+            memory.GradientAngleMagnitude_Color = Color.White;
+        }
+        else
+        {
+            var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+            if (gradientMagnitudeNormalized > 1.0f)
+                gradientMagnitudeNormalized = 1.0f;
+            memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+        }
 
         float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
         var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /

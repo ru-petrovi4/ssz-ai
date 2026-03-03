@@ -395,7 +395,7 @@ public class Detector : IOwnedDataSerializable
             return;
         }
 
-        DetectorRange detectorRange = retina.DetectorRanges[(int)gradientInPoint.Magnitude, (int)gradientInPoint.Angle]!;
+        DetectorRange detectorRange = retina.DetectorRanges[(int)gradientInPoint.Magnitude, (int)MathHelper.RadiansToDegrees((float)gradientInPoint.Angle)]!;
 
         bool activated = (gradientInPoint.Magnitude >= AverageGradientMagnitude - detectorRange.GradientMagnitudeHalfRange) &&
             (gradientInPoint.Magnitude < AverageGradientMagnitude + detectorRange.GradientMagnitudeHalfRange);

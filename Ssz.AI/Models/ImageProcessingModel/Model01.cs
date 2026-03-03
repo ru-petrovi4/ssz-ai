@@ -362,58 +362,37 @@ public class Model01
         if (bestForMemoryMiniColumn is null)
             return;
 
-        float alpha = GetLearningRate(currentIteration, totalIterations);    // α(t)
-        float sigma = GetNeighborhoodRadius(currentIteration, totalIterations); // σ(t)
+        float fraction = (float)currentIteration / totalIterations;
+
+        const float alpha0 = 0.3f;    // α0
+        const float alphaMin = 0.01f; // α_min        
+        float ratio_Alpha = alphaMin / alpha0;
+        float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
+
+        const float sigma0 = 14.0f;    // σ0
+        const float sigmaMin = 1.0f;  // σ_min        
+        float ratio_Sigma = sigmaMin / sigma0;
+        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
         {
             var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns[index];
             float distance_MiniColumns_Squared = (float)it.Item1;
+            
+            float neighborhood = MathF.Exp(-distance_MiniColumns_Squared / (2.0f * sigma * sigma));
 
-            float h = Neighborhood(distance_MiniColumns_Squared, sigma); // h_{ci}(t)
-
-            if (h < 1e-6f) 
+            if (neighborhood < 1e-6f) 
                 continue; // мелкий порог, чтобы не считать лишнее
 
-            float coeff = alpha * h; // общий скалярный множитель шага
+            float coeff = alpha * neighborhood; // общий скалярный множитель шага
 
             var somWeights = it.Item2.Temp_SomWeights;
 
             TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, somWeights, somWeights);
         }
-    }
-
-    private float GetLearningRate(int currentIteration, int totalIterations)
-    {
-        const float alpha0 = 0.3f;    // α0
-        const float alphaMin = 0.01f; // α_min
-                                             
-        float fraction = (float)currentIteration / totalIterations;
-        float ratio = alphaMin / alpha0;
-        return alpha0 * MathF.Pow(ratio, fraction);
-    }
-
-    private float GetNeighborhoodRadius(int currentIteration, int totalIterations)
-    {
-        const float sigma0 = 14.0f;    // σ0
-        const float sigmaMin = 1.0f;  // σ_min
-
-        float fraction = (float)currentIteration / totalIterations;
-        float ratio = sigmaMin / sigma0;
-        return sigma0 * MathF.Pow(ratio, fraction);
-    }
-
-    /// <summary>
-    /// Вычисление функции соседства (Gaussian)
-    /// </summary>
-    private float Neighborhood(float distance_MiniColumns_Squared, float sigma)
-    {
-        // h = exp( - d_grid^2 / (2 σ^2) )
-        float denom = 2.0f * sigma * sigma;
-        return MathF.Exp(-distance_MiniColumns_Squared / denom);
-    }
+    }        
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
     {   
@@ -805,7 +784,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash);  //TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash); //
+                    miniColumn.Temp_SomActivity = TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash); //TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash); 
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
@@ -983,7 +962,7 @@ public class Model01
 
         public int MaxGradientMagnitudeExclusive => 1200;
 
-        public double DetectorMinGradientMagnitudeInclusive => 42;
+        public double DetectorMinGradientMagnitudeInclusive => 0;
 
         public float GradientMagnitudeDelta => 10;
 
