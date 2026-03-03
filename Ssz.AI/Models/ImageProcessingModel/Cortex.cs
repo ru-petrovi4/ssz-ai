@@ -462,24 +462,7 @@ public partial class Cortex : ISerializableModelObject
               
         memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
         memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
-        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
-
-        if (memory.GradientMagnitude < 40)
-        {
-            memory.GradientAngleMagnitude_Color = Color.White;
-        }
-        else
-        {
-            var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
-            if (gradientMagnitudeNormalized > 1.0f)
-                gradientMagnitudeNormalized = 1.0f;
-            memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
-        }
-
-        float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
-        var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
-            MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
-        memory.HyperColumnCenter_Color = Visualisation.ColorFromHSV((double)(hyperColumnCenter_A + MathF.PI) / (2 * MathF.PI), hyperColumnCenter_M, 1.0);
+        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;        
 
         GradientInPoint gradientInPoint = new()
         {
@@ -500,6 +483,8 @@ public partial class Cortex : ISerializableModelObject
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }
+
+        CreateCortexMemoryColors(memory, hyperColumnCenter_MiniColumn);
 
         return memory;
     }
@@ -554,31 +539,16 @@ public partial class Cortex : ISerializableModelObject
             averageGradientAngle_Sum /= activatedDetectorsCount;
         }
         memory.GradientMagnitude = averageGradientMagnitude_Sum;
-        memory.GradientAngle = averageGradientAngle_Sum;
+        memory.GradientAngle = averageGradientAngle_Sum;        
 
         memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
         memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
         memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
 
-        if (memory.GradientMagnitude < 40)
-        {
-            memory.GradientAngleMagnitude_Color = Color.White;
-        }
-        else
-        {
-            var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
-            if (gradientMagnitudeNormalized > 1.0f)
-                gradientMagnitudeNormalized = 1.0f;
-            memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
-        }
-
-        float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
-        var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
-            MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
-        memory.HyperColumnCenter_Color = Visualisation.ColorFromHSV((double)(hyperColumnCenter_A + MathF.PI) / (2 * MathF.PI), hyperColumnCenter_M, 1.0);
+        CreateCortexMemoryColors(memory, hyperColumnCenter_MiniColumn);
 
         return memory;
-    }
+    }    
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -638,6 +608,19 @@ public partial class Cortex : ISerializableModelObject
     }
 
     #endregion
+
+    private void CreateCortexMemoryColors(Memory memory, MiniColumn hyperColumnCenter_MiniColumn)
+    {
+        var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+        if (gradientMagnitudeNormalized > 1.0f)
+            gradientMagnitudeNormalized = 1.0f;
+        memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
+
+        float hyperColumnCenter_A = MathHelper.NormalizeAngle(MathF.Atan2(memory.HyperColumnCenter_RetinaYAngle, memory.HyperColumnCenter_RetinaXAngle));
+        var hyperColumnCenter_M = MathF.Sqrt(hyperColumnCenter_MiniColumn.MCX * hyperColumnCenter_MiniColumn.MCX + hyperColumnCenter_MiniColumn.MCY * hyperColumnCenter_MiniColumn.MCY) * 2.0f /
+            MathF.Sqrt(Constants.CortexWidth_MiniColumns * Constants.CortexWidth_MiniColumns + Constants.CortexHeight_MiniColumns * Constants.CortexHeight_MiniColumns);
+        memory.HyperColumnCenter_Color = Visualisation.ColorFromHSV((double)(hyperColumnCenter_A + MathF.PI) / (2 * MathF.PI), hyperColumnCenter_M, 1.0);
+    }
 
     public class MiniColumn : ISerializableModelObject
     {

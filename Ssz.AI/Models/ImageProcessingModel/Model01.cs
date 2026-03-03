@@ -264,13 +264,15 @@ public class Model01
         return (idealCortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
+    private int _totalIterations;
+    private int _currentIteration;
+
     public async Task ProcessSomIdealNAsync(float epochs, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
     {
         if (Cortex.MiniColumns is null)
             return;
 
-        int totalIterations = (int)epochs * StereoInput.StereoInputSamples.Length;
-        int currentIteration = 0;
+        _totalIterations += (int)epochs * StereoInput.StereoInputSamples.Length;        
 
         var miniColumns = Cortex.MiniColumns;
 
@@ -289,12 +291,17 @@ public class Model01
 
                 var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
 
+#if DEBUG
+                if (TensorPrimitives.Sum(cortexMemory.Hash) < 5)
+                    continue;
+#endif
+
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
-                UpdateWeights(bestForMemoryMiniColumn, cortexMemory, currentIteration, totalIterations);
+                UpdateWeights(bestForMemoryMiniColumn, cortexMemory, _currentIteration, _totalIterations);
 
-                currentIteration += 1;
+                _currentIteration += 1;
 
                 if (sw.ElapsedMilliseconds > 1000)
                 {
