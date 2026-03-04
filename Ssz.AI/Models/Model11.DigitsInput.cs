@@ -383,7 +383,7 @@ namespace Ssz.AI.Models
             //    (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
             var activatedDetectors = Cortex.SubAreaOrAll_Detectors.Where(d => d.Temp_IsActivated).ToList();
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
 
             var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn!.Detectors.Where(d => d.Temp_IsActivated).ToList();
 

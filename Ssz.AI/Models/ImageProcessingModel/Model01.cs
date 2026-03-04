@@ -326,7 +326,7 @@ public class Model01
                 {
                     Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
 
-                    Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
+                    Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(nearest_HyperColumnCenter_MiniColumn, cortexMemory);
 
                     await refreshAction();
                     sw.Restart();
@@ -900,7 +900,7 @@ public class Model01
         return MathF.Exp(exponent);
     }
 
-    private SampleVisualisation GetImageVisualisation(Models.ImageProcessingModel.Cortex.Memory cortexMemory)
+    private SampleVisualisation GetImageVisualisation(Models.ImageProcessingModel.Cortex.MiniColumn cortexMemoryFromMiniColumn, Models.ImageProcessingModel.Cortex.Memory cortexMemory)
     {
         SampleVisualisation imageVisualisation = new();
 
@@ -908,15 +908,18 @@ public class Model01
 
         Bitmap retinaFullImage;
         DenseMatrix<GradientInPoint> gradientMatrix;
+        FastList<Detector> detectors;
         if (cortexMemory.RetinaImageData_IsRightEye)
         {
             retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.RightRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
             gradientMatrix = stereoInputSample.RightEye_GradientMatrix;
+            detectors = cortexMemoryFromMiniColumn.Temp_RightEye_Detectors;
         }
         else
         {
             retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.LeftRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
             gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
+            detectors = cortexMemoryFromMiniColumn.Temp_LeftEye_Detectors;
         }
 
         float horizontal_Pixels_K = Constants.RetinaImagePixelSize.Width / Constants.RetinaImageAngle;
@@ -927,6 +930,9 @@ public class Model01
         imageVisualisation.Image = BitmapHelper.GetSubBitmap(retinaFullImage, centerX, centerY, radius);
 
         imageVisualisation.GradientImage = BitmapHelper.GetSubBitmap(Visualisation.GetGradientBitmap(gradientMatrix), centerX, centerY, radius);
+
+        imageVisualisation.DetectorsActivationImage = BitmapHelper.GetSubBitmap(
+            Visualisation.GetBitmapFromActivatedDetectors(detectors, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height), centerX, centerY, radius);
 
         return imageVisualisation;
     }

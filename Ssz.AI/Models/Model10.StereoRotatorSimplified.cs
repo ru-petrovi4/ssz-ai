@@ -185,7 +185,7 @@ namespace Ssz.AI.Models
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
             Cortex.CenterMiniColumn!.GetHash(DetectorsActivationHash);
             MonoInput.AddValueHash(0.5f, DetectorsActivationHash);
@@ -229,7 +229,7 @@ namespace Ssz.AI.Models
                 (int)(Cortex.CenterMiniColumn!.CenterY * 10),
                 (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
-            var detectorsActivationBitmap = Visualisation.GetBitmap(Cortex.SubArea_Detectors.Where(d => d.Temp_IsActivated).ToList());
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(Cortex.SubArea_Detectors.Where(d => d.Temp_IsActivated).ToList());
 
             var activityColorImage = BitmapHelper.GetSubBitmap(
                 Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex),
@@ -293,7 +293,7 @@ namespace Ssz.AI.Models
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
                 Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),

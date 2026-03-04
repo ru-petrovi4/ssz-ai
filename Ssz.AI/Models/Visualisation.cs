@@ -552,7 +552,7 @@ public static class Visualisation
         return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
     }
 
-    public static Bitmap GetBitmap(IEnumerable<Detector> activatedDetectors, int widthPixels, int heightPixels)
+    public static Bitmap GetBitmapFromActivatedDetectors(IEnumerable<Detector> activatedDetectors, int widthPixels, int heightPixels)
     {
         Bitmap bitmap = new Bitmap(widthPixels, heightPixels);
 
@@ -572,7 +572,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmap(List<Detector> activatedDetectors)
+    public static Bitmap GetBitmapFromActivatedDetectors(List<Detector> activatedDetectors)
     {
         int width = MNISTHelper.MNISTImageWidthPixels * 10;
         int height = MNISTHelper.MNISTImageHeightPixels * 10;

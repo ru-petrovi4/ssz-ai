@@ -188,7 +188,7 @@ namespace Ssz.AI.Models
             Cortex.CenterMiniColumn!.GetHash(DetectorsActivationHash);
 
             var gradientBitmap = Visualisation.GetGradientBigBitmap(gradientMatrix);
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
             return [resizedBitmap, gradientBitmap, detectorsActivationBitmap];
         }

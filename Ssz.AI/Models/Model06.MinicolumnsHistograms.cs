@@ -98,7 +98,7 @@ namespace Ssz.AI.Models
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
                 Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
@@ -195,7 +195,7 @@ namespace Ssz.AI.Models
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
-            var detectorsActivationBitmap = Visualisation.GetBitmap(activatedDetectors);
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
             var miniColumsActivityBitmap = BitmapHelper.GetSubBitmap(
                 Visualisation.GetMiniColumsActivityBitmap_Obsolete(Cortex, activitiyMaxInfo),
