@@ -26,6 +26,29 @@ namespace Ssz.AI.Helpers
             return (labels, imageDatas, imagesSize);
         }
 
+        public static Bitmap GetBitmap(byte[] imageData, int width, int height)
+        {
+            Bitmap bitmap = new Bitmap(width, height);
+
+            // Проходим по каждому пикселю и устанавливаем его в Bitmap
+            for (int y = 0; y < height; y += 1)
+            {
+                for (int x = 0; x < width; x += 1)
+                {
+                    // Значение пикселя из массива байтов
+                    byte pixelValue = imageData[x + y * width];
+
+                    // Преобразуем значение пикселя в оттенок серого (0-255)
+                    Color color = Color.FromArgb(pixelValue, pixelValue, pixelValue);
+
+                    // Устанавливаем пиксель в изображении
+                    bitmap.SetPixel(x, y, color);
+                }
+            }
+
+            return bitmap;
+        }
+
         #endregion
 
         #region private functions

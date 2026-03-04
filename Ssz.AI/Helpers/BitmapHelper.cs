@@ -11,7 +11,8 @@ using System.Runtime.InteropServices;
 namespace Ssz.AI.Helpers;
 
 public static class BitmapHelper
-{
+{   
+
     public static byte GetInterpolatedValue(byte[] imageData, PixelSize imageSize, float centerX, float centerY)
     {
         int x = (int)centerX;
@@ -80,8 +81,10 @@ public static class BitmapHelper
         return bitmap;
     }
 
-    public static Avalonia.Media.Imaging.Bitmap ConvertImageToAvaloniaBitmap(Image image)
+    public static Avalonia.Media.Imaging.Bitmap? ConvertImageToAvaloniaBitmap(Image? image)
     {
+        if (image is null)
+            return null;
         using (var memoryStream = new MemoryStream())
         {
             image.Save(memoryStream, ImageFormat.Png);
@@ -257,5 +260,5 @@ public static class BitmapHelper
             if (bd is not null)
                 dst.UnlockBits(bd);
         }
-    }               
+    }    
 }

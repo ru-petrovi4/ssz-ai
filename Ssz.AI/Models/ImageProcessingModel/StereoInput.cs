@@ -49,8 +49,8 @@ public class StereoInput : ISerializableModelObject
             stereoInputSample.ImageNormalDirection.XRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
             stereoInputSample.ImageNormalDirection.YRadians = -MathF.PI / 4 + initializationRandom.NextSingle() * MathF.PI / 2;
 
-            stereoInputSample.LeftRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, leftEye);
-            stereoInputSample.RightRetinaImageData = GetRetinaImageData(constants, inputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, rightEye);
+            stereoInputSample.LeftRetinaImageData = GetRetinaImageData(constants, stereoInputSample.InputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, leftEye);
+            stereoInputSample.RightRetinaImageData = GetRetinaImageData(constants, stereoInputSample.InputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, rightEye);
 
             // Применяем оператор Собеля
             stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
@@ -257,4 +257,13 @@ public class StereoInputSample : IOwnedDataSerializable
             }
         }
     }
+}
+
+public class SampleVisualisation
+{
+    public Image? Image;
+
+    public Image? GradientImage;
+
+    public Image? DetectorsActivationImage;
 }

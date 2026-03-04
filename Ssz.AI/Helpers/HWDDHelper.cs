@@ -25,7 +25,7 @@ namespace Ssz.AI.Helpers
         //    return (labels, images);
         //}
 
-        public static Bitmap GetBitmap(byte[] mnistImageData, int width, int height)
+        public static Bitmap GetBitmap(byte[] imageData, int width, int height)
         {
             Bitmap bitmap = new Bitmap(width, height);
 
@@ -35,7 +35,7 @@ namespace Ssz.AI.Helpers
                 for (int x = 0; x < width; x += 1)
                 {
                     // Значение пикселя из массива байтов
-                    byte pixelValue = mnistImageData[x + y * width];
+                    byte pixelValue = imageData[x + y * width];
 
                     // Преобразуем значение пикселя в оттенок серого (0-255)
                     Color color = Color.FromArgb(pixelValue, pixelValue, pixelValue);

@@ -103,6 +103,8 @@ public partial class Cortex : ISerializableModelObject
 
     public string Temp_InputCurrentDesc = null!;
 
+    public SampleVisualisation? Temp_LastMiniColumn_SampleVisualisation;
+
     public void GenerateOwnedData(Random initialization_Random, bool onlyCenterHypercolumn)
     {
         MiniColumns = new FastList<MiniColumn>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);

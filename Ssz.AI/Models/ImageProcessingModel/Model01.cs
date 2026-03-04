@@ -160,6 +160,12 @@ public class Model01
         Cortex.CalculateSomCortexMemories();
 
         return [
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.Image),
+                    Desc = $"Видимая миниколонкой картинка." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.GradientImage),
+                    Desc = $"Видимый миниколонкой градиент." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.DetectorsActivationImage),
+                    Desc = $"Видимые миниколонкой детекторы." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"SOM. Модуль и угол." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r0.Image),
@@ -269,7 +275,7 @@ public class Model01
     private int _totalIterations;
     private int _currentIteration;
 
-    public async Task ProcessSomIdealNAsync(int stereoInputSamples_Count, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
+    public async Task ProcessSomNAsync(int stereoInputSamples_Count, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, bool isIdeal)
     {
         if (Cortex.MiniColumns is null)
             return;
@@ -293,7 +299,12 @@ public class Model01
 
                 var stereoInputSample = shuffledStereoInputSamples[sample_Index];
 
-                var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
+                Memory cortexMemory;
+                MiniColumn nearest_HyperColumnCenter_MiniColumn;
+                if (isIdeal)
+                    (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
+                else
+                    (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
 
 #if DEBUG
                 if (TensorPrimitives.Sum(cortexMemory.Hash) < 5)
@@ -315,6 +326,8 @@ public class Model01
                 {
                     Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
 
+                    Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
+
                     await refreshAction();
                     sw.Restart();
                 }
@@ -322,52 +335,7 @@ public class Model01
         }
 
         await refreshAction();
-    }
-
-    public async Task ProcessSomNAsync(float epochs, Random random, CancellationToken cancellationToken, Func<Task> refreshAction)
-    {
-        if (Cortex.MiniColumns is null)
-            return;
-
-        int totalIterations = (int)epochs * StereoInput.StereoInputSamples.Length;
-        int currentIteration = 0;
-
-        var miniColumns = Cortex.MiniColumns;
-
-        Stopwatch sw = Stopwatch.StartNew();
-
-        for (int epoch = 0; epoch < epochs; epoch += 1)
-        {
-            StereoInputSample[] shuffledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
-            random.Shuffle(shuffledStereoInputSamples);
-
-            for (int sample_Index = 0; sample_Index < shuffledStereoInputSamples.Length; sample_Index += 1)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var stereoInputSample = shuffledStereoInputSamples[sample_Index];
-
-                var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
-
-                MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
-                //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
-
-                UpdateWeights(bestForMemoryMiniColumn, cortexMemory, currentIteration, totalIterations);
-
-                currentIteration += 1;
-
-                if (sw.ElapsedMilliseconds > 1000)
-                {
-                    Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
-
-                    await refreshAction();
-                    sw.Restart();
-                }
-            }            
-        }
-
-        await refreshAction();
-    }
+    }    
 
     /// <summary>
     /// Обновление весов нейронов после нахождения BMU
@@ -930,7 +898,38 @@ public class Model01
         float exponent = -x2 / twoSigmaSquared;        
 
         return MathF.Exp(exponent);
-    }    
+    }
+
+    private SampleVisualisation GetImageVisualisation(Models.ImageProcessingModel.Cortex.Memory cortexMemory)
+    {
+        SampleVisualisation imageVisualisation = new();
+
+        StereoInputSample stereoInputSample = StereoInput.StereoInputSamples[cortexMemory.StereoInputSample_Index];
+
+        Bitmap retinaFullImage;
+        DenseMatrix<GradientInPoint> gradientMatrix;
+        if (cortexMemory.RetinaImageData_IsRightEye)
+        {
+            retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.RightRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+            gradientMatrix = stereoInputSample.RightEye_GradientMatrix;
+        }
+        else
+        {
+            retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.LeftRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+            gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
+        }
+
+        float horizontal_Pixels_K = Constants.RetinaImagePixelSize.Width / Constants.RetinaImageAngle;
+        float vertical_Pixels_K =  Constants.RetinaImagePixelSize.Height / Constants.RetinaImageAngle;        
+        int centerX = (int)(Constants.RetinaImagePixelSize.Width / 2.0f + cortexMemory.Main_RetinaXAngle * horizontal_Pixels_K);
+        int centerY = (int)(Constants.RetinaImagePixelSize.Height / 2.0f + cortexMemory.Main_RetinaYAngle * vertical_Pixels_K);        
+        double radius = Constants.FullFieldOfViewDiameter_MiniColumn_Angle * vertical_Pixels_K / 2.0f;
+        imageVisualisation.Image = BitmapHelper.GetSubBitmap(retinaFullImage, centerX, centerY, radius);
+
+        imageVisualisation.GradientImage = BitmapHelper.GetSubBitmap(Visualisation.GetGradientBitmap(gradientMatrix), centerX, centerY, radius);
+
+        return imageVisualisation;
+    }
 
     #endregion
 

@@ -233,7 +233,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSomIdeal1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomIdealNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask);
+        await Model.ProcessSomNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: true);
 
         Refresh_ImagesSet();
     }
@@ -253,14 +253,15 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomIdealNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
                         Refresh_ImagesSet();
                     });
                     return Task.CompletedTask;
-                });
+                },
+                isIdeal: true);
             }
             catch (OperationCanceledException)
             {
@@ -276,7 +277,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSom1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomNAsync(0.1f, _random, CancellationToken.None, () => Task.CompletedTask);
+        await Model.ProcessSomNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: false);
 
         Refresh_ImagesSet();
     }
@@ -296,14 +297,15 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomN Started.");
 
-                await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
                         Refresh_ImagesSet();
                     });
                     return Task.CompletedTask;
-                });
+                },
+                isIdeal: false);
             }
             catch (OperationCanceledException)
             {
