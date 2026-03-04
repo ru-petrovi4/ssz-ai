@@ -72,14 +72,11 @@ public static class Visualisation
         for (int mc_index = 0; mc_index < cortex.MiniColumns.Count; mc_index += 1)
         {
             var miniColumn = cortex.MiniColumns[mc_index];
-            if (miniColumn.CortexMemories.Count > 0)
-            {
-                double value = getValue(miniColumn);
-                if (value < valueMin_Local)
-                    valueMin_Local = value;
-                if (value > valueMax_Local)
-                    valueMax_Local = value;
-            }
+            double value = getValue(miniColumn);
+            if (value < valueMin_Local)
+                valueMin_Local = value;
+            if (value > valueMax_Local)
+                valueMax_Local = value;
         }
 
         double valueMin_Final;

@@ -593,15 +593,15 @@ public partial class Cortex : ISerializableModelObject
 
                 miniColumn.Temp_SomCortexMemories.Clear();
 
-                float min = Single.MaxValue;
+                float max = Single.MinValue;
                 Memory? idealPinwheelMemory_Best = null;
                 for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
                 {
                     var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
-                    float f = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
-                    if (f < min)
+                    float f = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
+                    if (f > max)
                     {
-                        min = f;
+                        max = f;
                         idealPinwheelMemory_Best = idealPinwheelMemory;
                     }    
                 }
@@ -609,7 +609,7 @@ public partial class Cortex : ISerializableModelObject
                 if (idealPinwheelMemory_Best is not null)
                     miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
             }));
-    }
+    }    
 
     #endregion
 
@@ -787,7 +787,20 @@ public partial class Cortex : ISerializableModelObject
                         break;                    
                 }
             }
-        } 
+        }
+
+        public float GetAverageSomDistanceToAdjacent()
+        {
+            float averageSomDistanceToAdjacent = 0.0f;            
+            for (int m_index = 0; m_index < Temp_AdjacentMiniColumns.Count; m_index += 1)
+            {
+                var adjacentMiniColumn = Temp_AdjacentMiniColumns[m_index].Item2;
+                averageSomDistanceToAdjacent += TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+            }
+            if (Temp_AdjacentMiniColumns.Count > 0)
+                averageSomDistanceToAdjacent /= Temp_AdjacentMiniColumns.Count;
+            return averageSomDistanceToAdjacent;
+        }
     }
 
     public class Memory : IOwnedDataSerializable

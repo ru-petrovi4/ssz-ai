@@ -150,8 +150,8 @@ public class Model01
         double filterColorLow,
         double filterColorHigh)
     {
-        //var r0 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-        //                (MiniColumn mc) => (double)(mc.Temp_SomWeights), valueMin: -1.0, valueMax: 1.0);
+        var r0 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
+                        (MiniColumn mc) => (double)mc.GetAverageSomDistanceToAdjacent(), valueMin: 0.0, valueMax: 1.0);
         var r1 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0);
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
@@ -161,7 +161,9 @@ public class Model01
 
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
-                    Desc = $"SOM в миниколонках (Модуль и угол)." },
+                    Desc = $"SOM. Модуль и угол." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r0.Image),
+                    Desc = $"SOM. Среднее расстояние до соседей; Min: {r0.ValueMin:F03}; Max: {r0.ValueMax:F03}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns, hypercolumnIndex: 0)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.HyperColumnCenter_Color)),
@@ -797,7 +799,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, cortexMemory.Hash); // TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash); //
+                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash); // TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash); //
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
@@ -807,7 +809,7 @@ public class Model01
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            miniColumn.Temp_TotalEnergy = miniColumn.Temp_SomActivity;
+            miniColumn.Temp_TotalEnergy = -miniColumn.Temp_SomActivity;
 
             if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
             {
