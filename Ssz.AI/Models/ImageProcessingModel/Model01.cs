@@ -315,7 +315,7 @@ public class Model01
                 int cortexMemory_BitsCount = (int)TensorPrimitives.Sum(cortexMemory.Hash);
                 cortexMemory_BitsCountAverage += cortexMemory_BitsCount;
                 sampleProcessedCount += 1;
-                if (cortexMemory_BitsCount < 10)
+                if (cortexMemory_BitsCount < 5)
                     continue;
 
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
@@ -371,7 +371,7 @@ public class Model01
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
 
-        const float lambda = -0.5f;
+        const float lambda = -0.2f;
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -386,10 +386,8 @@ public class Model01
 
             float coeff = alpha * neighborhood; // общий скалярный множитель шага
 
-            var somWeights = it.Item2.Temp_SomWeights;
-
-            TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
-            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, somWeights, somWeights);
+            TensorPrimitives.Subtract(cortexMemory.Hash, it.Item2.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
+            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, it.Item2.Temp_SomWeights, it.Item2.Temp_SomWeights);
         }
 
         // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
@@ -406,13 +404,12 @@ public class Model01
 
             if (neighborhood < 1e-5f)
                 continue; // мелкий порог, чтобы не считать лишнее
-
-            TensorPrimitives.Subtract(it.Item2.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
+            
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
         }
 
         // Применяем: w_s += η · λ · correction
-        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, alpha * lambda, bestForMemoryMiniColumn.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights);        
+        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, -1.0f * alpha * lambda, bestForMemoryMiniColumn.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights);        
     }        
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
