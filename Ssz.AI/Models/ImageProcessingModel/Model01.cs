@@ -371,7 +371,7 @@ public class Model01
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
 
-        const float lambda = -1.0f;
+        const float lambda = -0.5f;
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -392,7 +392,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, somWeights, somWeights);
         }
 
-        // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (v − w_{r'})
+        // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
         // для каждой компоненты d
         Array.Clear(bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -411,8 +411,8 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
         }
 
-        // Применяем: w_s -= η · λ · correction
-        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, lambda, bestForMemoryMiniColumn.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights);        
+        // Применяем: w_s += η · λ · correction
+        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, alpha * lambda, bestForMemoryMiniColumn.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights);        
     }        
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)

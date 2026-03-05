@@ -808,7 +808,10 @@ public partial class Cortex : ISerializableModelObject
             for (int m_index = 0; m_index < Temp_AdjacentMiniColumns.Count; m_index += 1)
             {
                 var adjacentMiniColumn = Temp_AdjacentMiniColumns[m_index].Item2;
-                averageSomDistanceToAdjacent += TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+                float s = TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+                if (s < 0.0f)
+                    s = 0.0f;
+                averageSomDistanceToAdjacent += s;
             }
             if (Temp_AdjacentMiniColumns.Count > 0)
                 averageSomDistanceToAdjacent /= Temp_AdjacentMiniColumns.Count;
