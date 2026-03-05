@@ -57,7 +57,7 @@ public class Model01
                 }),
                 new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
 
-        DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        //DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
 
         LeftEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
         LeftEye.IsRightEye = false;
@@ -122,7 +122,7 @@ public class Model01
         Cortex.Prepare(LeftEye, RightEye, random);
 
 
-        DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
+        //DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
 
 #endregion
@@ -298,6 +298,8 @@ public class Model01
             StereoInputSample[] shuffledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
             random.Shuffle(shuffledStereoInputSamples);
 
+            float cortexMemory_BitsCountAverage = 0;
+            int sampleProcessedCount = 0;
             for (int sample_Index = 0; sample_Index < shuffledStereoInputSamples.Length && _currentIteration < _totalIterations; sample_Index += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -310,10 +312,11 @@ public class Model01
                 else
                     (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
 
-#if DEBUG
-                if (TensorPrimitives.Sum(cortexMemory.Hash) < 5)
+                int cortexMemory_BitsCount = (int)TensorPrimitives.Sum(cortexMemory.Hash);
+                cortexMemory_BitsCountAverage += cortexMemory_BitsCount;
+                sampleProcessedCount += 1;
+                if (cortexMemory_BitsCount < 10)
                     continue;
-#endif
 
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
@@ -336,6 +339,10 @@ public class Model01
                     sw.Restart();
                 }
             }
+            if (sampleProcessedCount > 0)
+                cortexMemory_BitsCountAverage /= sampleProcessedCount;
+
+            Logger.LogInformation($"Epoch: {epoch} Done; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
         }
 
         if (nearest_HyperColumnCenter_MiniColumn is not null && cortexMemory is not null)
@@ -385,19 +392,27 @@ public class Model01
     }        
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
-    {   
+    {
+        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
+
         var leftEye_GradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
         var leftEye_Detectors = LeftEye.Retina.Detectors;
-        Parallel.For(
-            fromInclusive: 0,
-            toExclusive: leftEye_Detectors.Data.Length,
-            d_index =>
-            {
-                var d = leftEye_Detectors.Data[d_index];
-                d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
-            });
-
-        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
+        // Optimization
+        //Parallel.For(
+        //    fromInclusive: 0,
+        //    toExclusive: leftEye_Detectors.Data.Length,
+        //    d_index =>
+        //    {
+        //        var d = leftEye_Detectors.Data[d_index];
+        //        d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
+        //    });
+        FastList<Detector> detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_Detectors;        
+        for (int d_index = 0; d_index < detectors.Count; d_index += 1)
+        {
+            var detector = detectors[d_index];
+            detector.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);            
+        }
+        
         Cortex.Memory cortexMemory = Cortex.GetCortexMemory(
             LeftEye,
             stereoInputSample,
@@ -964,7 +979,7 @@ public class Model01
 
         public int MaxGradientMagnitudeExclusive => 1200;
 
-        public double MinGradientMagnitudeInclusive => 5;
+        public double MinGradientMagnitudeInclusive => 42;
 
         public float GradientMagnitudeDelta => 10;
 
@@ -992,7 +1007,7 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 600;
+        public int MiniColumnVisibleDetectorsCount => 2000;
 
         public int HashLength => 200;
 

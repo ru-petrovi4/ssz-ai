@@ -126,7 +126,7 @@ public static class BitmapHelper
                 if (x < 0 || x >= bitmap.Width)
                     continue;
                 var r = Math.Sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
-                if (r < radius + 1.000001)
+                //if (r < radius + 1.000001)
                 {   
                     Color color = bitmap.GetPixel(x, y);
                     int subX = x - (int)Math.Round(centerX - radius, 0);
