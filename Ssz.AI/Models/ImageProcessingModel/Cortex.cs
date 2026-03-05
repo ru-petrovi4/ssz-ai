@@ -256,6 +256,7 @@ public partial class Cortex : ISerializableModelObject
             miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns, nearestRadius_MiniColumns);
             miniColumn.Temp_SomWeights = new float[Constants.HashLength];
             miniColumn.Temp_SomWeightsDiff = new float[Constants.HashLength];
+            miniColumn.Temp_SomWeightsCorrection = new float[Constants.HashLength];
             for (int bit_Index = 0; bit_Index < Constants.HashLength; bit_Index += 1)
             {
                 // Инициализация малыми случайными значениями
@@ -747,6 +748,8 @@ public partial class Cortex : ISerializableModelObject
         public float[] Temp_SomWeights = null!;
 
         public float[] Temp_SomWeightsDiff = null!;
+
+        public float[] Temp_SomWeightsCorrection = null!;
 
         public float Temp_SomActivity;
 

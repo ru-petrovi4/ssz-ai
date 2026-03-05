@@ -369,7 +369,9 @@ public class Model01
         const float sigma0 = 7.0f;    // σ0
         const float sigmaMin = 1.0f;  // σ_min        // Recommended: 1.0    
         float ratio_Sigma = sigmaMin / sigma0;
-        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
+        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
+
+        const float lambda = -1.0f;
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -389,6 +391,28 @@ public class Model01
             TensorPrimitives.Subtract(cortexMemory.Hash, somWeights, it.Item2.Temp_SomWeightsDiff);
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, somWeights, somWeights);
         }
+
+        // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (v − w_{r'})
+        // для каждой компоненты d
+        Array.Clear(bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
+        for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
+        {
+            var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns[index];
+            if (it.Item2.Index == bestForMemoryMiniColumn.Index)
+                continue;
+            float distance_MiniColumns_Squared = (float)it.Item1;
+
+            float neighborhood = MathF.Exp(-distance_MiniColumns_Squared / (2.0f * sigma * sigma));
+
+            if (neighborhood < 1e-5f)
+                continue; // мелкий порог, чтобы не считать лишнее
+
+            TensorPrimitives.Subtract(it.Item2.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
+            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
+        }
+
+        // Применяем: w_s -= η · λ · correction
+        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, lambda, bestForMemoryMiniColumn.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights);        
     }        
 
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
