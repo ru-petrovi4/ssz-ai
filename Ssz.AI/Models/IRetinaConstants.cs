@@ -20,7 +20,7 @@ public interface IRetinaConstants
     /// <summary>
     ///     Минимальная чувствительность к модулю градиента
     /// </summary>
-    double DetectorMinGradientMagnitudeInclusive { get; }
+    double MinGradientMagnitudeInclusive { get; }
 
     float GradientMagnitudeDelta { get; }
 

@@ -552,22 +552,32 @@ public static class Visualisation
         return (SobelOperator.ApplySobel(resizedBitmap, smallWidth, smallHeight), resizedBitmap);
     }
 
-    public static Bitmap GetBitmapFromActivatedDetectors(IEnumerable<Detector> activatedDetectors, int widthPixels, int heightPixels)
+    public static Bitmap GetBitmapFromActivatedDetectors(
+        IEnumerable<Detector>? detectors, 
+        int widthPixels, 
+        int heightPixels,
+        float retinaDetectorsDeltaPixels)
     {
-        Bitmap bitmap = new Bitmap(widthPixels, heightPixels);
+        Bitmap bitmap = new Bitmap(
+            (int)(widthPixels / retinaDetectorsDeltaPixels),
+            (int)(heightPixels / retinaDetectorsDeltaPixels));
 
-        for (int y = 0; y < heightPixels; y += 1)
+        for (int y = 0; y < bitmap.Height; y += 1)
         {
-            for (int x = 0; x < widthPixels; x += 1)
-            {
+            for (int x = 0; x < bitmap.Width; x += 1)
+            {                
                 bitmap.SetPixel(x, y, Color.Black);
             }
         }
 
-        foreach (var detector in activatedDetectors)
-        {
-            bitmap.SetPixel((int)detector.CenterXPixels, (int)detector.CenterYPixels, Color.FromArgb(255, 200, 200, 200));
-        }
+        if (detectors is not null)
+            foreach (var detector in detectors)
+            {
+                bitmap.SetPixel(
+                        (int)(detector.CenterXPixels / retinaDetectorsDeltaPixels), 
+                        (int)(detector.CenterYPixels / retinaDetectorsDeltaPixels), 
+                        Color.FromArgb(255, 200, 200, 200));
+            }
 
         return bitmap;
     }

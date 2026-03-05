@@ -13,11 +13,8 @@
       </Style>
     </Grid.Styles>
     <Grid.RowDefinitions>
-      <RowDefinition Height="auto" />
-      <RowDefinition Height="auto" />
-      <RowDefinition Height="*" />
-      <RowDefinition Height="auto" />
-      <RowDefinition Height="*" />
+      <RowDefinition Height="auto" />      
+      <RowDefinition Height="*" />      
       <RowDefinition Height="auto" />      
       <RowDefinition Height="auto" />   
     </Grid.RowDefinitions>
@@ -61,14 +58,9 @@
     <Grid Grid.Row="1">      
       <TextBlock Margin="5" x:Name="ImagesSet1_TextBlock" FontSize="16" FontWeight="Bold" />
     </Grid>
-    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+    <localViews:ImagesSet Grid.Row="1" Name="ImagesSet1" />   
 
-    <Grid Grid.Row="3">      
-      <TextBlock Margin="5" x:Name="ImagesSet2_TextBlock" FontSize="16" FontWeight="Bold" />
-    </Grid>
-    <localViews:ImagesSet Grid.Row="4" Name="ImagesSet2" />
-
-    <Grid Grid.Row="5">
+    <Grid Grid.Row="2">
       <Grid.Styles>
         <Style Selector="TextBlock">
           <Setter Property="TextWrapping" Value="Wrap"/>
@@ -90,7 +82,7 @@
       <local:Sliders Name="NegativeSliders" Grid.Row="1" Grid.Column="1" />
     </Grid>
     
-    <Grid Grid.Row="6">
+    <Grid Grid.Row="3">
       <Grid.Styles>
         <Style Selector="TextBlock">
           <Setter Property="TextWrapping" Value="Wrap"/>

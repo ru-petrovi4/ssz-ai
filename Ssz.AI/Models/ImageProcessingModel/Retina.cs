@@ -178,7 +178,7 @@ public class Retina : ISerializableModelObject
             }
 
         FastList<Sample> samples = new FastList<Sample>((int)(((constants.MaxGradientMagnitudeExclusive + 1) * 361) / (constants.GradientMagnitudeDelta * constants.GradientAngleDegreeDelta)));
-        for (int gradientMagnitude = (int)constants.DetectorMinGradientMagnitudeInclusive; gradientMagnitude < constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)constants.GradientMagnitudeDelta)
+        for (int gradientMagnitude = (int)constants.MinGradientMagnitudeInclusive; gradientMagnitude < constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)constants.GradientMagnitudeDelta)
         {
             for (int gradientAngleDegree = 0; gradientAngleDegree < 360; gradientAngleDegree += (int)constants.GradientAngleDegreeDelta)
             {
@@ -295,7 +295,7 @@ public class Retina : ISerializableModelObject
         dataToDisplayHolder.DistributionXMax = constants.MaxGradientMagnitudeExclusive / constants.GradientMagnitudeDelta;
         dataToDisplayHolder.Distribution = new ulong[(int)(constants.MaxGradientMagnitudeExclusive / constants.GradientMagnitudeDelta) + 1];
 
-        for (int gradientMagnitude = (int)constants.DetectorMinGradientMagnitudeInclusive; gradientMagnitude < constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)constants.GradientMagnitudeDelta)
+        for (int gradientMagnitude = (int)constants.MinGradientMagnitudeInclusive; gradientMagnitude < constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)constants.GradientMagnitudeDelta)
         {
             int activatedCount = 0;
             for (int gradientAngleDegree = 0; gradientAngleDegree < 360; gradientAngleDegree += (int)constants.GradientAngleDegreeDelta)
@@ -388,7 +388,7 @@ public class Detector : IOwnedDataSerializable
     {
         Temp_GradientInPoint = gradientInPoint;
 
-        if (gradientInPoint.Magnitude < constants.DetectorMinGradientMagnitudeInclusive || 
+        if (gradientInPoint.Magnitude < constants.MinGradientMagnitudeInclusive || 
                 gradientInPoint.Magnitude >= constants.MaxGradientMagnitudeExclusive)
         {
             Temp_IsActivated = false;
@@ -419,7 +419,7 @@ public class Detector : IOwnedDataSerializable
     {
         (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
 
-        if (magnitude < constants.DetectorMinGradientMagnitudeInclusive)
+        if (magnitude < constants.MinGradientMagnitudeInclusive)
             return false;
 
         //bool activated = (magnitude >= GradientMagnitudeLowLimit) && (magnitude < GradientMagnitudeMax);

@@ -105,29 +105,38 @@ public static class BitmapHelper
     }
 
     public static Bitmap GetSubBitmap(Bitmap bitmap, int centerX, int centerY, double radius)
-    {
-        Bitmap subBitmap = new Bitmap((int)(radius * 2) + 1, (int)(radius * 2) + 1);
+    {        
+        Bitmap subBitmap = new Bitmap((int)Math.Round(radius * 2, 0) + 1, (int)Math.Round(radius * 2, 0) + 1);
+
+        for (int y = 0; y < subBitmap.Height; y += 1)
+        {
+            for (int x = 0; x < subBitmap.Width; x += 1)
+            {
+                subBitmap.SetPixel(x, y, Color.FromArgb(0, 255, 0));
+            }
+        }
 
         // Проходим по каждому пикселю и устанавливаем его в Bitmap
-        for (int y = (int)(centerY - radius); y < (int)(centerY + radius); y += 1)
+        for (int y = (int)Math.Round(centerY - radius, 0); y < (int)Math.Round(centerY + radius, 0) + 1; y += 1)
         {
             if (y < 0 || y >= bitmap.Height)
                 continue;
-            for (int x = (int)(centerX - radius); x < (int)(centerX + radius); x += 1)
+            for (int x = (int)Math.Round(centerX - radius, 0); x < (int)Math.Round(centerX + radius, 0) + 1; x += 1)
             {
                 if (x < 0 || x >= bitmap.Width)
                     continue;
                 var r = Math.Sqrt((x - centerX) * (x - centerX) + (y - centerY) * (y - centerY));
-                if (r > radius)
-                {
-                    subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), Color.Black);
-                }
-                else
-                {                        
+                if (r < radius + 1.000001)
+                {   
                     Color color = bitmap.GetPixel(x, y);
+                    int subX = x - (int)Math.Round(centerX - radius, 0);
+                    int subY = y - (int)Math.Round(centerY - radius, 0);
 
+                    if (subX < 0 || subX >= subBitmap.Width ||
+                            subY < 0 || subY >= subBitmap.Height)
+                        continue;
                     // Устанавливаем пиксель в изображении
-                    subBitmap.SetPixel(x - (int)(centerX - radius), y - (int)(centerY - radius), color);
+                    subBitmap.SetPixel(subX, subY, color);
                 }
             }
         }

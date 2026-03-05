@@ -452,6 +452,8 @@ public partial class Cortex : ISerializableModelObject
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)) * gradientMagnitude_K;
         if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
             gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
+        else if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+            gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
 
         Memory memory = new();
 
@@ -486,6 +488,9 @@ public partial class Cortex : ISerializableModelObject
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }
+#if DEBUG
+        memory.Temp_DetectorsActivated = detectors.Where(d => d.Temp_IsActivated).ToArray();
+#endif
 
         if (TensorPrimitives.Sum(memory.Hash) < 5)
             throw new InvalidOperationException();
@@ -539,6 +544,9 @@ public partial class Cortex : ISerializableModelObject
                 averageGradientAngle_Sum += detector.AverageGradientAngle;
             }
         }
+#if DEBUG
+        memory.Temp_DetectorsActivated = detectors.Where(d => d.Temp_IsActivated).ToArray();
+#endif
         if (activatedDetectorsCount > 0)
         {
             averageGradientMagnitude_Sum /= activatedDetectorsCount;
@@ -837,7 +845,9 @@ public partial class Cortex : ISerializableModelObject
 
         public Color GradientAngleMagnitude_Color;
 
-        public Color HyperColumnCenter_Color;        
+        public Color HyperColumnCenter_Color;
+
+        public Detector[]? Temp_DetectorsActivated = null;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {

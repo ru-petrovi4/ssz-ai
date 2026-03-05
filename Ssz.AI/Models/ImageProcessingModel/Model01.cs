@@ -1,4 +1,4 @@
-﻿//#define GENERATE_INPUT_DATA
+﻿#define GENERATE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -160,6 +160,8 @@ public class Model01
         Cortex.CalculateSomCortexMemories();
 
         return [
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.FullImage),
+                    Desc = $"Картинка." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.Image),
                     Desc = $"Видимая миниколонкой картинка." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.GradientImage),
@@ -286,6 +288,9 @@ public class Model01
 
         var miniColumns = Cortex.MiniColumns;
 
+        Memory? cortexMemory = null;
+        MiniColumn? nearest_HyperColumnCenter_MiniColumn = null;
+
         Stopwatch sw = Stopwatch.StartNew();
 
         for (int epoch = 0; epoch < epochs; epoch += 1)
@@ -298,9 +303,8 @@ public class Model01
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var stereoInputSample = shuffledStereoInputSamples[sample_Index];
-
-                Memory cortexMemory;
-                MiniColumn nearest_HyperColumnCenter_MiniColumn;
+                
+                
                 if (isIdeal)
                     (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
                 else
@@ -326,13 +330,16 @@ public class Model01
                 {
                     Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
 
-                    Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(nearest_HyperColumnCenter_MiniColumn, cortexMemory);
+                    Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
 
                     await refreshAction();
                     sw.Restart();
                 }
             }
         }
+
+        if (nearest_HyperColumnCenter_MiniColumn is not null && cortexMemory is not null)
+            Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
 
         await refreshAction();
     }    
@@ -900,26 +907,23 @@ public class Model01
         return MathF.Exp(exponent);
     }
 
-    private SampleVisualisation GetImageVisualisation(Models.ImageProcessingModel.Cortex.MiniColumn cortexMemoryFromMiniColumn, Models.ImageProcessingModel.Cortex.Memory cortexMemory)
+    private SampleVisualisation GetImageVisualisation(Models.ImageProcessingModel.Cortex.Memory cortexMemory)
     {
         SampleVisualisation imageVisualisation = new();
 
         StereoInputSample stereoInputSample = StereoInput.StereoInputSamples[cortexMemory.StereoInputSample_Index];
 
         Bitmap retinaFullImage;
-        DenseMatrix<GradientInPoint> gradientMatrix;
-        FastList<Detector> detectors;
+        DenseMatrix<GradientInPoint> gradientMatrix;        
         if (cortexMemory.RetinaImageData_IsRightEye)
         {
             retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.RightRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
-            gradientMatrix = stereoInputSample.RightEye_GradientMatrix;
-            detectors = cortexMemoryFromMiniColumn.Temp_RightEye_Detectors;
+            gradientMatrix = stereoInputSample.RightEye_GradientMatrix;            
         }
         else
         {
             retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.LeftRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
-            gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
-            detectors = cortexMemoryFromMiniColumn.Temp_LeftEye_Detectors;
+            gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;            
         }
 
         float horizontal_Pixels_K = Constants.RetinaImagePixelSize.Width / Constants.RetinaImageAngle;
@@ -927,12 +931,21 @@ public class Model01
         int centerX = (int)(Constants.RetinaImagePixelSize.Width / 2.0f + cortexMemory.Main_RetinaXAngle * horizontal_Pixels_K);
         int centerY = (int)(Constants.RetinaImagePixelSize.Height / 2.0f + cortexMemory.Main_RetinaYAngle * vertical_Pixels_K);        
         double radius = Constants.FullFieldOfViewDiameter_MiniColumn_Angle * vertical_Pixels_K / 2.0f;
+
+        imageVisualisation.FullImage = retinaFullImage;
+
         imageVisualisation.Image = BitmapHelper.GetSubBitmap(retinaFullImage, centerX, centerY, radius);
 
         imageVisualisation.GradientImage = BitmapHelper.GetSubBitmap(Visualisation.GetGradientBitmap(gradientMatrix), centerX, centerY, radius);
 
         imageVisualisation.DetectorsActivationImage = BitmapHelper.GetSubBitmap(
-            Visualisation.GetBitmapFromActivatedDetectors(detectors, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height), centerX, centerY, radius);
+            Visualisation.GetBitmapFromActivatedDetectors(cortexMemory.Temp_DetectorsActivated, 
+                Constants.RetinaImagePixelSize.Width,
+                Constants.RetinaImagePixelSize.Height,
+                ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
+            (int)(centerX / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
+            (int)(centerY / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
+            (int)(radius / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels));
 
         return imageVisualisation;
     }
@@ -945,13 +958,13 @@ public class Model01
 
     public class ModelConstants : ICortexConstants
     {
-        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(20, 20); // Full image: new PixelSize(200, 200);
+        public PixelSize RetinaImagePixelSize { get; set; } = new PixelSize(100, 100); // Full image: new PixelSize(200, 200);
 
         public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.5f); // Full image: MathHelper.DegreesToRadians(0.5f);
 
         public int MaxGradientMagnitudeExclusive => 1200;
 
-        public double DetectorMinGradientMagnitudeInclusive => 0;
+        public double MinGradientMagnitudeInclusive => 5;
 
         public float GradientMagnitudeDelta => 10;
 
@@ -959,7 +972,7 @@ public class Model01
 
         public Vector3DFloat PhysicalImageCenter { get; } = new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
-        public Size2DFloat PhysicalImageSize => new Size2DFloat(PhysicalImageCenter.Z * MathF.Sin(RetinaImageAngle), PhysicalImageCenter.Z * MathF.Sin(RetinaImageAngle));
+        public Size2DFloat PhysicalImageSize => new Size2DFloat(2.0f * PhysicalImageCenter.Z * MathF.Tan(RetinaImageAngle / 2.0f), 2.0f * PhysicalImageCenter.Z * MathF.Tan(RetinaImageAngle / 2.0f));
 
         public float DistanceBetweenEyes => 0.064f;
 
@@ -974,7 +987,7 @@ public class Model01
         /// </summary>
         public int FullFieldOfView_MiniColumns => 40;
 
-        public float FullFieldOfViewDiameter_MiniColumn_Angle => MathHelper.DegreesToRadians(0.1f);
+        public float FullFieldOfViewDiameter_MiniColumn_Angle => MathHelper.DegreesToRadians(1f / 60f);
 
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой

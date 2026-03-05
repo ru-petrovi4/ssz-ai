@@ -261,6 +261,8 @@ public class StereoInputSample : IOwnedDataSerializable
 
 public class SampleVisualisation
 {
+    public Image? FullImage;
+
     public Image? Image;
 
     public Image? GradientImage;

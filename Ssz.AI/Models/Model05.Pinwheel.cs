@@ -579,7 +579,7 @@ namespace Ssz.AI.Models
                     if (inputIndex >= MonoInput.MonoInputItems.Length)
                         continue;
 
-                    magnitude = Constants.DetectorMinGradientMagnitudeInclusive;
+                    magnitude = Constants.MinGradientMagnitudeInclusive;
                     angle = -MathF.PI;
 
                     gradX = (int)Math.Round(Math.Cos(angle) * magnitude, 0);
@@ -1289,7 +1289,7 @@ namespace Ssz.AI.Models
 
             public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
-            public double DetectorMinGradientMagnitudeInclusive => 5;
+            public double MinGradientMagnitudeInclusive => 5;
 
             public float GradientMagnitudeDelta => 10;
 

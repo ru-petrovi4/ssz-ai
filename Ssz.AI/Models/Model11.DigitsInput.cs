@@ -382,8 +382,12 @@ namespace Ssz.AI.Models
             //    (int)(Cortex.CenterMiniColumn!.CenterYPixels * 10),
             //    (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
-            var activatedDetectors = Cortex.SubAreaOrAll_Detectors.Where(d => d.Temp_IsActivated).ToList();
-            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+            var activatedDetectors = Cortex.SubAreaOrAll_Detectors.Where(d => d.Temp_IsActivated).ToArray();
+            var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(
+                activatedDetectors, 
+                Constants.RetinaImagePixelSize.Width, 
+                Constants.RetinaImagePixelSize.Height,
+                ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels);
 
             var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn!.Detectors.Where(d => d.Temp_IsActivated).ToList();
 
@@ -399,7 +403,7 @@ namespace Ssz.AI.Models
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(gradientBitmap), 
                     Desc = $"Видимая картина градиентов. {stereoInputImage.Label}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(detectorsActivationBitmap),
-                    Desc = $"Активация детекторов. Всего (для одной миниколонки): {activatedDetectors.Count} ({forMinicolumn_ActivatedDetectors.Count})" },
+                    Desc = $"Активация детекторов. Всего (для одной миниколонки): {activatedDetectors.Length} ({forMinicolumn_ActivatedDetectors.Count})" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(activityColorImage), 
                     Desc = @"Активность миниколонок (белый - максимум)" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(superActivityColorImage), 
@@ -1191,7 +1195,7 @@ namespace Ssz.AI.Models
 
             public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
-            public double DetectorMinGradientMagnitudeInclusive => 42;
+            public double MinGradientMagnitudeInclusive => 42;
 
             public float GradientMagnitudeDelta => 10;
 

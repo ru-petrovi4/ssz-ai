@@ -76,7 +76,7 @@ namespace Ssz.AI.Models
                 for (int x = 0; x < width; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < constants.DetectorMinGradientMagnitudeInclusive)
+                    if (magnitudeInt < constants.MinGradientMagnitudeInclusive)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
@@ -326,7 +326,7 @@ namespace Ssz.AI.Models
                 for (int x = 0; x < width; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < constants.DetectorMinGradientMagnitudeInclusive)
+                    if (magnitudeInt < constants.MinGradientMagnitudeInclusive)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
