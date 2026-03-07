@@ -220,7 +220,7 @@ namespace Ssz.AI.Models
         {
             var random = new Random();
 
-            DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            DataToDisplayHolder dataToDisplayHolder = DataToDisplayHolder.Instance;
 
             dataToDisplayHolder.WithCoordinate_MiniColumsBitsCountInHashDistribution = new ulong[Constants.CortexWidth_MiniColumns, Constants.CortexHeight_MiniColumns, Constants.HashLength];
 

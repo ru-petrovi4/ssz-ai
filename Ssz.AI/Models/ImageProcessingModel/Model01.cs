@@ -57,7 +57,7 @@ public class Model01
                 }),
                 new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
 
-        //DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        DataToDisplayHolder = DataToDisplayHolder.Instance;
 
         LeftEye = CreateEye_ExceptRetina(pupil: new Vector3DFloat() { X = -Constants.DistanceBetweenEyes / 2, Y = 0.0f, Z = 0.0f });
         LeftEye.IsRightEye = false;
@@ -122,7 +122,7 @@ public class Model01
         Cortex.Prepare(LeftEye, RightEye, random);
 
 
-        //DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
+        DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
 
 #endregion
@@ -371,7 +371,7 @@ public class Model01
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
 
-        const float lambda = -0.2f;
+        const float lambda = +0.0f;
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -998,9 +998,9 @@ public class Model01
 
         public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.5f); // Full image: MathHelper.DegreesToRadians(0.5f);
 
-        public int MaxGradientMagnitudeExclusive => 1200;
+        public int MaxGradientMagnitudeExclusive => 1200; // Исходя из гистограммы
 
-        public double MinGradientMagnitudeInclusive => 42;
+        public double MinGradientMagnitudeInclusive => 20; // Исходя из гистограммы
 
         public float GradientMagnitudeDelta => 10;
 

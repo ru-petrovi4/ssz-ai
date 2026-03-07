@@ -697,7 +697,7 @@ namespace Ssz.AI.Models
                 {
                     using (writer.EnterBlock(1))
                     {
-                        writer.WriteOwnedDataSerializableAndRecreatable(Autoencoder, null);
+                        writer.WriteOwnedDataSerializable_NullableFixedType(Autoencoder, null);
                     }
                 }
             }
@@ -711,7 +711,7 @@ namespace Ssz.AI.Models
                         switch (block.Version)
                         {
                             case 1:
-                                Autoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
+                                Autoencoder = reader.ReadOwnedDataSerializable_NullableFixedType<Autoencoder>(null);
                                 break;
                         }
                     }

@@ -34,7 +34,7 @@ namespace Ssz.AI.Models
                 //SobelOperator.CalculateDistributionObsolete(gradientMatrix, constants, gradientDistribution);
             }
 
-            DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            DataToDisplayHolder dataToDisplayHolder = DataToDisplayHolder.Instance;
             dataToDisplayHolder.GradientDistribution = gradientDistribution;
         }
     }

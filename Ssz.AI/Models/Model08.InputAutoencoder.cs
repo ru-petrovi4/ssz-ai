@@ -35,7 +35,7 @@ namespace Ssz.AI.Models
         public Model8()
         {
             Logger = ActivatorUtilities.CreateInstance<Logger<Model8>>(Program.Host.Services);
-            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            DataToDisplayHolder = DataToDisplayHolder.Instance;
 
             string labelsPath = @"Data\train-labels.idx1-ubyte"; // Укажите путь к файлу меток
             string imagesPath = @"Data\train-images.idx3-ubyte"; // Укажите путь к файлу изображений

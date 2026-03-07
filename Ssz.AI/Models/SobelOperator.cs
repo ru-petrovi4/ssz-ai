@@ -68,15 +68,13 @@ namespace Ssz.AI.Models
 
         public static void CalculateDistribution(DenseMatrix<GradientInPoint> gradientMatrix, GradientDistribution gradientDistribution, IRetinaConstants constants)
         {
-            int width = gradientMatrix.Dimensions[0];
-            int height = gradientMatrix.Dimensions[1];
-
-            for (int y = 0; y < height; y += 1)
+            for (int y = 0; y < gradientMatrix.Dimensions[1]; y += 1)
             {
-                for (int x = 0; x < width; x += 1)
+                for (int x = 0; x < gradientMatrix.Dimensions[0]; x += 1)
                 {
                     var magnitudeInt = (int)gradientMatrix[x, y].Magnitude;
-                    if (magnitudeInt < constants.MinGradientMagnitudeInclusive)
+                    if (magnitudeInt < constants.MinGradientMagnitudeInclusive ||
+                            magnitudeInt >= constants.MaxGradientMagnitudeExclusive)
                         continue;
 
                     gradientDistribution.MagnitudeData[magnitudeInt] += 1;
@@ -84,25 +82,7 @@ namespace Ssz.AI.Models
                     int angleDegree = (int)MathHelper.RadiansToDegrees((float)gradientMatrix[x, y].Angle);
                     gradientDistribution.AngleData[angleDegree] += 1;
                 }
-            }
-
-            //var detectors = new DenseMatrix<Detector>((int)(gradientMatrix.Dimensions[0] / constants.DetectorDelta), (int)(gradientMatrix.Dimensions[1] / constants.DetectorDelta));
-            //foreach (int dy in Enumerable.Range(0, detectors.Dimensions[1]))
-            //    foreach (int dx in Enumerable.Range(0, detectors.Dimensions[0]))
-            //    {
-            //        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(dx * constants.DetectorDelta, dy * constants.DetectorDelta, gradientMatrix);
-
-            //        var magnitudeInt = (int)magnitude;
-            //        if (magnitudeInt < Detector.GradientMagnitudeMinimum)
-            //            continue;
-
-            //        gradientDistribution.MagnitudeData[magnitudeInt] += 1;
-
-            //        int angleDegree = (int)(180.0 * angle / Math.PI + 180.0);
-            //        if (angleDegree == 360)
-            //            angleDegree = 0;
-            //        gradientDistribution.AngleData[angleDegree] += 1;
-            //    }            
+            }        
         }
 
         // ====================================================================================================        
@@ -340,3 +320,22 @@ namespace Ssz.AI.Models
         }             
     }
 }
+
+
+//var detectors = new DenseMatrix<Detector>((int)(gradientMatrix.Dimensions[0] / constants.DetectorDelta), (int)(gradientMatrix.Dimensions[1] / constants.DetectorDelta));
+//foreach (int dy in Enumerable.Range(0, detectors.Dimensions[1]))
+//    foreach (int dx in Enumerable.Range(0, detectors.Dimensions[0]))
+//    {
+//        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient(dx * constants.DetectorDelta, dy * constants.DetectorDelta, gradientMatrix);
+
+//        var magnitudeInt = (int)magnitude;
+//        if (magnitudeInt < Detector.GradientMagnitudeMinimum)
+//            continue;
+
+//        gradientDistribution.MagnitudeData[magnitudeInt] += 1;
+
+//        int angleDegree = (int)(180.0 * angle / Math.PI + 180.0);
+//        if (angleDegree == 360)
+//            angleDegree = 0;
+//        gradientDistribution.AngleData[angleDegree] += 1;
+//    }   

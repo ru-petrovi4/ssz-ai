@@ -31,7 +31,7 @@ namespace Ssz.AI
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<DataToDisplayHolder>();
+            services.AddSingleton<DataToDisplayHolder>(DataToDisplayHolder.Instance);
             //services.AddTransient<Ssz.AI.Models.AdvancedEmbeddingModel2.Model01>();
 
             IMvcCoreBuilder mvcBuilder = services.AddMvcCore(options =>

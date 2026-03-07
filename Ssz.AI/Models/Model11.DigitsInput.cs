@@ -65,7 +65,7 @@ namespace Ssz.AI.Models
                 }),
                 new UserFriendlyLogger(DebugWindow.AddLine));
 
-            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            DataToDisplayHolder = DataToDisplayHolder.Instance;
 
             Stopwatch sw = Stopwatch.StartNew();
 

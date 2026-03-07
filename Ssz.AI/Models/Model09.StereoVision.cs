@@ -36,7 +36,7 @@ namespace Ssz.AI.Models
         public Model9()
         {
             Logger = ActivatorUtilities.CreateInstance<Logger<Model9>>(Program.Host.Services);
-            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            DataToDisplayHolder = DataToDisplayHolder.Instance;
 
             Random random = new();
 

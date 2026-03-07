@@ -245,7 +245,7 @@ public partial class Model03
         //matcher.NearestA = new OneToOneMatcher.Nearest();
         //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
 
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
 
         var embeddings = languageDiscreteEmbeddings_EN;
@@ -273,7 +273,7 @@ public partial class Model03
         //matcher.NearestB = new PrimaryWordsOneToOneMatcher.Nearest();
         //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestB, matcher.NearestB, null, _loggersSet.UserFriendlyLogger);
 
-        //var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        //var dataToDisplayHolder = DataToDisplayHolder.Instance;
         //dataToDisplayHolder.Distribution = new ulong[Model01.Constants.DiscreteVectorLength];
 
         //var nearest = matcher.NearestB.Array;
@@ -309,7 +309,7 @@ public partial class Model03
         //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 2.0f;
@@ -342,7 +342,7 @@ public partial class Model03
         //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 10.0f;
@@ -406,7 +406,7 @@ public partial class Model03
         }
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 10.0f;
@@ -442,7 +442,7 @@ public partial class Model03
         //energy = energy / wordsCount;
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 150.0f;
@@ -478,7 +478,7 @@ public partial class Model03
         var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_EN.ClusterInfos);
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 150.0f;
@@ -517,7 +517,7 @@ public partial class Model03
         var primaryBitsEnergy_Matrix_EN = ModelHelper.GetPrimaryBitsEnergy_Matrix(languageDiscreteEmbeddings_EN.ClusterInfos);        
 
         int n = 500;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = -5000.0f;
         dataToDisplayHolder.DistributionXMax = 5000.0f;
@@ -574,7 +574,7 @@ public partial class Model03
         //Helpers.SerializationHelper.LoadFromFileIfExists(FileName_NearestA, matcher.NearestA, null, _loggersSet.UserFriendlyLogger);        
 
         int n = 1000;
-        var dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+        var dataToDisplayHolder = DataToDisplayHolder.Instance;
         dataToDisplayHolder.Distribution = new ulong[n];
         dataToDisplayHolder.DistributionXMin = 0.0f;
         dataToDisplayHolder.DistributionXMax = 70.0f;

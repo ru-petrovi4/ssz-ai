@@ -447,14 +447,21 @@ public partial class Cortex : ISerializableModelObject
             gradientAngle = MathHelper.NormalizeAngle(angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle));            
         }
 
-        float gradientMagnitude_K = Constants.MaxGradientMagnitudeExclusive / (Constants.HyperColumnDefinedRadius_MiniColumns);
-
-        float gradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
-            + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)) * gradientMagnitude_K;
-        if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
+        int gradientMagnitude_K = (int)MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
+            + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
+        float gradientMagnitude;
+        if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientMagnitudeRanges.Count)
+        {
+            gradientMagnitude = eye.Retina.IdealPinwheel_GradientMagnitudeRanges[(int)gradientMagnitude_K]!.Average_GradientMagnitude;
+            if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
+                gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
+            else if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+                gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
+        }
+        else
+        {
             gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
-        else if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
-            gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
+        }
 
         Memory memory = new();
 
@@ -541,8 +548,8 @@ public partial class Cortex : ISerializableModelObject
             {
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
                 activatedDetectorsCount += 1;
-                averageGradientMagnitude_Sum += detector.AverageGradientMagnitude;
-                averageGradientAngle_Sum += detector.AverageGradientAngle;
+                averageGradientMagnitude_Sum += detector.Average_GradientMagnitude;
+                averageGradientAngle_Sum += detector.Average_GradientAngle;
             }
         }
 #if DEBUG

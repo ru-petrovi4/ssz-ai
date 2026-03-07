@@ -52,7 +52,7 @@ namespace Ssz.AI.Models
                 new UserFriendlyLogger(DebugWindow.AddLine));
 
 #if CALC_BITS_COUNT_IN_HASH_HISTOGRAM
-            DataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();            
+            DataToDisplayHolder = DataToDisplayHolder.Instance;            
 #endif
 
             Stopwatch sw = Stopwatch.StartNew();            

@@ -203,7 +203,7 @@ public class Cortex_Simplified : ISerializableModelObject
                     using (writer.EnterBlock(1))
                     {
                         MiniColumn miniColumn = MiniColumns.Data[mc_index];
-                        writer.WriteOwnedDataSerializableAndRecreatable(miniColumn, context);
+                        writer.WriteOwnedDataSerializable_NullableFixedType(miniColumn, context);
                     }
                 }
             }
@@ -233,7 +233,7 @@ public class Cortex_Simplified : ISerializableModelObject
                             {
                                 MiniColumn? miniColumn = MiniColumns.Data[mc_index];
                                 if (miniColumn is not null)
-                                    reader.ReadOwnedDataSerializableAndRecreatable<MiniColumn>(() => miniColumn, context);
+                                    reader.ReadOwnedDataSerializable_NullableFixedType<MiniColumn>(() => miniColumn, context);
                             }
                         }
                         break;
@@ -499,7 +499,7 @@ public class Cortex_Simplified : ISerializableModelObject
             {
                 using (writer.EnterBlock(1))
                 {
-                    writer.WriteOwnedDataSerializableAndRecreatable(Autoencoder, null);
+                    writer.WriteOwnedDataSerializable_NullableFixedType(Autoencoder, null);
                 }
             }
         }
@@ -513,7 +513,7 @@ public class Cortex_Simplified : ISerializableModelObject
                     switch (block.Version)
                     {
                         case 1:
-                            Autoencoder = reader.ReadOwnedDataSerializableAndRecreatable<Autoencoder>(null);
+                            Autoencoder = reader.ReadOwnedDataSerializable_NullableFixedType<Autoencoder>(null);
                             break;
                     }
                 }

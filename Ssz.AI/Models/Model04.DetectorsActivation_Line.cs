@@ -63,7 +63,7 @@ namespace Ssz.AI.Models
             GetImages(0.0, 0.0);
             DetectorsActivationHash0 = (float[])DetectorsActivationHash.Clone();
 
-            //DataToDisplayHolder dataToDisplayHolder = Program.Host.Services.GetRequiredService<DataToDisplayHolder>();
+            //DataToDisplayHolder dataToDisplayHolder = DataToDisplayHolder.Instance;
             //foreach (var gradientMatrix in gradientMatricesCollection)
             //{
             //    Parallel.For(

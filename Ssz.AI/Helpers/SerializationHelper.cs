@@ -35,6 +35,40 @@ public static class SerializationHelper
         logger?.LogInformation($"Loaded: {fileName}");
     }
 
+    public static void SerializeOwnedData_FastList<T>(FastList<T?> fastList, SerializationWriter writer, object? context)
+        where T : class, IOwnedDataSerializable
+    {
+        using (writer.EnterBlock(1))
+        {
+            writer.WriteOptimized(fastList.Count);
+            for (int index = 0; index < fastList.Count; index += 1)
+            {
+                var o = fastList[index];
+                writer.WriteOwnedDataSerializable_NullableFixedType(o, context);
+            }
+        }
+    }
+
+    public static FastList<T?> DeserializeOwnedData_FastList<T>(SerializationReader reader, object? context, Func<int, T> func)
+        where T : class, IOwnedDataSerializable
+    {        
+        using (Block block = reader.EnterBlock())
+        {
+            switch (block.Version)
+            {
+                case 1:
+                    var count = reader.ReadOptimizedInt32()!;
+                    FastList<T?> fastList = new(count);
+                    for (int index = 0; index < fastList.Count; index += 1)
+                    {   
+                        fastList[index] = reader.ReadOwnedDataSerializable_NullableFixedType<T>(() => func(index), context);
+                    }
+                    return fastList;
+            }
+        }
+        throw new InvalidOperationException();
+    }
+
     public static void SerializeOwnedData_DenseMatrix<T>(DenseMatrix<T?> denseMatrix, SerializationWriter writer, object? context)
         where T : class, IOwnedDataSerializable
     {
@@ -45,31 +79,31 @@ public static class SerializationHelper
                 for (int mcx = 0; mcx < denseMatrix.Dimensions[0]; mcx += 1)
                 {
                     var o = denseMatrix[mcx, mcy];
-                    writer.WriteOwnedDataSerializableAndRecreatable(o, context);                                      
+                    writer.WriteOwnedDataSerializable_NullableFixedType(o, context);
                 }
         }
     }
 
     public static DenseMatrix<T?> DeserializeOwnedData_DenseMatrix<T>(SerializationReader reader, object? context, Func<int, int, T> func)
         where T : class, IOwnedDataSerializable
-    {        
+    {
         using (Block block = reader.EnterBlock())
         {
             switch (block.Version)
             {
                 case 1:
                     var dimensions = reader.ReadArray<int>()!;
-                    DenseMatrix<T?> denseMatrix = new(dimensions);                    
+                    DenseMatrix<T?> denseMatrix = new(dimensions);
                     for (int mcy = 0; mcy < dimensions[1]; mcy += 1)
                         for (int mcx = 0; mcx < dimensions[0]; mcx += 1)
-                        {   
-                            denseMatrix[mcx, mcy] = reader.ReadOwnedDataSerializableAndRecreatable<T>(() => func(mcx, mcy), context);
+                        {
+                            denseMatrix[mcx, mcy] = reader.ReadOwnedDataSerializable_NullableFixedType<T>(() => func(mcx, mcy), context);
                         }
                     return denseMatrix;
             }
         }
         throw new InvalidOperationException();
-    }        
+    }
 
     public static void Write(this SerializationWriter writer, Color value)
     {
