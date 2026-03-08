@@ -450,13 +450,14 @@ public partial class Cortex : ISerializableModelObject
         int gradientMagnitude_K = (int)MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
             + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
         float gradientMagnitude;
-        if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientMagnitudeRanges.Count)
+        if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientRanges.Count)
         {
-            gradientMagnitude = eye.Retina.IdealPinwheel_GradientMagnitudeRanges[(int)gradientMagnitude_K]!.Average_GradientMagnitude;
-            if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
-                gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
-            else if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+            var gradientRange = eye.Retina.IdealPinwheel_GradientRanges[gradientMagnitude_K]!;
+            gradientMagnitude = gradientRange.GradientMagnitude_Average;            
+            if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
                 gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
+            else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
+                gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
         }
         else
         {
@@ -548,8 +549,8 @@ public partial class Cortex : ISerializableModelObject
             {
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
                 activatedDetectorsCount += 1;
-                averageGradientMagnitude_Sum += detector.Average_GradientMagnitude;
-                averageGradientAngle_Sum += detector.Average_GradientAngle;
+                averageGradientMagnitude_Sum += detector.GradientMagnitude_Average;
+                averageGradientAngle_Sum += detector.GradientAngle_Average;
             }
         }
 #if DEBUG
