@@ -613,15 +613,15 @@ public partial class Cortex : ISerializableModelObject
 
                 miniColumn.Temp_SomCortexMemories.Clear();
 
-                float min = Single.MaxValue;
+                float max = Single.MinValue;
                 Memory? idealPinwheelMemory_Best = null;
                 for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
                 {
                     var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
-                    float f = TensorPrimitives.Distance(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
-                    if (f < min)
+                    float f = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
+                    if (f > max)
                     {
-                        min = f;
+                        max = f;
                         idealPinwheelMemory_Best = idealPinwheelMemory;
                     }    
                 }
