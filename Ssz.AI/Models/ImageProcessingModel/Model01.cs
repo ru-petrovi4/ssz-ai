@@ -371,7 +371,7 @@ public class Model01
         float ratio_Sigma = sigmaMin / sigma0;
         float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
 
-        const float lambda = +0.0f;
+        const float lambda = -0.1f;
 
         // Обновление весов всех нейронов с учетом функции соседства
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns.Count; index += 1)
@@ -404,7 +404,8 @@ public class Model01
 
             if (neighborhood < 1e-5f)
                 continue; // мелкий порог, чтобы не считать лишнее
-            
+
+            TensorPrimitives.Subtract(cortexMemory.Hash, it.Item2.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
         }
 
