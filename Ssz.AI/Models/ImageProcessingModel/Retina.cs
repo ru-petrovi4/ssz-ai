@@ -190,7 +190,7 @@ public class Retina : ISerializableModelObject
     {   
         // Плотность детекторов, в зависимости от модуля градиента и угла градиента (в градусах) детектора.
         MatrixFloat_ColumnMajor detectorDensities_ShortIndexed = new MatrixFloat_ColumnMajor(
-            (int)(DetectorGradientRanges[DetectorGradientRanges.Dimensions[0] - 1, DetectorGradientRanges.Dimensions[1] - 1]!.GradientMagnitude_UpperExclusive / Constants.GradientMagnitudeDelta), //(int)(Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta)
+            (int)(constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta), //(int)(Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta)
             (int)(360 / Constants.GradientAngleDegreeDelta));
 
         DenseMatrix<Detector> testDetectors_ShortIndexed = new DenseMatrix<Detector>(detectorDensities_ShortIndexed.Dimensions[0], detectorDensities_ShortIndexed.Dimensions[1]);
@@ -278,7 +278,7 @@ public class Retina : ISerializableModelObject
 
             Logger.LogInformation($"Retina.CalculateDetectorDensities, activatedDelta_NormAbsMax: {activatedDelta_NormAbsMax}");
 
-            if (activatedDelta_NormAbsMax > prev_ActivatedDelta_NormAbsMax - 0.01f)
+            if (activatedDelta_NormAbsMax > prev_ActivatedDelta_NormAbsMax - 0.001f)
                 break;
 
             prev_ActivatedDelta_NormAbsMax = activatedDelta_NormAbsMax;
@@ -287,7 +287,10 @@ public class Retina : ISerializableModelObject
             {
                 var detector = testDetectors_ShortIndexed.Data[d_index];
                 if (detector.Temp_GradientSamples.Count == 0)
+                {
+                    detectorDensities_ShortIndexed[detector.DI, detector.DJ] = 0.0f;
                     continue;
+                }
                 float detector_K = 0.0f;
                 for (int s_index = 0; s_index < detector.Temp_GradientSamples.Count; s_index += 1)
                 {
