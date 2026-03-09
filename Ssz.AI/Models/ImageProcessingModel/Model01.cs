@@ -810,7 +810,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash); // TensorPrimitives.Dot(miniColumn.Temp_SomWeights, cortexMemory.Hash); //
+                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
