@@ -168,6 +168,8 @@ public class Model01
                     Desc = $"Видимый миниколонкой градиент." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.DetectorsActivationImage),
                     Desc = $"Видимые миниколонкой детекторы." },
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
+                    Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"SOM. Модуль и угол." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r0.Image),
@@ -177,9 +179,7 @@ public class Model01
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.HyperColumnCenter_Color)),
                     Desc = $"Воспоминания в миниколонках (XY)." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r1.Image),
-                    Desc = $"Активность миниколонок; Min: {r1.ValueMin:F03}; Max: {r1.ValueMax:F03}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
-                    Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" },                
+                    Desc = $"Активность миниколонок; Min: {r1.ValueMin:F03}; Max: {r1.ValueMax:F03}" },                               
             ];
     }    
 
@@ -369,9 +369,7 @@ public class Model01
         const float sigma0 = 7.0f;    // σ0
         const float sigmaMin = 1.0f;  // σ_min        // Recommended: 1.0    
         float ratio_Sigma = sigmaMin / sigma0;
-        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);
-
-        const float lambda = +1.0f;
+        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
 
         // Обновление весов всех нейронов с учетом функции соседства
         bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Clear();
@@ -394,21 +392,27 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
-        // для каждой компоненты d
-        Array.Clear(bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
-        for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count; index += 1)
+        const float lambda = 0.0f;
+        if (lambda != 0.0f)
         {
-            var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns2[index];            
+            // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
+            // для каждой компоненты d
+#pragma warning disable CS0162 // Unreachable code detected
+            Array.Clear(bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
+#pragma warning restore CS0162 // Unreachable code detected
+            for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count; index += 1)
+            {
+                var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns2[index];
 
-            float neighborhood = it.Item1;
+                float neighborhood = it.Item1;
 
-            TensorPrimitives.Subtract(it.Item2.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
-            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
+                TensorPrimitives.Subtract(it.Item2.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
+                TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
+            }
+
+            // Применяем: w_s += η · λ · correction
+            TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, lambda * alpha, bestForMemoryMiniColumn.Temp_NewSomWeights, bestForMemoryMiniColumn.Temp_NewSomWeights);
         }
-
-        // Применяем: w_s += η · λ · correction
-        TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, lambda * alpha, bestForMemoryMiniColumn.Temp_NewSomWeights, bestForMemoryMiniColumn.Temp_NewSomWeights);
 
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count; index += 1)
         {
@@ -817,7 +821,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);
+                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);//TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;

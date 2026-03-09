@@ -52,11 +52,11 @@ public class Retina : ISerializableModelObject
         IdealPinwheel_GradientRanges = new FastList<GradientRange?>(idealPinwheel_GradientMagnitudeRanges_Count);
         ulong[] gradientMagnitude_AccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
         ulong samples_Total = gradientMagnitude_AccumulativeDistribution[^1];
-        ulong inIdealPinwheelMiniColumn_Samples = samples_Total / (ulong)idealPinwheel_GradientMagnitudeRanges_Count;        
+        ulong inIdealPinwheelMiniColumn_Half_Samples = (ulong)(samples_Total / (1.0f + 2.0f * (idealPinwheel_GradientMagnitudeRanges_Count - 1)));        
         int gradientMagnitude_LowerInclusive = 0;        
         for (int range_Index = 0; range_Index < idealPinwheel_GradientMagnitudeRanges_Count; range_Index += 1)
         {
-            ulong samples_UpperLimit = inIdealPinwheelMiniColumn_Samples * (ulong)(range_Index + 1);
+            ulong samples_UpperLimit = inIdealPinwheelMiniColumn_Half_Samples + inIdealPinwheelMiniColumn_Half_Samples * (ulong)(range_Index * 2.0f);            
 
             if (samples_UpperLimit > samples_Total)
                 samples_UpperLimit = samples_Total;
@@ -74,14 +74,14 @@ public class Retina : ISerializableModelObject
             gradientMagnitude_LowerInclusive = gradientMagnitude_UpperExclusive;
         }
         
-        float gradientMagnitudeRange_Samples = 5.0f * inIdealPinwheelMiniColumn_Samples;
+        float gradientMagnitudeRange_Samples = 5.0f * 2.0f * inIdealPinwheelMiniColumn_Half_Samples;
 
         DetectorGradientRanges = new DenseMatrix<GradientRange?>(Constants.MaxGradientMagnitudeExclusive, 360);                
         
         for (int gradientMagnitude = 0; gradientMagnitude < DetectorGradientRanges.Dimensions[0]; gradientMagnitude += 1)
         {
             float samples = gradientMagnitude_AccumulativeDistribution[gradientMagnitude];
-            float idealPinwheel_MiniColumns = samples / inIdealPinwheelMiniColumn_Samples;
+            float idealPinwheel_MiniColumns = samples / (2.0f * inIdealPinwheelMiniColumn_Half_Samples);
             
             float fullCircle_MiniColuns = 2.0f * MathF.PI * idealPinwheel_MiniColumns;
             float gradientAngleRange_MiniColumns = 5.0f;
