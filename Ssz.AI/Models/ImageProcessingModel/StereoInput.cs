@@ -56,12 +56,12 @@ public class StereoInput : ISerializableModelObject
             stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
             // TEMPCODE
             //SobelOperator.CalculateDistribution(stereoInputSample.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
-            Array.Fill(leftEye_GradientDistribution.MagnitudeData, 1u);
+            Array.Fill(leftEye_GradientDistribution.MagnitudeData, 1u, 0, 1200);
             
             stereoInputSample.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
             // TEMPCODE
             //SobelOperator.CalculateDistribution(stereoInputSample.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
-            Array.Fill(rightEye_GradientDistribution.MagnitudeData, 1u);
+            Array.Fill(rightEye_GradientDistribution.MagnitudeData, 1u, 0, 1200);
         }
     }
 
