@@ -255,6 +255,7 @@ public partial class Cortex : ISerializableModelObject
             MiniColumn miniColumn = MiniColumns[mc_index];
             miniColumn.Prepare(sameFieldOfViewRadius_MiniColumns, nearestRadius_MiniColumns);
             miniColumn.Temp_SomWeights = new float[Constants.HashLength];
+            miniColumn.Temp_NewSomWeights = new float[Constants.HashLength];
             miniColumn.Temp_SomWeightsDiff = new float[Constants.HashLength];
             miniColumn.Temp_SomWeightsCorrection = new float[Constants.HashLength];
             for (int bit_Index = 0; bit_Index < Constants.HashLength; bit_Index += 1)
@@ -729,6 +730,11 @@ public partial class Cortex : ISerializableModelObject
         /// </summary>
         public FastList<(double, MiniColumn)> Temp_NearestMiniColumns = null!;
 
+        /// <summary>
+        ///     (neighborhood, MiniColumn)
+        /// </summary>
+        public FastList<(float, MiniColumn)> Temp_NearestMiniColumns2 = null!;
+
         public double Temp_MiniColumnEnergy;
 
         public (float PositiveActivity, float NegativeActivity, int CortexMemoriesCount) Temp_Activity;
@@ -755,6 +761,8 @@ public partial class Cortex : ISerializableModelObject
 
         public float[] Temp_SomWeights = null!;
 
+        public float[] Temp_NewSomWeights = null!;
+
         public float[] Temp_SomWeightsDiff = null!;
 
         public float[] Temp_SomWeightsCorrection = null!;
@@ -777,6 +785,7 @@ public partial class Cortex : ISerializableModelObject
             Temp_SomCortexMemories = new(1);
 
             Temp_NearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * nearestRadius_MiniColumns * nearestRadius_MiniColumns + 5));
+            Temp_NearestMiniColumns2 = new FastList<(float, MiniColumn)>();
         }
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
