@@ -53,11 +53,15 @@ public class StereoInput : ISerializableModelObject
             stereoInputSample.RightRetinaImageData = GetRetinaImageData(constants, stereoInputSample.InputImageData, inputImagesSize, stereoInputSample.ImageNormalDirection, rightEye);
 
             // Применяем оператор Собеля
-            stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-            SobelOperator.CalculateDistribution(stereoInputSample.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
-
-            stereoInputSample.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);                
-            SobelOperator.CalculateDistribution(stereoInputSample.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
+            stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
+            // TEMPCODE
+            //SobelOperator.CalculateDistribution(stereoInputSample.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
+            Array.Fill(leftEye_GradientDistribution.MagnitudeData, 1u);
+            
+            stereoInputSample.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
+            // TEMPCODE
+            //SobelOperator.CalculateDistribution(stereoInputSample.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
+            Array.Fill(rightEye_GradientDistribution.MagnitudeData, 1u);
         }
     }
 

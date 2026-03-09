@@ -74,7 +74,7 @@ public class Retina : ISerializableModelObject
             gradientMagnitude_LowerInclusive = gradientMagnitude_UpperExclusive;
         }
         
-        float gradientMagnitudeRange_Samples = 6.0f * 2.0f * inIdealPinwheelMiniColumn_Half_Samples;
+        float gradientMagnitudeRange_Samples = 5.0f * 2.0f * inIdealPinwheelMiniColumn_Half_Samples;
 
         DetectorGradientRanges = new DenseMatrix<GradientRange?>(Constants.MaxGradientMagnitudeExclusive, 360);                
         
