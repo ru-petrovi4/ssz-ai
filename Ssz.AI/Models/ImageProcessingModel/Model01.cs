@@ -100,7 +100,7 @@ public class Model01
 #else
         Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
 #endif
-        LeftEye.Retina.Prepare(); // Does nothing.
+        LeftEye.Retina.Prepare();
 #if GENERATE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
 #endif
@@ -111,7 +111,7 @@ public class Model01
 #else
         Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null, Logger);
 #endif
-        RightEye.Retina.Prepare(); // Does nothing.
+        RightEye.Retina.Prepare();
 #if GENERATE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null, Logger);
 #endif
@@ -426,23 +426,14 @@ public class Model01
     private (Memory, MiniColumn) GetCortexMemory(Random random, StereoInputSample stereoInputSample)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
-
-        var leftEye_GradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
-        var leftEye_Detectors = LeftEye.Retina.Detectors;
-        // Optimization
-        //Parallel.For(
-        //    fromInclusive: 0,
-        //    toExclusive: leftEye_Detectors.Data.Length,
-        //    d_index =>
-        //    {
-        //        var d = leftEye_Detectors.Data[d_index];
-        //        d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
-        //    });
+        
+        LeftEye.Retina.CalculateRetinaPoints(stereoInputSample.LeftEye_GradientMatrix);        
+        
         FastList<Detector> detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_Detectors;        
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
-            detector.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);            
+            detector.Temp_IsActivated = detector.CalculateIsActivated();            
         }
         
         Cortex.Memory cortexMemory = Cortex.GetCortexMemory(
@@ -1022,6 +1013,10 @@ public class Model01
         public Size2DFloat PhysicalImageSize => new Size2DFloat(2.0f * PhysicalImageCenter.Z * MathF.Tan(RetinaImageAngle / 2.0f), 2.0f * PhysicalImageCenter.Z * MathF.Tan(RetinaImageAngle / 2.0f));
 
         public float DistanceBetweenEyes => 0.064f;
+
+        public float RetinaPointDeltaPixels => 0.2f;
+
+        public float DetectorFieldOfViewRadiusPixels => 1.0f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.

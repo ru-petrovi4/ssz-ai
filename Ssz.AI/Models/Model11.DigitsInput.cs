@@ -885,14 +885,15 @@ namespace Ssz.AI.Models
                 return;
 
             var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
+            LeftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
             var leftEye_Detectors = LeftEye.Retina.Detectors;
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: leftEye_Detectors.Data.Length,
                 d_index =>
                 {
-                    var d = leftEye_Detectors.Data[d_index];
-                    d.CalculateIsActivated(LeftEye.Retina, leftEye_GradientMatrix, Constants);
+                    var d = leftEye_Detectors.Data[d_index]!;
+                    d.Temp_IsActivated = d.CalculateIsActivated();
                 });
 
             // TEMPCODE
@@ -1333,6 +1334,10 @@ namespace Ssz.AI.Models
             public float[] NegativeK { get; set; } = [1.00f, 0.13f, 0.08f, 0.00f];
 
             public float DistanceBetweenEyes => 0.064f;
+
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
 
             public Vector3DFloat PhysicalImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 

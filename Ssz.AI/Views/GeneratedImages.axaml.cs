@@ -69,25 +69,27 @@ public partial class GeneratedImages : UserControl
     private void Refresh()
     {
         var model = _model05View.Model;
+        model.Retina.CalculateRetinaPoints(GeneratedImage0.GeneratedGradientMatrix);
         Parallel.For(
                     fromInclusive: 0,
                     toExclusive: model.Cortex.SubArea_Detectors.Length,
                     di =>
                     {
-                        var d = model.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(model.Retina, GeneratedImage0.GeneratedGradientMatrix, model.Cortex.Constants);
+                        var d = model.Cortex.SubArea_Detectors[di]!;
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
 
         float[] hash0 = new float[model.Constants.HashLength];
         model.Cortex.CenterMiniColumn!.GetHash(hash0);
 
+        model.Retina.CalculateRetinaPoints(GeneratedImage1.GeneratedGradientMatrix);
         Parallel.For(
                     fromInclusive: 0,
                     toExclusive: model.Cortex.SubArea_Detectors.Length,
                     di =>
                     {
-                        var d = model.Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(model.Retina, GeneratedImage1.GeneratedGradientMatrix, model.Cortex.Constants);
+                        var d = model.Cortex.SubArea_Detectors[di]!;
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
 
         float[] hash1 = new float[model.Constants.HashLength];

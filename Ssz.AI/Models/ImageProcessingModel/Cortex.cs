@@ -494,7 +494,7 @@ public partial class Cortex : ISerializableModelObject
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
-            detector.CalculateIsActivated(eye.Retina, gradientInPoint, Constants);
+            detector.Temp_IsActivated = detector.CalculateIsActivated(gradientInPoint);
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }
@@ -511,7 +511,7 @@ public partial class Cortex : ISerializableModelObject
     }
 
     /// <summary>
-    ///     Precondition: !!! detectors must be Activated !!!
+    ///     Precondition: !!! detectors Temp_IsActivated must be Calculated !!!
     /// </summary>
     /// <param name="eye"></param>
     /// <param name="stereoInputSample"></param>

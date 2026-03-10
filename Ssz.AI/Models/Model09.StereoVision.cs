@@ -279,6 +279,10 @@ namespace Ssz.AI.Models
 
             public float DistanceBetweenEyes => 0.064f;
 
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
+
             public Vector3DFloat ImageCenter => new Vector3DFloat() { X = 0.0f, Y = 0.0f, Z = 0.25f };
 
             public float ImageWidth => 0.1f;

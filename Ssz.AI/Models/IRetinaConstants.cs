@@ -8,9 +8,9 @@ namespace Ssz.AI.Models;
 /// </summary>
 public interface IRetinaConstants
 {
-    PixelSize RetinaImagePixelSize { get; set; }
+    PixelSize RetinaImagePixelSize { get; }
 
-    float RetinaImageAngle { get; set; }    
+    float RetinaImageAngle { get; }    
 
     /// <summary>
     ///     Оценочный максимальный градиент.
@@ -22,8 +22,14 @@ public interface IRetinaConstants
     /// </summary>
     double MinGradientMagnitudeInclusive { get; }
 
+    /// <summary>
+    ///     For internal calculations of Detectors densities.
+    /// </summary>
     float GradientMagnitudeDelta { get; }
 
+    /// <summary>
+    ///     For internal calculations of Detectors densities.
+    /// </summary>
     float GradientAngleDegreeDelta { get; }
 
     Vector3DFloat PhysicalImageCenter { get; }
@@ -31,6 +37,10 @@ public interface IRetinaConstants
     Size2DFloat PhysicalImageSize { get; }
 
     float DistanceBetweenEyes { get; }
+
+    float RetinaPointDeltaPixels { get; }
+
+    float DetectorFieldOfViewRadiusPixels { get; }
 
     /// <summary>
     ///     Примерный радиус гиперколонки (измеренный в миниколонках).

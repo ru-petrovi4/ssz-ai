@@ -564,13 +564,14 @@ namespace Ssz.AI.Models
 
         public void CalculateDetectorsAndActivityAndSuperActivity(float angleNormalized, DenseMatrix<GradientInPoint> gradientMatrix, ActivitiyMaxInfo activitiyMaxInfo)
         {
+            Retina.CalculateRetinaPoints(gradientMatrix);
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(Retina, gradientMatrix, Constants);
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
 
             Parallel.For(
@@ -994,6 +995,10 @@ namespace Ssz.AI.Models
             public Size2DFloat PhysicalImageSize => throw new NotImplementedException();
 
             public float DistanceBetweenEyes => throw new NotImplementedException();
+
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
 
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 

@@ -756,6 +756,10 @@ namespace Ssz.AI.Models
 
             public float DistanceBetweenEyes => throw new NotImplementedException();
 
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
+
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 
             public float FullFieldOfViewDiameter_MiniColumn_Angle => throw new NotImplementedException();

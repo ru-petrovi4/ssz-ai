@@ -43,10 +43,14 @@ public class Retina : ISerializableModelObject
 
     public DenseMatrix<Detector?> Detectors = new();
 
-	/// <summary>
-	///     Generates model data after construction.
-	/// </summary>
-	public void GenerateOwnedData(Random initializationRandom, GradientDistribution gradientDistribution)
+    public DenseMatrix<RetinaPoint> Temp_RetinaPoints = null!;
+
+    public FastList<RetinaPoint> Temp_ToCalculateRetinaPoints = null!;
+
+    /// <summary>
+    ///     Generates model data after construction.
+    /// </summary>
+    public void GenerateOwnedData(Random initializationRandom, GradientDistribution gradientDistribution)
     {
         float gradientAngleRange_MiniColumns = 5.0f;
         float gradientAngleRange_Full_MiniColumns = gradientAngleRange_MiniColumns / (2.0f * MathF.PI);
@@ -132,6 +136,7 @@ public class Retina : ISerializableModelObject
 
                 Detector detector = new()
                 {
+                    Retina = this,
                     DI = dI,
                     DJ = dJ,
                     CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
@@ -153,6 +158,46 @@ public class Retina : ISerializableModelObject
     /// </summary>
     public void Prepare()
     {
+        Temp_RetinaPoints = new DenseMatrix<RetinaPoint>((int)(Constants.RetinaImagePixelSize.Width / Constants.RetinaPointDeltaPixels), (int)(Constants.RetinaImagePixelSize.Height / Constants.RetinaPointDeltaPixels));
+        Temp_RetinaPoints.CreateElementInstances((int x, int y) => new RetinaPoint()
+        {
+            CenterXPixels = x * Constants.RetinaPointDeltaPixels,
+            CenterYPixels = y * Constants.RetinaPointDeltaPixels
+        });
+
+        float detectorFieldOfViewRadiusPixels = Constants.DetectorFieldOfViewRadiusPixels;
+        foreach (int dJ in Enumerable.Range(0, Detectors.Dimensions[1]))
+            foreach (int dI in Enumerable.Range(0, Detectors.Dimensions[0]))
+            {
+                Detector detector = Detectors[dI, dJ]!;
+                detector.Temp_RetinaPoints = new FastList<RetinaPoint>((int)(MathF.PI * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels) * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels)));
+
+                for (int rpJ = (int)((detector.CenterYPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpJ < (int)((detector.CenterYPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpJ < Temp_RetinaPoints.Dimensions[1]; rpJ += 1)
+                    for (int rpI = (int)((detector.CenterXPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpI < (int)((detector.CenterXPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpI < Temp_RetinaPoints.Dimensions[0]; rpI += 1)
+                    {
+                        if (rpI < 0 || rpJ < 0)
+                            continue;
+
+                        RetinaPoint retinaPoint = Temp_RetinaPoints[rpI, rpJ]!;
+                        double rPixels = Math.Sqrt((detector.CenterXPixels - retinaPoint.CenterXPixels) * (detector.CenterXPixels - retinaPoint.CenterXPixels) + (detector.CenterYPixels - retinaPoint.CenterYPixels) * (detector.CenterYPixels - retinaPoint.CenterYPixels));
+                        if (rPixels < detectorFieldOfViewRadiusPixels)
+                            detector.Temp_RetinaPoints.Add(retinaPoint);
+                    }
+            }
+
+        Temp_ToCalculateRetinaPoints = new FastList<RetinaPoint>(Temp_RetinaPoints.Data);
+    }
+
+    public void CalculateRetinaPoints(DenseMatrix<GradientInPoint> eye_GradientMatrix)
+    {        
+        for (int rp_Index = 0; rp_Index < Temp_ToCalculateRetinaPoints.Count; rp_Index += 1)
+        {
+            RetinaPoint retinaPoint = Temp_ToCalculateRetinaPoints[rp_Index];
+            retinaPoint.GradientInPoint = MathHelper.GetInterpolatedGradient(
+                retinaPoint.CenterXPixels,
+                retinaPoint.CenterYPixels,
+                eye_GradientMatrix);
+        }
     }
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
@@ -176,6 +221,7 @@ public class Retina : ISerializableModelObject
                     DetectorGradientRanges = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new GradientRange());
                     Detectors = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new Detector
                     {
+                        Retina = this,
                         DI = dI,
                         DJ = dJ,
                         CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
@@ -201,6 +247,7 @@ public class Retina : ISerializableModelObject
             {
                 Detector detector = new Detector
                 {
+                    Retina = this,
                     DI = dI_ShortIndexed,
                     DJ = dJ_ShortIndexed,
                 };
@@ -234,13 +281,8 @@ public class Retina : ISerializableModelObject
 
                 for (int d_index = 0; d_index < testDetectors_ShortIndexed.Data.Length; d_index += 1)
                 {
-                    var detector = testDetectors_ShortIndexed.Data[d_index];
-                    detector.CalculateIsActivated(
-                        this,
-                        gradientInPoint,
-                        constants
-                    );
-                    if (detector.Temp_IsActivated)
+                    var detector = testDetectors_ShortIndexed.Data[d_index];                    
+                    if (detector.CalculateIsActivated(gradientInPoint))
                     {
                         gradientSample.Detectors.Add(detector);
                         detector.Temp_GradientSamples.Add(gradientSample);
@@ -323,7 +365,10 @@ public class Retina : ISerializableModelObject
             int dataIndex = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative_ShortIndexed.Data);
             var indices_ShortIndexed = detectorDensities_Accumulative_ShortIndexed.GetIndices(dataIndex);
 
-            Detector detector = new Detector();
+            Detector detector = new Detector()
+            {
+                Retina = this,
+            };
             detector.GradientMagnitude_Average = indices_ShortIndexed.I * Constants.GradientMagnitudeDelta;
             detector.GradientAngle_Average = MathHelper.DegreesToRadians(indices_ShortIndexed.J * Constants.GradientAngleDegreeDelta);            
             detector.BitIndexInHash = initializationRandom.Next(constants.HashLength);
@@ -352,13 +397,8 @@ public class Retina : ISerializableModelObject
 
                 for (int d_index = 0; d_index < testDetectors.Length; d_index += 1)
                 {
-                    var detector = testDetectors[d_index];
-                    detector.CalculateIsActivated(
-                        this,
-                        gradientInPoint,
-                        constants
-                    );
-                    if (detector.Temp_IsActivated)
+                    var detector = testDetectors[d_index];                    
+                    if (detector.CalculateIsActivated(gradientInPoint))
                     {
                         activatedCount += 1;
                         detector.Temp_IsActivatedCount += 1;
@@ -367,24 +407,20 @@ public class Retina : ISerializableModelObject
             }
             dataToDisplayHolder.Distribution[(int)(gradientMagnitude / constants.GradientMagnitudeDelta)] = (ulong)(activatedCount * constants.GradientAngleDegreeDelta / 360);
         }   
-    }    
+    }
 }
 
 public class Detector : IOwnedDataSerializable
 {
+    public Retina Retina = null!;
+
     public int DI;
 
-    public int DJ;        
+    public int DJ;
 
-    /// <summary>
-    ///     
-    /// </summary>
-    public double CenterXPixels { get; init; }
+    public double CenterXPixels;
 
-    /// <summary>
-    ///     
-    /// </summary>
-    public double CenterYPixels { get; init; }
+    public double CenterYPixels;
 
     /// <summary>
     ///     [0, Constants.MaxGradientMagnitudeInclusive)
@@ -400,11 +436,11 @@ public class Detector : IOwnedDataSerializable
 
     public bool Temp_IsActivated;
 
-    public int Temp_IsActivatedCount;
-
-    public GradientInPoint Temp_GradientInPoint;
+    public int Temp_IsActivatedCount;    
 
     public FastList<GradientSample> Temp_GradientSamples = null!;
+
+    public FastList<RetinaPoint> Temp_RetinaPoints = null!;
 
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
@@ -420,49 +456,44 @@ public class Detector : IOwnedDataSerializable
         BitIndexInHash = reader.ReadInt32();
     }
 
-    public void CalculateIsActivated(Retina retina, DenseMatrix<GradientInPoint> gradientMatrix, IRetinaConstants constants, Vector2 offset = default)
+    /// <summary>
+    ///     Precondition: !!! Gradient in Temp_RetinaPoints must be calculated !!!
+    /// </summary>
+    public bool CalculateIsActivated()
     {
-        CalculateIsActivated(
-            retina,
-            MathHelper.GetInterpolatedGradient(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix), 
-            constants);        
+        for (int rp_Index = 0; rp_Index < Temp_RetinaPoints.Count; rp_Index += 1)
+        {
+            bool activated = CalculateIsActivated(Temp_RetinaPoints[rp_Index].GradientInPoint);
+            if (activated)
+                return true;
+        }
+        return false;
     }
 
-    public void CalculateIsActivated(Retina retina, GradientInPoint gradientInPoint, IRetinaConstants constants)
+    public bool CalculateIsActivated(GradientInPoint gradientInPoint)
     {
-        Temp_GradientInPoint = gradientInPoint;
+        if (gradientInPoint.Magnitude < Retina.Constants.MinGradientMagnitudeInclusive || 
+                gradientInPoint.Magnitude >= Retina.Constants.MaxGradientMagnitudeExclusive)
+            return false;
 
-        if (gradientInPoint.Magnitude < constants.MinGradientMagnitudeInclusive || 
-                gradientInPoint.Magnitude >= constants.MaxGradientMagnitudeExclusive)
-        {
-            Temp_IsActivated = false;
-            return;
-        }
-
-        GradientRange detectorGradientRange = retina.DetectorGradientRanges[(int)gradientInPoint.Magnitude, (int)MathHelper.RadiansToDegrees((float)gradientInPoint.Angle)]!;
+        GradientRange detectorGradientRange = Retina.DetectorGradientRanges[(int)gradientInPoint.Magnitude, (int)MathHelper.RadiansToDegrees((float)gradientInPoint.Angle)]!;
 
         bool activated = GradientMagnitude_Average >= detectorGradientRange.GradientMagnitude_LowerInclusive &&
             GradientMagnitude_Average < detectorGradientRange.GradientMagnitude_UpperExclusive;
         if (!activated)
-        {
-            Temp_IsActivated = false;
-            return;
-        }
+            return false;
 
         // [-pi, pi)
         float gradientAngleMinInclusive = detectorGradientRange.GradientAngle_LowerInclusive;
         float gradientAngleMaxExclusive = detectorGradientRange.GradientAngle_UpperExclusive;
         if (MathF.Abs(gradientAngleMinInclusive - gradientAngleMaxExclusive) < MathF.PI / 180)
-        {
-            Temp_IsActivated = true;
-            return;
-        }
+            return true;
 
         if (gradientAngleMaxExclusive > gradientAngleMinInclusive)
             activated = (GradientAngle_Average >= gradientAngleMinInclusive) && (GradientAngle_Average < gradientAngleMaxExclusive);
         else
             activated = (GradientAngle_Average >= gradientAngleMinInclusive) || (GradientAngle_Average < gradientAngleMaxExclusive);
-        Temp_IsActivated = activated;
+        return activated;
     }
 
     public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstantsObsolete constants, Vector2 offset = default)
@@ -543,4 +574,13 @@ public class GradientSample
     public readonly FastList<Detector> Detectors = new(300);
 
     public float Temp_ActivatedTotal;
+}
+
+public class RetinaPoint
+{
+    public GradientInPoint GradientInPoint;
+
+    public double CenterXPixels { get; init; }
+
+    public double CenterYPixels { get; init; }
 }

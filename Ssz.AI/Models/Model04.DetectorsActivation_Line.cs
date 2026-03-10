@@ -170,7 +170,8 @@ namespace Ssz.AI.Models
 
             // Применяем оператор Собеля к первому изображению
             DenseMatrix<GradientInPoint> gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
-            
+
+            Retina.CalculateRetinaPoints(gradientMatrix);
             List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
             Parallel.For(
                     fromInclusive: 0,
@@ -178,7 +179,7 @@ namespace Ssz.AI.Models
                     d_index =>
                     {
                         var d = Cortex.SubArea_Detectors[d_index];
-                        d.CalculateIsActivated(Retina, gradientMatrix, Constants);
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                         if (d.Temp_IsActivated)
                         {                            
                             activatedDetectors.Add(d);
@@ -357,6 +358,10 @@ namespace Ssz.AI.Models
             public Size2DFloat PhysicalImageSize => throw new NotImplementedException();
 
             public float DistanceBetweenEyes => throw new NotImplementedException();
+
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
 
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 

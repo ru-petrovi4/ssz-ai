@@ -908,10 +908,11 @@ namespace Ssz.AI.Models
         public void CalculateDetectorsAndActivityAndSuperActivity(DenseMatrix<GradientInPoint> gradientMatrix, ActivitiyMaxInfo activitiyMaxInfo)
         {
 #if DEBUG
+            Retina.CalculateRetinaPoints(gradientMatrix);
             for (int di = 0; di < Cortex.SubArea_Detectors.Length; di += 1)
             {
                 var d = Cortex.SubArea_Detectors[di];
-                d.CalculateIsActivated(Retina, gradientMatrix, Constants);
+                d.Temp_IsActivated = d.CalculateIsActivated();
             }
 #else
             Parallel.For(
@@ -920,7 +921,7 @@ namespace Ssz.AI.Models
                     di =>
                     {
                         var d = Cortex.SubArea_Detectors[di];
-                        d.CalculateIsActivated(Retina, gradientMatrix, Constants);
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
 #endif
 
@@ -1445,6 +1446,10 @@ namespace Ssz.AI.Models
             public Size2DFloat PhysicalImageSize => throw new NotImplementedException();
 
             public float DistanceBetweenEyes => throw new NotImplementedException();
+
+            public float RetinaPointDeltaPixels => 0.2f;
+
+            public float DetectorFieldOfViewRadiusPixels => 1.0f;
 
             public int FullFieldOfView_MiniColumns => throw new NotImplementedException();
 

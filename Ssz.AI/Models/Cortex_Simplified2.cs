@@ -100,25 +100,27 @@ namespace Ssz.AI.Models
                 var stereoInputImage = stereoInputImages[i];
 
                 var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
+                leftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
                 var leftEye_Detectors = leftEye.Retina.Detectors;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: leftEye_Detectors.Data.Length,
                     d_index =>
                     {
-                        var d = leftEye_Detectors.Data[d_index];
-                        d.CalculateIsActivated(leftEye.Retina, leftEye_GradientMatrix, Constants);
+                        var d = leftEye_Detectors.Data[d_index]!;
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
                 
                 var rightEye_GradientMatrix = stereoInputImage.RightEye_GradientMatrix;
+                rightEye.Retina.CalculateRetinaPoints(rightEye_GradientMatrix);
                 var rightEye_Detectors = rightEye.Retina.Detectors;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: rightEye_Detectors.Data.Length,
                     d_index =>
                     {
-                        var d = rightEye_Detectors.Data[d_index];
-                        d.CalculateIsActivated(rightEye.Retina, rightEye_GradientMatrix, Constants);
+                        var d = rightEye_Detectors.Data[d_index]!;
+                        d.Temp_IsActivated = d.CalculateIsActivated();
                     });
 
                 Parallel.For(

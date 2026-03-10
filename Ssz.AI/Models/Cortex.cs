@@ -659,21 +659,21 @@ namespace Ssz.AI.Models
                 int notNullCount = 0;
                 foreach (var detector in Detectors)
                 {
-                    if (detector.Temp_GradientInPoint.GradX != 0 ||
-                            detector.Temp_GradientInPoint.GradY != 0)
-                    {
-                        if (detector.Temp_GradientInPoint.GradX > max.GradX)
-                            max.GradX = detector.Temp_GradientInPoint.GradX;
-                        if (detector.Temp_GradientInPoint.GradY > max.GradY)
-                            max.GradY = detector.Temp_GradientInPoint.GradY;
-                        if (detector.Temp_GradientInPoint.GradX < min.GradX)
-                            min.GradX = detector.Temp_GradientInPoint.GradX;
-                        if (detector.Temp_GradientInPoint.GradY < min.GradY)
-                            min.GradY = detector.Temp_GradientInPoint.GradY;
-                        gradX += detector.Temp_GradientInPoint.GradX;
-                        gradY += detector.Temp_GradientInPoint.GradY;
-                        notNullCount += 1;
-                    }
+                    //if (detector.Temp_GradientInPoint.GradX != 0 ||
+                    //        detector.Temp_GradientInPoint.GradY != 0)
+                    //{
+                    //    if (detector.Temp_GradientInPoint.GradX > max.GradX)
+                    //        max.GradX = detector.Temp_GradientInPoint.GradX;
+                    //    if (detector.Temp_GradientInPoint.GradY > max.GradY)
+                    //        max.GradY = detector.Temp_GradientInPoint.GradY;
+                    //    if (detector.Temp_GradientInPoint.GradX < min.GradX)
+                    //        min.GradX = detector.Temp_GradientInPoint.GradX;
+                    //    if (detector.Temp_GradientInPoint.GradY < min.GradY)
+                    //        min.GradY = detector.Temp_GradientInPoint.GradY;
+                    //    gradX += detector.Temp_GradientInPoint.GradX;
+                    //    gradY += detector.Temp_GradientInPoint.GradY;
+                    //    notNullCount += 1;
+                    //}
                 }
                 if (notNullCount > 0)
                 {
