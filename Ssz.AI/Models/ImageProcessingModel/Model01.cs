@@ -121,6 +121,16 @@ public class Model01
         Cortex.GenerateOwnedData(initialization_Random, onlyCenterHypercolumn);
         Cortex.Prepare(LeftEye, RightEye, random);
 
+        // Optimization
+        HashSet<RetinaPoint> toCalculateRetinaPoints = new();
+        foreach (var d in Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[0]].Temp_LeftEye_Detectors)
+        {
+            foreach (var rp in d.Temp_RetinaPoints)
+            {
+                toCalculateRetinaPoints.Add(rp);
+            }
+        }
+        LeftEye.Retina.Temp_ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
 
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
