@@ -529,10 +529,7 @@ public partial class Cortex : ISerializableModelObject
         }
 #if DEBUG
         memory.Temp_DetectorsActivated = detectors.Where(d => d.Temp_IsActivated).ToArray();
-#endif
-
-        if (TensorPrimitives.Sum(memory.Hash) < 5)
-            throw new InvalidOperationException();
+#endif        
 
         CreateCortexMemoryColors(memory, hyperColumnCenter_MiniColumn);
 
@@ -862,6 +859,19 @@ public partial class Cortex : ISerializableModelObject
             if (Temp_AdjacentMiniColumns.Count > 0)
                 averageSomDistanceToAdjacent /= Temp_AdjacentMiniColumns.Count;
             return averageSomDistanceToAdjacent;
+        }
+
+        public float GetMinSomSimilarityToAdjacent()
+        {
+            float minSomSimilarityToAdjacent = Single.MaxValue;
+            for (int m_index = 0; m_index < Temp_AdjacentMiniColumns.Count; m_index += 1)
+            {
+                var adjacentMiniColumn = Temp_AdjacentMiniColumns[m_index].Item2;
+                float s = TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+                if (s < minSomSimilarityToAdjacent)
+                    minSomSimilarityToAdjacent = s;
+            }            
+            return minSomSimilarityToAdjacent;
         }
     }
 
