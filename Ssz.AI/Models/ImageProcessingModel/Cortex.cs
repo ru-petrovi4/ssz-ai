@@ -365,18 +365,33 @@ public partial class Cortex : ISerializableModelObject
 
             // Воспоминания для оценки качества вертушки TODO            
             hyperColumnIdealPinwheelMemories.Add(
-                GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, hyperColumnCenter_MiniColumn, leftEye));
+                GetIdealCortexMemory(
+                    initialization_Random, 
+                    hyperColumnCenter_MiniColumn, 
+                    hyperColumnCenter_MiniColumn, 
+                    main_MiniColumn: hyperColumnCenter_MiniColumn, 
+                    leftEye));
 
             foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
             {
                 Temp_IdealPinwheelMemories.Add(
-                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, miniColumn, miniColumn, leftEye));
+                    GetIdealCortexMemory(
+                        initialization_Random, 
+                        hyperColumnCenter_MiniColumn, 
+                        miniColumn, 
+                        main_MiniColumn: miniColumn, 
+                        leftEye));
             }            
 
             foreach (var it in hyperColumnCenter_MiniColumn.Temp_AdjacentMiniColumns)
             {
                 hyperColumnIdealPinwheelMemories.Add(
-                    GetIdealCortexMemory(initialization_Random, hyperColumnCenter_MiniColumn, it.Item2, it.Item2, leftEye));
+                    GetIdealCortexMemory(
+                        initialization_Random, 
+                        hyperColumnCenter_MiniColumn, 
+                        it.Item2, 
+                        main_MiniColumn: it.Item2, 
+                        leftEye));
             }
 
             if (hyperColumnIdealPinwheelMemories.Count == 7)
@@ -414,56 +429,67 @@ public partial class Cortex : ISerializableModelObject
     public Memory GetIdealCortexMemory(
         Random random, 
         MiniColumn hyperColumnCenter_MiniColumn, 
-        MiniColumn idealAngleMagnitude_MiniColumn, 
+        MiniColumn? idealAngleMagnitude_MiniColumn, 
         MiniColumn main_MiniColumn,
         Eye eye)
-    {        
-        float gradientAngle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
-        if (MathF.Abs(hyperColumnCenter_MiniColumn.MCX) < 1.0f && MathF.Abs(hyperColumnCenter_MiniColumn.MCY) < 1.0f)
-        {   
+    {
+        float gradientAngle;
+        float gradientMagnitude;
+
+        if (idealAngleMagnitude_MiniColumn is not null)
+        {
+            gradientAngle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX)));
+            if (MathF.Abs(hyperColumnCenter_MiniColumn.MCX) < 1.0f && MathF.Abs(hyperColumnCenter_MiniColumn.MCY) < 1.0f)
+            {
+            }
+            else
+            {
+                int mci = hyperColumnCenter_MiniColumn.HyperColumn_Mci;
+                int mcj = hyperColumnCenter_MiniColumn.HyperColumn_Mcj;
+                int mcj_remainder = (30000 + mcj) % 3;
+                bool r = mcj % 2 == 0;
+                int mci_remainder = (30000 + mci + (r ? 0 : 2)) % 3;
+                bool c = mci_remainder == 0;
+                float angleHypercolumn;
+                switch (mcj_remainder)
+                {
+                    case 0:
+                        angleHypercolumn = 0;
+                        break;
+                    case 1:
+                        angleHypercolumn = -MathF.PI * 2.0f / 3.0f;
+                        break;
+                    case 2:
+                        angleHypercolumn = MathF.PI * 2.0f / 3.0f;
+                        break;
+                    default:
+                        throw new InvalidOperationException();
+                }
+                gradientAngle = MathHelper.NormalizeAngle(angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle));
+            }
+
+            int gradientMagnitude_K = (int)MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
+                + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
+            if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientRanges.Count)
+            {
+                var gradientRange = eye.Retina.IdealPinwheel_GradientRanges[gradientMagnitude_K]!;
+                gradientMagnitude = gradientRange.GradientMagnitude_Average;                
+            }
+            else
+            {
+                gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
+            }
         }
         else
         {
-            int mci = hyperColumnCenter_MiniColumn.HyperColumn_Mci;
-            int mcj = hyperColumnCenter_MiniColumn.HyperColumn_Mcj;
-            int mcj_remainder = (30000 + mcj) % 3;
-            bool r = mcj % 2 == 0;
-            int mci_remainder = (30000 + mci + (r ? 0 : 2)) % 3;
-            bool c = mci_remainder == 0;            
-            float angleHypercolumn;
-            switch (mcj_remainder)
-            {
-                case 0:
-                    angleHypercolumn = 0;
-                    break;
-                case 1:
-                    angleHypercolumn = -MathF.PI * 2.0f / 3.0f;
-                    break;
-                case 2:
-                    angleHypercolumn = MathF.PI * 2.0f / 3.0f;
-                    break;
-                default:
-                    throw new InvalidOperationException();
-            }
-            gradientAngle = MathHelper.NormalizeAngle(angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle));            
+            gradientAngle = MathHelper.NormalizeAngle(2.0f * MathF.PI * random.NextSingle());
+            gradientMagnitude = (float)(Constants.MinGradientMagnitudeInclusive + (Constants.MaxGradientMagnitudeExclusive - Constants.MinGradientMagnitudeInclusive) * random.NextSingle());
         }
 
-        int gradientMagnitude_K = (int)MathF.Sqrt((idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumn.MCY - hyperColumnCenter_MiniColumn.MCY)
-            + (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumn.MCX - hyperColumnCenter_MiniColumn.MCX));
-        float gradientMagnitude;
-        if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientRanges.Count)
-        {
-            var gradientRange = eye.Retina.IdealPinwheel_GradientRanges[gradientMagnitude_K]!;
-            gradientMagnitude = gradientRange.GradientMagnitude_Average;            
-            if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
-                gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
-            else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
-                gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
-        }
-        else
-        {
+        if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+            gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
+        else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
             gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
-        }
 
         Memory memory = new();
 
@@ -485,7 +511,10 @@ public partial class Cortex : ISerializableModelObject
             GradY = gradientMagnitude * Math.Sin(gradientAngle),
             Magnitude = gradientMagnitude,
             Angle = gradientAngle
-        };        
+        };
+        DenseMatrix<GradientInPoint> eye_GradientMatrix = new DenseMatrix<GradientInPoint>(Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+        eye_GradientMatrix.CreateElementInstances((i, j) => gradientInPoint);
+        eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
         FastList<Detector> detectors;
         if (eye.IsRightEye)
             detectors = main_MiniColumn.Temp_RightEye_Detectors;
@@ -494,7 +523,7 @@ public partial class Cortex : ISerializableModelObject
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
-            detector.Temp_IsActivated = detector.CalculateIsActivated(gradientInPoint);
+            detector.Temp_IsActivated = detector.CalculateIsActivated();
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }

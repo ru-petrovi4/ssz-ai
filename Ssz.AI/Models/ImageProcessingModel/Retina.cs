@@ -79,7 +79,7 @@ public class Retina : ISerializableModelObject
         }
         
         float gradientMagnitudeRange_Samples = 5.0f * inIdealPinwheelMiniColumn_Samples;
-        float gradientAngleRange_MiniColumns = MathF.PI;
+        float gradientAngleRange_MiniColumns = 5.0f;
 
         DetectorGradientRanges = new DenseMatrix<GradientRange?>(Constants.MaxGradientMagnitudeExclusive, 360);                
         
@@ -104,7 +104,7 @@ public class Retina : ISerializableModelObject
             for (int gradientAngleDegree = 0; gradientAngleDegree < DetectorGradientRanges.Dimensions[1]; gradientAngleDegree += 1)            
             {
                 float gradientAngle = MathHelper.DegreesToRadians(gradientAngleDegree);
-                DetectorGradientRanges[gradientMagnitude, gradientAngleDegree] = new GradientRange
+                GradientRange gradientRange = new GradientRange
                 {
                     GradientMagnitude_LowerInclusive = DistributionHelper.GetIndex((ulong)samples_Lower, gradientMagnitude_AccumulativeDistribution),
                     GradientMagnitude_Average = gradientMagnitude,
@@ -113,6 +113,13 @@ public class Retina : ISerializableModelObject
                     GradientAngle_Average = gradientAngle,
                     GradientAngle_UpperExclusive = MathHelper.NormalizeAngle(gradientAngle + angleRange / 2.0f)
                 };
+                float gradientMagnitude_LowerHalfRange = gradientRange.GradientMagnitude_UpperExclusive - gradientRange.GradientMagnitude_Average;
+                float gradientMagnitude_UpperHalfRange = gradientRange.GradientMagnitude_Average - gradientRange.GradientMagnitude_LowerInclusive;
+                if (gradientMagnitude_UpperHalfRange < gradientMagnitude_LowerHalfRange)
+                    gradientRange.GradientMagnitude_UpperExclusive = gradientRange.GradientMagnitude_Average + gradientMagnitude_LowerHalfRange;
+                //else // Excessive
+                //    gradientRange.GradientMagnitude_LowerInclusive = gradientRange.GradientMagnitude_Average - gradientMagnitude_UpperHalfRange;
+                DetectorGradientRanges[gradientMagnitude, gradientAngleDegree] = gradientRange;
             }
         }
 
@@ -236,7 +243,7 @@ public class Retina : ISerializableModelObject
     {   
         // Плотность детекторов, в зависимости от модуля градиента и угла градиента (в градусах) детектора.
         MatrixFloat_ColumnMajor detectorDensities_ShortIndexed = new MatrixFloat_ColumnMajor(
-            (int)(constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta), //(int)(Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta)
+            (int)(DetectorGradientRanges[DetectorGradientRanges.Dimensions[0] - 1, 0]!.GradientMagnitude_UpperExclusive / Constants.GradientMagnitudeDelta),
             (int)(360 / Constants.GradientAngleDegreeDelta));
 
         DenseMatrix<Detector> testDetectors_ShortIndexed = new DenseMatrix<Detector>(detectorDensities_ShortIndexed.Dimensions[0], detectorDensities_ShortIndexed.Dimensions[1]);
