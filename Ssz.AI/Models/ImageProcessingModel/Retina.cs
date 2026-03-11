@@ -51,19 +51,16 @@ public class Retina : ISerializableModelObject
     ///     Generates model data after construction.
     /// </summary>
     public void GenerateOwnedData(Random initializationRandom, GradientDistribution gradientDistribution)
-    {
-        float gradientAngleRange_MiniColumns = 5.0f;
-        float zeroRadius_MiniColumns = gradientAngleRange_MiniColumns / (2.0f * MathF.PI);
-
+    {   
         int idealPinwheel_GradientMagnitudeRanges_Count = Constants.HyperColumnDefinedRadius_MiniColumns + 1;
         IdealPinwheel_GradientRanges = new FastList<GradientRange?>(idealPinwheel_GradientMagnitudeRanges_Count);
         ulong[] gradientMagnitude_AccumulativeDistribution = DistributionHelper.GetAccumulativeDistribution(gradientDistribution.MagnitudeData);
         ulong samples_Total = gradientMagnitude_AccumulativeDistribution[^1];
-        float inIdealPinwheelMiniColumn_Samples = samples_Total / (zeroRadius_MiniColumns + idealPinwheel_GradientMagnitudeRanges_Count - 1);        
+        float inIdealPinwheelMiniColumn_Samples = samples_Total / (idealPinwheel_GradientMagnitudeRanges_Count - 0.5f);        
         int gradientMagnitude_LowerInclusive = 0;        
         for (int range_Index = 0; range_Index < idealPinwheel_GradientMagnitudeRanges_Count; range_Index += 1)
         {
-            ulong samples_UpperLimit = (ulong)(inIdealPinwheelMiniColumn_Samples * (zeroRadius_MiniColumns + range_Index));            
+            ulong samples_UpperLimit = (ulong)(inIdealPinwheelMiniColumn_Samples * (0.5f + range_Index));            
 
             if (samples_UpperLimit > samples_Total)
                 samples_UpperLimit = samples_Total;
@@ -82,6 +79,7 @@ public class Retina : ISerializableModelObject
         }
         
         float gradientMagnitudeRange_Samples = 5.0f * inIdealPinwheelMiniColumn_Samples;
+        float gradientAngleRange_MiniColumns = MathF.PI;
 
         DetectorGradientRanges = new DenseMatrix<GradientRange?>(Constants.MaxGradientMagnitudeExclusive, 360);                
         
