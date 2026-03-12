@@ -206,11 +206,17 @@ public class Model01
             //if (!nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnMiniColumns.Contains(miniColumn))
             //    continue;
 
-            var idealCortexMemory = Cortex.GetIdealCortexMemory(random, nearest_HyperColumnCenter_MiniColumn, miniColumn, miniColumn, LeftEye);
+            var idealCortexMemory = Cortex.GetIdealCortexMemory(
+                random,
+                hyperColumnCenter_MiniColumn: nearest_HyperColumnCenter_MiniColumn,
+                idealAngleMagnitude_MiniColumn: miniColumn,
+                main_MiniColumn: nearest_HyperColumnCenter_MiniColumn, 
+                LeftEye);
             
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
                 miniColumn.CortexMemories.Add(idealCortexMemory);
+                Array.Copy(idealCortexMemory.Hash, miniColumn.Temp_SomWeights, idealCortexMemory.Hash.Length);
             }
         }
     }

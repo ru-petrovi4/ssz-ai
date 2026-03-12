@@ -56,12 +56,12 @@ public class StereoInput : ISerializableModelObject
             stereoInputSample.LeftEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.LeftRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
             
             //SobelOperator.CalculateDistribution(stereoInputSample.LeftEye_GradientMatrix, leftEye_GradientDistribution, constants);
-            Array.Fill(leftEye_GradientDistribution.MagnitudeData, 1u, (int)constants.MinGradientMagnitudeInclusive, (int)constants.MaxGradientMagnitudeExclusive);
+            Array.Fill(leftEye_GradientDistribution.MagnitudeData, 1u, (int)constants.MinGradientMagnitudeInclusive, (int)(constants.MaxGradientMagnitudeExclusive - constants.MinGradientMagnitudeInclusive));
             
             stereoInputSample.RightEye_GradientMatrix = SobelOperator.ApplySobel(stereoInputSample.RightRetinaImageData, constants.RetinaImagePixelSize.Width, constants.RetinaImagePixelSize.Height);
             
             //SobelOperator.CalculateDistribution(stereoInputSample.RightEye_GradientMatrix, rightEye_GradientDistribution, constants);
-            Array.Fill(rightEye_GradientDistribution.MagnitudeData, 1u, (int)constants.MinGradientMagnitudeInclusive, (int)constants.MaxGradientMagnitudeExclusive);
+            Array.Fill(rightEye_GradientDistribution.MagnitudeData, 1u, (int)constants.MinGradientMagnitudeInclusive, (int)(constants.MaxGradientMagnitudeExclusive - constants.MinGradientMagnitudeInclusive));
         }
     }
 

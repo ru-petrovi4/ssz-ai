@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using System.Numerics.Tensors;
 using System.Runtime.CompilerServices;
 
 namespace Ssz.AI.Helpers
