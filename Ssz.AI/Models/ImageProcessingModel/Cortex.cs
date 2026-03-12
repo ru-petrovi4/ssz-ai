@@ -512,9 +512,9 @@ public partial class Cortex : ISerializableModelObject
             Magnitude = gradientMagnitude,
             Angle = gradientAngle
         };
-        DenseMatrix<GradientInPoint> eye_GradientMatrix = new DenseMatrix<GradientInPoint>(Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
-        eye_GradientMatrix.CreateElementInstances((i, j) => gradientInPoint);
-        eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
+        //DenseMatrix<GradientInPoint> eye_GradientMatrix = new DenseMatrix<GradientInPoint>(Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+        //eye_GradientMatrix.CreateElementInstances((i, j) => gradientInPoint);
+        //eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
         FastList<Detector> detectors;
         if (eye.IsRightEye)
             detectors = main_MiniColumn.Temp_RightEye_Detectors;
@@ -523,7 +523,7 @@ public partial class Cortex : ISerializableModelObject
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
-            detector.Temp_IsActivated = detector.CalculateIsActivated();
+            detector.Temp_IsActivated = detector.CalculateIsActivated(gradientInPoint);
             if (detector.Temp_IsActivated)
                 memory.Hash[detector.BitIndexInHash] = 1.0f;
         }
