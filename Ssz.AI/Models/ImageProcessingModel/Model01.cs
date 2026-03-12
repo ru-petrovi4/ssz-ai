@@ -283,7 +283,7 @@ public class Model01
         Cortex.Memory idealCortexMemory = Cortex.GetIdealCortexMemory(
             random,
             nearest_HyperColumnCenter_MiniColumn,
-            idealAngleMagnitude_MiniColumn,
+            idealAngleMagnitude_MiniColumn: null,
             main_MiniColumn: nearest_HyperColumnCenter_MiniColumn, 
             LeftEye
             );
