@@ -420,7 +420,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 0.0f;
+        const float lambda = -0.4f;
         if (lambda != 0.0f)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
