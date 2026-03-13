@@ -211,8 +211,7 @@ public class Model01
                 hyperColumnCenter_MiniColumn: nearest_HyperColumnCenter_MiniColumn,
                 idealAngleMagnitude_MiniColumn: miniColumn,
                 main_MiniColumn: nearest_HyperColumnCenter_MiniColumn, 
-                LeftEye,
-                equalDensity: true);
+                LeftEye);
             
             for (int i = 0; i < inMiniColumn_CortexMemoriesCount; i += 1)
             {
@@ -286,9 +285,7 @@ public class Model01
             nearest_HyperColumnCenter_MiniColumn,
             idealAngleMagnitude_MiniColumn: null,
             main_MiniColumn: nearest_HyperColumnCenter_MiniColumn, 
-            LeftEye,
-            equalDensity: true
-            );
+            LeftEye);
         return (idealCortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 

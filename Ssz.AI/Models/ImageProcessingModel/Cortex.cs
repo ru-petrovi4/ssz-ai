@@ -370,8 +370,7 @@ public partial class Cortex : ISerializableModelObject
                     hyperColumnCenter_MiniColumn, 
                     hyperColumnCenter_MiniColumn, 
                     main_MiniColumn: hyperColumnCenter_MiniColumn, 
-                    leftEye,
-                    equalDensity: true));
+                    leftEye));
 
             foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
             {
@@ -381,8 +380,7 @@ public partial class Cortex : ISerializableModelObject
                         hyperColumnCenter_MiniColumn, 
                         miniColumn, 
                         main_MiniColumn: miniColumn, 
-                        leftEye,
-                        equalDensity: true));
+                        leftEye));
             }            
 
             foreach (var it in hyperColumnCenter_MiniColumn.Temp_AdjacentMiniColumns)
@@ -393,8 +391,7 @@ public partial class Cortex : ISerializableModelObject
                         hyperColumnCenter_MiniColumn, 
                         it.Item2, 
                         main_MiniColumn: it.Item2, 
-                        leftEye,
-                        equalDensity: true));
+                        leftEye));
             }
 
             if (hyperColumnIdealPinwheelMemories.Count == 7)
@@ -434,13 +431,12 @@ public partial class Cortex : ISerializableModelObject
         MiniColumn hyperColumnCenter_MiniColumn, 
         MiniColumn? idealAngleMagnitude_MiniColumn, 
         MiniColumn main_MiniColumn,
-        Eye eye,
-        bool equalDensity)
+        Eye eye)
     {
         float gradientAngle;
         float gradientMagnitude;
 
-        if (equalDensity)
+        while (true)
         {
             float idealAngleMagnitude_MiniColumnMCX;
             float idealAngleMagnitude_MiniColumnMCY;
@@ -451,10 +447,9 @@ public partial class Cortex : ISerializableModelObject
                 idealAngleMagnitude_MiniColumnMCY = idealAngleMagnitude_MiniColumn.MCY;
             }
             else
-            {
-                var r = () => MathF.Pow(random.NextSingle(), 3) * (random.Next(2) * 2 - 1);
-                idealAngleMagnitude_MiniColumnMCX = hyperColumnCenter_MiniColumn.MCX + r() * Constants.HyperColumnDefinedRadius_MiniColumns;
-                idealAngleMagnitude_MiniColumnMCY = hyperColumnCenter_MiniColumn.MCY + r() * Constants.HyperColumnDefinedRadius_MiniColumns;
+            {                
+                idealAngleMagnitude_MiniColumnMCX = hyperColumnCenter_MiniColumn.MCX + MathF.Pow(random.NextSingle(), 1.0f) * (random.Next(2) * 2 - 1) * Constants.HyperColumnDefinedRadius_MiniColumns;
+                idealAngleMagnitude_MiniColumnMCY = hyperColumnCenter_MiniColumn.MCY + MathF.Pow(random.NextSingle(), 1.0f) * (random.Next(2) * 2 - 1) * Constants.HyperColumnDefinedRadius_MiniColumns;
             }
 
             gradientAngle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX)));
@@ -485,40 +480,38 @@ public partial class Cortex : ISerializableModelObject
                         throw new InvalidOperationException();
                 }
                 gradientAngle = MathHelper.NormalizeAngle(angleHypercolumn + (c ? gradientAngle : MathF.PI - gradientAngle));
-            }
+            }            
+
+            float r_MiniColumns = MathF.Sqrt((idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY)
+                    + (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX));
+            
+            float inIdealPinwheelMiniColumn_Samples = (float)eye.Retina.GradientMagnitude_AccumulativeDistribution[^1] / Constants.HyperColumnDefinedRadius_MiniColumns;
+            gradientMagnitude = DistributionHelper.GetIndex((ulong)(r_MiniColumns * inIdealPinwheelMiniColumn_Samples), eye.Retina.GradientMagnitude_AccumulativeDistribution);
 
             if (idealAngleMagnitude_MiniColumn is not null)
             {
-                int gradientMagnitude_K = (int)MathF.Sqrt((idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY)
-                    + (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX));
-                if (gradientMagnitude_K < eye.Retina.IdealPinwheel_GradientRanges.Count)
-                {
-                    var gradientRange = eye.Retina.IdealPinwheel_GradientRanges[gradientMagnitude_K]!;
-                    gradientMagnitude = gradientRange.GradientMagnitude_Average;
-                }
-                else
-                {
+                if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+                    gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
+                else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
                     gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
-                }
             }
             else
             {
-                float in1MiniColumn_Magnitude = eye.Retina.IdealPinwheel_GradientRanges[^1]!.GradientMagnitude_UpperExclusive / (eye.Retina.IdealPinwheel_GradientRanges.Count - 0.5f);
-                gradientMagnitude = MathF.Sqrt((idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY) * (idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY)
-                    + (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX) * (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX)) *
-                    in1MiniColumn_Magnitude;
-            }
-        }
-        else
-        {
-            gradientAngle = MathHelper.NormalizeAngle(2.0f * MathF.PI * random.NextSingle());
-            gradientMagnitude = (float)(Constants.MinGradientMagnitudeInclusive + (Constants.MaxGradientMagnitudeExclusive - Constants.MinGradientMagnitudeInclusive) * random.NextSingle());
-        }
+                if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
+                    continue;
+                else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive * 0.9f - 1)
+                    continue;
+            }            
 
-        if (gradientMagnitude < (float)Constants.MinGradientMagnitudeInclusive)
-            gradientMagnitude = (float)Constants.MinGradientMagnitudeInclusive;
-        else if (gradientMagnitude > Constants.MaxGradientMagnitudeExclusive - 1)
-            gradientMagnitude = Constants.MaxGradientMagnitudeExclusive - 1;
+            break;
+        }
+        //else
+        //{
+        //    gradientAngle = MathHelper.NormalizeAngle(2.0f * MathF.PI * random.NextSingle());
+        //    gradientMagnitude = (float)(Constants.MinGradientMagnitudeInclusive + (Constants.MaxGradientMagnitudeExclusive - Constants.MinGradientMagnitudeInclusive) * random.NextSingle());
+        //}
+
+        
 
         Memory memory = new();
 
