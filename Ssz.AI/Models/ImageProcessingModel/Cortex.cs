@@ -452,8 +452,9 @@ public partial class Cortex : ISerializableModelObject
             }
             else
             {
-                idealAngleMagnitude_MiniColumnMCX = hyperColumnCenter_MiniColumn.MCX + (-1.0f + 2.0f * random.NextSingle()) * Constants.HyperColumnDefinedRadius_MiniColumns;
-                idealAngleMagnitude_MiniColumnMCY = hyperColumnCenter_MiniColumn.MCY + (-1.0f + 2.0f * random.NextSingle()) * Constants.HyperColumnDefinedRadius_MiniColumns;
+                var r = () => MathF.Pow(random.NextSingle(), 3) * (random.Next(2) * 2 - 1);
+                idealAngleMagnitude_MiniColumnMCX = hyperColumnCenter_MiniColumn.MCX + r() * Constants.HyperColumnDefinedRadius_MiniColumns;
+                idealAngleMagnitude_MiniColumnMCY = hyperColumnCenter_MiniColumn.MCY + r() * Constants.HyperColumnDefinedRadius_MiniColumns;
             }
 
             gradientAngle = MathHelper.NormalizeAngle(MathF.Atan2((idealAngleMagnitude_MiniColumnMCY - hyperColumnCenter_MiniColumn.MCY), (idealAngleMagnitude_MiniColumnMCX - hyperColumnCenter_MiniColumn.MCX)));
