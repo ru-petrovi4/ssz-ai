@@ -401,7 +401,20 @@ public class Model01
             if (it.Item2.Index != bestForMemoryMiniColumn.Index)
                 bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Add((neighborhood, it.Item2));
 
-            float coeff = alpha * neighborhood; // общий скалярный множитель шага
+            float localizedLearningK = 1.0f;
+            //if (it.Item2.Temp_AdjacentMiniColumns.Count > 0)
+            //{
+            //    localizedLearningK = 0.0f;
+            //    for (int mc_Index = 0; mc_Index < it.Item2.Temp_AdjacentMiniColumns.Count; mc_Index += 1)
+            //    {
+            //        var adjacentMiniColumn = it.Item2.Temp_AdjacentMiniColumns[mc_Index].Item2;
+            //        localizedLearningK += TensorPrimitives.CosineSimilarity(it.Item2.Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+            //    }
+            //    localizedLearningK /= it.Item2.Temp_AdjacentMiniColumns.Count;
+            //    localizedLearningK = 1.0f - localizedLearningK * localizedLearningK;
+            //}
+
+            float coeff = alpha * neighborhood * localizedLearningK; // общий скалярный множитель шага
 
             TensorPrimitives.Subtract(cortexMemory.Hash, it.Item2.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
