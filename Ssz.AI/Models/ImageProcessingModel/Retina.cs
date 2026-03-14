@@ -77,12 +77,13 @@ public class Retina : ISerializableModelObject
                 samples_Lower = 0;
             long samples_Upper = (long)(samples + gradientMagnitudeRange_Samples / 2.0f);
             if (samples_Upper > (long)samples_Total)
-                samples_Upper = (long)samples_Total;               
+                samples_Upper = (long)samples_Total;
 
+            GradientRange? gradientRange = null;
             for (int gradientAngleDegree = 0; gradientAngleDegree < DetectorGradientRanges.Dimensions[1]; gradientAngleDegree += 1)            
             {
                 float gradientAngle = MathHelper.DegreesToRadians(gradientAngleDegree);
-                GradientRange gradientRange = new GradientRange
+                gradientRange = new GradientRange
                 {
                     GradientMagnitude_LowerInclusive = DistributionHelper.GetIndex((ulong)samples_Lower, GradientMagnitude_AccumulativeDistribution),
                     GradientMagnitude_Average = gradientMagnitude,
@@ -94,9 +95,9 @@ public class Retina : ISerializableModelObject
                 };
                 float gradientMagnitude_UpperHalfRange = gradientRange.GradientMagnitude_UpperExclusive - gradientRange.GradientMagnitude_Average;
                 float gradientMagnitude_LowerHalfRange = gradientRange.GradientMagnitude_Average - gradientRange.GradientMagnitude_LowerInclusive;
-                if (gradientMagnitude_UpperHalfRange < gradientMagnitude_LowerHalfRange)
+                if (samples_Upper == (long)samples_Total && gradientMagnitude_UpperHalfRange < gradientMagnitude_LowerHalfRange)
                     gradientRange.GradientMagnitude_UpperExclusive = gradientRange.GradientMagnitude_Average + gradientMagnitude_LowerHalfRange;
-                else
+                else if (samples_Lower == 0 && gradientMagnitude_LowerHalfRange < gradientMagnitude_UpperHalfRange)
                     gradientRange.GradientMagnitude_LowerInclusive = gradientRange.GradientMagnitude_Average - gradientMagnitude_UpperHalfRange;
                 DetectorGradientRanges[gradientMagnitude, gradientAngleDegree] = gradientRange;
             }
