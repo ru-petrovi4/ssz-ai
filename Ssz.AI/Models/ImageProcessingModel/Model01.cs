@@ -399,47 +399,34 @@ public class Model01
                 continue; // мелкий порог, чтобы не считать лишнее
 
             if (it.Item2.Index != bestForMemoryMiniColumn.Index)
-                bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Add((neighborhood, it.Item2));
-
-            float localizedLearningK = 1.0f;
-            //if (it.Item2.Temp_AdjacentMiniColumns.Count > 0)
-            //{
-            //    localizedLearningK = 0.0f;
-            //    for (int mc_Index = 0; mc_Index < it.Item2.Temp_AdjacentMiniColumns.Count; mc_Index += 1)
-            //    {
-            //        var adjacentMiniColumn = it.Item2.Temp_AdjacentMiniColumns[mc_Index].Item2;
-            //        localizedLearningK += TensorPrimitives.CosineSimilarity(it.Item2.Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
-            //    }
-            //    localizedLearningK /= it.Item2.Temp_AdjacentMiniColumns.Count;
-            //    localizedLearningK = 1.0f - localizedLearningK * localizedLearningK;
-            //}
-
-            float coeff = alpha * neighborhood * localizedLearningK; // общий скалярный множитель шага
+                bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Add((neighborhood, it.Item2));            
 
             TensorPrimitives.Subtract(cortexMemory.Hash, it.Item2.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
-            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, coeff, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
+            TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = -0.4f;
-        if (lambda != 0.0f)
+        const float lambda = -1.0f;
+        if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
             // для каждой компоненты d
 #pragma warning disable CS0162 // Unreachable code detected
             Array.Clear(bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
 #pragma warning restore CS0162 // Unreachable code detected
+            float neighborhood_sum = 0.0f;
             for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count; index += 1)
             {
                 var it = bestForMemoryMiniColumn.Temp_NearestMiniColumns2[index];
 
                 float neighborhood = it.Item1;
+                neighborhood_sum += neighborhood;
 
                 TensorPrimitives.Subtract(it.Item2.Temp_SomWeights, bestForMemoryMiniColumn.Temp_SomWeights, it.Item2.Temp_SomWeightsDiff);
                 TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, neighborhood, bestForMemoryMiniColumn.Temp_SomWeightsCorrection, bestForMemoryMiniColumn.Temp_SomWeightsCorrection);
             }
 
             // Применяем: w_s += η · λ · correction
-            TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, lambda * alpha, bestForMemoryMiniColumn.Temp_NewSomWeights, bestForMemoryMiniColumn.Temp_NewSomWeights);
+            TensorPrimitives.MultiplyAdd(bestForMemoryMiniColumn.Temp_SomWeightsCorrection, alpha * lambda / neighborhood_sum, bestForMemoryMiniColumn.Temp_NewSomWeights, bestForMemoryMiniColumn.Temp_NewSomWeights);
         }
 
         for (int index = 0; index < bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count; index += 1)
@@ -1103,3 +1090,19 @@ public class Model01
         public bool SingleMemory { get; set; } = false;        
     }
 }
+
+
+//float localizedLearningK = 1.0f;
+//if (it.Item2.Temp_AdjacentMiniColumns.Count > 0)
+//{
+//    localizedLearningK = 0.0f;
+//    for (int mc_Index = 0; mc_Index < it.Item2.Temp_AdjacentMiniColumns.Count; mc_Index += 1)
+//    {
+//        var adjacentMiniColumn = it.Item2.Temp_AdjacentMiniColumns[mc_Index].Item2;
+//        localizedLearningK += TensorPrimitives.CosineSimilarity(it.Item2.Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+//    }
+//    localizedLearningK /= it.Item2.Temp_AdjacentMiniColumns.Count;
+//    localizedLearningK = 100.0f * (1.0f - localizedLearningK);
+//    if (localizedLearningK > 1.0f)
+//        localizedLearningK = 1.0f;
+//}
