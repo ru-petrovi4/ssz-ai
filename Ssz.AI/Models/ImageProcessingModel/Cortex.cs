@@ -448,7 +448,7 @@ public partial class Cortex : ISerializableModelObject
             }
             else
             {
-                var f = () => MathF.Pow(random.NextSingle(), 1.0f) * (random.Next(2) * 2 - 1); // 3
+                var f = () => MathF.Pow(random.NextSingle(), 1.3f) * (random.Next(2) * 2 - 1); // 3
                 idealAngleMagnitude_MiniColumnMCX = hyperColumnCenter_MiniColumn.MCX + f() * Constants.HyperColumnDefinedRadius_MiniColumns;
                 idealAngleMagnitude_MiniColumnMCY = hyperColumnCenter_MiniColumn.MCY + f() * Constants.HyperColumnDefinedRadius_MiniColumns;
             }
