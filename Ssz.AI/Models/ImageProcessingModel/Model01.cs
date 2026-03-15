@@ -336,7 +336,7 @@ public class Model01
                 var info = Cortex.GetIdealPinwheelMemory_BestInfo(cortexMemory.Hash);
                 if (info.IdealPinwheelMemory_Best is not null)
                 {
-                    float limit = info.AverageSimilarMemoriesCount * 2.0f;
+                    float limit = info.AverageSimilarMemoriesCount * 1.5f;
                     if (limit > 10.0f && info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount > limit)
                         continue;
                     info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount += 1;

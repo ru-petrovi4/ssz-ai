@@ -47,28 +47,28 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
 
 
-        //Task.Run(async () =>
-        //{
-        //    try
-        //    {
-        //        Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+        Task.Run(async () =>
+        {
+            try
+            {
+                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-        //        await Model.ProcessSomNAsync((int)(300 * Model.StereoInput.StereoInputSamples.Length), _random, CancellationToken.None, () =>
-        //        {
-        //            Dispatcher.UIThread.Invoke(() =>
-        //            {
-        //                Refresh_ImagesSet();
-        //            });
-        //            return Task.CompletedTask;
-        //        },
-        //        isIdeal: false);
-        //    }
-        //    catch (OperationCanceledException)
-        //    {
-        //        Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
-        //    }
-        //    Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
-        //});
+                await Model.ProcessSomNAsync((int)(300 * Model.StereoInput.StereoInputSamples.Length), _random, CancellationToken.None, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                },
+                isIdeal: false);
+            }
+            catch (OperationCanceledException)
+            {
+                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+            }
+            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+        });
     }
 
     public Model01 Model = null!;
