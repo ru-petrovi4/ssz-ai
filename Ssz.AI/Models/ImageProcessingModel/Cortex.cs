@@ -684,10 +684,15 @@ public partial class Cortex : ISerializableModelObject
         float max = Single.MinValue;
         Memory? idealPinwheelMemory_Best = null;
         float averageSimilarMemoriesCount = 0.0f;
+        int notNull_IdealPinwheelMemories_Count = 0;
         for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
             var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
-            averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
+            if (idealPinwheelMemory.Temp_SimilarMemoriesCount > 0)
+            {
+                averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
+                notNull_IdealPinwheelMemories_Count += 1;
+            }
             float f = TensorPrimitives.CosineSimilarity(hash, idealPinwheelMemory.Hash);
             if (f > max)
             {
@@ -695,9 +700,15 @@ public partial class Cortex : ISerializableModelObject
                 idealPinwheelMemory_Best = idealPinwheelMemory;
             }
         }
-        if (Temp_IdealPinwheelMemories.Count > 0)
-            averageSimilarMemoriesCount /= Temp_IdealPinwheelMemories.Count;
-        return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);
+        if (notNull_IdealPinwheelMemories_Count > 0)
+        {
+            averageSimilarMemoriesCount /= notNull_IdealPinwheelMemories_Count;
+            return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);
+        }
+        else
+        {
+            return (null, 0);
+        }
     }
 
     #endregion

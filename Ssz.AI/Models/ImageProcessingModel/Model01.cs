@@ -336,8 +336,8 @@ public class Model01
                 var info = Cortex.GetIdealPinwheelMemory_BestInfo(cortexMemory.Hash);
                 if (info.IdealPinwheelMemory_Best is not null)
                 {
-                    float limit = info.AverageSimilarMemoriesCount * 2;
-                    if (limit > 20 && info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount > limit)
+                    float limit = info.AverageSimilarMemoriesCount * 1.5f;
+                    if (limit > 15 && info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount > limit)
                         continue;
                     info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount += 1;
                 }
@@ -414,7 +414,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 0.8f;
+        const float lambda = 1.0f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
@@ -1040,7 +1040,7 @@ public class Model01
 
         public float RetinaPointDeltaPixels => 0.2f;
 
-        public float DetectorFieldOfViewRadiusPixels => 0.5f;
+        public float DetectorFieldOfViewRadiusPixels => 0.6f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.
