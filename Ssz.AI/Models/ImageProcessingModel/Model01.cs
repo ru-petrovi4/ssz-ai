@@ -333,7 +333,14 @@ public class Model01
                 if (cortexMemory_BitsCount < 5)
                     continue;
 
-
+                var info = Cortex.GetIdealPinwheelMemory_BestInfo(cortexMemory.Hash);
+                if (info.IdealPinwheelMemory_Best is not null)
+                {
+                    float limit = info.AverageSimilarMemoriesCount * 2;
+                    if (limit > 20 && info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount > limit)
+                        continue;
+                    info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount += 1;
+                }
 
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
