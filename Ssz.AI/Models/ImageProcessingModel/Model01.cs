@@ -333,6 +333,8 @@ public class Model01
                 if (cortexMemory_BitsCount < 5)
                     continue;
 
+
+
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 

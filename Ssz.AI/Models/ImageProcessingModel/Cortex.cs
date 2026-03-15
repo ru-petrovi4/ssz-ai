@@ -629,9 +629,7 @@ public partial class Cortex : ISerializableModelObject
     public void SerializeOwnedData(SerializationWriter writer, object? context)
     {
         using (writer.EnterBlock(1))
-        {            
-            writer.WriteFastListOfOwnedDataSerializable(Temp_IdealPinwheelCenterMemories, context);
-            writer.WriteFastListOfOwnedDataSerializable(Temp_IdealPinwheelMemories, context);
+        {   
             writer.WriteFastListOfOwnedDataSerializable(MiniColumns, context);
             HyperColumnCenters_MiniColumnIndices.SerializeOwnedData(writer, context);            
         }
@@ -644,8 +642,6 @@ public partial class Cortex : ISerializableModelObject
             switch (block.Version)
             {
                 case 1:                    
-                    Temp_IdealPinwheelCenterMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
-                    Temp_IdealPinwheelMemories = reader.ReadFastListOfOwnedDataSerializable(idx => new Memory(), context);
                     MiniColumns = reader.ReadFastListOfOwnedDataSerializable(idx => new MiniColumn(Constants), context);
                     HyperColumnCenters_MiniColumnIndices = new FastList<int>();
                     HyperColumnCenters_MiniColumnIndices.DeserializeOwnedData(reader, context);
