@@ -687,7 +687,7 @@ public partial class Cortex : ISerializableModelObject
         int notNull_IdealPinwheelMemories_Count = 0;
         for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
-            var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
+            var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];            
             if (idealPinwheelMemory.Temp_SimilarMemoriesCount > 0)
             {
                 averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
@@ -701,14 +701,9 @@ public partial class Cortex : ISerializableModelObject
             }
         }
         if (notNull_IdealPinwheelMemories_Count > 0)
-        {
             averageSimilarMemoriesCount /= notNull_IdealPinwheelMemories_Count;
-            return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);
-        }
-        else
-        {
-            return (null, 0);
-        }
+
+        return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);        
     }
 
     #endregion
