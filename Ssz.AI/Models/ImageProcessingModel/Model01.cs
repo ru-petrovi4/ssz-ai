@@ -405,7 +405,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 1.0f;
+        const float lambda = 0.8f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
@@ -1031,7 +1031,7 @@ public class Model01
 
         public float RetinaPointDeltaPixels => 0.2f;
 
-        public float DetectorFieldOfViewRadiusPixels => 1.0f;
+        public float DetectorFieldOfViewRadiusPixels => 0.5f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.

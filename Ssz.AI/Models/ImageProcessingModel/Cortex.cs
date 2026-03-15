@@ -91,13 +91,13 @@ public partial class Cortex : ISerializableModelObject
     public FastList<int> HyperColumnCenters_MiniColumnIndices { get; private set; } = null!;
 
     /// <summary>
-    ///     Первое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
+    ///     Нулевое воспоминеие нулевое в идеальной вертушке. Следующие 6 воспоминаний вокруг нулевого в идеальной вертушке.
     ///     И так для каждой гиперколонки.
     /// </summary>
     public FastList<Memory> Temp_IdealPinwheelCenterMemories { get; private set; } = null!;
 
     /// <summary>
-    ///     Набор идеальных воспоминаний.
+    ///     Набор идеальных воспоминаний. Сначала для одной гиперколонки, потом для другой, и .т.д.
     /// </summary>
     public FastList<Memory> Temp_IdealPinwheelMemories { get; private set; } = null!;
 
@@ -361,41 +361,41 @@ public partial class Cortex : ISerializableModelObject
         {
             MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
 
-            var hyperColumnIdealPinwheelMemories = new FastList<Memory>(7);
+            var hyperColumn_IdealPinwheelCenterMemories = new FastList<Memory>(7);
 
             // Воспоминания для оценки качества вертушки TODO            
-            hyperColumnIdealPinwheelMemories.Add(
+            hyperColumn_IdealPinwheelCenterMemories.Add(
                 GetIdealCortexMemory(
-                    initialization_Random, 
-                    hyperColumnCenter_MiniColumn, 
-                    hyperColumnCenter_MiniColumn, 
+                    initialization_Random,
+                    hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
+                    idealAngleMagnitude_MiniColumn: hyperColumnCenter_MiniColumn, 
                     main_MiniColumn: hyperColumnCenter_MiniColumn, 
                     leftEye));
 
-            foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnMax_MiniColumns)
+            foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns)
             {
                 Temp_IdealPinwheelMemories.Add(
                     GetIdealCortexMemory(
-                        initialization_Random, 
-                        hyperColumnCenter_MiniColumn, 
-                        miniColumn, 
+                        initialization_Random,
+                        hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
+                        idealAngleMagnitude_MiniColumn: miniColumn, 
                         main_MiniColumn: miniColumn, 
                         leftEye));
             }            
 
             foreach (var it in hyperColumnCenter_MiniColumn.Temp_AdjacentMiniColumns)
             {
-                hyperColumnIdealPinwheelMemories.Add(
+                hyperColumn_IdealPinwheelCenterMemories.Add(
                     GetIdealCortexMemory(
-                        initialization_Random, 
-                        hyperColumnCenter_MiniColumn, 
-                        it.Item2, 
+                        initialization_Random,
+                        hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
+                        idealAngleMagnitude_MiniColumn: it.Item2, 
                         main_MiniColumn: it.Item2, 
                         leftEye));
             }
 
-            if (hyperColumnIdealPinwheelMemories.Count == 7)
-                Temp_IdealPinwheelCenterMemories.AddRange(hyperColumnIdealPinwheelMemories.Items);
+            if (hyperColumn_IdealPinwheelCenterMemories.Count == 7)
+                Temp_IdealPinwheelCenterMemories.AddRange(hyperColumn_IdealPinwheelCenterMemories.Items);
         }
     }
 
@@ -612,6 +612,8 @@ public partial class Cortex : ISerializableModelObject
             averageGradientMagnitude_Sum /= activatedDetectorsCount;
             averageGradientAngle_Sum /= activatedDetectorsCount;
         }
+        if (averageGradientMagnitude_Sum < 0)
+            averageGradientMagnitude_Sum = 0;
         memory.GradientMagnitude = averageGradientMagnitude_Sum;
         memory.GradientAngle = averageGradientAngle_Sum;        
 
@@ -934,6 +936,8 @@ public partial class Cortex : ISerializableModelObject
         public Color HyperColumnCenter_Color;
 
         public Detector[]? Temp_DetectorsActivated = null;
+
+        public int Temp_SimilarMemoriesCount;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {
