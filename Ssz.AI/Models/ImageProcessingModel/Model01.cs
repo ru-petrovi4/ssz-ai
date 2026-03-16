@@ -342,7 +342,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 1.5f);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
@@ -434,10 +434,23 @@ public class Model01
         float ratio_Alpha = alphaMin / alpha0;
         float alpha = alpha0 * MathF.Pow(ratio_Alpha, fraction);
 
+        //if (currentIteration > totalIterations * 0.9f)
+        //{
+        //    // Фаза заморозки
+        //    alpha = 0.001f;
+        //}
+        //float phase = (float)epoch / totalEpochs;
+        //if (phase < 0.3f)      // Фаза 1: Ordering
+        //    return 0.5f;
+        //else if (phase < 0.8f) // Фаза 2: Convergence  
+        //    return 0.1f * MathF.Exp(-(phase - 0.3f) / 0.5f);
+        //else                   // Фаза 3: Заморозка
+        //    return 0.0005f;    // Постоянно очень малая
+
         const float sigma0 = 7.0f;    // σ0
-        const float sigmaMin = 1.0f;  // σ_min        // Recommended: 1.0    
+        const float sigmaMin = 1.5f;  // σ_min        // Recommended: 1.0    
         float ratio_Sigma = sigmaMin / sigma0;
-        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);        
+        float sigma = sigma0 * MathF.Pow(ratio_Sigma, fraction);                
 
         // Обновление весов всех нейронов с учетом функции соседства
         bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Clear();
