@@ -342,7 +342,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
+        int maxSamplesCount = (int)(averageSamlesCount * 0.7f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
@@ -458,7 +458,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 1.0f;
+        const float lambda = 0.8f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
