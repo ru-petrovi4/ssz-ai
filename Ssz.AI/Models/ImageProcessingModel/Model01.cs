@@ -342,7 +342,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 0.7f);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.5f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
