@@ -47,28 +47,28 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
 
 
-        Task.Run(async () =>
-        {
-            try
-            {
-                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+        //Task.Run(async () =>
+        //{
+        //    try
+        //    {
+        //        Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomNAsync((int)(300 * Model.StereoInput.StereoInputSamples.Length), _random, CancellationToken.None, () =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        Refresh_ImagesSet();
-                    });
-                    return Task.CompletedTask;
-                },
-                isIdeal: false);
-            }
-            catch (OperationCanceledException)
-            {
-                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
-            }
-            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
-        });
+        //        await Model.ProcessSomNAsync(700, _random, CancellationToken.None, () =>
+        //        {
+        //            Dispatcher.UIThread.Invoke(() =>
+        //            {
+        //                Refresh_ImagesSet();
+        //            });
+        //            return Task.CompletedTask;
+        //        },
+        //        isIdeal: false);
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //        Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+        //    }
+        //    Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+        //});
     }
 
     public Model01 Model = null!;
@@ -251,7 +251,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSomIdeal1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: true);
+        await Model.ProcessSomNAsync(0, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: true);
 
         Refresh_ImagesSet();
     }
@@ -263,7 +263,7 @@ public partial class Model01View : UserControl
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"1")).ValueAsSingle(false);
+        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"300")).ValueAsSingle(false);
 
         _curentLongRunningTask = Task.Run(async () =>
         {
@@ -271,7 +271,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync((int)epochs, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -295,7 +295,7 @@ public partial class Model01View : UserControl
 
     private async void StartProcessSom1_OnClick(object? sender, RoutedEventArgs args)
     {
-        await Model.ProcessSomNAsync(1, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: false);
+        await Model.ProcessSomNAsync(0, _random, CancellationToken.None, () => Task.CompletedTask, isIdeal: false);
 
         Refresh_ImagesSet();
     }
@@ -307,7 +307,7 @@ public partial class Model01View : UserControl
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"1")).ValueAsSingle(false);
+        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"300")).ValueAsSingle(false);
 
         _curentLongRunningTask = Task.Run(async () =>
         {
@@ -315,7 +315,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomN Started.");
 
-                await Model.ProcessSomNAsync((int)(epochs * Model.StereoInput.StereoInputSamples.Length), _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync((int)epochs, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {

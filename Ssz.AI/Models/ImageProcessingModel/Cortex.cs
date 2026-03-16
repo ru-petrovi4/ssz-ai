@@ -679,20 +679,20 @@ public partial class Cortex : ISerializableModelObject
             }));
     }
 
-    public (Memory? IdealPinwheelMemory_Best, float AverageSimilarMemoriesCount) GetIdealPinwheelMemory_BestInfo(float[] hash)
+    public Memory? GetIdealPinwheelMemory_Best(float[] hash)
     {
         float max = Single.MinValue;
         Memory? idealPinwheelMemory_Best = null;
-        float averageSimilarMemoriesCount = 0.0f;
-        int notNull_IdealPinwheelMemories_Count = 0;
+        //float averageSimilarMemoriesCount = 0.0f;
+        //int notNull_IdealPinwheelMemories_Count = 0;
         for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
             var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];            
-            if (idealPinwheelMemory.Temp_SimilarMemoriesCount > 0)
-            {
-                averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
-                notNull_IdealPinwheelMemories_Count += 1;
-            }
+            //if (idealPinwheelMemory.Temp_SimilarMemoriesCount > 0)
+            //{
+            //    averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
+            //    notNull_IdealPinwheelMemories_Count += 1;
+            //}
             float f = TensorPrimitives.CosineSimilarity(hash, idealPinwheelMemory.Hash);
             if (f > max)
             {
@@ -700,10 +700,10 @@ public partial class Cortex : ISerializableModelObject
                 idealPinwheelMemory_Best = idealPinwheelMemory;
             }
         }
-        if (notNull_IdealPinwheelMemories_Count > 0)
-            averageSimilarMemoriesCount /= notNull_IdealPinwheelMemories_Count;
-
-        return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);        
+        //if (notNull_IdealPinwheelMemories_Count > 0)
+        //    averageSimilarMemoriesCount /= notNull_IdealPinwheelMemories_Count;
+        //return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);
+        return idealPinwheelMemory_Best;
     }
 
     #endregion
@@ -960,7 +960,7 @@ public partial class Cortex : ISerializableModelObject
 
         public Detector[]? Temp_DetectorsActivated = null;
 
-        public int Temp_SimilarMemoriesCount;
+        public FastList<(Memory, MiniColumn)>? Temp_SimilarMemories;
 
         public void SerializeOwnedData(SerializationWriter writer, object? context)
         {

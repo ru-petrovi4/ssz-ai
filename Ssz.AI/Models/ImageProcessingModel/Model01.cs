@@ -292,14 +292,10 @@ public class Model01
     private int _totalIterations;
     private int _currentIteration;
 
-    public async Task ProcessSomNAsync(int stereoInputSamples_Count, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, bool isIdeal)
+    public async Task ProcessSomNAsync(int epochsCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, bool isIdeal)
     {
         if (Cortex.MiniColumns is null)
-            return;
-
-        float epochs = (float)stereoInputSamples_Count / StereoInput.StereoInputSamples.Length;
-
-        _totalIterations += stereoInputSamples_Count;        
+            return;                     
 
         var miniColumns = Cortex.MiniColumns;
 
@@ -307,40 +303,70 @@ public class Model01
         MiniColumn? nearest_HyperColumnCenter_MiniColumn = null;
 
         Stopwatch sw = Stopwatch.StartNew();
-
-        for (int epoch = 0; epoch < epochs; epoch += 1)
+        
+        for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
-            StereoInputSample[] shuffledStereoInputSamples = (StereoInputSample[])StereoInput.StereoInputSamples.Clone();
-            random.Shuffle(shuffledStereoInputSamples);
+            var idealPinwheelMemory = Cortex.Temp_IdealPinwheelMemories[m_index];
+            if (idealPinwheelMemory.Temp_SimilarMemories is null)            
+                idealPinwheelMemory.Temp_SimilarMemories = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length / Cortex.Temp_IdealPinwheelMemories.Count);            
+            else
+                idealPinwheelMemory.Temp_SimilarMemories.Clear();
+        }
+        float cortexMemory_BitsCountAverage = 0;
+        int sampleProcessedCount = 0;        
+        for (int sample_Index = 0; sample_Index < StereoInput.StereoInputSamples.Length; sample_Index += 1)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-            float cortexMemory_BitsCountAverage = 0;
-            int sampleProcessedCount = 0;
-            for (int sample_Index = 0; sample_Index < shuffledStereoInputSamples.Length && _currentIteration < _totalIterations; sample_Index += 1)
+            var stereoInputSample = StereoInput.StereoInputSamples[sample_Index];
+
+            if (isIdeal)
+                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
+            else
+                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
+
+            int cortexMemory_BitsCount = (int)TensorPrimitives.Sum(cortexMemory.Hash);
+            cortexMemory_BitsCountAverage += cortexMemory_BitsCount;            
+            if (cortexMemory_BitsCount < 5)
+                continue;
+
+            Memory? idealPinwheelMemory_Best = Cortex.GetIdealPinwheelMemory_Best(cortexMemory.Hash);
+            if (idealPinwheelMemory_Best is not null)
+            {
+                idealPinwheelMemory_Best.Temp_SimilarMemories!.Add((cortexMemory, nearest_HyperColumnCenter_MiniColumn));
+                sampleProcessedCount += 1;
+            }
+        }
+        if (StereoInput.StereoInputSamples.Length > 0)
+            cortexMemory_BitsCountAverage /= StereoInput.StereoInputSamples.Length;
+        Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
+
+        float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
+
+        FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
+        for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
+        {
+            var idealPinwheelMemory = Cortex.Temp_IdealPinwheelMemories[m_index];
+            int count = Math.Min(idealPinwheelMemory.Temp_SimilarMemories!.Count, (int)(averageSamlesCount * 2.0f));
+
+            memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items.Slice(0, count));
+        }
+        (Memory, MiniColumn)[] shuffledMemoriesToProcess = memoriesToProcess.ToArray();
+        
+        if (epochsCount == 0)
+            _totalIterations += 1;
+        else
+            _totalIterations += epochsCount * shuffledMemoriesToProcess.Length;        
+
+        for (int epoch = 0; epoch < epochsCount; epoch += 1)
+        {            
+            random.Shuffle(shuffledMemoriesToProcess);            
+            
+            for (int sample_Index = 0; sample_Index < shuffledMemoriesToProcess.Length && _currentIteration < _totalIterations; sample_Index += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var stereoInputSample = shuffledStereoInputSamples[sample_Index];
-                
-                
-                if (isIdeal)
-                    (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
-                else
-                    (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
-
-                int cortexMemory_BitsCount = (int)TensorPrimitives.Sum(cortexMemory.Hash);
-                cortexMemory_BitsCountAverage += cortexMemory_BitsCount;
-                sampleProcessedCount += 1;
-                if (cortexMemory_BitsCount < 5)
-                    continue;
-
-                var info = Cortex.GetIdealPinwheelMemory_BestInfo(cortexMemory.Hash);
-                if (info.IdealPinwheelMemory_Best is not null)
-                {
-                    float limit = info.AverageSimilarMemoriesCount * 1.5f;
-                    if (limit > 10.0f && info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount > limit)
-                        continue;
-                    info.IdealPinwheelMemory_Best.Temp_SimilarMemoriesCount += 1;
-                }
+                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = shuffledMemoriesToProcess[sample_Index];                
 
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
@@ -355,7 +381,7 @@ public class Model01
 
                 if (sw.ElapsedMilliseconds > 1000)
                 {
-                    Logger.LogInformation($"Epoch: {epoch}; sample_Index: {sample_Index};");
+                    Logger.LogInformation($"Epoch: {epoch}; Sample: {sample_Index}/{shuffledMemoriesToProcess.Length};");
 
                     Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
 
@@ -363,10 +389,8 @@ public class Model01
                     sw.Restart();
                 }
             }
-            if (sampleProcessedCount > 0)
-                cortexMemory_BitsCountAverage /= sampleProcessedCount;
 
-            Logger.LogInformation($"Epoch: {epoch} Done; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
+            Logger.LogInformation($"Epoch: {epoch}; Sample: {shuffledMemoriesToProcess.Length}/{shuffledMemoriesToProcess.Length};");
         }
 
         if (nearest_HyperColumnCenter_MiniColumn is not null && cortexMemory is not null)
