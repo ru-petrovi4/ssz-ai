@@ -342,22 +342,28 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
             var idealPinwheelMemory = Cortex.Temp_IdealPinwheelMemories[m_index];
-            int count = Math.Min(idealPinwheelMemory.Temp_SimilarMemories!.Count, (int)(averageSamlesCount * 2.0f));
-
-            memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items.Slice(0, count));
+            if (idealPinwheelMemory.Temp_SimilarMemories!.Count > maxSamplesCount)
+            {
+                //random.Shuffle(idealPinwheelMemory.Temp_SimilarMemories.Items);
+                memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items.Slice(0, maxSamplesCount));
+            }
+            else
+            {
+                memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items);
+            }
         }
         
         if (epochsCount == 0)
             _totalIterations += 1;
         else
             _totalIterations += epochsCount * memoriesToProcess.Count;
-
-        int maxSamplesCount = (int)(averageSamlesCount * 2.0f);        
+               
         for (int epoch = 0; epoch < epochsCount; epoch += 1)
         {
             memoriesToProcess.Clear();
@@ -452,7 +458,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 0.8f;
+        const float lambda = 1.0f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)

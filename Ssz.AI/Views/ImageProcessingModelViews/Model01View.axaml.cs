@@ -53,7 +53,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomNAsync(700, _random, CancellationToken.None, () =>
+                await Model.ProcessSomNAsync(1000, _random, CancellationToken.None, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
