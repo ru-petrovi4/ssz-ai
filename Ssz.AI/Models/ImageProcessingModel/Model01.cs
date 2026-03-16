@@ -1115,7 +1115,7 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 600;
+        public int MiniColumnVisibleDetectorsCount => 800;
 
         public int HashLength => 200;
 
