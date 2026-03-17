@@ -710,7 +710,8 @@ public partial class Cortex : ISerializableModelObject
 
     private void CreateCortexMemoryColors(Memory memory, MiniColumn hyperColumnCenter_MiniColumn)
     {
-        var gradientMagnitudeNormalized = memory.GradientMagnitude / Constants.MaxGradientMagnitudeExclusive;
+        // TEMPCODE
+        var gradientMagnitudeNormalized = memory.GradientMagnitude / (0.7 * Constants.MaxGradientMagnitudeExclusive);
         if (gradientMagnitudeNormalized > 1.0f)
             gradientMagnitudeNormalized = 1.0f;
         memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);

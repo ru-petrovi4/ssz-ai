@@ -1,4 +1,5 @@
 ﻿#define GENERATE_INPUT_DATA
+//#define SAVE_INPUT_DATA
 
 using System;
 using System.Collections.Generic;
@@ -43,7 +44,7 @@ public class Model01
 
     public Model01(Random random, bool onlyCenterHypercolumn)
     {
-        Random initialization_Random = new(6);
+        Random initialization_Random = new(7);
 
         Logger = new WrapperUserFriendlyLogger(
                 new SszLogger("Ssz.AI.Models.ImageProcessingModel.Model01", "Ssz.AI.Models.ImageProcessingModel.Model01", new SszLoggerOptions()
@@ -56,6 +57,9 @@ public class Model01
 #endif
                 }),
                 new UserFriendlyLogger((l, id, s) => DebugWindow.Instance.AddLine(s)));
+
+        //var value = ConfigurationHelper.GetValue<float>(Program.Host.Services.GetRequiredService<IConfiguration>(), Program.ConfigurationKey_Value, 0.0f);
+        //Constants.DetectorFieldOfViewRadiusPixels = value;
 
         DataToDisplayHolder = DataToDisplayHolder.Instance;
 
@@ -90,7 +94,7 @@ public class Model01
 #endif
         StereoInput.Prepare(); // Does nothing.
 
-#if GENERATE_INPUT_DATA
+#if GENERATE_INPUT_DATA && SAVE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("StereoInput.bin", StereoInput, null, null);
 #endif
 
@@ -101,7 +105,7 @@ public class Model01
         Helpers.SerializationHelper.LoadFromFileIfExists("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
 #endif
         LeftEye.Retina.Prepare();
-#if GENERATE_INPUT_DATA
+#if GENERATE_INPUT_DATA && SAVE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("LeftEyeRetina.bin", LeftEye.Retina, null, Logger);
 #endif
 
@@ -112,7 +116,7 @@ public class Model01
         Helpers.SerializationHelper.LoadFromFileIfExists("RightEyeRetina.bin", RightEye.Retina, null, Logger);
 #endif
         RightEye.Retina.Prepare();
-#if GENERATE_INPUT_DATA
+#if GENERATE_INPUT_DATA && SAVE_INPUT_DATA
         Helpers.SerializationHelper.SaveToFile("RightEyeRetina.bin", RightEye.Retina, null, Logger);
 #endif
 
@@ -1102,7 +1106,7 @@ public class Model01
 
         public float RetinaPointDeltaPixels => 0.2f;
 
-        public float DetectorFieldOfViewRadiusPixels => 0.6f;
+        public float DetectorFieldOfViewRadiusPixels { get; set; } = 0.8f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.

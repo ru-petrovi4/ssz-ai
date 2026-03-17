@@ -1,4 +1,7 @@
 using Avalonia.Controls;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Ssz.Utils;
 
 namespace Ssz.AI.Views
 {
@@ -7,6 +10,8 @@ namespace Ssz.AI.Views
         public MainWindow()
         {
             InitializeComponent();
+
+            Title = ConfigurationHelper.GetValue<string>(Program.Host.Services.GetRequiredService<IConfiguration>(), Program.ConfigurationKey_Value, @"<none>");
         }
     }
 }

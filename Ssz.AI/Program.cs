@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.IO;
 using Ssz.Utils;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using System.Collections.Generic;
 
 namespace Ssz.AI
 {
@@ -21,6 +23,8 @@ namespace Ssz.AI
         public static IHost Host { get; private set; } = null!;
 
         public static string EnvironmentName { get; private set; } = null!;
+
+        public const string ConfigurationKey_Value = "Value";
 
         #endregion
 
@@ -53,6 +57,10 @@ namespace Ssz.AI
                     config.AddEncryptedAppSettings(hostingContext.HostingEnvironment, crypter =>
                     {
                         crypter.CertificatePath = "appsettings.pfx";                        
+                    });
+                    config.AddCommandLine(args, new Dictionary<string, string>()
+                    {
+                        { "-v", ConfigurationKey_Value }
                     });
                 })
                 .ConfigureLogging(
