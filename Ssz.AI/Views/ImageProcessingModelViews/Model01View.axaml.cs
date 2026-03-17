@@ -47,28 +47,28 @@ public partial class Model01View : UserControl
         Refresh_ImagesSet();
 
 
-        Task.Run(async () =>
-        {
-            try
-            {
-                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+        //Task.Run(async () =>
+        //{
+        //    try
+        //    {
+        //        Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomNAsync(1000, _random, CancellationToken.None, () =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        Refresh_ImagesSet();
-                    });
-                    return Task.CompletedTask;
-                },
-                isIdeal: false);
-            }
-            catch (OperationCanceledException)
-            {
-                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
-            }
-            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
-        });
+        //        await Model.ProcessSomNAsync(1000, _random, CancellationToken.None, () =>
+        //        {
+        //            Dispatcher.UIThread.Invoke(() =>
+        //            {
+        //                Refresh_ImagesSet();
+        //            });
+        //            return Task.CompletedTask;
+        //        },
+        //        isIdeal: false);
+        //    }
+        //    catch (OperationCanceledException)
+        //    {
+        //        Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+        //    }
+        //    Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+        //});
     }
 
     public Model01 Model = null!;
@@ -263,7 +263,10 @@ public partial class Model01View : UserControl
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"300")).ValueAsSingle(false);
+        int? epochs = null;
+        var epochsString = await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"");
+        if (!String.IsNullOrEmpty(epochsString))
+            epochs = new Any(epochsString).ValueAsInt32(false);
 
         _curentLongRunningTask = Task.Run(async () =>
         {
@@ -271,7 +274,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                await Model.ProcessSomNAsync((int)epochs, _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {
@@ -307,7 +310,10 @@ public partial class Model01View : UserControl
         _cancellationTokenSource = new CancellationTokenSource();
         var cancellationToken = _cancellationTokenSource.Token;
 
-        float epochs = new Any(await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"300")).ValueAsSingle(false);
+        int? epochs = null;
+        var epochsString = await DialogHelper.GetValueFromUserAsync("epochs", defaultValue: @"");
+        if (!String.IsNullOrEmpty(epochsString))
+            epochs = new Any(epochsString).ValueAsInt32(false);
 
         _curentLongRunningTask = Task.Run(async () =>
         {
@@ -315,7 +321,7 @@ public partial class Model01View : UserControl
             {
                 Model.Logger.LogInformation("StartProcessSomN Started.");
 
-                await Model.ProcessSomNAsync((int)epochs, _random, cancellationToken, () =>
+                await Model.ProcessSomNAsync(epochs, _random, cancellationToken, () =>
                 {
                     Dispatcher.UIThread.Invoke(() =>
                     {

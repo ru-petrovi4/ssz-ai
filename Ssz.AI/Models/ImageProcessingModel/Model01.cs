@@ -292,7 +292,7 @@ public class Model01
     private int _totalIterations;
     private int _currentIteration;
 
-    public async Task ProcessSomNAsync(int epochsCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, bool isIdeal)
+    public async Task ProcessSomNAsync(int? epochsCount, Random random, CancellationToken cancellationToken, Func<Task> refreshAction, bool isIdeal)
     {
         if (Cortex.MiniColumns is null)
             return;                     
@@ -358,12 +358,17 @@ public class Model01
                 memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items);
             }
         }
-        
-        if (epochsCount == 0)
+
+        if (epochsCount is null)
+        {
+            epochsCount = (int)(12000.0f * 300.0f / memoriesToProcess.Count);
+        }        
+
+        if (epochsCount.Value == 0)
             _totalIterations += 1;
         else
-            _totalIterations += epochsCount * memoriesToProcess.Count;
-               
+            _totalIterations += epochsCount.Value * memoriesToProcess.Count;
+
         for (int epoch = 0; epoch < epochsCount; epoch += 1)
         {
             memoriesToProcess.Clear();
@@ -380,22 +385,22 @@ public class Model01
                     memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items);
                 }
             }
-            random.Shuffle(memoriesToProcess.Items);            
-            
+            random.Shuffle(memoriesToProcess.Items);
+
             for (int sample_Index = 0; sample_Index < memoriesToProcess.Count && _currentIteration < _totalIterations; sample_Index += 1)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = memoriesToProcess[sample_Index];                
+                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = memoriesToProcess[sample_Index];
 
                 MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
                 //bestForMemoryMiniColumn?.CortexMemories.Add(cortexMemory);
 
                 UpdateWeights(bestForMemoryMiniColumn, cortexMemory, _currentIteration, _totalIterations);
 
-//#if DEBUG
-//                MiniColumn? bestForMemoryMiniColumn2 = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
-//#endif
+                //#if DEBUG
+                //                MiniColumn? bestForMemoryMiniColumn2 = FindBestForMemoryMiniColumn_Som(cortexMemory, random, cancellationToken, nearest_HyperColumnCenter_MiniColumn.Temp_SameFieldOfViewMiniColumns);
+                //#endif
 
                 _currentIteration += 1;
 
