@@ -346,7 +346,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.2f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
@@ -364,9 +364,7 @@ public class Model01
         }
 
         if (epochsCount is null)
-        {
             epochsCount = (int)(12000.0f * 300.0f / memoriesToProcess.Count);
-        }        
 
         if (epochsCount.Value == 0)
             _totalIterations += 1;
@@ -381,7 +379,7 @@ public class Model01
                 var idealPinwheelMemory = Cortex.Temp_IdealPinwheelMemories[m_index];
                 if (idealPinwheelMemory.Temp_SimilarMemories!.Count > maxSamplesCount)
                 {
-                    random.Shuffle(idealPinwheelMemory.Temp_SimilarMemories.Items);
+                    //random.Shuffle(idealPinwheelMemory.Temp_SimilarMemories.Items);
                     memoriesToProcess.AddRange(idealPinwheelMemory.Temp_SimilarMemories!.Items.Slice(0, maxSamplesCount));
                 }
                 else
@@ -1092,7 +1090,7 @@ public class Model01
 
         public int MaxGradientMagnitudeExclusive => 1200; // Исходя из гистограммы
 
-        public double MinGradientMagnitudeInclusive => 20; // Исходя из гистограммы
+        public double MinGradientMagnitudeInclusive => 20; // Исходя из гистограммы 20
 
         public float GradientMagnitudeDelta => 10;
 
@@ -1104,9 +1102,9 @@ public class Model01
 
         public float DistanceBetweenEyes => 0.064f;
 
-        public float RetinaPointDeltaPixels => 0.2f;
+        public float RetinaPointDeltaPixels => 0.1f;
 
-        public float DetectorFieldOfViewRadiusPixels { get; set; } = 0.8f;
+        public float DetectorFieldOfViewRadiusPixels { get; set; } = 0.6f;
 
         /// <summary>
         ///     Радиус гиперколонки в миниколонках.
