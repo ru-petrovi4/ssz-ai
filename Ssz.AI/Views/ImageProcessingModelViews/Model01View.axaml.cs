@@ -62,7 +62,7 @@ public partial class Model01View : UserControl
         var constants = Model01.Constants;
         GetDataFromControls(constants);
 
-        for (int it = 0; it < 1; it += 1)
+        for (float it = 4.0f; it < 6.0; it += 0.1f)
         {
             await Task.Run(async () =>
             {
@@ -71,11 +71,13 @@ public partial class Model01View : UserControl
                     Model = null!;
                     GC.Collect();
 
+                    constants.DetectorRange_MiniColumns = it;
+
                     Model = new Model01(_random, OnlyCenterHyperColumn);
 
                     Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                    await Model.ProcessSomNAsync(epochsCount: 10, _random, CancellationToken.None, () =>
+                    await Model.ProcessSomNAsync(epochsCount: , _random, CancellationToken.None, () =>
                     {
                         Dispatcher.UIThread.Invoke(() =>
                         {
