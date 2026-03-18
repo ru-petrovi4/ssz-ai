@@ -19,6 +19,7 @@ using Avalonia.Threading;
 using System.Threading;
 using MathNet.Numerics.Random;
 using Tensorflow.Keras.Saving.SavedModel;
+using Ssz.AI.ViewModels;
 
 namespace Ssz.AI.Views.ImageProcessingModelViews;
 
@@ -43,32 +44,61 @@ public partial class Model01View : UserControl
         ColorLowScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
         ColorHighScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
 
-        Reset();
-        Refresh_ImagesSet();
-
-
-        Task.Run(async () =>
+        if (false)
         {
-            try
-            {
-                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+            Reset();
+            Refresh_ImagesSet();
+        }
+        else 
+        {
+            var t = Script2Async();
+        }            
+    }
 
-                await Model.ProcessSomNAsync(epochsCount: null, _random, CancellationToken.None, () =>
-                {
-                    Dispatcher.UIThread.Invoke(() =>
-                    {
-                        Refresh_ImagesSet();
-                    });
-                    return Task.CompletedTask;
-                },
-                isIdeal: false);
-            }
-            catch (OperationCanceledException)
+    public async Task Script2Async()
+    {
+        DateTime startDateTime = DateTime.Now;
+        _random = new Random(40);
+        var constants = Model01.Constants;
+        GetDataFromControls(constants);
+
+        for (int it = 0; it < 1; it += 1)
+        {
+            await Task.Run(async () =>
             {
-                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
-            }
-            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
-        });
+                try
+                {
+                    Model = null!;
+                    GC.Collect();
+
+                    Model = new Model01(_random, OnlyCenterHyperColumn);
+
+                    Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+
+                    await Model.ProcessSomNAsync(epochsCount: 10, _random, CancellationToken.None, () =>
+                    {
+                        Dispatcher.UIThread.Invoke(() =>
+                        {
+                            Refresh_ImagesSet();
+                        });
+                        return Task.CompletedTask;
+                    },
+                    isIdeal: false);
+                }
+                catch (OperationCanceledException)
+                {
+                    Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+                }
+                Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+            });
+
+            var imageWithDesc = (ImageWithDesc)(Model.GetImageWithDescs(
+                _random,
+                ColorLowScrollBar.Value,
+                ColorHighScrollBar.Value)[5]);
+
+            imageWithDesc.Image!.Save(Path.Combine("Data", "Script2", FileSystemHelper.ReplaceInvalidChars($"{new Any(startDateTime).ValueAsString(false)}_{it}.png")));
+        }
     }
 
     public Model01 Model = null!;
