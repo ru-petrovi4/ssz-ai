@@ -108,9 +108,9 @@ public partial class Cortex : ISerializableModelObject
     public void GenerateOwnedData(Random initialization_Random, bool onlyCenterHypercolumn)
     {
         MiniColumns = new FastList<MiniColumn>(Constants.CortexWidth_MiniColumns * Constants.CortexHeight_MiniColumns);
-
+                
         float delta_MCX = 1.0f;
-        float delta_MCY = MathF.Sqrt(1.0f - 0.5f * 0.5f);
+        float delta_MCY = MathF.Sqrt(delta_MCX * delta_MCX - delta_MCX * delta_MCX / 4.0f);
 
         if (onlyCenterHypercolumn)
         {
@@ -119,9 +119,9 @@ public partial class Cortex : ISerializableModelObject
             MiniColumn? global_CenterMiniColumn = null;
 
             for (int mcj = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj += 1)
-                for (int mci = -Constants.HyperColumnDefinedRadius_MiniColumns; mci <= Constants.HyperColumnDefinedRadius_MiniColumns; mci += 1)
+                for (int mci = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCX); mci <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCX); mci += 1)
                 {
-                    float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
+                    float mcx = (mci + ((mcj % 2 == 0) ? 0.0f : 0.5f)) * delta_MCX;
                     float mcy = mcj * delta_MCY;
 
                     float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
@@ -151,9 +151,9 @@ public partial class Cortex : ISerializableModelObject
             float maxRadius = Math.Min(Constants.CortexWidth_MiniColumns / 2.0f, Constants.CortexHeight_MiniColumns / 2.0f) + 0.00001f;
 
             for (int mcj = -(int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj <= (int)(Constants.CortexHeight_MiniColumns / (2.0f * delta_MCY)); mcj += 1)
-                for (int mci = -(int)(Constants.CortexWidth_MiniColumns / 2.0f); mci <= (int)(Constants.CortexWidth_MiniColumns / 2.0f); mci += 1)
+                for (int mci = -(int)(Constants.CortexWidth_MiniColumns / (2.0f * delta_MCX)); mci <= (int)(Constants.CortexWidth_MiniColumns / (2.0f * delta_MCX)); mci += 1)
                 {
-                    float mcx = mci + ((mcj % 2 == 0) ? 0.0f : 0.5f);
+                    float mcx = (mci + ((mcj % 2 == 0) ? 0.0f : 0.5f)) * delta_MCX;
                     float mcy = mcj * delta_MCY;
 
                     float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
@@ -359,30 +359,46 @@ public partial class Cortex : ISerializableModelObject
         Temp_IdealPinwheelMemories = new FastList<Memory>(MiniColumns.Count);
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
-            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
+            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];                        
 
-            var hyperColumn_IdealPinwheelCenterMemories = new FastList<Memory>(7);
+            float delta_MCX = 0.3f;
+            float delta_MCY = MathF.Sqrt(delta_MCX * delta_MCX - delta_MCX * delta_MCX / 4.0f);
+            float maxRadius = Constants.HyperColumnDefinedRadius_MiniColumns + 0.00001f;
+            for (int mcj = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj += 1)
+                for (int mci = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCX); mci <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCX); mci += 1)
+                {
+                    float mcx = (mci + ((mcj % 2 == 0) ? 0.0f : 0.5f)) * delta_MCX;
+                    float mcy = mcj * delta_MCY;
+
+                    float radius = MathF.Sqrt(mcx * mcx + mcy * mcy);
+                    if (radius < maxRadius)
+                    {
+                        MiniColumn miniColumn = new MiniColumn(
+                            Constants)
+                        {                            
+                            MCX = hyperColumnCenter_MiniColumn.MCX + mcx,
+                            MCY = hyperColumnCenter_MiniColumn.MCY + mcy
+                        };
+
+                        Temp_IdealPinwheelMemories.Add(
+                            GetIdealCortexMemory(
+                                initialization_Random,
+                                hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
+                                idealAngleMagnitude_MiniColumn: miniColumn,
+                                main_MiniColumn: hyperColumnCenter_MiniColumn,
+                                leftEye));
+                    }
+                }
 
             // Воспоминания для оценки качества вертушки TODO            
+            var hyperColumn_IdealPinwheelCenterMemories = new FastList<Memory>(7);
             hyperColumn_IdealPinwheelCenterMemories.Add(
                 GetIdealCortexMemory(
                     initialization_Random,
                     hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
-                    idealAngleMagnitude_MiniColumn: hyperColumnCenter_MiniColumn, 
-                    main_MiniColumn: hyperColumnCenter_MiniColumn, 
+                    idealAngleMagnitude_MiniColumn: hyperColumnCenter_MiniColumn,
+                    main_MiniColumn: hyperColumnCenter_MiniColumn,
                     leftEye));
-
-            foreach (var miniColumn in hyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns)
-            {
-                Temp_IdealPinwheelMemories.Add(
-                    GetIdealCortexMemory(
-                        initialization_Random,
-                        hyperColumnCenter_MiniColumn: hyperColumnCenter_MiniColumn,
-                        idealAngleMagnitude_MiniColumn: miniColumn, 
-                        main_MiniColumn: miniColumn, 
-                        leftEye));
-            }            
-
             foreach (var it in hyperColumnCenter_MiniColumn.Temp_AdjacentMiniColumns)
             {
                 hyperColumn_IdealPinwheelCenterMemories.Add(
@@ -393,7 +409,6 @@ public partial class Cortex : ISerializableModelObject
                         main_MiniColumn: it.Item2, 
                         leftEye));
             }
-
             if (hyperColumn_IdealPinwheelCenterMemories.Count == 7)
                 Temp_IdealPinwheelCenterMemories.AddRange(hyperColumn_IdealPinwheelCenterMemories.Items);
         }
@@ -661,18 +676,7 @@ public partial class Cortex : ISerializableModelObject
 
                 miniColumn.Temp_SomCortexMemories.Clear();
 
-                float max = Single.MinValue;
-                Memory? idealPinwheelMemory_Best = null;
-                for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
-                {
-                    var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];
-                    float f = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, idealPinwheelMemory.Hash);
-                    if (f > max)
-                    {
-                        max = f;
-                        idealPinwheelMemory_Best = idealPinwheelMemory;
-                    }    
-                }
+                Memory? idealPinwheelMemory_Best = GetIdealPinwheelMemory_Best(miniColumn.Temp_SomWeights);                
 
                 if (idealPinwheelMemory_Best is not null)
                     miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
@@ -709,9 +713,8 @@ public partial class Cortex : ISerializableModelObject
     #endregion
 
     private void CreateCortexMemoryColors(Memory memory, MiniColumn hyperColumnCenter_MiniColumn)
-    {
-        // TEMPCODE
-        var gradientMagnitudeNormalized = memory.GradientMagnitude / (0.7 * Constants.MaxGradientMagnitudeExclusive);
+    {        
+        var gradientMagnitudeNormalized = memory.GradientMagnitude / (0.8 * Constants.MaxGradientMagnitudeExclusive);
         if (gradientMagnitudeNormalized > 1.0f)
             gradientMagnitudeNormalized = 1.0f;
         memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
