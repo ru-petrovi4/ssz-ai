@@ -27,6 +27,15 @@ public class StateInfo
             SelectedTotalEnergyMin_MiniColumn = TotalEnergyMin_MiniColumns[random.Next(TotalEnergyMin_MiniColumns.Count)];
         return SelectedTotalEnergyMin_MiniColumn;
     }
+
+    public Cortex.MiniColumn? GetTotalEnergyMin_MiniColumn_Pure()
+    {
+        if (TotalEnergyMin_MiniColumns.Count == 0)
+            SelectedTotalEnergyMin_MiniColumn = null;
+        else
+            SelectedTotalEnergyMin_MiniColumn = TotalEnergyMin_MiniColumns[0];        
+        return SelectedTotalEnergyMin_MiniColumn;
+    }
 }
 
 public static class MiniColumnsEnergyHelper

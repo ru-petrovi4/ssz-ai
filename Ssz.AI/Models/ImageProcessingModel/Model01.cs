@@ -165,13 +165,13 @@ public class Model01
         double filterColorHigh)
     {
         var r0 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => (double)mc.GetMinSomSimilarityToAdjacent(), valueMin: 0.0, valueMax: 1.0);
+                        (MiniColumn mc) => (double)mc.GetMaxSomDistanceToAdjacent(), valueMin: 0.0, valueMax: 1.0);
         var r1 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => (double)(mc.Temp_Activity.PositiveActivity + mc.Temp_Activity.NegativeActivity), valueMin: -1.0, valueMax: 1.0);
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
 
-        Cortex.CalculateSomCortexMemories();
+        Cortex.CalculateSomCortexMemories(random);
 
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.FullImage),
@@ -187,7 +187,7 @@ public class Model01
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"SOM. Модуль и угол." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r0.Image),
-                    Desc = $"SOM. Минимальная близость с соседями; Min: {r0.ValueMin:F03}; Max: {r0.ValueMax:F03}" },
+                    Desc = $"SOM. Максимальное расстояние до соседей; Min: {r0.ValueMin:F03}; Max: {r0.ValueMax:F03}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"Воспоминания в миниколонках (Модуль и угол). Индекс вертушки: {GetPinwheelIndex(random, Cortex.MiniColumns, hypercolumnIndex: 0)}" },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.CortexMemories, ii => ii.HyperColumnCenter_Color)),
@@ -334,7 +334,7 @@ public class Model01
             if (cortexMemory_BitsCount < 5)
                 continue;
 
-            Memory? idealPinwheelMemory_Best = Cortex.GetIdealPinwheelMemory_Best(cortexMemory.Hash);
+            Memory? idealPinwheelMemory_Best = Cortex.GetIdealPinwheelMemory_Best(cortexMemory.Hash, random);
             if (idealPinwheelMemory_Best is not null)
             {
                 idealPinwheelMemory_Best.Temp_SimilarMemories!.Add((cortexMemory, nearest_HyperColumnCenter_MiniColumn));
@@ -346,7 +346,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.5f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
@@ -900,7 +900,7 @@ public class Model01
                 {
                     var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-                    miniColumn.Temp_SomActivity = TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);//TensorPrimitives.CosineSimilarity(miniColumn.Temp_SomWeights, cortexMemory.Hash);
+                    miniColumn.Temp_SomActivity = Cortex.GetDistance(miniColumn.Temp_SomWeights, cortexMemory.Hash);
                 });
 
         StateInfo.MinTotalEnergy = float.MaxValue;
@@ -910,7 +910,7 @@ public class Model01
         {
             var miniColumn = candidateMiniColumns[miniColumns_Index];
 
-            miniColumn.Temp_TotalEnergy = -miniColumn.Temp_SomActivity;
+            miniColumn.Temp_TotalEnergy = miniColumn.Temp_SomActivity;
 
             if (miniColumn.Temp_TotalEnergy < StateInfo.MinTotalEnergy)
             {
@@ -1122,9 +1122,9 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 900;
+        public int MiniColumnVisibleDetectorsCount => 800;
 
-        public int HashLength => 200;
+        public int HashLength => 300;
 
         public int CortexWidth_MiniColumns => 100;
 

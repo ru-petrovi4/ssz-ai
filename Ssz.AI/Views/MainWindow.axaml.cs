@@ -11,7 +11,8 @@ namespace Ssz.AI.Views
         {
             InitializeComponent();
 
-            Title = ConfigurationHelper.GetValue<string>(Program.Host.Services.GetRequiredService<IConfiguration>(), Program.ConfigurationKey_Value, @"<none>");
+            // DO NOT WORKING
+            //Title = ConfigurationHelper.GetValue<string>(Program.Host.Services.GetRequiredService<IConfiguration>(), Program.ConfigurationKey_Value, @"<none>");
         }
     }
 }

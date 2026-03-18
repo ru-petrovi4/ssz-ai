@@ -4,6 +4,7 @@ using Ssz.Utils;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using System;
+using System.Collections;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -104,6 +105,8 @@ public partial class Cortex : ISerializableModelObject
     public string Temp_InputCurrentDesc = null!;
 
     public SampleVisualisation? Temp_LastMiniColumn_SampleVisualisation;
+
+    public FastList<Memory> Temp_BestMemories = new();
 
     public void GenerateOwnedData(Random initialization_Random, bool onlyCenterHypercolumn)
     {
@@ -389,6 +392,7 @@ public partial class Cortex : ISerializableModelObject
                                 leftEye));
                     }
                 }
+            Temp_IdealPinwheelMemories = new FastList<Memory>(Temp_IdealPinwheelMemories.GroupBy(m => m.Hash, HashEqualityComparer.Instance).Select(g => g.First()).ToArray());
 
             // Воспоминания для оценки качества вертушки TODO            
             var hyperColumn_IdealPinwheelCenterMemories = new FastList<Memory>(7);
@@ -665,56 +669,62 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    public void CalculateSomCortexMemories()
+    public void CalculateSomCortexMemories(Random random)
     {
-        Parallel.For(
-            fromInclusive: 0,
-            toExclusive: MiniColumns.Count,
-            (Action<int>)(mc_index =>
-            {
-                MiniColumn miniColumn = MiniColumns[mc_index];
+        for (int mc_index = 0; mc_index < MiniColumns.Count; mc_index += 1)
+            //Parallel.For(
+            //fromInclusive: 0,
+            //toExclusive: MiniColumns.Count,
+            //(Action<int>)(mc_index =>
+        {
+            MiniColumn miniColumn = MiniColumns[mc_index];
 
-                miniColumn.Temp_SomCortexMemories.Clear();
+            miniColumn.Temp_SomCortexMemories.Clear();
 
-                Memory? idealPinwheelMemory_Best = GetIdealPinwheelMemory_Best(miniColumn.Temp_SomWeights);                
+            Memory? idealPinwheelMemory_Best = GetIdealPinwheelMemory_Best(miniColumn.Temp_SomWeights, random);                
 
-                if (idealPinwheelMemory_Best is not null)
-                    miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
-            }));
+            if (idealPinwheelMemory_Best is not null)
+                miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
+        }
     }
 
-    public Memory? GetIdealPinwheelMemory_Best(float[] hash)
+    public Memory? GetIdealPinwheelMemory_Best(float[] hash, Random random)
     {
-        float max = Single.MinValue;
-        Memory? idealPinwheelMemory_Best = null;
-        //float averageSimilarMemoriesCount = 0.0f;
-        //int notNull_IdealPinwheelMemories_Count = 0;
+        float min = Single.MaxValue;                
+        Temp_BestMemories.Clear();
         for (int m_index = 0; m_index < Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
-            var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];            
-            //if (idealPinwheelMemory.Temp_SimilarMemoriesCount > 0)
-            //{
-            //    averageSimilarMemoriesCount += idealPinwheelMemory.Temp_SimilarMemoriesCount;
-            //    notNull_IdealPinwheelMemories_Count += 1;
-            //}
-            float f = TensorPrimitives.CosineSimilarity(hash, idealPinwheelMemory.Hash);
-            if (f > max)
+            var idealPinwheelMemory = Temp_IdealPinwheelMemories[m_index];                        
+            float f = GetDistance(hash, idealPinwheelMemory.Hash);
+            if (f < min)
             {
-                max = f;
-                idealPinwheelMemory_Best = idealPinwheelMemory;
+                min = f;
+                Temp_BestMemories.Clear();
+                Temp_BestMemories.Add(idealPinwheelMemory);
+            }
+            else if (f == min)
+            {
+                Temp_BestMemories.Add(idealPinwheelMemory);
             }
         }
-        //if (notNull_IdealPinwheelMemories_Count > 0)
-        //    averageSimilarMemoriesCount /= notNull_IdealPinwheelMemories_Count;
-        //return (idealPinwheelMemory_Best, averageSimilarMemoriesCount);
-        return idealPinwheelMemory_Best;
+        if (Temp_BestMemories.Count == 0)
+            return null;
+        if (Temp_BestMemories.Count == 1)
+            return Temp_BestMemories[0];
+        return Temp_BestMemories[random.Next(Temp_BestMemories.Count)];
+    }
+
+    public static float GetDistance(float[] hash1, float[] hash2)
+    {
+        //return 1.0f - TensorPrimitives.CosineSimilarity(hash1, hash2);
+        return TensorPrimitives.Distance(hash1, hash2);
     }
 
     #endregion
 
     private void CreateCortexMemoryColors(Memory memory, MiniColumn hyperColumnCenter_MiniColumn)
     {        
-        var gradientMagnitudeNormalized = memory.GradientMagnitude / (0.8 * Constants.MaxGradientMagnitudeExclusive);
+        var gradientMagnitudeNormalized = memory.GradientMagnitude / (1.0 * Constants.MaxGradientMagnitudeExclusive);
         if (gradientMagnitudeNormalized > 1.0f)
             gradientMagnitudeNormalized = 1.0f;
         memory.GradientAngleMagnitude_Color = Visualisation.ColorFromHSV((double)(memory.GradientAngle + MathF.PI) / (2 * MathF.PI), gradientMagnitudeNormalized, 1.0);
@@ -904,7 +914,7 @@ public partial class Cortex : ISerializableModelObject
             for (int m_index = 0; m_index < Temp_AdjacentMiniColumns.Count; m_index += 1)
             {
                 var adjacentMiniColumn = Temp_AdjacentMiniColumns[m_index].Item2;
-                float s = TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+                float s = GetDistance(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
                 if (s < 0.0f)
                     s = 0.0f;
                 averageSomDistanceToAdjacent += s;
@@ -914,17 +924,17 @@ public partial class Cortex : ISerializableModelObject
             return averageSomDistanceToAdjacent;
         }
 
-        public float GetMinSomSimilarityToAdjacent()
+        public float GetMaxSomDistanceToAdjacent()
         {
-            float minSomSimilarityToAdjacent = Single.MaxValue;
+            float maxSoDistanceToAdjacent = Single.MinValue;
             for (int m_index = 0; m_index < Temp_AdjacentMiniColumns.Count; m_index += 1)
             {
                 var adjacentMiniColumn = Temp_AdjacentMiniColumns[m_index].Item2;
-                float s = TensorPrimitives.CosineSimilarity(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
-                if (s < minSomSimilarityToAdjacent)
-                    minSomSimilarityToAdjacent = s;
+                float s = GetDistance(Temp_SomWeights, adjacentMiniColumn.Temp_SomWeights);
+                if (s > maxSoDistanceToAdjacent)
+                    maxSoDistanceToAdjacent = s;
             }            
-            return minSomSimilarityToAdjacent;
+            return maxSoDistanceToAdjacent;
         }
     }
 
@@ -1013,8 +1023,23 @@ public partial class Cortex : ISerializableModelObject
     }
 }
 
+public class HashEqualityComparer : IEqualityComparer<float[]>
+{
+    public static readonly HashEqualityComparer Instance = new HashEqualityComparer();
 
-        ///// <summary>
-        /////     Distance from center in ideal pinwheel in minicolumns
-        ///// </summary>
-        //public float DistanceFromCenter_MiniColumns = Single.MinValue;
+    public bool Equals(float[]? x, float[]? y)
+    {        
+        return x!.SequenceEqual(y!);
+    }
+
+    public int GetHashCode(float[] obj)
+    {
+        return 0;
+    }
+}
+
+
+///// <summary>
+/////     Distance from center in ideal pinwheel in minicolumns
+///// </summary>
+//public float DistanceFromCenter_MiniColumns = Single.MinValue;
