@@ -1006,6 +1006,8 @@ namespace Ssz.AI.Models
 
             public float RetinaImageAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
+            public float DetectorRange_MiniColumns => throw new NotImplementedException();
+
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
         }        
     }

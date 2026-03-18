@@ -345,6 +345,8 @@ namespace Ssz.AI.Models
             public float FullFieldOfViewDiameter_MiniColumn_Angle => throw new NotImplementedException();
 
             public float RetinaImageAngle { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+            public float DetectorRange_MiniColumns => throw new NotImplementedException();
         }        
     }
 }

@@ -77,7 +77,7 @@ public partial class Model01View : UserControl
 
                     Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-                    await Model.ProcessSomNAsync(epochsCount: , _random, CancellationToken.None, () =>
+                    await Model.ProcessSomNAsync(epochsCount: null, _random, CancellationToken.None, () =>
                     {
                         Dispatcher.UIThread.Invoke(() =>
                         {
@@ -99,7 +99,7 @@ public partial class Model01View : UserControl
                 ColorLowScrollBar.Value,
                 ColorHighScrollBar.Value)[5]);
 
-            imageWithDesc.Image!.Save(Path.Combine("Data", "Script2", FileSystemHelper.ReplaceInvalidChars($"{new Any(startDateTime).ValueAsString(false)}_{it}.png")));
+            imageWithDesc.Image!.Save(Path.Combine("Data", "Script2", FileSystemHelper.ReplaceInvalidChars($"{new Any(startDateTime).ValueAsString(false)}_{new Any(it).ValueAsString(false, "F02")}.png")));
         }
     }
 
