@@ -1160,7 +1160,9 @@ public class Model01
         /// <summary>
         ///     Режим с одним воспоминанием в миниколонке.
         /// </summary>
-        public bool SingleMemory { get; set; } = false;        
+        public bool SingleMemory { get; set; } = false;
+
+        public float DetectorRange_MiniColumns { get; set; } = 4.3f;
     }
 }
 

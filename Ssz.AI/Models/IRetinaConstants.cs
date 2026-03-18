@@ -68,4 +68,6 @@ public interface IRetinaConstants
     ///     Длина хэш-вектора
     /// </summary>
     int HashLength { get; }
+
+    float DetectorRange_MiniColumns { get; }
 }

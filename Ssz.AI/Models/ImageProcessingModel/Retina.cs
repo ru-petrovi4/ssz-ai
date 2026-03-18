@@ -56,8 +56,8 @@ public class Retina : ISerializableModelObject
         ulong samples_Total = GradientMagnitude_AccumulativeDistribution[^1];
         float inIdealPinwheelMiniColumn_Samples = (float)samples_Total / Constants.HyperColumnDefinedRadius_MiniColumns;                
         
-        float gradientMagnitudeRange_Samples = 4.3f * inIdealPinwheelMiniColumn_Samples; // 5.0 уже плохо собирается
-        float gradientAngleRange_MiniColumns = 4.3f; // 5.0 уже плохо собирается
+        float gradientMagnitudeRange_Samples = Constants.DetectorRange_MiniColumns * inIdealPinwheelMiniColumn_Samples; // 5.0 уже плохо собирается
+        float gradientAngleRange_MiniColumns = Constants.DetectorRange_MiniColumns; // 5.0 уже плохо собирается
 
         DetectorGradientRanges = new DenseMatrix<GradientRange?>(Constants.MaxGradientMagnitudeExclusive, 360);                
         
