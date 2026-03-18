@@ -346,7 +346,7 @@ public class Model01
         Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
-        int maxSamplesCount = (int)(averageSamlesCount * 2.0f);
+        int maxSamplesCount = (int)(averageSamlesCount * 1.3f);
 
         FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
@@ -478,7 +478,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 0.8f;
+        const float lambda = 0.5f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
@@ -1122,7 +1122,7 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 800;
+        public int MiniColumnVisibleDetectorsCount => 900;
 
         public int HashLength => 200;
 
