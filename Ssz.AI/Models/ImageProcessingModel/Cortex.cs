@@ -364,7 +364,7 @@ public partial class Cortex : ISerializableModelObject
         {
             MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];                        
 
-            float delta_MCX = 0.3f;
+            float delta_MCX = 0.5f;
             float delta_MCY = MathF.Sqrt(delta_MCX * delta_MCX - delta_MCX * delta_MCX / 4.0f);
             float maxRadius = Constants.HyperColumnDefinedRadius_MiniColumns + 0.00001f;
             for (int mcj = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj += 1)

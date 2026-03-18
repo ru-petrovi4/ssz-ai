@@ -478,7 +478,7 @@ public class Model01
             TensorPrimitives.MultiplyAdd(it.Item2.Temp_SomWeightsDiff, alpha * neighborhood, it.Item2.Temp_SomWeights, it.Item2.Temp_NewSomWeights);
         }
 
-        const float lambda = 0.5f;
+        const float lambda = 0.8f;
         if (lambda != 0.0f && bestForMemoryMiniColumn.Temp_NearestMiniColumns2.Count > 0)
         {
             // Вычисляем сумму: Σ_{r' ≠ s} g(r', s) · (w_{r'} - v)
@@ -1102,7 +1102,7 @@ public class Model01
 
         public float DistanceBetweenEyes => 0.064f;
 
-        public float RetinaPointDeltaPixels => 0.1f;
+        public float RetinaPointDeltaPixels => 0.2f;
 
         public float DetectorFieldOfViewRadiusPixels { get; set; } = 0.6f;
 
@@ -1122,9 +1122,9 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 800;
+        public int MiniColumnVisibleDetectorsCount => 700;
 
-        public int HashLength => 300;
+        public int HashLength => 200;
 
         public int CortexWidth_MiniColumns => 100;
 
