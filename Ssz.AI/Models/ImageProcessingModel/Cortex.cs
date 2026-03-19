@@ -716,7 +716,6 @@ public partial class Cortex : ISerializableModelObject
 
     public static float GetDistance(float[] hash1, float[] hash2)
     {
-        //return 1.0f - TensorPrimitives.CosineSimilarity(hash1, hash2);
         return TensorPrimitives.Distance(hash1, hash2);
     }
 

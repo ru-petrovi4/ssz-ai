@@ -139,7 +139,7 @@ public class Model01
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
 
-#endregion
+    #endregion
 
     #region public functions       
 
@@ -1122,7 +1122,7 @@ public class Model01
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount => 700;
+        public int MiniColumnVisibleDetectorsCount { get; set; } = 700;
 
         public int HashLength => 200;
 
@@ -1162,7 +1162,7 @@ public class Model01
         /// </summary>
         public bool SingleMemory { get; set; } = false;
 
-        public float DetectorRange_MiniColumns { get; set; } = 4.3f;
+        public float DetectorRange_MiniColumns { get; set; } = 5.2f; // Исходя из картинки TensorPrimitives.Distance
     }
 }
 

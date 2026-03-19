@@ -62,7 +62,7 @@ public partial class Model01View : UserControl
         var constants = Model01.Constants;
         GetDataFromControls(constants);
 
-        for (float it = 4.0f; it < 6.0; it += 0.1f)
+        for (float it = 0.4f; it < 4.0; it += 0.2f)
         {
             await Task.Run(async () =>
             {
@@ -71,7 +71,7 @@ public partial class Model01View : UserControl
                     Model = null!;
                     GC.Collect();
 
-                    constants.DetectorRange_MiniColumns = it;
+                    constants.DetectorFieldOfViewRadiusPixels = it;
 
                     Model = new Model01(_random, OnlyCenterHyperColumn);
 
