@@ -44,7 +44,7 @@ public partial class Model01View : UserControl
         ColorLowScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
         ColorHighScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
 
-        if (false)
+        if (true)
         {
             Reset();
             Refresh_ImagesSet();
