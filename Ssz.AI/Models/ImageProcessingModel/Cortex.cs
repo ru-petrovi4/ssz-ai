@@ -362,9 +362,10 @@ public partial class Cortex : ISerializableModelObject
         Temp_IdealPinwheelMemories = new FastList<Memory>(MiniColumns.Count);
         foreach (int mc_index in HyperColumnCenters_MiniColumnIndices)
         {
-            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];                        
+            MiniColumn hyperColumnCenter_MiniColumn = MiniColumns[mc_index];
 
-            float delta_MCX = 0.5f;
+            // TEMPCODE
+            float delta_MCX = 1.0f; // Working: 0.5f;
             float delta_MCY = MathF.Sqrt(delta_MCX * delta_MCX - delta_MCX * delta_MCX / 4.0f);
             float maxRadius = Constants.HyperColumnDefinedRadius_MiniColumns + 0.00001f;
             for (int mcj = -(int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj <= (int)(Constants.HyperColumnDefinedRadius_MiniColumns / delta_MCY); mcj += 1)

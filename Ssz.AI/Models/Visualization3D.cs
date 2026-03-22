@@ -1,6 +1,7 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
 using Ssz.AI.Views;
+using Ssz.Utils;
 using Ssz.Utils.Avalonia.Model3D;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,76 @@ namespace Ssz.AI.Models
         //    window.Show();
         //}
 
+        public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed miniColumnDetailed)
+        {
+            if (miniColumnDetailed.Temp_ActiveZones is null)
+                return new Model3DScene();            
+
+            float mcxMin = Int32.MaxValue;
+            float mcxMax = Int32.MinValue;
+            float mcyMin = Int32.MaxValue;
+            float mcyMax = Int32.MinValue;
+            float mczMin = Int32.MaxValue;
+            float mczMax = Int32.MinValue;
+
+            FastList<Point3DWithColor> point3DWithColors = new FastList<Point3DWithColor>(30);
+
+            int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
+            for (int i = 0; i < displayCount; i += 1)
+            {
+                var z = miniColumnDetailed.Temp_ActiveZones[i];
+
+                var c = z.Center;
+                if (c.X > mcxMax)
+                    mcxMax = c.X;
+                if (c.X < mcxMin)
+                    mcxMin = c.X;
+                if (c.Y > mcyMax)
+                    mcyMax = c.Y;
+                if (c.Y < mcyMin)
+                    mcyMin = c.Y;
+                if (c.Z > mczMax)
+                    mczMax = c.Z;
+                if (c.Z < mczMin)
+                    mczMin = c.Z;
+
+                System.Drawing.Color color = System.Drawing.Color.White;
+                point3DWithColors.Add(new Point3DWithColor
+                {
+                    Position = z.Center,
+                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                });
+            }
+
+            //for (int i = 0; i < 1; i += 1)
+            //{
+            //    var axon = Axons[i];
+            //    AxonPoint? axonPoint = axon.Root;
+            //    for (; ; )
+            //    {
+            //        System.Drawing.Color color = System.Drawing.Color.Blue;
+            //        point3DWithColors.Add(new Point3DWithColor
+            //        {
+            //            Position = axonPoint.Position,
+            //            Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            //        });
+            //        axonPoint = axonPoint.Next;
+            //    }                    
+            //}
+
+            // Normalize
+            foreach (Point3DWithColor point3DWithColor in point3DWithColors)
+            {
+                point3DWithColor.Position.X = (mcxMax - point3DWithColor.Position.X) / (mcxMax - mcxMin) - 0.5f;
+                point3DWithColor.Position.Y = (mcyMax - point3DWithColor.Position.Y) / (mcyMax - mcyMin) - 0.5f;
+                point3DWithColor.Position.Z = (mczMax - point3DWithColor.Position.Z) / (mczMax - mczMin) - 0.5f;
+            }
+
+            Model3DScene model3DScene = new();
+            model3DScene.Point3DWithColorArray = point3DWithColors.ToArray();
+            return model3DScene;
+        }
+
         public static Model3DScene Get_MiniColumnsMemories_Model3DScene(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
         {
             List<Point3DWithColor> point3DWithColorList = new();
@@ -29,7 +100,7 @@ namespace Ssz.AI.Models
             int mcxMin = Int32.MaxValue;
             int mcxMax = Int32.MinValue;
             int mcyMin = Int32.MaxValue;
-            int mcyMax = Int32.MinValue;
+            int mcyMax = Int32.MinValue;            
 
             foreach (int mc_index in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
             {

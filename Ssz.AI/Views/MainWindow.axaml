@@ -9,7 +9,7 @@
 		    xmlns:dh="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 
         xmlns:v="using:Ssz.AI.Views"        
-        xmlns:views="using:Ssz.AI.Views.ImageProcessingModelViews" 
+        xmlns:views="using:Ssz.AI.Views.MiniColumnDetailedViews" 
         Icon="/Assets/avalonia-logo.ico"       
         Title="Main Window">
 

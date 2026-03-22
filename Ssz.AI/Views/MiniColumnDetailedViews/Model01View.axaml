@@ -25,6 +25,9 @@
       <RowDefinition Height="auto" />
     </Grid.RowDefinitions>
       <StackPanel Orientation="Horizontal">
+        <TextBlock Text="MiniColumn 3D:" VerticalAlignment="Center" />                            
+        <Button Content="Prepare Create 3D" Click="MiniColumnDetailedModel_PrepareCreate3D_OnClick" /> 
+        <Button Content="Create 3D" Click="MiniColumnDetailedModel_Create3D_OnClick" /> 
       </StackPanel>
     </Grid>
     <Grid Grid.Row="1">
@@ -60,14 +63,14 @@
       <TextBlock Text="Тестовый пример. Положение:" Grid.Row="3" />
       <TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="3" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar3" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
-      <TextBlock Text="Радиус зоны:" Grid.Row="4" />
+      <TextBlock Text="Радиус зоны (мкм):" Grid.Row="4" />
       <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="4" Grid.Column="1" />
-      <ScrollBar Name="LevelScrollBar4" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" />
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="50" />
       <TextBlock Text="Количество активных синапсов:" Grid.Row="5" />
       <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="5" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar5" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
     </Grid>
-    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" Height="300" />
     <localViews:ImagesSet Grid.Row="3" Name="ImagesSet2" />
 </Grid>
 </UserControl>

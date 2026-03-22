@@ -1,5 +1,9 @@
+using Avalonia.Media;
+using Ssz.Utils;
+using Ssz.Utils.Avalonia.Model3D;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -40,7 +44,9 @@ public sealed class MiniColumnDetailed
     public const int AxonCount = 200;
 
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
-    public const int SynapsesPerAxon = 10_000;
+    public const int SynapsesPerAxon = 2_000; // Orig^10_000;
+
+    public List<ActiveZone>? Temp_ActiveZones;
 
     /// <summary>
     /// Среднее число точек ветвления аксона.
@@ -96,10 +102,10 @@ public sealed class MiniColumnDetailed
     /// Создаёт миниколонку: генерирует 200 аксонов с биологически
     /// правдоподобной морфологией и 10 000 синапсов каждый.
     /// </summary>
-    /// <param name="seed">Seed для генератора случайных чисел.</param>
-    public MiniColumnDetailed(int seed = 42)
+    /// <param name="random">Seed для генератора случайных чисел.</param>
+    public MiniColumnDetailed(Random random)
     {
-        _rng = new Random(seed);
+        _rng = random;
         Axons = new Axon[AxonCount];
         _spatialIndex = new Dictionary<(int, int, int), List<(int, int)>>(
             capacity: AxonCount * SynapsesPerAxon / 10); // ~2M / 10 оценка
@@ -501,8 +507,8 @@ public sealed class MiniColumnDetailed
     /// <returns>
     /// Список найденных активных зон (дедуплицированных).
     /// </returns>
-    public List<ActiveZone> FindActiveZones(
-        ReadOnlySpan<bool> activityBits,
+    public void FindActiveZones(
+        float[] activityBits,
         float radius,
         int minActiveAxons)
     {
@@ -516,13 +522,16 @@ public sealed class MiniColumnDetailed
         var activeAxonSet = new HashSet<int>(capacity: 64);
         for (int i = 0; i < AxonCount; i += 1)
         {
-            if (activityBits[i])
+            if (activityBits[i] > 0.5f)
                 activeAxonSet.Add(i);
         }
 
         int activeCount = activeAxonSet.Count;
         if (activeCount < minActiveAxons)
-            return []; // Невозможно выполнить условие
+        {
+            Temp_ActiveZones = null;
+            return; // Невозможно выполнить условие
+        }            
 
         // ----------------------------------------------------------
         //  ШАГ 2: Параметры поиска в пространственном индексе
@@ -615,7 +624,7 @@ public sealed class MiniColumnDetailed
         //  (greedy merge: идём по списку, объединяем зоны,
         //   центры которых ближе, чем radius/2)
         // ----------------------------------------------------------
-        return MergeOverlappingZones(rawZones, radius * 0.5f);
+        Temp_ActiveZones = MergeOverlappingZones(rawZones, radius * 0.5f);        
     }
 
     // ============================================================
@@ -659,94 +668,5 @@ public sealed class MiniColumnDetailed
         }
 
         return result;
-    }
+    }    
 }
-
-// ============================================================
-//  ПРОГРАММА — ТОЧКА ВХОДА
-// ============================================================
-//internal static class Program
-//{
-//    static void Main()
-//    {
-//        Console.WriteLine("=== Модель миниколонки коры мозга ===");
-//        Console.WriteLine($"Аксонов: {MiniColumn.AxonCount}");
-//        Console.WriteLine($"Синапсов на аксон: {MiniColumn.SynapsesPerAxon}");
-//        Console.WriteLine($"Всего синапсов: {(long)MiniColumn.AxonCount * MiniColumn.SynapsesPerAxon:N0}");
-//        Console.WriteLine();
-
-//        // ----------------------------------------------------------
-//        //  СОЗДАНИЕ МИНИКОЛОНКИ
-//        //  На ~200 аксонов × 10 000 синапсов = 2 000 000 синапсов.
-//        //  Построение занимает несколько секунд.
-//        // ----------------------------------------------------------
-//        Console.Write("Генерация миниколонки...");
-//        var sw = System.Diagnostics.Stopwatch.StartNew();
-//        var column = new MiniColumn(seed: 42);
-//        sw.Stop();
-//        Console.WriteLine($" готово за {sw.ElapsedMilliseconds} мс.");
-//        Console.WriteLine();
-
-//        // ----------------------------------------------------------
-//        //  ВХОДНОЙ ВЕКТОР АКТИВНОСТИ
-//        //  200 бит, ~30 единиц (активных аксонов).
-//        // ----------------------------------------------------------
-//        var activityBits = new bool[MiniColumn.AxonCount];
-//        var rng = new Random(123);
-
-//        // Активируем ровно 30 случайных аксонов
-//        var activeIndices = new HashSet<int>(capacity: 30);
-//        while (activeIndices.Count < 30)
-//            activeIndices.Add(rng.Next(MiniColumn.AxonCount));
-
-//        foreach (int idx in activeIndices)
-//            activityBits[idx] = true;
-
-//        Console.WriteLine($"Активных аксонов: {activeIndices.Count}");
-//        Console.Write("Индексы активных аксонов: ");
-//        foreach (int idx in activeIndices)
-//            Console.Write($"{idx} ");
-//        Console.WriteLine();
-//        Console.WriteLine();
-
-//        // ----------------------------------------------------------
-//        //  ПАРАМЕТРЫ ПОИСКА
-//        // ----------------------------------------------------------
-//        float radius = 20.0f;   // радиус зоны в мкм
-//        int   minN   = 5;       // минимум N = 5 уникальных активных аксонов
-
-//        Console.WriteLine($"Параметры поиска:");
-//        Console.WriteLine($"  Радиус R = {radius} мкм");
-//        Console.WriteLine($"  Минимум N = {minN} уникальных активных аксонов в зоне");
-//        Console.WriteLine();
-
-//        // ----------------------------------------------------------
-//        //  ПОИСК АКТИВНЫХ ЗОН
-//        // ----------------------------------------------------------
-//        Console.Write("Поиск активных зон...");
-//        sw.Restart();
-//        var zones = column.FindActiveZones(activityBits, radius, minN);
-//        sw.Stop();
-//        Console.WriteLine($" готово за {sw.ElapsedMilliseconds} мс.");
-//        Console.WriteLine();
-
-//        // ----------------------------------------------------------
-//        //  ВЫВОД РЕЗУЛЬТАТОВ
-//        // ----------------------------------------------------------
-//        Console.WriteLine($"Найдено активных зон: {zones.Count}");
-//        Console.WriteLine();
-
-//        int displayCount = Math.Min(zones.Count, 10);
-//        for (int i = 0; i < displayCount; i += 1)
-//        {
-//            var z = zones[i];
-//            Console.WriteLine(
-//                $"  Зона {i + 1,3}: центр=({z.Center.X,7:F1}, {z.Center.Y,7:F1}, {z.Center.Z,7:F1}) мкм  " +
-//                $"уникальных аксонов={z.UniqueAxonCount,3}  " +
-//                $"аксоны=[{string.Join(",", z.ActiveAxonIndices)}]");
-//        }
-
-//        if (zones.Count > displayCount)
-//            Console.WriteLine($"  ... и ещё {zones.Count - displayCount} зон.");
-//    }
-//}

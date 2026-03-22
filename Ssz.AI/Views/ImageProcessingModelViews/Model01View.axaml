@@ -58,7 +58,7 @@
     <Grid Grid.Row="1">      
       <TextBlock Margin="5" x:Name="ImagesSet1_TextBlock" FontSize="16" FontWeight="Bold" />
     </Grid>
-    <localViews:ImagesSet Grid.Row="1" Name="ImagesSet1" />   
+    <localViews:ImagesSet Grid.Row="1" Name="ImagesSet1" Height="300" />   
 
     <Grid Grid.Row="2">
       <Grid.Styles>

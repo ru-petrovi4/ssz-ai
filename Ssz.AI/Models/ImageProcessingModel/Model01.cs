@@ -26,6 +26,7 @@ using OpenCvSharp;
 using Ssz.AI.Core;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
+using Ssz.AI.Models.MiniColumnDetailedModel;
 using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
@@ -168,6 +169,8 @@ public class Model01
 
     public Cortex Cortex = null!;
 
+    public MiniColumnDetailed? MiniColumnDetailed;
+
     public StateInfo StateInfo = new();
 
     public VisualizationWithDesc[] GetImageWithDescs(
@@ -225,14 +228,12 @@ public class Model01
     public VisualizationWithDesc[] GetImageWithDescs_MiniColumnDetailed2(
         Random random)
     {
-        var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
-                        (MiniColumn mc) => mc.Temp_TotalEnergy);
+        if (MiniColumnDetailed is null)
+            return [];
 
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color)),
-                    Desc = $"SOM. Модуль и угол." },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
-                    Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" }
+                new Model3DWithDesc { Data = Visualization3D.Get_MiniColumnDetailed_Model3DScene(MiniColumnDetailed),
+                    Desc = $"Миниколонка 3D." },                
             ];
     }
 
@@ -454,7 +455,7 @@ public class Model01
             Cortex.Temp_LastMiniColumn_SampleVisualisation = GetImageVisualisation(cortexMemory);
 
         await refreshAction();
-    }    
+    }
 
     public async Task CalculateTestMemoryWithSomAsync(Random random, CancellationToken cancellationToken)
     {
@@ -896,6 +897,84 @@ public class Model01
         }
     }
 
+    public void MiniColumnDetailedModel_PrepareCreate3D(Random random)
+    {        
+        Logger.LogInformation("=== Модель миниколонки коры мозга ===");
+        Logger.LogInformation($"Аксонов: {MiniColumnDetailedModel.MiniColumnDetailed.AxonCount}");
+        Logger.LogInformation($"Синапсов на аксон: {MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon}");
+        Logger.LogInformation($"Всего синапсов: {(long)MiniColumnDetailedModel.MiniColumnDetailed.AxonCount * MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon:N0}");
+        Logger.LogInformation($"");
+
+        // ----------------------------------------------------------
+        //  СОЗДАНИЕ МИНИКОЛОНКИ
+        //  На ~200 аксонов × 10 000 синапсов = 2 000 000 синапсов.
+        //  Построение занимает несколько секунд.
+        // ----------------------------------------------------------
+        Console.Write("Генерация миниколонки...");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        MiniColumnDetailed = new MiniColumnDetailed(random);
+        sw.Stop();
+        Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
+        Logger.LogInformation($"");
+    }
+
+    public void MiniColumnDetailedModel_Create3D(Random random)
+    {
+        if (MiniColumnDetailed is null)
+            return;
+
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColum) = GetTestCortexMemory(random);        
+
+        Logger.LogInformation($"Активных аксонов: {TensorPrimitives.Sum(cortexMemory.Hash)}");
+        //Console.Write("Индексы активных аксонов: ");
+        //foreach (int idx in activeIndices)
+        //    Console.Write($"{idx} ");
+        Logger.LogInformation($"");
+        Logger.LogInformation($"");
+
+        // ----------------------------------------------------------
+        //  ПАРАМЕТРЫ ПОИСКА
+        // ----------------------------------------------------------
+        
+        Logger.LogInformation($"Параметры поиска:");
+        Logger.LogInformation($"  Радиус R = {Constants.ZoneRadiusUm} мкм");
+        Logger.LogInformation($"  Минимум N = {Constants.ActivatedSynapsesCount} уникальных активных аксонов в зоне");
+        Logger.LogInformation($"");
+
+        // ----------------------------------------------------------
+        //  ПОИСК АКТИВНЫХ ЗОН
+        // ----------------------------------------------------------
+        Console.Write("Поиск активных зон...");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
+        var activeZones = MiniColumnDetailed.Temp_ActiveZones;
+        sw.Stop();
+        if (activeZones is not null)
+        {
+            Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
+            Logger.LogInformation($"");
+
+            // ----------------------------------------------------------
+            //  ВЫВОД РЕЗУЛЬТАТОВ
+            // ----------------------------------------------------------
+            Logger.LogInformation($"Найдено активных зон: {activeZones.Count}");
+            Logger.LogInformation($"");
+
+            int displayCount = Math.Min(activeZones.Count, 10);
+            for (int i = 0; i < displayCount; i += 1)
+            {
+                var z = activeZones[i];
+                Logger.LogInformation(
+                    $"  Зона {i + 1,3}: центр=({z.Center.X,7:F1}, {z.Center.Y,7:F1}, {z.Center.Z,7:F1}) мкм  " +
+                    $"уникальных аксонов={z.UniqueAxonCount,3}  " +
+                    $"аксоны=[{string.Join(",", z.ActiveAxonIndices)}]");
+            }
+
+            if (activeZones.Count > displayCount)
+                Logger.LogInformation($"  ... и ещё {activeZones.Count - displayCount} зон.");
+        }
+    }
+
     #endregion
 
     #region private functions 
@@ -1161,7 +1240,7 @@ public class Model01
             (int)(radius / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels));
 
         return imageVisualisation;
-    }
+    }    
 
     #endregion
 
@@ -1259,9 +1338,15 @@ public class Model01
 
         public float TestGradientPositionRelative { get; set; } = 0.0f;
 
-        public float ZoneRadius { get; set; }
+        /// <summary>
+        ///     радиус зоны в мкм
+        /// </summary>
+        public float ZoneRadiusUm { get; set; } = 20.0f;
 
-        public int ActivatedSynapsesCount { get; set; }
+        /// <summary>
+        ///     минимум N уникальных активных аксонов
+        /// </summary>
+        public int ActivatedSynapsesCount { get; set; } = 5;
     }
 }
 

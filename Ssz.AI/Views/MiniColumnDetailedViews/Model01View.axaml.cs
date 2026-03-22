@@ -39,27 +39,36 @@ public partial class Model01View : UserControl
         LevelScrollBar0.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh_ImagesSet1();
+            Refresh();
         };
         LevelScrollBar1.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh_ImagesSet1();
+            Refresh();
         };
         LevelScrollBar2.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh_ImagesSet1();
+            Refresh();
         };
         LevelScrollBar3.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh_ImagesSet1();
+            Refresh();
         };
-        LevelScrollBar4.ValueChanged += (s, e) => GetDataFromControls(constants);
-        LevelScrollBar5.ValueChanged += (s, e) => GetDataFromControls(constants);
+        LevelScrollBar4.ValueChanged += (s, e) =>
+        {
+            GetDataFromControls(constants);
+            Refresh();
+        };
+        LevelScrollBar5.ValueChanged += (s, e) =>
+        {
+            GetDataFromControls(constants);
+            Refresh();
+        };
 
         Reset();
+        Refresh_ImagesSet1();
         //if (true)
         //{
         //    Reset();
@@ -127,7 +136,7 @@ public partial class Model01View : UserControl
         LevelScrollBar1.Value = constants.TestGradientMagnitude;
         LevelScrollBar2.Value = constants.TestGradientWidthRelative;
         LevelScrollBar3.Value = constants.TestGradientPositionRelative;
-        LevelScrollBar4.Value = constants.ZoneRadius;
+        LevelScrollBar4.Value = constants.ZoneRadiusUm;
         LevelScrollBar5.Value = constants.ActivatedSynapsesCount;        
     }
 
@@ -137,11 +146,23 @@ public partial class Model01View : UserControl
         constants.TestGradientMagnitude = (float)LevelScrollBar1.Value;
         constants.TestGradientWidthRelative = (float)LevelScrollBar2.Value;
         constants.TestGradientPositionRelative = (float)LevelScrollBar3.Value;
-        constants.ZoneRadius = (float)LevelScrollBar4.Value;
+        constants.ZoneRadiusUm = (float)LevelScrollBar4.Value;
         constants.ActivatedSynapsesCount = (int)LevelScrollBar5.Value;        
     }
 
     #region Buttons Handlers 
+
+    private void MiniColumnDetailedModel_PrepareCreate3D_OnClick(object? sender, RoutedEventArgs args)
+    {
+        Model.MiniColumnDetailedModel_PrepareCreate3D(_random);
+    }
+
+    private void MiniColumnDetailedModel_Create3D_OnClick(object? sender, RoutedEventArgs args)
+    {        
+        Model.MiniColumnDetailedModel_Create3D(_random);
+
+        Refresh_ImagesSet2();
+    }    
 
     #endregion
 
@@ -161,6 +182,14 @@ public partial class Model01View : UserControl
         Model.PutMemories_Pinwheel(_random, 1);
 
         Model.Cortex.CalculateSomCortexMemories(_random);
+    }
+
+    private void Refresh()
+    {
+        //Model.MiniColumnDetailedModel_Create3D(_random);
+
+        Refresh_ImagesSet1();
+        //Refresh_ImagesSet2();
     }
 
     private async void Refresh_ImagesSet1()

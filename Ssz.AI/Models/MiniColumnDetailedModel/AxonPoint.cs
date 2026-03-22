@@ -1,3 +1,4 @@
+using Ssz.Utils;
 using System.Collections.Generic;
 using System.Numerics;
 
@@ -22,7 +23,7 @@ public sealed class AxonPoint
     /// 1 элемент — прямое продолжение без ветвления.
     /// 2 элемента — бинарное ветвление.
     /// </summary>
-    public readonly List<AxonPoint> Next = new(capacity: 2);
+    public readonly FastList<AxonPoint> Next = new(capacity: 2);
 
     public AxonPoint(Vector3 position)
     {
