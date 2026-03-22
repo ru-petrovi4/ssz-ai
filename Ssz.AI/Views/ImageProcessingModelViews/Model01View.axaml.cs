@@ -44,15 +44,55 @@ public partial class Model01View : UserControl
         ColorLowScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
         ColorHighScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
 
-        if (true)
+        if (false)
         {
             Reset();
             Refresh_ImagesSet();
         }
         else 
         {
-            var t = Script2Async();
+            var t = Script1Async();
         }            
+    }
+
+    public async Task Script1Async()
+    {
+        DateTime startDateTime = DateTime.Now;
+        _random = new Random(40);
+        var constants = Model01.Constants;
+        GetDataFromControls(constants);
+
+        await Task.Run(async () =>
+        {
+            try
+            {
+                Model = null!;
+                GC.Collect();                
+
+                Model = new Model01(_random, new Model01.Options
+                {
+                    OnlyCenterHyperColumn = OnlyCenterHyperColumn,
+                    LoadImagesSamplesFile = true,
+                });
+
+                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+
+                await Model.ProcessSomNAsync(epochsCount: null, _random, CancellationToken.None, () =>
+                {
+                    Dispatcher.UIThread.Invoke(() =>
+                    {
+                        Refresh_ImagesSet();
+                    });
+                    return Task.CompletedTask;
+                },
+                isIdeal: true);
+            }
+            catch (OperationCanceledException)
+            {
+                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+            }
+            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+        });
     }
 
     public async Task Script2Async()
@@ -73,7 +113,11 @@ public partial class Model01View : UserControl
 
                     constants.DetectorFieldOfViewRadiusPixels = it;
 
-                    Model = new Model01(_random, OnlyCenterHyperColumn);
+                    Model = new Model01(_random, new Model01.Options
+                    {
+                        OnlyCenterHyperColumn = OnlyCenterHyperColumn,
+                        LoadImagesSamplesFile = true,
+                    });
 
                     Model.Logger.LogInformation("StartProcessSomIdealN Started.");
 
@@ -603,7 +647,11 @@ public partial class Model01View : UserControl
                     int count = 100;
                     for (int it = 0; it < count; it += 1)
                     {
-                        Model = new Model01(_random, onlyCenterHypercolumn: true);                        
+                        Model = new Model01(_random, new Model01.Options
+                        {
+                            OnlyCenterHyperColumn = true,
+                            LoadImagesSamplesFile = true,
+                        });                        
 
                         Model.PutMemories_Random_MultiMemory(_random, cortexMemoriesCount: 6);
 
@@ -677,7 +725,11 @@ public partial class Model01View : UserControl
 
         _random = new Random();
 
-        Model = new Model01(_random, OnlyCenterHyperColumn);
+        Model = new Model01(_random, new Model01.Options
+        {
+            OnlyCenterHyperColumn = OnlyCenterHyperColumn,
+            LoadImagesSamplesFile = true,
+        });
     }
 
     private void Refresh_ImagesSet()

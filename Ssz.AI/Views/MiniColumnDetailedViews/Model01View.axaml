@@ -1,0 +1,74 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+       xmlns:local="clr-namespace:Ssz.AI"
+       xmlns:localViews="clr-namespace:Ssz.AI.Views"
+       mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+       x:Class="Ssz.AI.Views.MiniColumnDetailedViews.Model01View">
+  <Grid>
+    <Grid.Styles>
+      <Style Selector="TextBlock">
+        <Setter Property="FontSize" Value="8"/>
+      </Style>
+    </Grid.Styles>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+    <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+    </Grid.RowDefinitions>
+      <StackPanel Orientation="Horizontal">
+      </StackPanel>
+    </Grid>
+    <Grid Grid.Row="1">
+      <Grid.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="TextWrapping" Value="Wrap"/>
+          <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+      </Grid.Styles>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="200" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+      <Grid.RowDefinitions>        
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Text="Тестовый пример. Угол:" Grid.Row="0" />
+      <TextBlock Text="{Binding #LevelScrollBar0.Value}" Grid.Row="0" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar0" Grid.Row="0" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="360" />
+      <TextBlock Text="Тестовый пример. Модуль градиента:" Grid.Row="1" />
+      <TextBlock Text="{Binding #LevelScrollBar1.Value}" Grid.Row="1" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar1" Grid.Row="1" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1200" />
+      <TextBlock Text="Тестовый пример. Ширина:" Grid.Row="2" />
+      <TextBlock Text="{Binding #LevelScrollBar2.Value}" Grid.Row="2" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar2" Grid.Row="2" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" />
+      <TextBlock Text="Тестовый пример. Положение:" Grid.Row="3" />
+      <TextBlock Text="{Binding #LevelScrollBar3.Value}" Grid.Row="3" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar3" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="-1" Maximum="1" />
+      <TextBlock Text="Радиус зоны:" Grid.Row="4" />
+      <TextBlock Text="{Binding #LevelScrollBar4.Value}" Grid.Row="4" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar4" Grid.Row="4" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="1" />
+      <TextBlock Text="Количество активных синапсов:" Grid.Row="5" />
+      <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="5" Grid.Column="1" />
+      <ScrollBar Name="LevelScrollBar5" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
+    </Grid>
+    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" />
+    <localViews:ImagesSet Grid.Row="3" Name="ImagesSet2" />
+</Grid>
+</UserControl>
+

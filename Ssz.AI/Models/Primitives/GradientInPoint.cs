@@ -2,6 +2,9 @@
 
 namespace Ssz.AI.Models
 {
+    /// <summary>
+    ///     If chaged to class, default values in arrays must be checked.
+    /// </summary>
     public struct GradientInPoint : IOwnedDataSerializable
     {
         public double GradX;

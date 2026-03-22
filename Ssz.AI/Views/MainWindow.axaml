@@ -6,11 +6,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"        xmlns:avalonia="using:OxyPlot.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="Ssz.AI.Views.MainWindow"
-		xmlns:dh="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+		    xmlns:dh="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 
-        xmlns:v="using:Ssz.AI.Views"
-        xmlns:advancedEmbeddingViews2="using:Ssz.AI.Views.AdvancedEmbeddingViews2" 
-        xmlns:imageProcessingModelViews="using:Ssz.AI.Views.ImageProcessingModelViews" 
+        xmlns:v="using:Ssz.AI.Views"        
+        xmlns:views="using:Ssz.AI.Views.ImageProcessingModelViews" 
         Icon="/Assets/avalonia-logo.ico"       
         Title="Main Window">
 
@@ -22,7 +21,7 @@
 
 	<dh:DialogHost Identifier="RootDialog">
 		<Grid>
-            <imageProcessingModelViews:Model01View />
+      <views:Model01View />
 		</Grid>
 	</dh:DialogHost>
 </Window>

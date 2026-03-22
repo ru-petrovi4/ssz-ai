@@ -69,5 +69,5 @@ public interface IRetinaConstants
     /// </summary>
     int HashLength { get; }
 
-    float DetectorRange_MiniColumns { get; }
+    float DetectorRange_MiniColumns { get; }    
 }

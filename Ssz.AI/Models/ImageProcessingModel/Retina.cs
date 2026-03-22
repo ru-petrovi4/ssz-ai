@@ -171,6 +171,21 @@ public class Retina : ISerializableModelObject
         Temp_ToCalculateRetinaPoints = new FastList<RetinaPoint>(Temp_RetinaPoints.Data);
     }
 
+    public DenseMatrix<GradientInPoint> Get_Ideal_Eye_GradientMatrix(
+        float testGradientAngleDegrees,
+        float testGradientMagnitude,
+        float testGradientWidthRelative,
+        float testGradientPositionRelative)
+    {
+        return SobelOperator.ApplySobel(
+            testGradientAngleDegrees,
+            testGradientMagnitude,
+            testGradientWidthRelative,
+            testGradientPositionRelative,
+            Constants.RetinaImagePixelSize.Width, 
+            Constants.RetinaImagePixelSize.Height);
+    }
+
     public void CalculateRetinaPoints(DenseMatrix<GradientInPoint> eye_GradientMatrix)
     {        
         for (int rp_Index = 0; rp_Index < Temp_ToCalculateRetinaPoints.Count; rp_Index += 1)

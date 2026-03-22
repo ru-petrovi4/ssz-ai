@@ -25,7 +25,10 @@ namespace Ssz.AI.Models
             {  1,  2,  1 }
         };
 
-        public static DenseMatrix<GradientInPoint> ApplySobel(byte[] mnistImageData, int width, int height)
+        public static DenseMatrix<GradientInPoint> ApplySobel(
+            byte[] mnistImageData, 
+            int width, 
+            int height)
         {
             DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
 
@@ -60,6 +63,76 @@ namespace Ssz.AI.Models
                     };
 
                     gradientMatrix[x, y] = gradientInPoint;
+                }
+            }
+
+            return gradientMatrix;
+        }
+
+        public static DenseMatrix<GradientInPoint> ApplySobel(
+            float gradientAngle,
+            float gradientMagnitude,
+            float gradientWidthRelative,
+            float gradientPositionRelative, 
+            int width, 
+            int height)
+        {
+            DenseMatrix<GradientInPoint> gradientMatrix = new DenseMatrix<GradientInPoint>(width, height);
+
+            GradientInPoint gradientInPoint = new()
+            {
+                GradX = gradientMagnitude * Math.Cos(gradientAngle),
+                GradY = gradientMagnitude * Math.Sin(gradientAngle),
+                Magnitude = gradientMagnitude,
+                Angle = gradientAngle
+            };
+
+            // Толщина в \"пикселях\" по X
+            double lineWidth = gradientWidthRelative * width;
+            double halfWidth = lineWidth / 2.0;
+
+            // Центр матрицы в непрерывных координатах
+            double cx = (width - 1) / 2.0;
+            double cy = (height - 1) / 2.0;
+
+            // Направляющий вектор линии (по углу)
+            double dx = Math.Cos(gradientAngle);
+            double dy = Math.Sin(gradientAngle);
+
+            // Смещение вдоль нормали: offset задан относительно ширины
+            // Берём нормаль к (dx,dy): n = (-dy, dx)
+            double nx = -dy;
+            double ny = dx;
+            double offsetPixels = gradientPositionRelative * width;
+
+            // Точка на линии (смещаем центр вдоль нормали)
+            double x0 = cx + nx * offsetPixels;
+            double y0 = cy + ny * offsetPixels;
+
+            // Нормаль нормируем, чтобы расстояние считалось в пикселях
+            double nLen = Math.Sqrt(nx * nx + ny * ny);
+            nx /= nLen;
+            ny /= nLen;
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    // Центр пикселя
+                    double px = x + 0.5;
+                    double py = y + 0.5;
+
+                    // Вектор от точки на линии до пикселя
+                    double vx = px - x0;
+                    double vy = py - y0;
+
+                    // Подписанное расстояние до линии (скаляр по нормали)
+                    double dist = vx * nx + vy * ny;
+
+                    if (Math.Abs(dist) <= halfWidth)
+                    {
+                        gradientMatrix[x, y] = gradientInPoint;
+                    }
                 }
             }
 
