@@ -382,52 +382,112 @@ public sealed class MiniColumnDetailed
     //  РАЗМЕЩЕНИЕ СИНАПСОВ НА ДЕРЕВЕ АКСОНА
     // ============================================================
     /// <summary>
-    /// Размещает 10 000 исходящих синапсов вдоль всего дерева аксона.
-    ///
-    /// Биологически: синапсы расположены на терминальных бутонах
-    /// (en passant synapses) вдоль аксона, плотнее на дистальных
-    /// ветвях. Координаты синапсов = координата точки аксона +
-    /// небольшое случайное смещение (~0.5–2 мкм).
+    /// Размещает синапсы равномерно по всей длине аксона.
+    /// Алгоритм собирает все сегменты (отрезки между узлами аксона),
+    /// вычисляет их суммарную длину и распределяет синапсы
+    /// строго с одинаковым интервалом вдоль ветвей (с небольшим шумом).
     /// </summary>
     private Synapse[] PlaceSynapses(AxonPoint root)
     {
-        // Сначала собираем все точки дерева
-        var allPoints = new List<AxonPoint>(capacity: 512);
+        // 1. Сначала собираем все отрезки (сегменты) дерева аксона.
+        // Используем легковесные кортежи (ValueTuple) для хранения структуры:
+        // Начальная координата, Конечная координата и Длина отрезка в мкм.
+        var segments = new List<(Vector3 Start, Vector3 End, float Length)>(capacity: 512);
+
+        // Стек для обхода дерева без рекурсии, что гарантирует максимальную производительность
         var traversalStack = new Stack<AxonPoint>(128);
         traversalStack.Push(root);
 
+        // Переменная для хранения общей длины всех ветвей аксона
+        float totalLength = 0f;
+
+        // Обходим всё дерево аксона в глубину
         while (traversalStack.Count > 0)
         {
             var pt = traversalStack.Pop();
-            allPoints.Add(pt);
-            foreach (var child in pt.Next)
-                traversalStack.Push(child);
+
+            // Если у точки есть дочерние узлы (продолжения аксона)
+            if (pt.Next != null)
+            {
+                // Используем += 1 вместо запрещенного ++
+                for (int i = 0; i < pt.Next.Count; i += 1)
+                {
+                    var child = pt.Next[i];
+
+                    // Вычисляем длину отрезка с помощью SIMD-совместимого метода System.Numerics
+                    float length = Vector3.Distance(pt.Position, child.Position);
+
+                    // Записываем только валидные отрезки, имеющие ненулевую длину
+                    if (length > 0f)
+                    {
+                        segments.Add((pt.Position, child.Position, length));
+                        totalLength += length; // Накапливаем общую длину
+                    }
+
+                    traversalStack.Push(child);
+                }
+            }
         }
 
-        int totalPoints = allPoints.Count;
         var synapses = new Synapse[SynapsesPerAxon];
 
-        // Распределяем синапсы по точкам аксона
-        // Синапсы размещаются рядом с точками аксона + малый jitter
+        // 2. Краевой случай: Если аксон вырожден (длина нулевая), то размещаем все синапсы в корне
+        if (totalLength <= 0f || segments.Count == 0)
+        {
+            for (int s = 0; s < SynapsesPerAxon; s += 1)
+            {
+                synapses[s] = new Synapse(root.Position);
+            }
+            return synapses;
+        }
+
+        // 3. Вычисляем шаг, через который будут расставлены синапсы для идеальной равномерности
+        float step = totalLength / SynapsesPerAxon;
+
+        // Переменная для отслеживания индекса текущего сегмента при линейном проходе
+        int currentSegmentIdx = 0;
+
+        // Расстояние от начала текущего сегмента, на котором размещается очередной синапс
+        // Начинаем с половины шага, чтобы края аксона не были излишне "плотными"
+        float currentDistInSegment = step * 0.5f;
+
+        // 4. Проходим по необходимому количеству синапсов и размещаем их
         for (int s = 0; s < SynapsesPerAxon; s += 1)
         {
-            // Выбираем случайную точку аксона (равномерно)
-            int ptIdx = _random.Next(totalPoints);
-            var basePos = allPoints[ptIdx].Position;
+            // Если мы вышли за пределы длины текущего отрезка, переходим к следующему
+            // (цикл нужен для случаев, когда отрезки слишком короткие по сравнению с шагом)
+            while (currentDistInSegment > segments[currentSegmentIdx].Length && currentSegmentIdx < segments.Count - 1)
+            {
+                currentDistInSegment -= segments[currentSegmentIdx].Length;
+                currentSegmentIdx += 1; // Увеличиваем индекс без использования ++
+            }
 
-            // Добавляем небольшое смещение (~0.5–2 мкм) для реализма
-            // Синаптические бутоны расположены на небольшом расстоянии
-            // от центральной оси аксона
-            float jitter = 1.5f; // мкм
+            // Получаем текущий сегмент аксона
+            var seg = segments[currentSegmentIdx];
+
+            // Вычисляем долю (от 0.0 до 1.0) пройденного расстояния по отрезку
+            float t = currentDistInSegment / seg.Length;
+
+            // Выполняем линейную интерполяцию для нахождения точной позиции синапса на отрезке
+            var basePos = Vector3.Lerp(seg.Start, seg.End, t);
+
+            // 5. Добавляем небольшое случайное смещение (~1.5 мкм) для реализма,
+            // имитируя бутоны, расположенные на малом расстоянии от центральной оси аксона
+            float jitter = 1.5f;
             var synPos = new Vector3(
                 basePos.X + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
                 basePos.Y + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
                 basePos.Z + (float)(_random.NextDouble() - 0.5) * jitter * 2f
             );
 
+            // Создаем новый синапс
             synapses[s] = new Synapse(synPos);
+
+            // Продвигаемся дальше по отрезку на заданный равномерный шаг
+            currentDistInSegment += step;
         }
 
+        // Возвращаем массив готовых синапсов, равномерно расставленных по всему аксону
         return synapses;
     }
 

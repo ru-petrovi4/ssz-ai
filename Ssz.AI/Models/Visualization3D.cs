@@ -52,24 +52,24 @@ public static class Visualization3D
             });
         }
 
-        for (int i = 0; i < miniColumnDetailed.Axons.Length; i += 1)
+        for (int i = 0; i < 5; i += 1) //
         {
             var axon = miniColumnDetailed.Axons[i];
             model3DScene.Lines.AddRange(GetLines(null, axon.Root, sceneBounds));
 
-            //for (int j = 0; j < axon.Synapses.Length; j += 1)
-            //{
-            //    var s = axon.Synapses[j];
+            for (int j = 0; j < axon.Synapses.Length; j += 1)
+            {
+                var s = axon.Synapses[j];
 
-            //    sceneBounds.Update(s.Position);
+                sceneBounds.Update(s.Position);
 
-            //    System.Drawing.Color color = System.Drawing.Color.Red;
-            //    model3DScene.Points.Add(new Point3DWithColor
-            //    {
-            //        Position = s.Position,
-            //        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-            //    });
-            //}
+                System.Drawing.Color color = System.Drawing.Color.Red;
+                model3DScene.Points.Add(new Point3DWithColor
+                {
+                    Position = s.Position,
+                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                });
+            }
         }
 
         sceneBounds.Normalize(model3DScene);
