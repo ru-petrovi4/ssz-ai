@@ -1268,7 +1268,7 @@ public class Model01
 
         public float DistanceBetweenEyes => 0.064f;
 
-        public float RetinaPointDeltaPixels => 0.2f;
+        public float RetinaPointDeltaPixels { get; set; } = 0.2f;
 
         public float DetectorFieldOfViewRadiusPixels { get; set; } = 0.6f;
 

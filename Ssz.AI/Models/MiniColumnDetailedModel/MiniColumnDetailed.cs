@@ -87,13 +87,13 @@ public sealed class MiniColumnDetailed
     private readonly Dictionary<(int, int, int), List<(int axonIdx, int synIdx)>> _spatialIndex;
 
     /// <summary>Размер ячейки пространственного индекса (мкм).</summary>
-    private float _cellSize;
+    private float _cellSizeUm;
 
     // ----------------------------------------------------------
     //  ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ
     //  Инициализируется с фиксированным seed для воспроизводимости.
     // ----------------------------------------------------------
-    private readonly Random _rng;
+    private readonly Random _random;
 
     // ============================================================
     //  КОНСТРУКТОР: ГЕНЕРАЦИЯ ВСЕЙ МИНИКОЛОНКИ
@@ -105,7 +105,7 @@ public sealed class MiniColumnDetailed
     /// <param name="random">Seed для генератора случайных чисел.</param>
     public MiniColumnDetailed(Random random)
     {
-        _rng = random;
+        _random = random;
         Axons = new Axon[AxonCount];
         _spatialIndex = new Dictionary<(int, int, int), List<(int, int)>>(
             capacity: AxonCount * SynapsesPerAxon / 10); // ~2M / 10 оценка
@@ -133,7 +133,7 @@ public sealed class MiniColumnDetailed
         //  После заполнения всех аксонов _cellSize берём
         //  как среднее расстояние между синапсами * 4.
         // ----------------------------------------------------------
-        _cellSize = 15.0f; // мкм, исходя из плотности синапсов
+        _cellSizeUm = 15.0f; // мкм, исходя из плотности синапсов
         BuildSpatialIndex();
     }
 
@@ -173,12 +173,12 @@ public sealed class MiniColumnDetailed
                 float x, y;
                 do
                 {
-                    x = (float)(_rng.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
-                    y = (float)(_rng.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
+                    x = (float)(_random.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
+                    y = (float)(_random.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
                 }
                 while (x * x + y * y > ColumnRadiusUm * ColumnRadiusUm);
 
-                float z = zMin + (float)_rng.NextDouble() * (zMax - zMin);
+                float z = zMin + (float)_random.NextDouble() * (zMax - zMin);
                 positions[idx] = new Vector3(x, y, z);
                 idx += 1;
             }
@@ -214,7 +214,7 @@ public sealed class MiniColumnDetailed
         //  вниз ~60–100 мкм. Это биологически правильно — AIS
         //  всегда направлен перпендикулярно поверхности коры.
         // ----------------------------------------------------------
-        float aisLength = 60.0f + (float)_rng.NextDouble() * 40.0f; // 60–100 мкм
+        float aisLength = 60.0f + (float)_random.NextDouble() * 40.0f; // 60–100 мкм
         int aisPoints = 4;
         float aisStep = aisLength / aisPoints;
 
@@ -224,8 +224,8 @@ public sealed class MiniColumnDetailed
             // Небольшое горизонтальное отклонение (реалистичная кривизна)
             float jitter = 1.5f;
             var pos = new Vector3(
-                somaPos.X + (float)(_rng.NextDouble() - 0.5) * jitter,
-                somaPos.Y + (float)(_rng.NextDouble() - 0.5) * jitter,
+                somaPos.X + (float)(_random.NextDouble() - 0.5) * jitter,
+                somaPos.Y + (float)(_random.NextDouble() - 0.5) * jitter,
                 somaPos.Z + p * aisStep  // идёт вниз (увеличение Z)
             );
             var next = new AxonPoint(pos);
@@ -241,11 +241,11 @@ public sealed class MiniColumnDetailed
         var growthStack = new Stack<(AxonPoint node, int branchesLeft, Vector3 direction)>(32);
 
         // Начальное направление: горизонтально с небольшим наклоном
-        float angle = (float)(_rng.NextDouble() * Math.PI * 2.0); // случайный азимут
+        float angle = (float)(_random.NextDouble() * Math.PI * 2.0); // случайный азимут
         var initDir = new Vector3(
             MathF.Cos(angle) * 0.9f,
             MathF.Sin(angle) * 0.9f,
-            0.2f + (float)_rng.NextDouble() * 0.2f  // небольшой вертикальный компонент
+            0.2f + (float)_random.NextDouble() * 0.2f  // небольшой вертикальный компонент
         );
         initDir = Vector3.Normalize(initDir);
 
@@ -256,7 +256,7 @@ public sealed class MiniColumnDetailed
             var (node, branchesLeft, direction) = growthStack.Pop();
 
             // Длина текущего сегмента (варьируется биологически)
-            float segLen = MeanSegmentLengthUm * (0.6f + (float)_rng.NextDouble() * 0.8f);
+            float segLen = MeanSegmentLengthUm * (0.6f + (float)_random.NextDouble() * 0.8f);
             float stepLen = segLen / PointsPerSegment;
 
             // Рост сегмента от node до его конца
@@ -269,9 +269,9 @@ public sealed class MiniColumnDetailed
                 int branch2 = branchesLeft - branch1 - 1;
 
                 // Угол расходящихся ветвей: ~30–60 градусов
-                float spreadAngle = 0.4f + (float)(_rng.NextDouble() * 0.5f); // ~23–52°
-                Vector3 dir1 = RotateVector(direction, spreadAngle, _rng);
-                Vector3 dir2 = RotateVector(direction, -spreadAngle, _rng);
+                float spreadAngle = 0.4f + (float)(_random.NextDouble() * 0.5f); // ~23–52°
+                Vector3 dir1 = RotateVector(direction, spreadAngle, _random);
+                Vector3 dir2 = RotateVector(direction, -spreadAngle, _random);
 
                 growthStack.Push((segEnd, branch1, Vector3.Normalize(dir1)));
                 growthStack.Push((segEnd, branch2, Vector3.Normalize(dir2)));
@@ -302,8 +302,8 @@ public sealed class MiniColumnDetailed
         {
             // Случайное малое отклонение направления (изгиб аксона)
             // Максимальное отклонение ~10° на шаг
-            float bendAngle = (float)(_rng.NextDouble() - 0.5) * 0.18f;
-            dir = Vector3.Normalize(RotateVector(dir, bendAngle, _rng));
+            float bendAngle = (float)(_random.NextDouble() - 0.5) * 0.18f;
+            dir = Vector3.Normalize(RotateVector(dir, bendAngle, _random));
 
             var pos = current.Position + dir * stepLen;
 
@@ -327,7 +327,7 @@ public sealed class MiniColumnDetailed
     /// и изгибов аксона.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector3 RotateVector(Vector3 v, float angle, Random rng)
+    private static Vector3 RotateVector(Vector3 v, float angle, Random random)
     {
         // Находим произвольную ось, перпендикулярную v
         // Используем метод Хьюза–Мёллера для устойчивости
@@ -342,7 +342,7 @@ public sealed class MiniColumnDetailed
         perp = Vector3.Normalize(perp);
 
         // Поворачиваем ось в горизонтальной плоскости случайно
-        float phi = (float)(rng.NextDouble() * Math.PI * 2.0);
+        float phi = (float)(random.NextDouble() * Math.PI * 2.0);
         Vector3 crossV = Vector3.Cross(v, perp);
         Vector3 rotAxis = perp * MathF.Cos(phi) + crossV * MathF.Sin(phi);
         rotAxis = Vector3.Normalize(rotAxis);
@@ -371,7 +371,7 @@ public sealed class MiniColumnDetailed
         do
         {
             k += 1;
-            p *= _rng.NextDouble();
+            p *= _random.NextDouble();
         }
         while (p > L);
         // Ограничиваем диапазон [1, 12] для адекватной топологии дерева
@@ -412,7 +412,7 @@ public sealed class MiniColumnDetailed
         for (int s = 0; s < SynapsesPerAxon; s += 1)
         {
             // Выбираем случайную точку аксона (равномерно)
-            int ptIdx = _rng.Next(totalPoints);
+            int ptIdx = _random.Next(totalPoints);
             var basePos = allPoints[ptIdx].Position;
 
             // Добавляем небольшое смещение (~0.5–2 мкм) для реализма
@@ -420,9 +420,9 @@ public sealed class MiniColumnDetailed
             // от центральной оси аксона
             float jitter = 1.5f; // мкм
             var synPos = new Vector3(
-                basePos.X + (float)(_rng.NextDouble() - 0.5) * jitter * 2f,
-                basePos.Y + (float)(_rng.NextDouble() - 0.5) * jitter * 2f,
-                basePos.Z + (float)(_rng.NextDouble() - 0.5) * jitter * 2f
+                basePos.X + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
+                basePos.Y + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
+                basePos.Z + (float)(_random.NextDouble() - 0.5) * jitter * 2f
             );
 
             synapses[s] = new Synapse(synPos);
@@ -466,9 +466,9 @@ public sealed class MiniColumnDetailed
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private (int, int, int) GetCell(Vector3 pos)
     {
-        int ix = (int)MathF.Floor(pos.X / _cellSize);
-        int iy = (int)MathF.Floor(pos.Y / _cellSize);
-        int iz = (int)MathF.Floor(pos.Z / _cellSize);
+        int ix = (int)MathF.Floor(pos.X / _cellSizeUm);
+        int iy = (int)MathF.Floor(pos.Y / _cellSizeUm);
+        int iz = (int)MathF.Floor(pos.Z / _cellSizeUm);
         return (ix, iy, iz);
     }
 
@@ -538,7 +538,7 @@ public sealed class MiniColumnDetailed
         //  Нужно проверить все ячейки в кубе со стороной 2R
         // ----------------------------------------------------------
         float radiusSq = radius * radius;
-        int cellSpan = (int)MathF.Ceiling(radius / _cellSize);
+        int cellSpan = (int)MathF.Ceiling(radius / _cellSizeUm);
 
         // ----------------------------------------------------------
         //  ШАГ 3: Проверяем каждый синапс каждого активного аксона

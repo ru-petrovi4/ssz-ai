@@ -1,280 +1,353 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
+using Ssz.AI.Models.MiniColumnDetailedModel;
 using Ssz.AI.Views;
 using Ssz.Utils;
 using Ssz.Utils.Avalonia.Model3D;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
-namespace Ssz.AI.Models
+namespace Ssz.AI.Models;
+
+public static class Visualization3D
 {
-    public static class Visualization3D
+    //public static void ShowPoints(System.Drawing.Image[] images)
+    //{
+    //    var window = new Window
+    //    {
+    //        Width = 1500,
+    //        Height = 600,
+    //        Content = new Model3DView()
+    //    };
+
+    //    window.Show();
+    //}
+
+    public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed miniColumnDetailed)
     {
-        //public static void ShowPoints(System.Drawing.Image[] images)
-        //{
-        //    var window = new Window
-        //    {
-        //        Width = 1500,
-        //        Height = 600,
-        //        Content = new Model3DView()
-        //    };
+        Model3DScene model3DScene = new();
 
-        //    window.Show();
-        //}
+        if (miniColumnDetailed.Temp_ActiveZones is null)
+            return model3DScene;
+                
+        SceneBounds sceneBounds = new();
 
-        public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed miniColumnDetailed)
+        model3DScene.Points = new List<Point3DWithColor>(1024);
+        model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
+
+        int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
+        for (int i = 0; i < displayCount; i += 1)
         {
-            if (miniColumnDetailed.Temp_ActiveZones is null)
-                return new Model3DScene();            
+            var z = miniColumnDetailed.Temp_ActiveZones[i];
+            
+            sceneBounds.Update(z.Center);
 
-            float mcxMin = Int32.MaxValue;
-            float mcxMax = Int32.MinValue;
-            float mcyMin = Int32.MaxValue;
-            float mcyMax = Int32.MinValue;
-            float mczMin = Int32.MaxValue;
-            float mczMax = Int32.MinValue;
-
-            FastList<Point3DWithColor> point3DWithColors = new FastList<Point3DWithColor>(30);
-
-            int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
-            for (int i = 0; i < displayCount; i += 1)
+            System.Drawing.Color color = System.Drawing.Color.White;
+            model3DScene.Points.Add(new Point3DWithColor
             {
-                var z = miniColumnDetailed.Temp_ActiveZones[i];
+                Position = z.Center,
+                Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            });
+        }
 
-                var c = z.Center;
-                if (c.X > mcxMax)
-                    mcxMax = c.X;
-                if (c.X < mcxMin)
-                    mcxMin = c.X;
-                if (c.Y > mcyMax)
-                    mcyMax = c.Y;
-                if (c.Y < mcyMin)
-                    mcyMin = c.Y;
-                if (c.Z > mczMax)
-                    mczMax = c.Z;
-                if (c.Z < mczMin)
-                    mczMin = c.Z;
+        for (int i = 0; i < miniColumnDetailed.Axons.Length; i += 1)
+        {
+            var axon = miniColumnDetailed.Axons[i];
+            model3DScene.Lines.AddRange(GetLines(null, axon.Root, sceneBounds));
 
-                System.Drawing.Color color = System.Drawing.Color.White;
-                point3DWithColors.Add(new Point3DWithColor
+            //for (int j = 0; j < axon.Synapses.Length; j += 1)
+            //{
+            //    var s = axon.Synapses[j];
+
+            //    sceneBounds.Update(s.Position);
+
+            //    System.Drawing.Color color = System.Drawing.Color.Red;
+            //    model3DScene.Points.Add(new Point3DWithColor
+            //    {
+            //        Position = s.Position,
+            //        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            //    });
+            //}
+        }
+
+        sceneBounds.Normalize(model3DScene);
+
+        return model3DScene;
+    }
+
+    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, SceneBounds sceneBounds)
+    {        
+        List<List<Point3DWithColor>> lines = new(1024);
+        List<Point3DWithColor> line = new();
+
+        System.Drawing.Color color = System.Drawing.Color.Blue;
+
+        if (preStartAxonPoint is not null)
+            line.Add(new Point3DWithColor
+            {
+                Position = preStartAxonPoint.Position,
+                Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            });
+        lines.Add(line);
+        AxonPoint axonPoint = startAxonPoint;
+        for (; ; )
+        {
+            sceneBounds.Update(axonPoint.Position);
+            
+            line.Add(new Point3DWithColor
+            {
+                Position = axonPoint.Position,
+                Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            });
+            if (axonPoint.Next.Count == 0)
+                break;
+            if (axonPoint.Next.Count == 1)
+            {
+                axonPoint = axonPoint.Next[0];
+                continue;
+            }
+
+            for (int i = 0; i < axonPoint.Next.Count; i += 1)
+            {
+                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], sceneBounds));
+            }
+            break;
+        }
+        return lines;
+    }
+
+    public static Model3DScene Get_MiniColumnsMemories_Model3DScene(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+    {
+        List<Point3DWithColor> point3DWithColorList = new();
+
+        int mcxMin = Int32.MaxValue;
+        int mcxMax = Int32.MinValue;
+        int mcyMin = Int32.MaxValue;
+        int mcyMax = Int32.MinValue;            
+
+        foreach (int mc_index in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
+        {
+            var mc = cortex.MiniColumns.Data[mc_index];
+            if (mc.MCX > mcxMax)
+                mcxMax = mc.MCX;
+            if (mc.MCX < mcxMin)
+                mcxMin = mc.MCX;
+            if (mc.MCY > mcyMax)
+                mcyMax = mc.MCY;
+            if (mc.MCY < mcyMin)
+                mcyMin = mc.MCY;
+
+            foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
+            {
+                var cortexMemory = mc.CortexMemories[mi];
+                if (cortexMemory is null)
+                    continue;
+                
+                System.Drawing.Color color = cortexMemory.DiscreteRandomVector_Color;
+
+                point3DWithColorList.Add(new Point3DWithColor
                 {
-                    Position = z.Center,
+                    Position = new System.Numerics.Vector3(
+                        mc.MCX,
+                        mc.MCY,
+                        color.GetHue() / 360.0f - 0.5f),
                     Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
                 });
             }
-
-            //for (int i = 0; i < 1; i += 1)
-            //{
-            //    var axon = Axons[i];
-            //    AxonPoint? axonPoint = axon.Root;
-            //    for (; ; )
-            //    {
-            //        System.Drawing.Color color = System.Drawing.Color.Blue;
-            //        point3DWithColors.Add(new Point3DWithColor
-            //        {
-            //            Position = axonPoint.Position,
-            //            Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-            //        });
-            //        axonPoint = axonPoint.Next;
-            //    }                    
-            //}
-
-            // Normalize
-            foreach (Point3DWithColor point3DWithColor in point3DWithColors)
-            {
-                point3DWithColor.Position.X = (mcxMax - point3DWithColor.Position.X) / (mcxMax - mcxMin) - 0.5f;
-                point3DWithColor.Position.Y = (mcyMax - point3DWithColor.Position.Y) / (mcyMax - mcyMin) - 0.5f;
-                point3DWithColor.Position.Z = (mczMax - point3DWithColor.Position.Z) / (mczMax - mczMin) - 0.5f;
-            }
-
-            Model3DScene model3DScene = new();
-            model3DScene.Point3DWithColorArray = point3DWithColors.ToArray();
-            return model3DScene;
         }
 
-        public static Model3DScene Get_MiniColumnsMemories_Model3DScene(Ssz.AI.Models.AdvancedEmbeddingModel2.Cortex cortex)
+        // Normalize
+        foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
         {
-            List<Point3DWithColor> point3DWithColorList = new();
-
-            int mcxMin = Int32.MaxValue;
-            int mcxMax = Int32.MinValue;
-            int mcyMin = Int32.MaxValue;
-            int mcyMax = Int32.MinValue;            
-
-            foreach (int mc_index in Enumerable.Range(0, cortex.MiniColumns.Data.Length))
-            {
-                var mc = cortex.MiniColumns.Data[mc_index];
-                if (mc.MCX > mcxMax)
-                    mcxMax = mc.MCX;
-                if (mc.MCX < mcxMin)
-                    mcxMin = mc.MCX;
-                if (mc.MCY > mcyMax)
-                    mcyMax = mc.MCY;
-                if (mc.MCY < mcyMin)
-                    mcyMin = mc.MCY;
-
-                foreach (var mi in Enumerable.Range(0, mc.CortexMemories.Count))
-                {
-                    var cortexMemory = mc.CortexMemories[mi];
-                    if (cortexMemory is null)
-                        continue;
-                    
-                    System.Drawing.Color color = cortexMemory.DiscreteRandomVector_Color;
-
-                    point3DWithColorList.Add(new Point3DWithColor
-                    {
-                        Position = new System.Numerics.Vector3(
-                            mc.MCX,
-                            mc.MCY,
-                            color.GetHue() / 360.0f - 0.5f),
-                        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                    });
-                }
-            }
-
-            // Normalize
-            foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
-            {
-                point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
-                point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
-            }
-
-            Model3DScene model3DScene = new();
-            model3DScene.Point3DWithColorArray = point3DWithColorList.ToArray();
-            return model3DScene;
+            point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
+            point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
         }
 
-        public static Model3DScene GetSubArea_MiniColumnsMemories_Model3DScene(Cortex_Simplified cortex)
+        Model3DScene model3DScene = new();
+        model3DScene.Points = point3DWithColorList;
+        return model3DScene;
+    }
+
+    public static Model3DScene GetSubArea_MiniColumnsMemories_Model3DScene(Cortex_Simplified cortex)
+    {
+        List<Point3DWithColor> point3DWithColorList = new();
+
+        int mcxMin = Int32.MaxValue;
+        int mcxMax = Int32.MinValue;
+        int mcyMin = Int32.MaxValue;
+        int mcyMax = Int32.MinValue;
+
+        foreach (int mc_index in Enumerable.Range(0, cortex.SubArea_MiniColumns.Length))
         {
-            List<Point3DWithColor> point3DWithColorList = new();
+            Cortex_Simplified.MiniColumn mc = cortex.SubArea_MiniColumns[mc_index];
+            if (mc.MCX > mcxMax)
+                mcxMax = mc.MCX;
+            if (mc.MCX < mcxMin)
+                mcxMin = mc.MCX;
+            if (mc.MCY > mcyMax)
+                mcyMax = mc.MCY;
+            if (mc.MCY < mcyMin)
+                mcyMin = mc.MCY;
 
-            int mcxMin = Int32.MaxValue;
-            int mcxMax = Int32.MinValue;
-            int mcyMin = Int32.MaxValue;
-            int mcyMax = Int32.MinValue;
-
-            foreach (int mc_index in Enumerable.Range(0, cortex.SubArea_MiniColumns.Length))
+            foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
             {
-                Cortex_Simplified.MiniColumn mc = cortex.SubArea_MiniColumns[mc_index];
-                if (mc.MCX > mcxMax)
-                    mcxMax = mc.MCX;
-                if (mc.MCX < mcxMin)
-                    mcxMin = mc.MCX;
-                if (mc.MCY > mcyMax)
-                    mcyMax = mc.MCY;
-                if (mc.MCY < mcyMin)
-                    mcyMin = mc.MCY;
+                Cortex_Simplified.Memory? memory = mc.Memories[mi];
+                if (memory is null)
+                    continue;
 
-                foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
+                double gradX = memory.PictureAverageGradientInPoint.GradX;
+                double gradY = memory.PictureAverageGradientInPoint.GradY;
+
+                double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+                double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
+                double saturation = 0.3 + normalizedMagnitude;
+                if (saturation > 1)
+                    saturation = 1;
+
+                // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
+                float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
+                // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
+                System.Drawing.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
+
+                point3DWithColorList.Add(new Point3DWithColor
                 {
-                    Cortex_Simplified.Memory? memory = mc.Memories[mi];
-                    if (memory is null)
-                        continue;
-
-                    double gradX = memory.PictureAverageGradientInPoint.GradX;
-                    double gradY = memory.PictureAverageGradientInPoint.GradY;
-
-                    double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
-                    double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
-
-                    double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
-                    double saturation = 0.3 + normalizedMagnitude;
-                    if (saturation > 1)
-                        saturation = 1;
-
-                    // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
-                    float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
-                    // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    System.Drawing.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
-
-                    point3DWithColorList.Add(new Point3DWithColor
-                    {
-                        Position = new System.Numerics.Vector3(
-                            mc.MCX,
-                            mc.MCY,
-                            normalizedAngle - 0.5f),                        
-                        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                    });
-                }
+                    Position = new System.Numerics.Vector3(
+                        mc.MCX,
+                        mc.MCY,
+                        normalizedAngle - 0.5f),                        
+                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                });
             }
-
-            // Normalize
-            foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
-            {
-                point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
-                point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
-            }
-
-            Model3DScene model3DScene = new();
-            model3DScene.Point3DWithColorArray = point3DWithColorList.ToArray();
-            return model3DScene;
         }
 
-        public static Model3DScene GetSubArea_MiniColumnsMemories_Model3DScene(Cortex cortex)
+        // Normalize
+        foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
         {
-            List<Point3DWithColor> point3DWithColorList = new();
+            point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
+            point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
+        }
 
-            int mcxMin = Int32.MaxValue;
-            int mcxMax = Int32.MinValue;
-            int mcyMin = Int32.MaxValue;
-            int mcyMax = Int32.MinValue;
+        Model3DScene model3DScene = new();
+        model3DScene.Points = point3DWithColorList;
+        return model3DScene;
+    }
 
-            foreach (int mc_index in Enumerable.Range(0, cortex.SubAreaOrAll_MiniColumns.Length))
+    public static Model3DScene GetSubArea_MiniColumnsMemories_Model3DScene(Cortex cortex)
+    {
+        List<Point3DWithColor> points = new();
+
+        int mcxMin = Int32.MaxValue;
+        int mcxMax = Int32.MinValue;
+        int mcyMin = Int32.MaxValue;
+        int mcyMax = Int32.MinValue;
+
+        foreach (int mc_index in Enumerable.Range(0, cortex.SubAreaOrAll_MiniColumns.Length))
+        {
+            Cortex.MiniColumn mc = cortex.SubAreaOrAll_MiniColumns[mc_index];
+            if (mc.MCX > mcxMax)
+                mcxMax = mc.MCX;
+            if (mc.MCX < mcxMin)
+                mcxMin = mc.MCX;
+            if (mc.MCY > mcyMax)
+                mcyMax = mc.MCY;
+            if (mc.MCY < mcyMin)
+                mcyMin = mc.MCY;
+
+            foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
             {
-                Cortex.MiniColumn mc = cortex.SubAreaOrAll_MiniColumns[mc_index];
-                if (mc.MCX > mcxMax)
-                    mcxMax = mc.MCX;
-                if (mc.MCX < mcxMin)
-                    mcxMin = mc.MCX;
-                if (mc.MCY > mcyMax)
-                    mcyMax = mc.MCY;
-                if (mc.MCY < mcyMin)
-                    mcyMin = mc.MCY;
+                Cortex.Memory? memory = mc.Memories[mi];
+                if (memory is null)
+                    continue;
 
-                foreach (var mi in Enumerable.Range(0, mc.Memories.Count))
+                double gradX = memory.PictureAverageGradientInPoint.GradX;
+                double gradY = memory.PictureAverageGradientInPoint.GradY;
+
+                double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
+                double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+
+                double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
+                double saturation = 0.3 + normalizedMagnitude;
+                if (saturation > 1)
+                    saturation = 1;
+
+                // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
+                float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
+                // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
+                System.Drawing.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
+
+                points.Add(new Point3DWithColor
                 {
-                    Cortex.Memory? memory = mc.Memories[mi];
-                    if (memory is null)
-                        continue;
+                    Position = new System.Numerics.Vector3(
+                        mc.MCX,
+                        mc.MCY,
+                        normalizedAngle - 0.5f),
+                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                });
+            }
+        }
 
-                    double gradX = memory.PictureAverageGradientInPoint.GradX;
-                    double gradY = memory.PictureAverageGradientInPoint.GradY;
+        // Normalize
+        foreach (Point3DWithColor point3DWithColor in points)
+        {
+            point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
+            point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
+        }
 
-                    double magnitude = Math.Sqrt(gradX * gradX + gradY * gradY);
-                    double angle = Math.Atan2(gradY, gradX); // Угол в радианах    
+        Model3DScene model3DScene = new();
+        model3DScene.Points = points;
+        return model3DScene;
+    }
 
-                    double normalizedMagnitude = magnitude / cortex.Constants.MaxGradientMagnitudeExclusive; // 1448 - максимальная теоретическая магнитуда Собеля для 8-битных изображений (255 * sqrt(2))                                                                                                                                     //brightness = 0.5 + (1 - brightness) * 0.5;
-                    double saturation = 0.3 + normalizedMagnitude;
-                    if (saturation > 1)
-                        saturation = 1;
+    public class SceneBounds
+    {
+        public float mcxMin = Int32.MaxValue;
+        public float mcxMax = Int32.MinValue;
+        public float mcyMin = Int32.MaxValue;
+        public float mcyMax = Int32.MinValue;
+        public float mczMin = Int32.MaxValue;
+        public float mczMax = Int32.MinValue;
 
-                    // Преобразуем угол из диапазона [-pi, pi] в диапазон [0, 1] для цвета
-                    float normalizedAngle = ((float)angle + MathF.PI) / (2 * MathF.PI);
-                    // Получаем цвет на основе угла градиента (можно использовать HSV, здесь упрощенный пример через цветовой спектр)
-                    System.Drawing.Color color = Visualisation.ColorFromHSV(normalizedAngle, saturation, 1);
+        public void Update(Vector3 v)
+        {
+            if (v.X > mcxMax)
+                mcxMax = v.X;
+            if (v.X < mcxMin)
+                mcxMin = v.X;
+            if (v.Y > mcyMax)
+                mcyMax = v.Y;
+            if (v.Y < mcyMin)
+                mcyMin = v.Y;
+            if (v.Z > mczMax)
+                mczMax = v.Z;
+            if (v.Z < mczMin)
+                mczMin = v.Z;
+        }
 
-                    point3DWithColorList.Add(new Point3DWithColor
-                    {
-                        Position = new System.Numerics.Vector3(
-                            mc.MCX,
-                            mc.MCY,
-                            normalizedAngle - 0.5f),
-                        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                    });
+        public void Normalize(Model3DScene model3DScene)
+        {
+            if (model3DScene.Points is not null)
+                foreach (Point3DWithColor point3DWithColor in model3DScene.Points)
+                {
+                    Normalize(ref point3DWithColor.Position);
                 }
-            }
 
-            // Normalize
-            foreach (Point3DWithColor point3DWithColor in point3DWithColorList)
-            {
-                point3DWithColor.Position.X = (float)(mcxMax - point3DWithColor.Position.X) / (float)(mcxMax - mcxMin) - 0.5f;
-                point3DWithColor.Position.Y = (float)(mcyMax - point3DWithColor.Position.Y) / (float)(mcyMax - mcyMin) - 0.5f;
-            }
+            if (model3DScene.Lines is not null)
+                foreach (var line in model3DScene.Lines)
+                    foreach (Point3DWithColor point3DWithColor in line)
+                    {
+                        Normalize(ref point3DWithColor.Position);
+                    }
+        }
 
-            Model3DScene model3DScene = new();
-            model3DScene.Point3DWithColorArray = point3DWithColorList.ToArray();
-            return model3DScene;
+        public void Normalize(ref Vector3 v)
+        {
+            v.X = (mcxMax - v.X) / (mcxMax - mcxMin) - 0.5f;
+            v.Y = (mcyMax - v.Y) / (mcyMax - mcyMin) - 0.5f;
+            v.Z = (mczMax - v.Z) / (mczMax - mczMin) - 0.5f;
         }
     }
 }

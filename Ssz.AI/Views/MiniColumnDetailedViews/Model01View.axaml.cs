@@ -68,7 +68,7 @@ public partial class Model01View : UserControl
         };
 
         Reset();
-        Refresh_ImagesSet1();
+        Refresh();
         //if (true)
         //{
         //    Reset();
@@ -169,6 +169,8 @@ public partial class Model01View : UserControl
     private void Reset()
     {
         var constants = Model01.Constants;
+        constants.RetinaPointDeltaPixels = 1.0f; // Для быстродействия
+        constants.DetectorFieldOfViewRadiusPixels = 1.0f;
         GetDataFromControls(constants);
 
         _random = new Random();
