@@ -49,7 +49,7 @@ public sealed class MiniColumnDetailed
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
     public const int SynapsesPerAxon = 2_000; // Orig^10_000;
 
-    public List<ActiveZone>? Temp_ActiveZones;
+    public FastList<ActiveZone>? Temp_ActiveZones;
 
     /// <summary>
     /// Среднее число точек ветвления аксона.
@@ -75,28 +75,15 @@ public sealed class MiniColumnDetailed
     // ----------------------------------------------------------
 
     /// <summary>Все 200 аксонов миниколонки.</summary>
-    public readonly Axon[] Axons;
-
-    // ----------------------------------------------------------
-    //  ПРОСТРАНСТВЕННЫЙ ИНДЕКС ДЛЯ БЫСТРОГО ПОИСКА СИНАПСОВ
-    //
-    //  Реализован как словарь: ключ = целочисленная 3D-ячейка
-    //  (ix, iy, iz) пространственной решётки, значение = список
-    //  (индекс_аксона, индекс_синапса).
-    //
-    //  Это позволяет при поиске зон радиуса R перебирать только
-    //  синапсы в ближайших ячейках, а не все 200 × 10 000 = 2M.
-    // ----------------------------------------------------------
-    private readonly Dictionary<(int, int, int), List<(int axonIdx, int synIdx)>> _spatialIndex;
-
-    /// <summary>Размер ячейки пространственного индекса (мкм).</summary>
-    private float _cellSizeUm;
+    public readonly Axon[] Axons;    
 
     // ----------------------------------------------------------
     //  ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ
     //  Инициализируется с фиксированным seed для воспроизводимости.
     // ----------------------------------------------------------
     private readonly Random _random;
+
+    private readonly Device _device;
 
     // ============================================================
     //  КОНСТРУКТОР: ГЕНЕРАЦИЯ ВСЕЙ МИНИКОЛОНКИ
@@ -109,9 +96,9 @@ public sealed class MiniColumnDetailed
     public MiniColumnDetailed(Random random)
     {
         _random = random;
-        Axons = new Axon[AxonCount];
-        _spatialIndex = new Dictionary<(int, int, int), List<(int, int)>>(
-            capacity: AxonCount * SynapsesPerAxon / 10); // ~2M / 10 оценка
+        _device = cuda.is_available() ? CUDA : CPU;
+
+        Axons = new Axon[AxonCount];        
 
         // ----------------------------------------------------------
         //  ШАГ 1: Разместить 200 сом в цилиндре миниколонки.
@@ -128,16 +115,7 @@ public sealed class MiniColumnDetailed
             AxonPoint root = GrowAxon(somaPositions[i], i);
             Synapse[] synapses = PlaceSynapses(root);
             Axons[i] = new Axon(i, root, synapses);
-        }
-
-        // ----------------------------------------------------------
-        //  ШАГ 3: Построить пространственный индекс по синапсам.
-        //  Ячейка = cube со стороной _cellSize.
-        //  После заполнения всех аксонов _cellSize берём
-        //  как среднее расстояние между синапсами * 4.
-        // ----------------------------------------------------------
-        _cellSizeUm = 15.0f; // мкм, исходя из плотности синапсов
-        BuildSpatialIndex();
+        }        
     }
 
     // ============================================================
@@ -492,48 +470,7 @@ public sealed class MiniColumnDetailed
 
         // Возвращаем массив готовых синапсов, равномерно расставленных по всему аксону
         return synapses;
-    }
-
-    // ============================================================
-    //  ПОСТРОЕНИЕ ПРОСТРАНСТВЕННОГО ИНДЕКСА
-    // ============================================================
-    /// <summary>
-    /// Строит пространственный хэш-индекс для всех синапсов.
-    /// Ключ = целочисленная ячейка (ix, iy, iz).
-    /// Ячейка имеет размер _cellSize мкм.
-    ///
-    /// Это позволяет выполнять поиск за O(k) вместо O(2M),
-    /// где k — число синапсов в нескольких соседних ячейках.
-    /// </summary>
-    private void BuildSpatialIndex()
-    {
-        for (int a = 0; a < AxonCount; a += 1)
-        {
-            var synapses = Axons[a].Synapses;
-            for (int s_index = 0; s_index < synapses.Length; s_index += 1)
-            {
-                var cell = GetCell(synapses[s_index].Position);
-                if (!_spatialIndex.TryGetValue(cell, out var list))
-                {
-                    list = new List<(int, int)>(capacity: 8);
-                    _spatialIndex[cell] = list;
-                }
-                list.Add((a, s_index));
-            }
-        }
-    }
-
-    // ============================================================
-    //  ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ЯЧЕЙКА ПРОСТРАНСТВЕННОГО ИНДЕКСА
-    // ============================================================
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private (int, int, int) GetCell(Vector3 pos)
-    {
-        int ix = (int)MathF.Floor(pos.X / _cellSizeUm);
-        int iy = (int)MathF.Floor(pos.Y / _cellSizeUm);
-        int iz = (int)MathF.Floor(pos.Z / _cellSizeUm);
-        return (ix, iy, iz);
-    }
+    }        
 
     // ============================================================
     //  ПОИСК АКТИВНЫХ ЗОН (С ИСПОЛЬЗОВАНИЕМ TORCHSHARP)
@@ -549,19 +486,21 @@ public sealed class MiniColumnDetailed
     /// <param name="radius">Радиус поиска (мкм).</param>
     /// <param name="minActiveAxons">Минимальное количество уникальных активных аксонов в радиусе.</param>
     /// <returns>Список найденных уникальных зон активности.</returns>
-    public List<ActiveZone> FindActiveZones(
+    public void FindActiveZones(
         float[] activityBits,
         float radius,
         int minActiveAxons)
     {
+        using var disposeScope = torch.NewDisposeScope();
+
         // ----------------------------------------------------------
         //  ШАГ 1: Извлечение индексов активных аксонов
         // ----------------------------------------------------------
         var activeAxons = new FastList<int>(capacity: AxonCount);
         for (int i = 0; i < AxonCount; i += 1) // Без использования ++
-        {
-            if (activityBits[i] > 0.5f)
-            {
+        {            
+            if (Axons[i].Temp_IsActive = (activityBits[i] > 0.5f))
+            {                
                 activeAxons.Add(i);
             }
         }
@@ -571,13 +510,14 @@ public sealed class MiniColumnDetailed
         // Если активных аксонов меньше чем порог, зон быть не может
         if (activeCount < minActiveAxons)
         {
-            return new List<ActiveZone>();
+            Temp_ActiveZones = null;
+            return;
         }
 
         // ----------------------------------------------------------
         //  ШАГ 2: Определение границ пространства и параметров сетки
         // ----------------------------------------------------------
-        float voxelSize = 2.0f; // Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
+        float voxelSizeUm = 20.0f; // Orig: Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
 
         float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
         float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
@@ -586,9 +526,9 @@ public sealed class MiniColumnDetailed
         for (int a = 0; a < activeCount; a += 1)
         {
             var synapses = Axons[activeAxons[a]].Synapses;
-            for (int s = 0; s < synapses.Length; s += 1)
+            for (int s_Index = 0; s_Index < synapses.Length; s_Index += 1)
             {
-                var p = synapses[s].Position;
+                var p = synapses[s_Index].Position;
                 if (p.X < minX) minX = p.X;
                 if (p.Y < minY) minY = p.Y;
                 if (p.Z < minZ) minZ = p.Z;
@@ -603,15 +543,19 @@ public sealed class MiniColumnDetailed
         maxX += radius; maxY += radius; maxZ += radius;
 
         // Вычисляем размерности тензора: [Глубина(Z), Высота(Y), Ширина(X)]
-        int width = (int)MathF.Ceiling((maxX - minX) / voxelSize);
-        int height = (int)MathF.Ceiling((maxY - minY) / voxelSize);
-        int depth = (int)MathF.Ceiling((maxZ - minZ) / voxelSize);
+        int width = (int)MathF.Ceiling((maxX - minX) / voxelSizeUm);
+        int height = (int)MathF.Ceiling((maxY - minY) / voxelSizeUm);
+        int depth = (int)MathF.Ceiling((maxZ - minZ) / voxelSizeUm);
 
         // ----------------------------------------------------------
         //  ШАГ 3: Создание входного тензора (Grid)
         // ----------------------------------------------------------
         long totalVoxels = (long)activeCount * depth * height * width;
-        float[] gridData = new float[totalVoxels]; // Одномерный массив для максимальной скорости
+
+        _gridDataBuffer.Clear();
+        _gridDataBuffer.AddRangeOfDefault((int)totalVoxels); // Одномерный массив для максимальной скорости
+
+        var gridData = _gridDataBuffer.Items;
 
         long spatialSize = (long)depth * height * width;
         long areaSize = (long)height * width;
@@ -625,25 +569,39 @@ public sealed class MiniColumnDetailed
             for (int s = 0; s < synapses.Length; s += 1)
             {
                 var p = synapses[s].Position;
-                int ix = (int)((p.X - minX) / voxelSize);
-                int iy = (int)((p.Y - minY) / voxelSize);
-                int iz = (int)((p.Z - minZ) / voxelSize);
+                int ix = (int)((p.X - minX) / voxelSizeUm);
+                int iy = (int)((p.Y - minY) / voxelSizeUm);
+                int iz = (int)((p.Z - minZ) / voxelSizeUm);
 
                 if (ix >= 0 && ix < width && iy >= 0 && iy < height && iz >= 0 && iz < depth)
                 {
                     long index = channelOffset + (iz * areaSize) + (iy * width) + ix;
-                    gridData[index] = 1.0f; // Указываем наличие синапса
+                    gridData[(int)index] = 1.0f; // Указываем наличие синапса
                 }
             }
         }
 
         // Создаем 5D тензор: [Batch=1, Channels=activeCount, Depth, Height, Width]
-        using var gridTensor = tensor(gridData, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32);
+        Tensor gridTensor_device;
+        //unsafe
+        //{
+        //    fixed (float* dataPtr = _gridDataBuffer.ItemsBuffer)
+        //    {
+        //        IntPtr ptr = new IntPtr(dataPtr);
+
+        //        // Передаем указатель в TorchSharp. Под капотом произойдет быстрое нативное 
+        //        // копирование (memcpy) ровно того объема памяти, который задан в shape.
+        //        gridTensor_device = tensor(
+        //            ptr, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32, device: _device
+        //        );
+        //    }
+        //}
+        gridTensor_device = tensor(_gridDataBuffer.ItemsBuffer, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32, device: _device);
 
         // ----------------------------------------------------------
         //  ШАГ 4: Создание сферического ядра для 3D-свертки
         // ----------------------------------------------------------
-        int kRad = (int)MathF.Ceiling(radius / voxelSize);
+        int kRad = (int)MathF.Ceiling(radius / voxelSizeUm);
         int kSize = kRad * 2 + 1; // Нечетный размер ядра для наличия четкого центра
         float[] kernelData = new float[activeCount * kSize * kSize * kSize];
 
@@ -655,7 +613,7 @@ public sealed class MiniColumnDetailed
             for (int ky = -kRad; ky <= kRad; ky += 1)
                 for (int kx = -kRad; kx <= kRad; kx += 1)
                 {
-                    float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSize;
+                    float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSizeUm;
                     if (dist <= radius)
                     {
                         int ikx = kx + kRad;
@@ -672,34 +630,36 @@ public sealed class MiniColumnDetailed
                 }
 
         // Тензор весов свертки: [OutChannels=activeCount, InChannels=1 (из-за groups), kD, kH, kW]
-        using var weightTensor = tensor(kernelData, new long[] { activeCount, 1, kSize, kSize, kSize }, dtype: ScalarType.Float32);
+        using var weightTensor_device = tensor(kernelData, new long[] { activeCount, 1, kSize, kSize, kSize }, dtype: ScalarType.Float32, device: _device);
 
         // ----------------------------------------------------------
         //  ШАГ 5: Выполнение вычислений через TorchSharp
         // ----------------------------------------------------------
         // Depthwise 3D свертка (каждый аксон обрабатывается независимо)
-        using var convResult = nn.functional.conv3d(
-            gridTensor,
-            weightTensor,
+        using var convResult_device = nn.functional.conv3d(
+            gridTensor_device,
+            weightTensor_device,
             padding: new long[] { kRad, kRad, kRad },
             groups: activeCount);
 
         // Бинаризуем результат: если > 0, значит синапсы этого аксона есть в радиусе R
-        using var presentMask = convResult.gt(0.0f).to_type(ScalarType.Float32);
+        using var presentMask_device = convResult_device.gt(0.0f).to_type(ScalarType.Float32);
 
         // Суммируем измерения вдоль каналов (dim=1), чтобы получить число уникальных аксонов
-        using var activeAxonsCount = presentMask.sum(new long[] { 1 }, keepdim: false);
+        using var activeAxonsCount_device = presentMask_device.sum(new long[] { 1 }, keepdim: false);
 
         // Оставляем только те воксели, где число аксонов >= N
-        using var validZonesMask = activeAxonsCount.ge(minActiveAxons);
+        using var validZonesMask_device = activeAxonsCount_device.ge(minActiveAxons);
 
         // Получаем индексы (координаты) всех успешных вокселей. 
         // Формат: [Кол-во вокселей, 4 (Batch, Z, Y, X)]
-        using var nonZeroIndices = validZonesMask.nonzero();
+        using var nonZeroIndices_device = validZonesMask_device.nonzero();
 
-        long numValidVoxels = nonZeroIndices.shape[0];
-        long dims = nonZeroIndices.shape[1]; // Должно быть равно 4
-        long[] flatIndices = nonZeroIndices.data<long>().ToArray();
+        long numValidVoxels = nonZeroIndices_device.shape[0];
+        long dims = nonZeroIndices_device.shape[1]; // Должно быть равно 4
+        long[] flatIndices = null!;
+        if (numValidVoxels > 0)
+            flatIndices = nonZeroIndices_device.data<long>().ToArray();
 
         // ----------------------------------------------------------
         //  ШАГ 6: Преобразование обратно в 3D пространство (Vector3)
@@ -712,9 +672,9 @@ public sealed class MiniColumnDetailed
             long yIdx = flatIndices[i * dims + 2];
             long xIdx = flatIndices[i * dims + 3];
 
-            float xPos = minX + (xIdx * voxelSize) + (voxelSize * 0.5f);
-            float yPos = minY + (yIdx * voxelSize) + (voxelSize * 0.5f);
-            float zPos = minZ + (zIdx * voxelSize) + (voxelSize * 0.5f);
+            float xPos = minX + (xIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
+            float yPos = minY + (yIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
+            float zPos = minZ + (zIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
 
             rawCenters.Add(new Vector3(xPos, yPos, zPos));
         }
@@ -724,7 +684,7 @@ public sealed class MiniColumnDetailed
         // ----------------------------------------------------------
         // Воксели часто образуют сплошные "облака" плотности. Мы объединяем
         // все воксели, находящиеся в радиусе R друг от друга, в единые зоны.
-        var finalZones = new List<ActiveZone>();
+        var finalZones = new FastList<ActiveZone>(1024);
         float mergeRadiusSq = radius * radius;
         bool[] merged = new bool[rawCenters.Count];
 
@@ -755,6 +715,74 @@ public sealed class MiniColumnDetailed
             });
         }
 
-        return finalZones;
+        Temp_ActiveZones = finalZones;
     }
+
+    private readonly FastList<float> _gridDataBuffer = new(1024 * 1024);
 }
+
+
+//// ============================================================
+//    //  ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ЯЧЕЙКА ПРОСТРАНСТВЕННОГО ИНДЕКСА
+//    // ============================================================
+//    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+//    private (int, int, int) GetCell(Vector3 pos)
+//    {
+//        int ix = (int)MathF.Floor(pos.X / _cellSizeUm);
+//        int iy = (int)MathF.Floor(pos.Y / _cellSizeUm);
+//        int iz = (int)MathF.Floor(pos.Z / _cellSizeUm);
+//        return (ix, iy, iz);
+//    }
+
+//// ----------------------------------------------------------
+////  ШАГ 3: Построить пространственный индекс по синапсам.
+////  Ячейка = cube со стороной _cellSize.
+////  После заполнения всех аксонов _cellSize берём
+////  как среднее расстояние между синапсами * 4.
+//// ----------------------------------------------------------
+//_cellSizeUm = 15.0f; // мкм, исходя из плотности синапсов
+
+//// ----------------------------------------------------------
+////  ПРОСТРАНСТВЕННЫЙ ИНДЕКС ДЛЯ БЫСТРОГО ПОИСКА СИНАПСОВ
+////
+////  Реализован как словарь: ключ = целочисленная 3D-ячейка
+////  (ix, iy, iz) пространственной решётки, значение = список
+////  (индекс_аксона, индекс_синапса).
+////
+////  Это позволяет при поиске зон радиуса R перебирать только
+////  синапсы в ближайших ячейках, а не все 200 × 10 000 = 2M.
+//// ----------------------------------------------------------
+//private readonly Dictionary<(int, int, int), FastList<(int axonIdx, int synIdx)>> _spatialIndex;
+
+///// <summary>Размер ячейки пространственного индекса (мкм).</summary>
+//private float _cellSizeUm;
+
+
+//// ============================================================
+////  ПОСТРОЕНИЕ ПРОСТРАНСТВЕННОГО ИНДЕКСА
+//// ============================================================
+///// <summary>
+///// Строит пространственный хэш-индекс для всех синапсов.
+///// Ключ = целочисленная ячейка (ix, iy, iz).
+///// Ячейка имеет размер _cellSize мкм.
+/////
+///// Это позволяет выполнять поиск за O(k) вместо O(2M),
+///// где k — число синапсов в нескольких соседних ячейках.
+///// </summary>
+//private void BuildSpatialIndex()
+//{
+//    for (int a = 0; a < AxonCount; a += 1)
+//    {
+//        var synapses = Axons[a].Synapses;
+//        for (int s_index = 0; s_index < synapses.Length; s_index += 1)
+//        {
+//            var cell = GetCell(synapses[s_index].Position);
+//            if (!_spatialIndex.TryGetValue(cell, out var list))
+//            {
+//                list = new FastList<(int, int)>(capacity: 8);
+//                _spatialIndex[cell] = list;
+//            }
+//            list.Add((a, s_index));
+//        }
+//    }
+//}

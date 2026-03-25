@@ -30,6 +30,7 @@ using Ssz.AI.Models.MiniColumnDetailedModel;
 using Ssz.AI.ViewModels;
 using Ssz.Utils;
 using Ssz.Utils.Addons;
+using Ssz.Utils.Avalonia.Model3D;
 using Ssz.Utils.Logging;
 using Ssz.Utils.Serialization;
 using static Ssz.AI.Models.ImageProcessingModel.Cortex;
@@ -225,16 +226,13 @@ public class Model01
             ];
     }
 
-    public VisualizationWithDesc[] GetImageWithDescs_MiniColumnDetailed2(
+    public Model3DScene? GetImageWithDescs_MiniColumnDetailed2(
         Random random)
     {
         if (MiniColumnDetailed is null)
-            return [];
+            return null;
 
-        return [
-                new Model3DWithDesc { Data = Visualization3D.Get_MiniColumnDetailed_Model3DScene(MiniColumnDetailed),
-                    Desc = $"Миниколонка 3D." },                
-            ];
+        return Visualization3D.Get_MiniColumnDetailed_Model3DScene(MiniColumnDetailed);
     }
 
     public void PutMemories_Pinwheel(Random random, int inMiniColumn_CortexMemoriesCount)
@@ -897,7 +895,7 @@ public class Model01
         }
     }
 
-    public void MiniColumnDetailedModel_PrepareCreate3D(Random random)
+    public void Create_MiniColumnDetailed(Random random)
     {        
         Logger.LogInformation("=== Модель миниколонки коры мозга ===");
         Logger.LogInformation($"Аксонов: {MiniColumnDetailedModel.MiniColumnDetailed.AxonCount}");
@@ -923,34 +921,44 @@ public class Model01
         if (MiniColumnDetailed is null)
             return;
 
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColum) = GetTestCortexMemory(random);        
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColum) = GetTestCortexMemory(random);
 
-        Logger.LogInformation($"Активных аксонов: {TensorPrimitives.Sum(cortexMemory.Hash)}");
-        //Console.Write("Индексы активных аксонов: ");
-        //foreach (int idx in activeIndices)
-        //    Console.Write($"{idx} ");
-        Logger.LogInformation($"");
-        Logger.LogInformation($"");
+        bool log = false;
 
-        // ----------------------------------------------------------
-        //  ПАРАМЕТРЫ ПОИСКА
-        // ----------------------------------------------------------
-        
-        Logger.LogInformation($"Параметры поиска:");
-        Logger.LogInformation($"  Радиус R = {Constants.ZoneRadiusUm} мкм");
-        Logger.LogInformation($"  Минимум N = {Constants.ActivatedSynapsesCount} уникальных активных аксонов в зоне");
-        Logger.LogInformation($"");
-
-        // ----------------------------------------------------------
-        //  ПОИСК АКТИВНЫХ ЗОН
-        // ----------------------------------------------------------
-        Console.Write("Поиск активных зон...");
-        var sw = System.Diagnostics.Stopwatch.StartNew();
-        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
-        var activeZones = MiniColumnDetailed.Temp_ActiveZones;
-        sw.Stop();
-        if (activeZones is not null)
+        Stopwatch? sw = null;
+        if (log)
         {
+            Logger.LogInformation($"Активных аксонов: {TensorPrimitives.Sum(cortexMemory.Hash)}");
+            //Console.Write("Индексы активных аксонов: ");
+            //foreach (int idx in activeIndices)
+            //    Console.Write($"{idx} ");
+            Logger.LogInformation($"");
+            Logger.LogInformation($"");
+
+            // ----------------------------------------------------------
+            //  ПАРАМЕТРЫ ПОИСКА
+            // ----------------------------------------------------------
+
+            Logger.LogInformation($"Параметры поиска:");
+            Logger.LogInformation($"  Радиус R = {Constants.ZoneRadiusUm} мкм");
+            Logger.LogInformation($"  Минимум N = {Constants.ActivatedSynapsesCount} уникальных активных аксонов в зоне");
+            Logger.LogInformation($"");
+
+            // ----------------------------------------------------------
+            //  ПОИСК АКТИВНЫХ ЗОН
+            // ----------------------------------------------------------
+            Console.Write("Поиск активных зон...");
+
+            sw = System.Diagnostics.Stopwatch.StartNew();
+        }
+        
+        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
+        var activeZones = MiniColumnDetailed.Temp_ActiveZones;        
+
+        if (log && activeZones is not null)
+        {
+            sw!.Stop();
+
             Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
             Logger.LogInformation($"");
 

@@ -5,6 +5,7 @@
        xmlns:local="clr-namespace:Ssz.AI"
        xmlns:localViews="clr-namespace:Ssz.AI.Views"
        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+       xmlns:model3D="using:Ssz.Utils.Avalonia.Model3D"
        x:Class="Ssz.AI.Views.MiniColumnDetailedViews.Model01View">
   <Grid>
     <Grid.Styles>
@@ -14,8 +15,7 @@
     </Grid.Styles>
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
-      <RowDefinition Height="auto" />
-      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />      
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <Grid>
@@ -70,8 +70,10 @@
       <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="5" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar5" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
     </Grid>
-    <localViews:ImagesSet Grid.Row="2" Name="ImagesSet1" Height="300" />
-    <localViews:ImagesSet Grid.Row="3" Name="ImagesSet2" />
+    <StackPanel Grid.Row="2" Orientation="Horizontal">
+      <model3D:Model3DControl Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" />
+      <localViews:ImagesSet Name="ImagesSet1" Height="300" VerticalAlignment="Top" />      
+    </StackPanel>
 </Grid>
 </UserControl>
 

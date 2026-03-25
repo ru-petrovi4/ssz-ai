@@ -35,6 +35,8 @@ public sealed class Axon
     /// <summary>Соответствующий бит в векторе активности (0–199).</summary>
     public int BitIndex => Index;
 
+    public bool Temp_IsActive;
+
     public Axon(int index, AxonPoint root, Synapse[] synapses)
     {
         Index = index;

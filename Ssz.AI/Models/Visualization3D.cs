@@ -27,35 +27,35 @@ public static class Visualization3D
 
     public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed miniColumnDetailed)
     {
-        Model3DScene model3DScene = new();
-
-        if (miniColumnDetailed.Temp_ActiveZones is null)
-            return model3DScene;
+        Model3DScene model3DScene = new();        
                 
         SceneBounds sceneBounds = new();
 
         model3DScene.Points = new List<Point3DWithColor>(1024);
         model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
 
-        int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
-        for (int i = 0; i < displayCount; i += 1)
+        if (miniColumnDetailed.Temp_ActiveZones is not null)
         {
-            var z = miniColumnDetailed.Temp_ActiveZones[i];
-            
-            sceneBounds.Update(z.Center);
-
-            System.Drawing.Color color = System.Drawing.Color.White;
-            model3DScene.Points.Add(new Point3DWithColor
+            int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
+            for (int i = 0; i < displayCount; i += 1)
             {
-                Position = z.Center,
-                Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-            });
+                var z = miniColumnDetailed.Temp_ActiveZones[i];
+
+                sceneBounds.Update(z.Center);
+
+                System.Drawing.Color color = System.Drawing.Color.White;
+                model3DScene.Points.Add(new Point3DWithColor
+                {
+                    Position = z.Center,
+                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                });
+            }
         }
 
-        for (int i = 0; i < 5; i += 1) //
+        for (int i = 0; i < miniColumnDetailed.Axons.Length; i += 1) //
         {
             var axon = miniColumnDetailed.Axons[i];
-            model3DScene.Lines.AddRange(GetLines(null, axon.Root, sceneBounds));
+            model3DScene.Lines.AddRange(GetLines(null, axon.Root, sceneBounds, axon.Temp_IsActive));
 
             for (int j = 0; j < axon.Synapses.Length; j += 1)
             {
@@ -63,12 +63,12 @@ public static class Visualization3D
 
                 sceneBounds.Update(s.Position);
 
-                System.Drawing.Color color = System.Drawing.Color.Red;
-                model3DScene.Points.Add(new Point3DWithColor
-                {
-                    Position = s.Position,
-                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                });
+                //System.Drawing.Color color = System.Drawing.Color.Red;
+                //model3DScene.Points.Add(new Point3DWithColor
+                //{
+                //    Position = s.Position,
+                //    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                //});
             }
         }
 
@@ -77,12 +77,16 @@ public static class Visualization3D
         return model3DScene;
     }
 
-    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, SceneBounds sceneBounds)
+    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, SceneBounds sceneBounds, bool isActive)
     {        
         List<List<Point3DWithColor>> lines = new(1024);
         List<Point3DWithColor> line = new();
 
-        System.Drawing.Color color = System.Drawing.Color.Blue;
+        System.Drawing.Color color;
+        if (isActive)
+            color = System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF);
+        else
+            color = System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF);
 
         if (preStartAxonPoint is not null)
             line.Add(new Point3DWithColor
@@ -111,7 +115,7 @@ public static class Visualization3D
 
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
-                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], sceneBounds));
+                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], sceneBounds, isActive));
             }
             break;
         }

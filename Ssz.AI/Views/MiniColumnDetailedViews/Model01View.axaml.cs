@@ -21,6 +21,7 @@ using MathNet.Numerics.Random;
 using Tensorflow.Keras.Saving.SavedModel;
 using Ssz.AI.ViewModels;
 using Ssz.AI.Models.ImageProcessingModel;
+using OfficeOpenXml.Table.PivotTable;
 
 namespace Ssz.AI.Views.MiniColumnDetailedViews;
 
@@ -154,14 +155,14 @@ public partial class Model01View : UserControl
 
     private void MiniColumnDetailedModel_PrepareCreate3D_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.MiniColumnDetailedModel_PrepareCreate3D(_random);
+        Model.Create_MiniColumnDetailed(_random);
     }
 
     private void MiniColumnDetailedModel_Create3D_OnClick(object? sender, RoutedEventArgs args)
     {        
         Model.MiniColumnDetailedModel_Create3D(_random);
 
-        Refresh_ImagesSet2();
+        Refresh_3D();
     }    
 
     #endregion
@@ -184,14 +185,45 @@ public partial class Model01View : UserControl
         Model.PutMemories_Pinwheel(_random, 1);
 
         Model.Cortex.CalculateSomCortexMemories(_random);
+
+        Model.Create_MiniColumnDetailed(_random);
     }
 
-    private void Refresh()
-    {
-        //Model.MiniColumnDetailedModel_Create3D(_random);
+    private bool _refreshTaskIsRunning;
+    private bool _refreshTaskIsPending;
 
+    private async void Refresh()
+    {
         Refresh_ImagesSet1();
-        //Refresh_ImagesSet2();
+
+        if (_refreshTaskIsRunning)
+        {
+            _refreshTaskIsPending = true;
+            return;
+        }
+
+        _refreshTaskIsRunning = true;
+
+        try
+        {
+            do
+            {
+                _refreshTaskIsPending = false; // Сбрасываем флаг перед началом
+
+                // Выполнение тяжелой задачи с актуальными на данный момент данными
+                await Task.Run(() =>
+                {
+                    Model.MiniColumnDetailedModel_Create3D(_random);
+                });
+
+                Refresh_3D();
+
+            } while (_refreshTaskIsPending); // Если во время работы флаг подняли, идем на новый круг
+        }
+        finally
+        {
+            _refreshTaskIsRunning = false;
+        }
     }
 
     private async void Refresh_ImagesSet1()
@@ -202,9 +234,9 @@ public partial class Model01View : UserControl
             _random);
     }
 
-    private void Refresh_ImagesSet2()
+    private void Refresh_3D()
     {
-        ImagesSet2.MainItemsControl.ItemsSource = Model.GetImageWithDescs_MiniColumnDetailed2(
+        MainModel3DControl.Data = Model.GetImageWithDescs_MiniColumnDetailed2(
             _random);
     }
 
