@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Collections;
+using TorchSharp;
+using static TorchSharp.torch;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
@@ -507,15 +510,15 @@ public sealed class MiniColumnDetailed
         for (int a = 0; a < AxonCount; a += 1)
         {
             var synapses = Axons[a].Synapses;
-            for (int s = 0; s < SynapsesPerAxon; s += 1)
+            for (int s_index = 0; s_index < synapses.Length; s_index += 1)
             {
-                var cell = GetCell(synapses[s].Position);
+                var cell = GetCell(synapses[s_index].Position);
                 if (!_spatialIndex.TryGetValue(cell, out var list))
                 {
                     list = new List<(int, int)>(capacity: 8);
                     _spatialIndex[cell] = list;
                 }
-                list.Add((a, s));
+                list.Add((a, s_index));
             }
         }
     }
@@ -533,200 +536,225 @@ public sealed class MiniColumnDetailed
     }
 
     // ============================================================
-    //  ОСНОВНОЙ МЕТОД: ПОИСК АКТИВНЫХ ЗОН
+    //  ПОИСК АКТИВНЫХ ЗОН (С ИСПОЛЬЗОВАНИЕМ TORCHSHARP)
     // ============================================================
     /// <summary>
-    /// Находит все области заданного радиуса, в которых активны
-    /// N или более синапсов от РАЗНЫХ активных аксонов.
-    ///
-    /// Алгоритм:
-    ///   1. Определить множество активных аксонов по вектору bits.
-    ///   2. Собрать все синапсы активных аксонов.
-    ///   3. Для каждого активного синапса проверить его окрестность
-    ///      в пространственном индексе.
-    ///   4. Подсчитать, сколько РАЗНЫХ активных аксонов имеют
-    ///      синапс в радиусе R от данного синапса.
-    ///   5. Если >= N — центр этого синапса является центром
-    ///      активной зоны.
-    ///   6. Дедупликация зон (merge overlapping).
-    ///
-    /// Сложность: O(A_active * S_per_axon * k_neighbors),
-    /// где k_neighbors — среднее число синапсов в (2R/cellSize)^3 ячейках.
+    /// Ищет пространственные области (зоны) заданного радиуса,
+    /// внутри которых присутствуют синапсы как минимум от N различных активных аксонов.
+    /// Алгоритм использует вокселизацию пространства и 3D-свертку на базе TorchSharp
+    /// для точного математического поиска максимумов плотности в любой точке пространства
+    /// (а не только с центрами в синапсах), после чего проводит дедупликацию.
     /// </summary>
-    /// <param name="activityBits">
-    /// Битовый вектор длиной 200. Единица = активный аксон.
-    /// Ожидается примерно 30 единиц.
-    /// </param>
-    /// <param name="radius">
-    /// Радиус поиска в мкм. Например, 10–30 мкм.
-    /// </param>
-    /// <param name="minActiveAxons">
-    /// Минимальное число N уникальных активных аксонов,
-    /// синапсы которых должны попасть в зону.
-    /// </param>
-    /// <returns>
-    /// Список найденных активных зон (дедуплицированных).
-    /// </returns>
-    public void FindActiveZones(
+    /// <param name="activityBits">Битовый вектор, где true означает активность аксона.</param>
+    /// <param name="radius">Радиус поиска (мкм).</param>
+    /// <param name="minActiveAxons">Минимальное количество уникальных активных аксонов в радиусе.</param>
+    /// <returns>Список найденных уникальных зон активности.</returns>
+    public List<ActiveZone> FindActiveZones(
         float[] activityBits,
         float radius,
         int minActiveAxons)
     {
-        if (activityBits.Length != AxonCount)
-            throw new ArgumentException(
-                $"Длина вектора активности должна быть {AxonCount}, получено {activityBits.Length}.");
-
         // ----------------------------------------------------------
-        //  ШАГ 1: Множество индексов активных аксонов
+        //  ШАГ 1: Извлечение индексов активных аксонов
         // ----------------------------------------------------------
-        var activeAxonSet = new HashSet<int>(capacity: 64);
-        for (int i = 0; i < AxonCount; i += 1)
+        var activeAxons = new FastList<int>(capacity: AxonCount);
+        for (int i = 0; i < AxonCount; i += 1) // Без использования ++
         {
             if (activityBits[i] > 0.5f)
-                activeAxonSet.Add(i);
+            {
+                activeAxons.Add(i);
+            }
         }
 
-        int activeCount = activeAxonSet.Count;
+        int activeCount = activeAxons.Count;
+
+        // Если активных аксонов меньше чем порог, зон быть не может
         if (activeCount < minActiveAxons)
         {
-            Temp_ActiveZones = null;
-            return; // Невозможно выполнить условие
-        }            
+            return new List<ActiveZone>();
+        }
 
         // ----------------------------------------------------------
-        //  ШАГ 2: Параметры поиска в пространственном индексе
-        //  Нужно проверить все ячейки в кубе со стороной 2R
+        //  ШАГ 2: Определение границ пространства и параметров сетки
         // ----------------------------------------------------------
-        float radiusSq = radius * radius;
-        int cellSpan = (int)MathF.Ceiling(radius / _cellSizeUm);
+        float voxelSize = 2.0f; // Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
 
-        // ----------------------------------------------------------
-        //  ШАГ 3: Проверяем каждый синапс каждого активного аксона
-        //  как потенциальный центр зоны
-        // ----------------------------------------------------------
-        // Используем словарь центр->зона для объединения близких зон.
-        // Для каждого синапса считаем окрестность.
-        var rawZones = new List<ActiveZone>(capacity: 1024);
+        float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
+        float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
 
-        // Для дедупликации: зоны с центрами, расстояние между
-        // которыми < radius, считаем одной зоной (берём первый найденный центр).
-        // Используем пространственный хэш для найденных центров.
-        var foundCenters = new Dictionary<(int, int, int), ActiveZone>(capacity: 512);
-
-        foreach (int axonIdx in activeAxonSet)
+        // Находим реальные границы (bounding box) для активных синапсов
+        for (int a = 0; a < activeCount; a += 1)
         {
-            var synapses = Axons[axonIdx].Synapses;
-
-            for (int s = 0; s < SynapsesPerAxon; s += 1)
+            var synapses = Axons[activeAxons[a]].Synapses;
+            for (int s = 0; s < synapses.Length; s += 1)
             {
-                var synPos = synapses[s].Position;
+                var p = synapses[s].Position;
+                if (p.X < minX) minX = p.X;
+                if (p.Y < minY) minY = p.Y;
+                if (p.Z < minZ) minZ = p.Z;
+                if (p.X > maxX) maxX = p.X;
+                if (p.Y > maxY) maxY = p.Y;
+                if (p.Z > maxZ) maxZ = p.Z;
+            }
+        }
 
-                // --------------------------------------------------
-                //  Быстрая проверка: не смотрим в уже найденную зону
-                //  (дедупликация на лету через пространственный хэш)
-                // --------------------------------------------------
-                var centerCell = GetCell(synPos);
-                if (foundCenters.ContainsKey(centerCell))
-                    continue;
+        // Расширяем границы на величину радиуса, чтобы захватить краевые зоны
+        minX -= radius; minY -= radius; minZ -= radius;
+        maxX += radius; maxY += radius; maxZ += radius;
 
-                // --------------------------------------------------
-                //  Подсчёт уникальных активных аксонов в радиусе R
-                // --------------------------------------------------
-                var uniqueActiveInRadius = new HashSet<int>(capacity: minActiveAxons + 4);
+        // Вычисляем размерности тензора: [Глубина(Z), Высота(Y), Ширина(X)]
+        int width = (int)MathF.Ceiling((maxX - minX) / voxelSize);
+        int height = (int)MathF.Ceiling((maxY - minY) / voxelSize);
+        int depth = (int)MathF.Ceiling((maxZ - minZ) / voxelSize);
 
-                // Обход ячеек в кубе [-cellSpan..+cellSpan]^3
-                (int baseX, int baseY, int baseZ) = GetCell(synPos);
+        // ----------------------------------------------------------
+        //  ШАГ 3: Создание входного тензора (Grid)
+        // ----------------------------------------------------------
+        long totalVoxels = (long)activeCount * depth * height * width;
+        float[] gridData = new float[totalVoxels]; // Одномерный массив для максимальной скорости
 
-                for (int dz = -cellSpan; dz <= cellSpan; dz += 1)
-                for (int dy = -cellSpan; dy <= cellSpan; dy += 1)
-                for (int dx = -cellSpan; dx <= cellSpan; dx += 1)
+        long spatialSize = (long)depth * height * width;
+        long areaSize = (long)height * width;
+
+        // Проецируем синапсы в воксели. Каждый активный аксон получает свой слой (канал)
+        for (int a = 0; a < activeCount; a += 1)
+        {
+            var synapses = Axons[activeAxons[a]].Synapses;
+            long channelOffset = a * spatialSize;
+
+            for (int s = 0; s < synapses.Length; s += 1)
+            {
+                var p = synapses[s].Position;
+                int ix = (int)((p.X - minX) / voxelSize);
+                int iy = (int)((p.Y - minY) / voxelSize);
+                int iz = (int)((p.Z - minZ) / voxelSize);
+
+                if (ix >= 0 && ix < width && iy >= 0 && iy < height && iz >= 0 && iz < depth)
                 {
-                    var neighborCell = (baseX + dx, baseY + dy, baseZ + dz);
-                    if (!_spatialIndex.TryGetValue(neighborCell, out var neighbors))
-                        continue;
+                    long index = channelOffset + (iz * areaSize) + (iy * width) + ix;
+                    gridData[index] = 1.0f; // Указываем наличие синапса
+                }
+            }
+        }
 
-                    foreach (var (nAxonIdx, nSynIdx) in neighbors)
+        // Создаем 5D тензор: [Batch=1, Channels=activeCount, Depth, Height, Width]
+        using var gridTensor = tensor(gridData, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32);
+
+        // ----------------------------------------------------------
+        //  ШАГ 4: Создание сферического ядра для 3D-свертки
+        // ----------------------------------------------------------
+        int kRad = (int)MathF.Ceiling(radius / voxelSize);
+        int kSize = kRad * 2 + 1; // Нечетный размер ядра для наличия четкого центра
+        float[] kernelData = new float[activeCount * kSize * kSize * kSize];
+
+        long kSpatial = (long)kSize * kSize * kSize;
+        long kArea = (long)kSize * kSize;
+
+        // Формируем сферу. Если дистанция от центра <= радиус, ставим 1.0
+        for (int kz = -kRad; kz <= kRad; kz += 1)
+            for (int ky = -kRad; ky <= kRad; ky += 1)
+                for (int kx = -kRad; kx <= kRad; kx += 1)
+                {
+                    float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSize;
+                    if (dist <= radius)
                     {
-                        // Только активные аксоны интересуют
-                        if (!activeAxonSet.Contains(nAxonIdx))
-                            continue;
+                        int ikx = kx + kRad;
+                        int iky = ky + kRad;
+                        int ikz = kz + kRad;
+                        long offset = (ikz * kArea) + (iky * kSize) + ikx;
 
-                        // Проверяем точное расстояние (после быстрой ячейковой фильтрации)
-                        var nPos = Axons[nAxonIdx].Synapses[nSynIdx].Position;
-                        float distSq = Vector3.DistanceSquared(synPos, nPos);
-                        if (distSq <= radiusSq)
-                            uniqueActiveInRadius.Add(nAxonIdx);
+                        // Дублируем веса ядра для каждого канала (Depthwise Convolution)
+                        for (int c = 0; c < activeCount; c += 1)
+                        {
+                            kernelData[c * kSpatial + offset] = 1.0f;
+                        }
                     }
                 }
 
-                // --------------------------------------------------
-                //  Если нашли >= N уникальных активных аксонов — зона!
-                // --------------------------------------------------
-                if (uniqueActiveInRadius.Count >= minActiveAxons)
-                {
-                    var zone = new ActiveZone
-                    {
-                        Center = synPos,
-                    };
-                    foreach (int idx in uniqueActiveInRadius)
-                        zone.ActiveAxonIndices.Add(idx);
+        // Тензор весов свертки: [OutChannels=activeCount, InChannels=1 (из-за groups), kD, kH, kW]
+        using var weightTensor = tensor(kernelData, new long[] { activeCount, 1, kSize, kSize, kSize }, dtype: ScalarType.Float32);
 
-                    rawZones.Add(zone);
+        // ----------------------------------------------------------
+        //  ШАГ 5: Выполнение вычислений через TorchSharp
+        // ----------------------------------------------------------
+        // Depthwise 3D свертка (каждый аксон обрабатывается независимо)
+        using var convResult = nn.functional.conv3d(
+            gridTensor,
+            weightTensor,
+            padding: new long[] { kRad, kRad, kRad },
+            groups: activeCount);
 
-                    // Отмечаем ячейку как найденную (дедупликация)
-                    foundCenters[centerCell] = zone;
-                }
-            }
+        // Бинаризуем результат: если > 0, значит синапсы этого аксона есть в радиусе R
+        using var presentMask = convResult.gt(0.0f).to_type(ScalarType.Float32);
+
+        // Суммируем измерения вдоль каналов (dim=1), чтобы получить число уникальных аксонов
+        using var activeAxonsCount = presentMask.sum(new long[] { 1 }, keepdim: false);
+
+        // Оставляем только те воксели, где число аксонов >= N
+        using var validZonesMask = activeAxonsCount.ge(minActiveAxons);
+
+        // Получаем индексы (координаты) всех успешных вокселей. 
+        // Формат: [Кол-во вокселей, 4 (Batch, Z, Y, X)]
+        using var nonZeroIndices = validZonesMask.nonzero();
+
+        long numValidVoxels = nonZeroIndices.shape[0];
+        long dims = nonZeroIndices.shape[1]; // Должно быть равно 4
+        long[] flatIndices = nonZeroIndices.data<long>().ToArray();
+
+        // ----------------------------------------------------------
+        //  ШАГ 6: Преобразование обратно в 3D пространство (Vector3)
+        // ----------------------------------------------------------
+        var rawCenters = new List<Vector3>((int)numValidVoxels);
+        for (long i = 0; i < numValidVoxels; i += 1)
+        {
+            // Извлекаем индексы: Batch(0), Depth(1), Height(2), Width(3)
+            long zIdx = flatIndices[i * dims + 1];
+            long yIdx = flatIndices[i * dims + 2];
+            long xIdx = flatIndices[i * dims + 3];
+
+            float xPos = minX + (xIdx * voxelSize) + (voxelSize * 0.5f);
+            float yPos = minY + (yIdx * voxelSize) + (voxelSize * 0.5f);
+            float zPos = minZ + (zIdx * voxelSize) + (voxelSize * 0.5f);
+
+            rawCenters.Add(new Vector3(xPos, yPos, zPos));
         }
 
         // ----------------------------------------------------------
-        //  ШАГ 4: Постобработка — объединение перекрывающихся зон
-        //  (greedy merge: идём по списку, объединяем зоны,
-        //   центры которых ближе, чем radius/2)
+        //  ШАГ 7: Дедупликация (Слияние близлежащих вокселей)
         // ----------------------------------------------------------
-        Temp_ActiveZones = MergeOverlappingZones(rawZones, radius * 0.5f);        
-    }
+        // Воксели часто образуют сплошные "облака" плотности. Мы объединяем
+        // все воксели, находящиеся в радиусе R друг от друга, в единые зоны.
+        var finalZones = new List<ActiveZone>();
+        float mergeRadiusSq = radius * radius;
+        bool[] merged = new bool[rawCenters.Count];
 
-    // ============================================================
-    //  ОБЪЕДИНЕНИЕ ПЕРЕКРЫВАЮЩИХСЯ ЗОН
-    // ============================================================
-    /// <summary>
-    /// Жадное объединение зон: если центры двух зон ближе mergeRadius,
-    /// они считаются одной зоной (берётся центр первой найденной,
-    /// индексы аксонов объединяются).
-    ///
-    /// Реализован за O(n^2) по числу зон. Для типичного случая
-    /// (активных зон десятки–сотни) это приемлемо.
-    /// Для больших R или больших N можно заменить на KD-tree merge.
-    /// </summary>
-    private static List<ActiveZone> MergeOverlappingZones(
-        List<ActiveZone> zones, float mergeRadius)
-    {
-        float mergeRadSq = mergeRadius * mergeRadius;
-        int n = zones.Count;
-        var merged = new bool[n];
-        var result = new List<ActiveZone>(n);
-
-        for (int i = 0; i < n; i += 1)
+        for (int i = 0; i < rawCenters.Count; i += 1)
         {
             if (merged[i]) continue;
 
-            var zone = zones[i];
-            for (int j = i + 1; j < n; j += 1)
+            Vector3 sumPos = rawCenters[i];
+            int count = 1;
+            merged[i] = true;
+
+            for (int j = i + 1; j < rawCenters.Count; j += 1)
             {
                 if (merged[j]) continue;
-                float distSq = Vector3.DistanceSquared(zone.Center, zones[j].Center);
-                if (distSq <= mergeRadSq)
+
+                if (Vector3.DistanceSquared(rawCenters[i], rawCenters[j]) <= mergeRadiusSq)
                 {
-                    // Объединяем аксоны
-                    foreach (int idx in zones[j].ActiveAxonIndices)
-                        zone.ActiveAxonIndices.Add(idx);
+                    sumPos += rawCenters[j];
+                    count += 1;
                     merged[j] = true;
                 }
             }
-            result.Add(zone);
+
+            // Вычисляем геометрический центр объединения и формируем зону
+            finalZones.Add(new ActiveZone
+            {
+                Center = sumPos / count
+            });
         }
 
-        return result;
-    }    
+        return finalZones;
+    }
 }
