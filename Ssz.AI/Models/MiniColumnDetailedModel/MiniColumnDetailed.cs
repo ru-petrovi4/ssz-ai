@@ -47,7 +47,7 @@ public sealed class MiniColumnDetailed : IDisposable
     public const int AxonCount = 200;
 
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
-    public const int SynapsesPerAxon = 2_000; // Orig^10_000;
+    public const int SynapsesPerAxon = 10_000; // Orig^10_000;
 
     public FastList<ActiveZone>? Temp_ActiveZones;
 
@@ -154,12 +154,12 @@ public sealed class MiniColumnDetailed : IDisposable
                 float x, y;
                 do
                 {
-                    x = (float)(_random.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
-                    y = (float)(_random.NextDouble() * 2.0 - 1.0) * ColumnRadiusUm;
+                    x = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
+                    y = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
                 }
                 while (x * x + y * y > ColumnRadiusUm * ColumnRadiusUm);
 
-                float z = zMin + (float)_random.NextDouble() * (zMax - zMin);
+                float z = zMin + _random.NextSingle() * (zMax - zMin);
                 positions[idx] = new Vector3(x, y, z);
                 idx += 1;
             }
@@ -195,7 +195,7 @@ public sealed class MiniColumnDetailed : IDisposable
         //  вниз ~60–100 мкм. Это биологически правильно — AIS
         //  всегда направлен перпендикулярно поверхности коры.
         // ----------------------------------------------------------
-        float aisLength = 60.0f + (float)_random.NextDouble() * 40.0f; // 60–100 мкм
+        float aisLength = 60.0f + _random.NextSingle() * 40.0f; // 60–100 мкм
         int aisPoints = 4;
         float aisStep = aisLength / aisPoints;
 
@@ -205,8 +205,8 @@ public sealed class MiniColumnDetailed : IDisposable
             // Небольшое горизонтальное отклонение (реалистичная кривизна)
             float jitter = 1.5f;
             var pos = new Vector3(
-                somaPos.X + (float)(_random.NextDouble() - 0.5) * jitter,
-                somaPos.Y + (float)(_random.NextDouble() - 0.5) * jitter,
+                somaPos.X + (_random.NextSingle() - 0.5f) * jitter,
+                somaPos.Y + (_random.NextSingle() - 0.5f) * jitter,
                 somaPos.Z + p * aisStep  // идёт вниз (увеличение Z)
             );
             var next = new AxonPoint(pos);
@@ -222,11 +222,11 @@ public sealed class MiniColumnDetailed : IDisposable
         var growthStack = new Stack<(AxonPoint node, int branchesLeft, Vector3 direction)>(32);
 
         // Начальное направление: горизонтально с небольшим наклоном
-        float angle = (float)(_random.NextDouble() * Math.PI * 2.0); // случайный азимут
+        float angle = _random.NextSingle() * MathF.PI * 2.0f; // случайный азимут
         var initDir = new Vector3(
             MathF.Cos(angle) * 0.9f,
             MathF.Sin(angle) * 0.9f,
-            0.2f + (float)_random.NextDouble() * 0.2f  // небольшой вертикальный компонент
+            0.2f + _random.NextSingle() * 0.2f  // небольшой вертикальный компонент
         );
         initDir = Vector3.Normalize(initDir);
 
@@ -237,7 +237,7 @@ public sealed class MiniColumnDetailed : IDisposable
             var (node, branchesLeft, direction) = growthStack.Pop();
 
             // Длина текущего сегмента (варьируется биологически)
-            float segLen = MeanSegmentLengthUm * (0.6f + (float)_random.NextDouble() * 0.8f);
+            float segLen = MeanSegmentLengthUm * (0.6f + _random.NextSingle() * 0.8f);
             float stepLen = segLen / PointsPerSegment;
 
             // Рост сегмента от node до его конца
@@ -250,7 +250,7 @@ public sealed class MiniColumnDetailed : IDisposable
                 int branch2 = branchesLeft - branch1 - 1;
 
                 // Угол расходящихся ветвей: ~30–60 градусов
-                float spreadAngle = 0.4f + (float)(_random.NextDouble() * 0.5f); // ~23–52°
+                float spreadAngle = 0.4f + _random.NextSingle() * 0.5f; // ~23–52°
                 Vector3 dir1 = RotateVector(direction, spreadAngle, _random);
                 Vector3 dir2 = RotateVector(direction, -spreadAngle, _random);
 
@@ -410,16 +410,16 @@ public sealed class MiniColumnDetailed : IDisposable
             }
         }
 
-        var synapses = new Synapse[SynapsesPerAxon];
+        FastList<Synapse> synapses = new(SynapsesPerAxon);
 
         // 2. Краевой случай: Если аксон вырожден (длина нулевая), то размещаем все синапсы в корне
         if (totalLength <= 0f || segments.Count == 0)
         {
             for (int s = 0; s < SynapsesPerAxon; s += 1)
             {
-                synapses[s] = new Synapse(root.Position);
+                synapses.Add(new Synapse(root.Position));
             }
-            return synapses;
+            return synapses.ToArray();
         }
 
         // 3. Вычисляем шаг, через который будут расставлены синапсы для идеальной равномерности
@@ -456,20 +456,23 @@ public sealed class MiniColumnDetailed : IDisposable
             // имитируя бутоны, расположенные на малом расстоянии от центральной оси аксона
             float jitter = 1.5f;
             var synPos = new Vector3(
-                basePos.X + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
-                basePos.Y + (float)(_random.NextDouble() - 0.5) * jitter * 2f,
-                basePos.Z + (float)(_random.NextDouble() - 0.5) * jitter * 2f
+                basePos.X + (_random.NextSingle() - 0.5f) * jitter * 2f,
+                basePos.Y + (_random.NextSingle() - 0.5f) * jitter * 2f,
+                basePos.Z + (_random.NextSingle() - 0.5f) * jitter * 2f
             );
 
-            // Создаем новый синапс
-            synapses[s] = new Synapse(synPos);
+            // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют
+            float r = ColumnRadiusUm * 2.0f;
+            if (synPos.X > -r && synPos.X < r &&
+                    synPos.Y > -r && synPos.Y < r)
+                synapses.Add(new Synapse(synPos));
 
             // Продвигаемся дальше по отрезку на заданный равномерный шаг
             currentDistInSegment += step;
         }
 
         // Возвращаем массив готовых синапсов, равномерно расставленных по всему аксону
-        return synapses;
+        return synapses.ToArray();
     }        
 
     // ============================================================
@@ -482,13 +485,13 @@ public sealed class MiniColumnDetailed : IDisposable
     /// для точного математического поиска максимумов плотности в любой точке пространства
     /// (а не только с центрами в синапсах), после чего проводит дедупликацию.
     /// </summary>
-    /// <param name="activityBits">Битовый вектор, где true означает активность аксона.</param>
-    /// <param name="radius">Радиус поиска (мкм).</param>
+    /// <param name="activityBits">Вектор, где 1.0f означает активность аксона.</param>
+    /// <param name="radiusUm">Радиус поиска (мкм).</param>
     /// <param name="minActiveAxons">Минимальное количество уникальных активных аксонов в радиусе.</param>
     /// <returns>Список найденных уникальных зон активности.</returns>
     public void FindActiveZones(
         float[] activityBits,
-        float radius,
+        float radiusUm,
         int minActiveAxons)
     {
         using var disposeScope = torch.NewDisposeScope();
@@ -496,16 +499,16 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         //  ШАГ 1: Извлечение индексов активных аксонов
         // ----------------------------------------------------------
-        var activeAxons = new FastList<int>(capacity: AxonCount);
-        for (int i = 0; i < AxonCount; i += 1) // Без использования ++
+        _activeAxons.Clear();
+        for (int i = 0; i < AxonCount; i += 1) 
         {            
             if (Axons[i].Temp_IsActive = (activityBits[i] > 0.5f))
             {                
-                activeAxons.Add(i);
+                _activeAxons.Add(i);
             }
         }
 
-        int activeCount = activeAxons.Count;
+        int activeCount = _activeAxons.Count;
 
         // Если активных аксонов меньше чем порог, зон быть не может
         if (activeCount < minActiveAxons)
@@ -517,81 +520,74 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         //  ШАГ 2: Определение границ пространства и параметров сетки
         // ----------------------------------------------------------
-        float voxelSizeUm = 20.0f; // Orig: Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
+        float voxelSizeUm = 2.0f; // Orig: Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
 
-        float minX = float.MaxValue, minY = float.MaxValue, minZ = float.MaxValue;
-        float maxX = float.MinValue, maxY = float.MinValue, maxZ = float.MinValue;
+        SceneBounds sceneBounds = new();
 
         // Находим реальные границы (bounding box) для активных синапсов
         for (int a = 0; a < activeCount; a += 1)
         {
-            var synapses = Axons[activeAxons[a]].Synapses;
+            var synapses = Axons[_activeAxons[a]].Synapses;
             for (int s_Index = 0; s_Index < synapses.Length; s_Index += 1)
             {
-                var p = synapses[s_Index].Position;
-                if (p.X < minX) minX = p.X;
-                if (p.Y < minY) minY = p.Y;
-                if (p.Z < minZ) minZ = p.Z;
-                if (p.X > maxX) maxX = p.X;
-                if (p.Y > maxY) maxY = p.Y;
-                if (p.Z > maxZ) maxZ = p.Z;
+                sceneBounds.Update(synapses[s_Index].Position);                
             }
         }
 
         // Расширяем границы на величину радиуса, чтобы захватить краевые зоны
-        minX -= radius; minY -= radius; minZ -= radius;
-        maxX += radius; maxY += radius; maxZ += radius;
+        sceneBounds.XMin -= radiusUm; sceneBounds.YMin -= radiusUm; sceneBounds.ZMin -= radiusUm;
+        sceneBounds.XMax += radiusUm; sceneBounds.YMax += radiusUm; sceneBounds.ZMax += radiusUm;
 
         // Вычисляем размерности тензора: [Глубина(Z), Высота(Y), Ширина(X)]
-        int width = (int)MathF.Ceiling((maxX - minX) / voxelSizeUm);
-        int height = (int)MathF.Ceiling((maxY - minY) / voxelSizeUm);
-        int depth = (int)MathF.Ceiling((maxZ - minZ) / voxelSizeUm);
+        int width = (int)MathF.Ceiling((sceneBounds.XMax - sceneBounds.XMin) / voxelSizeUm);
+        int height = (int)MathF.Ceiling((sceneBounds.YMax - sceneBounds.YMin) / voxelSizeUm);
+        int depth = (int)MathF.Ceiling((sceneBounds.ZMax - sceneBounds.ZMin) / voxelSizeUm);
 
         // ----------------------------------------------------------
-        // ШАГ 3: Создание входного тензора (Grid) НАПРЯМУЮ ЧЕРЕЗ SPAN
+        // ШАГ 3: Создание входного тензора (Grid)
         // ----------------------------------------------------------
         long totalVoxels = (long)activeCount * depth * height * width;
 
         // ==========================================================
         // ПЕРЕИСПОЛЬЗОВАНИЕ ТЕНЗОРОВ (ABSOLUTE ZERO-ALLOCATION)
         // ==========================================================
-        if (_gridTensor_device is null || _gridTensor_capacity < totalVoxels)
+        if (_gridTensor_device_Buffer is null || _gridTensor_Buffer_Capacity < totalVoxels)
         {
-            _gridTensor_device?.Dispose();
-            _gridTensor_Cpu?.Dispose();
+            _gridTensor_device_Buffer?.Dispose();
+            _gridTensor_Cpu_Buffer?.Dispose();
 
-            _gridTensor_capacity = Math.Max(totalVoxels, _gridTensor_capacity == 0 ? totalVoxels : _gridTensor_capacity * 2);
+            _gridTensor_Buffer_Capacity = totalVoxels; //Math.Max(totalVoxels, _gridTensor_Buffer_Capacity == 0 ? totalVoxels : _gridTensor_Buffer_Capacity * 2);
 
-            _gridTensor_device = empty(new long[] { _gridTensor_capacity }, dtype: ScalarType.Float32, device: _device).DetachFromDisposeScope();
-            _gridTensor_Cpu = empty(new long[] { _gridTensor_capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
+            _gridTensor_device_Buffer = empty(new long[] { _gridTensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: _device).DetachFromDisposeScope();
+            _gridTensor_Cpu_Buffer = empty(new long[] { _gridTensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
         }
 
         // 1. Создаем срезы ровно под размер текущих данных
-        using var cpuView = _gridTensor_Cpu!.slice(0, 0, totalVoxels, 1);
-        using var deviceView = _gridTensor_device.slice(0, 0, totalVoxels, 1);
+        using var gridTensor_Cpu_Flat = _gridTensor_Cpu_Buffer!.slice(0, 0, totalVoxels, 1);
+        using var gridTensor_device_Flat = _gridTensor_device_Buffer.slice(0, 0, totalVoxels, 1);
 
         // 2. Быстро очищаем память (зануляем) на уровне C++
-        cpuView.zero_();
+        gridTensor_Cpu_Flat.zero_();
 
         long spatialSize = (long)depth * height * width;
         long areaSize = (long)height * width;
 
         // 3. Получаем прямое окно (Span) в неуправляемую память CPU-тензора.
         // Это работает мгновенно и не делает никаких копий.
-        var gridData = _gridTensor_Cpu.data<float>();
+        var gridTensorData = gridTensor_Cpu_Flat.data<float>();
 
         // 4. Проецируем синапсы напрямую в память TorchSharp
         for (int a = 0; a < activeCount; a += 1)
         {
-            var synapses = Axons[activeAxons[a]].Synapses;
+            var synapses = Axons[_activeAxons[a]].Synapses;
             long channelOffset = a * spatialSize;
 
             for (int s = 0; s < synapses.Length; s += 1)
             {
                 var p = synapses[s].Position;
-                int ix = (int)((p.X - minX) / voxelSizeUm);
-                int iy = (int)((p.Y - minY) / voxelSizeUm);
-                int iz = (int)((p.Z - minZ) / voxelSizeUm);
+                int ix = (int)((p.X - sceneBounds.XMin) / voxelSizeUm);
+                int iy = (int)((p.Y - sceneBounds.YMin) / voxelSizeUm);
+                int iz = (int)((p.Z - sceneBounds.ZMin) / voxelSizeUm);
 
                 if (ix >= 0 && ix < width && iy >= 0 && iy < height && iz >= 0 && iz < depth)
                 {
@@ -599,21 +595,21 @@ public sealed class MiniColumnDetailed : IDisposable
 
                     // Прямая запись в нативную память без P/Invoke!
                     // Скорость записи идентична float* в C++
-                    gridData[(int)index] = 1.0f;
+                    gridTensorData[index] = 1.0f;
                 }
             }
         }
 
         // 5. Копируем данные из оперативной памяти (CPU) в видеопамять (Device)
-        deviceView.copy_(cpuView);
+        gridTensor_device_Flat.copy_(gridTensor_Cpu_Flat);
 
         // 6. Формируем итоговый 5D-view для свертки
-        Tensor gridTensor_device = deviceView.view(1, activeCount, depth, height, width);
+        Tensor gridTensor_device = gridTensor_device_Flat.view(1, activeCount, depth, height, width);
 
         // ----------------------------------------------------------
         //  ШАГ 4: Создание сферического ядра для 3D-свертки
         // ----------------------------------------------------------
-        int kRad = (int)MathF.Ceiling(radius / voxelSizeUm);
+        int kRad = (int)MathF.Ceiling(radiusUm / voxelSizeUm);
         int kSize = kRad * 2 + 1; // Нечетный размер ядра для наличия четкого центра
         float[] kernelData = new float[activeCount * kSize * kSize * kSize];
 
@@ -626,7 +622,7 @@ public sealed class MiniColumnDetailed : IDisposable
                 for (int kx = -kRad; kx <= kRad; kx += 1)
                 {
                     float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSizeUm;
-                    if (dist <= radius)
+                    if (dist <= radiusUm)
                     {
                         int ikx = kx + kRad;
                         int iky = ky + kRad;
@@ -684,9 +680,9 @@ public sealed class MiniColumnDetailed : IDisposable
             long yIdx = flatIndices[i * dims + 2];
             long xIdx = flatIndices[i * dims + 3];
 
-            float xPos = minX + (xIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
-            float yPos = minY + (yIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
-            float zPos = minZ + (zIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
+            float xPos = sceneBounds.XMin + (xIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
+            float yPos = sceneBounds.YMin + (yIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
+            float zPos = sceneBounds.ZMin + (zIdx * voxelSizeUm) + (voxelSizeUm * 0.5f);
 
             rawCenters.Add(new Vector3(xPos, yPos, zPos));
         }
@@ -697,7 +693,7 @@ public sealed class MiniColumnDetailed : IDisposable
         // Воксели часто образуют сплошные "облака" плотности. Мы объединяем
         // все воксели, находящиеся в радиусе R друг от друга, в единые зоны.
         var finalZones = new FastList<ActiveZone>(1024);
-        float mergeRadiusSq = radius * radius;
+        float mergeRadiusSq = radiusUm * radiusUm;
         bool[] merged = new bool[rawCenters.Count];
 
         for (int i = 0; i < rawCenters.Count; i += 1)
@@ -732,14 +728,17 @@ public sealed class MiniColumnDetailed : IDisposable
 
     public void Dispose()
     {
-        _gridTensor_device?.Dispose();
+        _gridTensor_device_Buffer?.Dispose();
+        _gridTensor_Cpu_Buffer?.Dispose();
     }
 
+    private readonly FastList<int> _activeAxons = new FastList<int>(capacity: AxonCount);
+
     // Кэшированный тензор для переиспользования памяти
-    private Tensor? _gridTensor_device;
-    private Tensor? _gridTensor_Cpu;
+    private Tensor? _gridTensor_device_Buffer;
+    private Tensor? _gridTensor_Cpu_Buffer;
     // Текущая вместимость (в элементах), чтобы понимать, когда нужно перевыделять память
-    private long _gridTensor_capacity = 0;
+    private long _gridTensor_Buffer_Capacity = 0;
 }
 
 

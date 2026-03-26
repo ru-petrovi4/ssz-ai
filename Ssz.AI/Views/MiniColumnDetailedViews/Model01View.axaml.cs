@@ -108,9 +108,9 @@ public partial class Model01View : UserControl
 
     //                Model = new Model01(_random, OnlyCenterHyperColumn);
 
-    //                Model.Logger.LogInformation("StartProcessSomIdealN Started.");
+    //                Model!.Logger.LogInformation("StartProcessSomIdealN Started.");
 
-    //                await Model.ProcessSomNAsync(epochsCount: null, _random, CancellationToken.None, () =>
+    //                await Model!.ProcessSomNAsync(epochsCount: null, _random, CancellationToken.None, () =>
     //                {
     //                    Dispatcher.UIThread.Invoke(() =>
     //                    {
@@ -122,12 +122,12 @@ public partial class Model01View : UserControl
     //            }
     //            catch (OperationCanceledException)
     //            {
-    //                Model.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
+    //                Model!.Logger.LogInformation("StartProcessSomIdealN Cancelled.");
     //            }
-    //            Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
+    //            Model!.Logger.LogInformation("StartProcessSomIdealN Finished.");
     //        });
 
-    //        var imageWithDesc = (ImageWithDesc)(Model.GetImageWithDescs(
+    //        var imageWithDesc = (ImageWithDesc)(Model!.GetImageWithDescs(
     //            _random,
     //            ColorLowScrollBar.Value,
     //            ColorHighScrollBar.Value)[5]);
@@ -175,12 +175,12 @@ public partial class Model01View : UserControl
 
     private void MiniColumnDetailedModel_PrepareCreate3D_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.Create_MiniColumnDetailed(_random);
+        Model!.Create_MiniColumnDetailed(_random);
     }
 
     private void MiniColumnDetailedModel_Create3D_OnClick(object? sender, RoutedEventArgs args)
     {        
-        Model.MiniColumnDetailedModel_Create3D(_random);
+        Model!.MiniColumnDetailedModel_Create3D(_random);
 
         Refresh_3D();
     }    
@@ -202,11 +202,11 @@ public partial class Model01View : UserControl
             LoadImagesSamplesFile = false,
         });
 
-        Model.PutMemories_Pinwheel(_random, 1);
+        Model!.PutMemories_Pinwheel(_random, 1);
 
-        Model.Cortex.CalculateSomCortexMemories(_random);
+        Model!.Cortex.CalculateSomCortexMemories(_random);
 
-        Model.Create_MiniColumnDetailed(_random);
+        Model!.Create_MiniColumnDetailed(_random);
     }
 
     private bool _refreshTaskIsRunning;
@@ -233,7 +233,7 @@ public partial class Model01View : UserControl
                 // Выполнение тяжелой задачи с актуальными на данный момент данными
                 await Task.Run(() =>
                 {
-                    Model.MiniColumnDetailedModel_Create3D(_random);
+                    Model!.MiniColumnDetailedModel_Create3D(_random);
                 });
 
                 Refresh_3D();
@@ -251,9 +251,9 @@ public partial class Model01View : UserControl
         if (Model is null)
             return;
 
-        await Model.CalculateTestMemoryWithSomAsync(_random, CancellationToken.None);
+        await Model!.CalculateTestMemoryWithSomAsync(_random, CancellationToken.None);
 
-        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs_MiniColumnDetailed1(
+        ImagesSet1.MainItemsControl.ItemsSource = Model!.GetImageWithDescs_MiniColumnDetailed1(
             _random);
     }
 
@@ -262,7 +262,7 @@ public partial class Model01View : UserControl
         if (Model is null)
             return;
 
-        MainModel3DControl.Data = Model.GetImageWithDescs_MiniColumnDetailed2(
+        MainModel3DControl.Data = Model!.GetImageWithDescs_MiniColumnDetailed2(
             _random);
     }
 

@@ -55,7 +55,7 @@ public static class Visualization3D
         for (int i = 0; i < miniColumnDetailed.Axons.Length; i += 1) //
         {
             var axon = miniColumnDetailed.Axons[i];
-            model3DScene.Lines.AddRange(GetLines(null, axon.Root, sceneBounds, axon.Temp_IsActive));
+            model3DScene.Lines.AddRange(GetLines(null, axon.Root, ref sceneBounds, axon.Temp_IsActive));
 
             for (int j = 0; j < axon.Synapses.Length; j += 1)
             {
@@ -77,7 +77,7 @@ public static class Visualization3D
         return model3DScene;
     }
 
-    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, SceneBounds sceneBounds, bool isActive)
+    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, ref SceneBounds sceneBounds, bool isActive)
     {        
         List<List<Point3DWithColor>> lines = new(1024);
         List<Point3DWithColor> line = new();
@@ -115,7 +115,7 @@ public static class Visualization3D
 
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
-                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], sceneBounds, isActive));
+                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], ref sceneBounds, isActive));
             }
             break;
         }
@@ -304,54 +304,68 @@ public static class Visualization3D
         Model3DScene model3DScene = new();
         model3DScene.Points = points;
         return model3DScene;
+    }    
+}
+
+public struct SceneBounds
+{
+    public SceneBounds()
+    {
     }
 
-    public class SceneBounds
+    public float XMin = Int32.MaxValue;
+    public float XMax = Int32.MinValue;
+    public float YMin = Int32.MaxValue;
+    public float YMax = Int32.MinValue;
+    public float ZMin = Int32.MaxValue;
+    public float ZMax = Int32.MinValue;
+
+    public void Update(Vector3 v)
     {
-        public float mcxMin = Int32.MaxValue;
-        public float mcxMax = Int32.MinValue;
-        public float mcyMin = Int32.MaxValue;
-        public float mcyMax = Int32.MinValue;
-        public float mczMin = Int32.MaxValue;
-        public float mczMax = Int32.MinValue;
+        if (v.X > XMax)
+            XMax = v.X;
+        if (v.X < XMin)
+            XMin = v.X;
+        if (v.Y > YMax)
+            YMax = v.Y;
+        if (v.Y < YMin)
+            YMin = v.Y;
+        if (v.Z > ZMax)
+            ZMax = v.Z;
+        if (v.Z < ZMin)
+            ZMin = v.Z;
+    }
 
-        public void Update(Vector3 v)
-        {
-            if (v.X > mcxMax)
-                mcxMax = v.X;
-            if (v.X < mcxMin)
-                mcxMin = v.X;
-            if (v.Y > mcyMax)
-                mcyMax = v.Y;
-            if (v.Y < mcyMin)
-                mcyMin = v.Y;
-            if (v.Z > mczMax)
-                mczMax = v.Z;
-            if (v.Z < mczMin)
-                mczMin = v.Z;
-        }
+    public void Normalize(Model3DScene model3DScene)
+    {
+        // 1. Находим общий максимальный размах сцены по всем осям
+        float maxRange = MathF.Max(XMax - XMin, MathF.Max(YMax - YMin, ZMax - ZMin));
+        //if (maxRange <= 0f) maxRange = 0.000001f; // Защита от деления на ноль
 
-        public void Normalize(Model3DScene model3DScene)
-        {
-            if (model3DScene.Points is not null)
-                foreach (Point3DWithColor point3DWithColor in model3DScene.Points)
+        // 2. Вычисляем центр сцены
+        Vector3 center = new Vector3(
+            (XMax + XMin) / 2f,
+            (YMax + YMin) / 2f,
+            (ZMax + ZMin) / 2f
+        );
+
+        //float deltaMax = MathF.Max(MathF.Max(XMax - XMin, YMax - YMin), ZMax - ZMin);
+        if (model3DScene.Points is not null)
+            foreach (Point3DWithColor point3DWithColor in model3DScene.Points)
+            {
+                Normalize(ref point3DWithColor.Position, center, maxRange);
+            }
+
+        if (model3DScene.Lines is not null)
+            foreach (var line in model3DScene.Lines)
+                foreach (Point3DWithColor point3DWithColor in line)
                 {
-                    Normalize(ref point3DWithColor.Position);
+                    Normalize(ref point3DWithColor.Position, center, maxRange);
                 }
+    }
 
-            if (model3DScene.Lines is not null)
-                foreach (var line in model3DScene.Lines)
-                    foreach (Point3DWithColor point3DWithColor in line)
-                    {
-                        Normalize(ref point3DWithColor.Position);
-                    }
-        }
-
-        public void Normalize(ref Vector3 v)
-        {
-            v.X = (mcxMax - v.X) / (mcxMax - mcxMin) - 0.5f;
-            v.Y = (mcyMax - v.Y) / (mcyMax - mcyMin) - 0.5f;
-            v.Z = (mczMax - v.Z) / (mczMax - mczMin) - 0.5f;
-        }
+    public void Normalize(ref Vector3 v, Vector3 center, float maxRange)
+    {
+        v = (v - center) / maxRange;
     }
 }
