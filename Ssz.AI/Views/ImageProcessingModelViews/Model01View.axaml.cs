@@ -44,6 +44,8 @@ public partial class Model01View : UserControl
         ColorLowScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
         ColorHighScrollBar.ValueChanged += (s, e) => Refresh_ImagesSet();
 
+        Unloaded += Model01View_Unloaded;
+
         if (false)
         {
             Reset();
@@ -53,6 +55,11 @@ public partial class Model01View : UserControl
         {
             var t = Script1Async();
         }            
+    }
+
+    private void Model01View_Unloaded(object? sender, RoutedEventArgs e)
+    {
+        Model = null;
     }
 
     public async Task Script1Async()
@@ -147,7 +154,20 @@ public partial class Model01View : UserControl
         }
     }
 
-    public Model01 Model = null!;
+    private Model01? _model = null!;
+
+    public Model01? Model
+    {
+        get
+        {
+            return _model;
+        }
+        set
+        {
+            _model?.Dispose();
+            _model = value;
+        }
+    }
 
     private void SetDataToControls(Model01.ModelConstants constants)
     {

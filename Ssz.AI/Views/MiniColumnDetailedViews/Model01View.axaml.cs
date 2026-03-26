@@ -79,6 +79,13 @@ public partial class Model01View : UserControl
         //{
         //    var t = Script2Async();
         //}
+
+        Unloaded += Model01View_Unloaded;
+    }
+
+    private void Model01View_Unloaded(object? sender, RoutedEventArgs e)
+    {
+        Model = null;
     }
 
     //public async Task Script2Async()
@@ -129,7 +136,20 @@ public partial class Model01View : UserControl
     //    }
     //}
 
-    public Model01 Model = null!;
+    private Model01? _model = null!;
+
+    public Model01? Model
+    {
+        get
+        {
+            return _model;
+        }
+        set
+        {
+            _model?.Dispose();
+            _model = value;
+        }
+    }
 
     private void SetDataToControls(Model01.ModelConstants constants)
     {
@@ -228,6 +248,9 @@ public partial class Model01View : UserControl
 
     private async void Refresh_ImagesSet1()
     {
+        if (Model is null)
+            return;
+
         await Model.CalculateTestMemoryWithSomAsync(_random, CancellationToken.None);
 
         ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs_MiniColumnDetailed1(
@@ -236,6 +259,9 @@ public partial class Model01View : UserControl
 
     private void Refresh_3D()
     {
+        if (Model is null)
+            return;
+
         MainModel3DControl.Data = Model.GetImageWithDescs_MiniColumnDetailed2(
             _random);
     }

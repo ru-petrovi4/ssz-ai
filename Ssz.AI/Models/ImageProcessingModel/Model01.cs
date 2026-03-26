@@ -37,7 +37,7 @@ using static Ssz.AI.Models.ImageProcessingModel.Cortex;
 
 namespace Ssz.AI.Models.ImageProcessingModel;
 
-public class Model01
+public class Model01 : IDisposable
 {
     public const string FileName_Cortex = "ImageProcessingModel01_Cortex.bin";
     public const string FileName_StereoInput = "ImageProcessingModel01_StereoInput.bin";
@@ -150,6 +150,11 @@ public class Model01
         LeftEye.Retina.Temp_ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
 
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
+    }
+
+    public void Dispose()
+    {
+        MiniColumnDetailed?.Dispose();
     }
 
     #endregion

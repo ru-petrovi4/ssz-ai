@@ -27,7 +27,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //  Источник: Buxhoeveden & Casanova 2002 (Brain),
 //            Wikipedia: Cortical minicolumn.
 // ============================================================
-public sealed class MiniColumnDetailed
+public sealed class MiniColumnDetailed : IDisposable
 {
     // ----------------------------------------------------------
     //  ФИЗИЧЕСКИЕ РАЗМЕРЫ МИНИКОЛОНКИ (мкм)
@@ -548,19 +548,39 @@ public sealed class MiniColumnDetailed
         int depth = (int)MathF.Ceiling((maxZ - minZ) / voxelSizeUm);
 
         // ----------------------------------------------------------
-        //  ШАГ 3: Создание входного тензора (Grid)
+        // ШАГ 3: Создание входного тензора (Grid) НАПРЯМУЮ ЧЕРЕЗ SPAN
         // ----------------------------------------------------------
         long totalVoxels = (long)activeCount * depth * height * width;
 
-        _gridDataBuffer.Clear();
-        _gridDataBuffer.AddRangeOfDefault((int)totalVoxels); // Одномерный массив для максимальной скорости
+        // ==========================================================
+        // ПЕРЕИСПОЛЬЗОВАНИЕ ТЕНЗОРОВ (ABSOLUTE ZERO-ALLOCATION)
+        // ==========================================================
+        if (_gridTensor_device is null || _gridTensor_capacity < totalVoxels)
+        {
+            _gridTensor_device?.Dispose();
+            _gridTensor_Cpu?.Dispose();
 
-        var gridData = _gridDataBuffer.Items;
+            _gridTensor_capacity = Math.Max(totalVoxels, _gridTensor_capacity == 0 ? totalVoxels : _gridTensor_capacity * 2);
+
+            _gridTensor_device = empty(new long[] { _gridTensor_capacity }, dtype: ScalarType.Float32, device: _device).DetachFromDisposeScope();
+            _gridTensor_Cpu = empty(new long[] { _gridTensor_capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
+        }
+
+        // 1. Создаем срезы ровно под размер текущих данных
+        using var cpuView = _gridTensor_Cpu!.slice(0, 0, totalVoxels, 1);
+        using var deviceView = _gridTensor_device.slice(0, 0, totalVoxels, 1);
+
+        // 2. Быстро очищаем память (зануляем) на уровне C++
+        cpuView.zero_();
 
         long spatialSize = (long)depth * height * width;
         long areaSize = (long)height * width;
 
-        // Проецируем синапсы в воксели. Каждый активный аксон получает свой слой (канал)
+        // 3. Получаем прямое окно (Span) в неуправляемую память CPU-тензора.
+        // Это работает мгновенно и не делает никаких копий.
+        var gridData = _gridTensor_Cpu.data<float>();
+
+        // 4. Проецируем синапсы напрямую в память TorchSharp
         for (int a = 0; a < activeCount; a += 1)
         {
             var synapses = Axons[activeAxons[a]].Synapses;
@@ -576,27 +596,19 @@ public sealed class MiniColumnDetailed
                 if (ix >= 0 && ix < width && iy >= 0 && iy < height && iz >= 0 && iz < depth)
                 {
                     long index = channelOffset + (iz * areaSize) + (iy * width) + ix;
-                    gridData[(int)index] = 1.0f; // Указываем наличие синапса
+
+                    // Прямая запись в нативную память без P/Invoke!
+                    // Скорость записи идентична float* в C++
+                    gridData[(int)index] = 1.0f;
                 }
             }
         }
 
-        // Создаем 5D тензор: [Batch=1, Channels=activeCount, Depth, Height, Width]
-        Tensor gridTensor_device;
-        //unsafe
-        //{
-        //    fixed (float* dataPtr = _gridDataBuffer.ItemsBuffer)
-        //    {
-        //        IntPtr ptr = new IntPtr(dataPtr);
+        // 5. Копируем данные из оперативной памяти (CPU) в видеопамять (Device)
+        deviceView.copy_(cpuView);
 
-        //        // Передаем указатель в TorchSharp. Под капотом произойдет быстрое нативное 
-        //        // копирование (memcpy) ровно того объема памяти, который задан в shape.
-        //        gridTensor_device = tensor(
-        //            ptr, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32, device: _device
-        //        );
-        //    }
-        //}
-        gridTensor_device = tensor(_gridDataBuffer.ItemsBuffer, new long[] { 1, activeCount, depth, height, width }, dtype: ScalarType.Float32, device: _device);
+        // 6. Формируем итоговый 5D-view для свертки
+        Tensor gridTensor_device = deviceView.view(1, activeCount, depth, height, width);
 
         // ----------------------------------------------------------
         //  ШАГ 4: Создание сферического ядра для 3D-свертки
@@ -718,7 +730,16 @@ public sealed class MiniColumnDetailed
         Temp_ActiveZones = finalZones;
     }
 
-    private readonly FastList<float> _gridDataBuffer = new(1024 * 1024);
+    public void Dispose()
+    {
+        _gridTensor_device?.Dispose();
+    }
+
+    // Кэшированный тензор для переиспользования памяти
+    private Tensor? _gridTensor_device;
+    private Tensor? _gridTensor_Cpu;
+    // Текущая вместимость (в элементах), чтобы понимать, когда нужно перевыделять память
+    private long _gridTensor_capacity = 0;
 }
 
 
