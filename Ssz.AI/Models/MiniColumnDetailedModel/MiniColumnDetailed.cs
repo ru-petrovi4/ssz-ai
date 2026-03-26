@@ -551,20 +551,14 @@ public sealed class MiniColumnDetailed : IDisposable
         // ==========================================================
         // ПЕРЕИСПОЛЬЗОВАНИЕ ТЕНЗОРОВ (ABSOLUTE ZERO-ALLOCATION)
         // ==========================================================
-        if (_gridTensor_device_Buffer is null || _gridTensor_Buffer_Capacity < totalVoxels)
-        {
-            _gridTensor_device_Buffer?.Dispose();
-            _gridTensor_Cpu_Buffer?.Dispose();
-
-            _gridTensor_Buffer_Capacity = totalVoxels; //Math.Max(totalVoxels, _gridTensor_Buffer_Capacity == 0 ? totalVoxels : _gridTensor_Buffer_Capacity * 2);
-
-            _gridTensor_device_Buffer = empty(new long[] { _gridTensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: _device).DetachFromDisposeScope();
-            _gridTensor_Cpu_Buffer = empty(new long[] { _gridTensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
-        }
+        if (_gridTensorBuffer is null)
+            _gridTensorBuffer = new TensorBuffer(_device, totalVoxels);
+        else
+            _gridTensorBuffer.EnsureCapacity(totalVoxels);
 
         // 1. Создаем срезы ровно под размер текущих данных
-        using var gridTensor_Cpu_Flat = _gridTensor_Cpu_Buffer!.slice(0, 0, totalVoxels, 1);
-        using var gridTensor_device_Flat = _gridTensor_device_Buffer.slice(0, 0, totalVoxels, 1);
+        using var gridTensor_Cpu_Flat = _gridTensorBuffer.Tensor_Cpu_Buffer!.slice(0, 0, totalVoxels, 1);
+        using var gridTensor_device_Flat = _gridTensorBuffer.Tensor_device_Buffer.slice(0, 0, totalVoxels, 1);
 
         // 2. Быстро очищаем память (зануляем) на уровне C++
         gridTensor_Cpu_Flat.zero_();
@@ -728,17 +722,52 @@ public sealed class MiniColumnDetailed : IDisposable
 
     public void Dispose()
     {
-        _gridTensor_device_Buffer?.Dispose();
-        _gridTensor_Cpu_Buffer?.Dispose();
+        _gridTensorBuffer?.Dispose();
     }
 
     private readonly FastList<int> _activeAxons = new FastList<int>(capacity: AxonCount);
 
     // Кэшированный тензор для переиспользования памяти
-    private Tensor? _gridTensor_device_Buffer;
-    private Tensor? _gridTensor_Cpu_Buffer;
+    private TensorBuffer? _gridTensorBuffer;    
+}
+
+public class TensorBuffer : IDisposable
+{
+    public TensorBuffer(Device device, long capacity)
+    {
+        Device = device;
+        Tensor_Buffer_Capacity = capacity; //Math.Max(totalVoxels, Tensor_Buffer_Capacity == 0 ? totalVoxels : Tensor_Buffer_Capacity * 2);
+
+        Tensor_device_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: device).DetachFromDisposeScope();
+        Tensor_Cpu_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
+    }
+
+    public void EnsureCapacity(long capacity)
+    {
+        if (capacity <= Tensor_Buffer_Capacity)
+            return;
+
+        Tensor_device_Buffer.Dispose();
+        Tensor_Cpu_Buffer.Dispose();
+
+        Tensor_Buffer_Capacity = capacity; //Math.Max(totalVoxels, Tensor_Buffer_Capacity == 0 ? totalVoxels : Tensor_Buffer_Capacity * 2);
+
+        Tensor_device_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: Device).DetachFromDisposeScope();
+        Tensor_Cpu_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
+    }
+
+    public readonly Device Device;
+
+    public Tensor Tensor_device_Buffer;
+    public Tensor Tensor_Cpu_Buffer;
     // Текущая вместимость (в элементах), чтобы понимать, когда нужно перевыделять память
-    private long _gridTensor_Buffer_Capacity = 0;
+    public long Tensor_Buffer_Capacity = 0;
+
+    public void Dispose()
+    {
+        Tensor_device_Buffer?.Dispose();
+        Tensor_Cpu_Buffer?.Dispose();
+    }
 }
 
 
