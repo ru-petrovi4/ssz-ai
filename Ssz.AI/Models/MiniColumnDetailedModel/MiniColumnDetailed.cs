@@ -605,7 +605,16 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         int kRad = (int)MathF.Ceiling(radiusUm / voxelSizeUm);
         int kSize = kRad * 2 + 1; // Нечетный размер ядра для наличия четкого центра
-        float[] kernelData = new float[activeCount * kSize * kSize * kSize];
+
+        long weightElementsCount = activeCount * kSize * kSize * kSize;
+        if (_weightTensorBuffer is null)
+            _weightTensorBuffer = new TensorBuffer(_device, weightElementsCount);
+        else
+            _weightTensorBuffer.EnsureCapacity(weightElementsCount);
+        using var weightTensor_Cpu_Flat = _weightTensorBuffer.Tensor_Cpu_Buffer!.slice(0, 0, weightElementsCount, 1);
+        using var weightTensor_device_Flat = _weightTensorBuffer.Tensor_device_Buffer.slice(0, 0, weightElementsCount, 1);
+        weightTensor_Cpu_Flat.zero_();
+        var kernelData = weightTensor_Cpu_Flat.data<float>();
 
         long kSpatial = (long)kSize * kSize * kSize;
         long kArea = (long)kSize * kSize;
@@ -631,8 +640,10 @@ public sealed class MiniColumnDetailed : IDisposable
                     }
                 }
 
+        weightTensor_device_Flat.copy_(weightTensor_Cpu_Flat);
+
         // Тензор весов свертки: [OutChannels=activeCount, InChannels=1 (из-за groups), kD, kH, kW]
-        using var weightTensor_device = tensor(kernelData, new long[] { activeCount, 1, kSize, kSize, kSize }, dtype: ScalarType.Float32, device: _device);
+        using var weightTensor_device = weightTensor_device_Flat.view(activeCount, 1, kSize, kSize, kSize);
 
         // ----------------------------------------------------------
         //  ШАГ 5: Выполнение вычислений через TorchSharp
@@ -728,7 +739,9 @@ public sealed class MiniColumnDetailed : IDisposable
     private readonly FastList<int> _activeAxons = new FastList<int>(capacity: AxonCount);
 
     // Кэшированный тензор для переиспользования памяти
-    private TensorBuffer? _gridTensorBuffer;    
+    private TensorBuffer? _gridTensorBuffer;
+
+    private TensorBuffer? _weightTensorBuffer;
 }
 
 public class TensorBuffer : IDisposable
