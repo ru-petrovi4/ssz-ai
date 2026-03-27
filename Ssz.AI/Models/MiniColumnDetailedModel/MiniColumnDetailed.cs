@@ -47,7 +47,7 @@ public sealed class MiniColumnDetailed : IDisposable
     public const int AxonCount = 200;
 
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
-    public const int SynapsesPerAxon = 10_000; // Orig^10_000;
+    public const int SynapsesPerAxon = 7_500; // Orig^10_000;
 
     public FastList<ActiveZone>? Temp_ActiveZones;
 
@@ -137,10 +137,17 @@ public sealed class MiniColumnDetailed : IDisposable
         [
             (0f,    200f,   20),   // слой II
             (200f,  600f,   50),   // слой III
-            (600f,  900f,   30),   // слой IV
-            (900f,  1400f,  60),   // слой V
-            (1400f, 2000f,  40),   // слой VI
+            (600f,  900f,   80),   // слой IV
+            (900f,  1400f,  30),   // слой V
+            (1400f, 2000f,  20),   // слой VI
         ];
+        //[            
+        //    (0f,    200f,   20),   // слой II
+        //    (200f,  600f,   50),   // слой III
+        //    (600f,  900f,   30),   // слой IV
+        //    (900f,  1400f,  60),   // слой V
+        //    (1400f, 2000f,  40),   // слой VI
+        //];
         // Итого: 200 нейронов распределены по 5 слоям.
 
         var positions = new Vector3[AxonCount];
@@ -195,7 +202,7 @@ public sealed class MiniColumnDetailed : IDisposable
         //  вниз ~60–100 мкм. Это биологически правильно — AIS
         //  всегда направлен перпендикулярно поверхности коры.
         // ----------------------------------------------------------
-        float aisLength = 60.0f + _random.NextSingle() * 40.0f; // 60–100 мкм
+        float aisLength = 40.0f + _random.NextSingle() * 30.0f; // Orig: 60–100 мкм
         int aisPoints = 4;
         float aisStep = aisLength / aisPoints;
 
