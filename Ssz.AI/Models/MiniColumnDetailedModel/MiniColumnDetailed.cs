@@ -15,7 +15,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 // ============================================================
 //  МИНИКОЛОНКА КОРЫ МОЗГА
 //
-//  Параметры, соответствующие анатомии человека:
+//  Параметры, соответствующие анатомии человека (V1):
 //    - Диаметр: ~40 мкм (диапазон 30–50 мкм)
 //    - Высота (слои II–VI): ~2000 мкм
 //    - Нейронов: 80–120 реально, здесь 200 (задание)
@@ -47,7 +47,7 @@ public sealed class MiniColumnDetailed : IDisposable
     public const int AxonCount = 200;
 
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
-    public const int SynapsesPerAxon = 7_500; // Orig^10_000;
+    public const int SynapsesPerAxon = 10_000;
 
     public FastList<ActiveZone>? Temp_ActiveZones;
 
@@ -75,7 +75,7 @@ public sealed class MiniColumnDetailed : IDisposable
     // ----------------------------------------------------------
 
     /// <summary>Все 200 аксонов миниколонки.</summary>
-    public readonly Axon[] Axons;    
+    public readonly Axon[] Axons;
 
     // ----------------------------------------------------------
     //  ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ
@@ -84,6 +84,31 @@ public sealed class MiniColumnDetailed : IDisposable
     private readonly Random _random;
 
     private readonly Device _device;
+
+    // ============================================================
+    //  СЛОЙ КОРЫ: ENUM ДЛЯ СЛОЙ-СПЕЦИФИЧНОГО ПОВЕДЕНИЯ АКСОНОВ
+    // ============================================================
+    /// <summary>
+    /// Корковые слои (II–VI) с учётом специфики V1.
+    /// Используется для выбора стратегии роста аксона.
+    ///
+    /// Источники:
+    ///   Mohan et al. 2015 (Cerebral Cortex) — морфология пирамидных нейронов по слоям;
+    ///   Douglas &amp; Martin 2004 (Annu. Rev. Neurosci.) — функциональные схемы слоёв V1.
+    /// </summary>
+    private enum CorticalLayer
+    {
+        /// <summary>Малые пирамидные клетки: горизонтальные транскортикальные коллатерали.</summary>
+        LayerII = 0,
+        /// <summary>Средние пирамидные клетки: горизонтальные + транскаллозальные проекции.</summary>
+        LayerIII = 1,
+        /// <summary>Зернистый слой (4A/4B/4C в V1): таламические входы, короткие локальные аксоны.</summary>
+        LayerIV = 2,
+        /// <summary>Крупные пирамидные (клетки Беца): нисходящий проекционный аксон + восходящие коллатерали.</summary>
+        LayerV = 3,
+        /// <summary>Мультиформный слой: нисходящие кортикоталамические аксоны + локальные коллатерали.</summary>
+        LayerVI = 4,
+    }
 
     // ============================================================
     //  КОНСТРУКТОР: ГЕНЕРАЦИЯ ВСЕЙ МИНИКОЛОНКИ
@@ -98,24 +123,26 @@ public sealed class MiniColumnDetailed : IDisposable
         _random = random;
         _device = cuda.is_available() ? CUDA : CPU;
 
-        Axons = new Axon[AxonCount];        
+        Axons = new Axon[AxonCount];
 
         // ----------------------------------------------------------
         //  ШАГ 1: Разместить 200 сом в цилиндре миниколонки.
         //  Сомы распределены по всем слоям (Z = 0..2000 мкм)
         //  и в радиусе ColumnRadiusUm от центральной оси.
+        //  Возвращаем также слой каждого нейрона для GrowAxon.
         // ----------------------------------------------------------
-        var somaPositions = GenerateSomaPositions();
+        var (somaPositions, somaLayers) = GenerateSomaPositions();
 
         // ----------------------------------------------------------
         //  ШАГ 2: Для каждого нейрона вырастить аксон.
+        //  Передаём слой нейрона для слой-специфичной морфологии.
         // ----------------------------------------------------------
         for (int i = 0; i < AxonCount; i += 1)
         {
-            AxonPoint root = GrowAxon(somaPositions[i], i);
+            AxonPoint root = GrowAxon(somaPositions[i], somaLayers[i]);
             Synapse[] synapses = PlaceSynapses(root);
             Axons[i] = new Axon(i, root, synapses);
-        }        
+        }
     }
 
     // ============================================================
@@ -125,35 +152,30 @@ public sealed class MiniColumnDetailed : IDisposable
     /// Располагает 200 нейронных сом равномерно в цилиндре
     /// миниколонки. Диаметр ~40 мкм, высота ~2000 мкм.
     /// Сомы размещены в 5 слоях (II, III, IV, V, VI),
-    /// что соответствует реальной корковой анатомии.
+    /// что соответствует реальной корковой анатомии V1.
     /// </summary>
-    private Vector3[] GenerateSomaPositions()
+    /// <returns>Пара: массив позиций и массив меток слоёв (CorticalLayer).</returns>
+    private (Vector3[] positions, CorticalLayer[] layers) GenerateSomaPositions()
     {
         // Границы слоёв (Z в мкм): слой II-III верхний, VI нижний
         // Примерные относительные толщины слоёв коры:
         // L II: 0–200, L III: 200–600, L IV: 600–900,
         // L V: 900–1400, L VI: 1400–2000
-        ReadOnlySpan<(float zMin, float zMax, int neuronCount)> layers =
+        ReadOnlySpan<(float zMin, float zMax, int neuronCount, CorticalLayer layer)> layers =
         [
-            (0f,    200f,   20),   // слой II
-            (200f,  600f,   50),   // слой III
-            (600f,  900f,   80),   // слой IV
-            (900f,  1400f,  30),   // слой V
-            (1400f, 2000f,  20),   // слой VI
+            (0f,    200f,   20, CorticalLayer.LayerII),   // слой II
+            (200f,  600f,   50, CorticalLayer.LayerIII),  // слой III
+            (600f,  900f,   30, CorticalLayer.LayerIV),   // слой IV
+            (900f,  1400f,  60, CorticalLayer.LayerV),    // слой V
+            (1400f, 2000f,  40, CorticalLayer.LayerVI),   // слой VI
         ];
-        //[            
-        //    (0f,    200f,   20),   // слой II
-        //    (200f,  600f,   50),   // слой III
-        //    (600f,  900f,   30),   // слой IV
-        //    (900f,  1400f,  60),   // слой V
-        //    (1400f, 2000f,  40),   // слой VI
-        //];
         // Итого: 200 нейронов распределены по 5 слоям.
 
         var positions = new Vector3[AxonCount];
+        var somaLayers = new CorticalLayer[AxonCount];
         int idx = 0;
 
-        foreach (var (zMin, zMax, count) in layers)
+        foreach (var (zMin, zMax, count, layer) in layers)
         {
             for (int n = 0; n < count; n += 1)
             {
@@ -168,28 +190,54 @@ public sealed class MiniColumnDetailed : IDisposable
 
                 float z = zMin + _random.NextSingle() * (zMax - zMin);
                 positions[idx] = new Vector3(x, y, z);
+                somaLayers[idx] = layer;
                 idx += 1;
             }
         }
 
-        return positions;
+        return (positions, somaLayers);
     }
 
     // ============================================================
-    //  РОСТ АКСОНА
+    //  РОСТ АКСОНА (СЛОЙ-СПЕЦИФИЧНЫЙ)
     // ============================================================
     /// <summary>
     /// Строит дерево аксона, начиная с позиции сомы.
+    /// Морфология определяется принадлежностью нейрона к слою коры.
     ///
-    /// Биологически правдоподобная морфология:
-    ///   1. AIS (axon initial segment): ~60–80 мкм вертикально вниз
-    ///   2. Горизонтальное распространение по слою с ветвлениями
-    ///   3. Бинарные ветвления, среднее число ~4.5 на аксон
-    ///   4. Угловые отклонения сегментов: плавная кривая (Perlin-like)
+    /// Стратегии по слоям (V1, Mohan et al. 2015):
     ///
-    /// Координаты: X,Y — горизонталь, Z — вертикаль (глубина).
+    ///   L II/III — горизонтальные транскортикальные коллатерали:
+    ///     AIS идёт вертикально вниз ~40–60 мкм, затем арбор
+    ///     распространяется преимущественно горизонтально (горизонт. компонент ~0.95).
+    ///     Именно эти нейроны формируют длинные горизонтальные связи
+    ///     в пределах V1 (до 6–8 мм).
+    ///
+    ///   L IV — зернистый слой, таламические реле:
+    ///     AIS короткий ~30–50 мкм, арбор строго локальный,
+    ///     горизонтальный разброс минимален (горизонт. компонент ~0.80),
+    ///     сегменты короче (~390 мкм среднее).
+    ///     Источник: Yoshioka et al. 1994 — аксоны L4 V1 ограничены
+    ///     пределами одной колонки.
+    ///
+    ///   L V — крупные пирамидные клетки (клетки Беца), нисходящие проекции:
+    ///     AIS длинный ~60–100 мкм, основной аксон уходит вниз (проекционный).
+    ///     Дополнительно добавляется восходящая рекуррентная коллатеральная ветвь
+    ///     в слои II/III (восходящий компонент -Z в нашей СК).
+    ///     Горизонтальный компонент начального арбора умеренный (~0.70),
+    ///     значительный вертикальный дрейф вниз (+Z).
+    ///
+    ///   L VI — кортикоталамические нейроны:
+    ///     Нисходящий аксон к белому веществу, локальные коллатерали короткие.
+    ///     AIS ~50–80 мкм, горизонт. компонент ~0.60, вертикальный дрейф вниз.
+    ///
+    /// Биологические источники:
+    ///   - Mohan et al. 2015, Cerebral Cortex 26:4839–4858
+    ///   - Douglas &amp; Martin 2004, Annu. Rev. Neurosci. 27:419–451
+    ///   - Yoshioka et al. 1994, J. Neurosci. 14(11):6652–6671
+    ///   - Markram et al. 1997; Larkman &amp; Mason 1990 (коллатераль L5)
     /// </summary>
-    private AxonPoint GrowAxon(Vector3 somaPos, int axonIdx)
+    private AxonPoint GrowAxon(Vector3 somaPos, CorticalLayer layer)
     {
         // Случайное число точек ветвления: Poisson-подобное ~4.5
         int totalBranchPoints = SamplePoissonBranchCount();
@@ -198,18 +246,35 @@ public sealed class MiniColumnDetailed : IDisposable
         var root = new AxonPoint(somaPos);
 
         // ----------------------------------------------------------
-        //  AIS: аксон выходит из основания сомы и идёт вертикально
-        //  вниз ~60–100 мкм. Это биологически правильно — AIS
-        //  всегда направлен перпендикулярно поверхности коры.
+        //  СЛОЙ-СПЕЦИФИЧНЫЕ ПАРАМЕТРЫ AIS
+        //  AIS всегда направлен вертикально вниз (к белому веществу).
+        //  Длина варьируется по слою.
         // ----------------------------------------------------------
-        float aisLength = 40.0f + _random.NextSingle() * 30.0f; // Orig: 60–100 мкм
+        float aisLength;
+        switch (layer)
+        {
+            case CorticalLayer.LayerIV:
+                // L4: короткий AIS — локальные интернейронные связи
+                aisLength = 30.0f + _random.NextSingle() * 20.0f; // 30–50 мкм
+                break;
+            case CorticalLayer.LayerV:
+            case CorticalLayer.LayerVI:
+                // L5/L6: длинный AIS — проекционные нейроны
+                aisLength = 60.0f + _random.NextSingle() * 40.0f; // 60–100 мкм
+                break;
+            default:
+                // L2/L3: стандартный AIS
+                aisLength = 40.0f + _random.NextSingle() * 20.0f; // 40–60 мкм
+                break;
+        }
+
         int aisPoints = 4;
         float aisStep = aisLength / aisPoints;
 
         AxonPoint current = root;
         for (int p = 1; p <= aisPoints; p += 1)
         {
-            // Небольшое горизонтальное отклонение (реалистичная кривизна)
+            // Небольшое горизонтальное отклонение (реалистичная кривизна AIS)
             float jitter = 1.5f;
             var pos = new Vector3(
                 somaPos.X + (_random.NextSingle() - 0.5f) * jitter,
@@ -222,29 +287,95 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         // ----------------------------------------------------------
+        //  СЛОЙ-СПЕЦИФИЧНЫЕ ПАРАМЕТРЫ НАЧАЛЬНОГО НАПРАВЛЕНИЯ АРБОРА
+        // ----------------------------------------------------------
+        float angle = _random.NextSingle() * MathF.PI * 2.0f; // случайный азимут
+
+        Vector3 initDir;
+        switch (layer)
+        {
+            case CorticalLayer.LayerII:
+            case CorticalLayer.LayerIII:
+                // L2/L3: СТРОГО горизонтальное распространение.
+                // Транскортикальные коллатерали V1 идут горизонтально
+                // в плоскости слоя на расстояния до 6–8 мм.
+                // Вертикальный компонент минимален (~0.05–0.10).
+                initDir = new Vector3(
+                    MathF.Cos(angle) * 0.95f,
+                    MathF.Sin(angle) * 0.95f,
+                    0.05f + _random.NextSingle() * 0.05f
+                );
+                break;
+
+            case CorticalLayer.LayerIV:
+                // L4: ЛОКАЛЬНОЕ горизонтальное распространение.
+                // Аксоны L4 V1 ограничены пределами одной колонки/гиперколонки.
+                // Горизонтальный компонент умеренный, сегменты короче.
+                initDir = new Vector3(
+                    MathF.Cos(angle) * 0.80f,
+                    MathF.Sin(angle) * 0.80f,
+                    0.15f + _random.NextSingle() * 0.10f
+                );
+                break;
+
+            case CorticalLayer.LayerV:
+                // L5: НИСХОДЯЩИЙ проекционный аксон.
+                // Основная ветвь уходит вертикально вниз (к белому веществу).
+                // Горизонтальный компонент меньше, вертикальный (+Z) значительный.
+                initDir = new Vector3(
+                    MathF.Cos(angle) * 0.55f,
+                    MathF.Sin(angle) * 0.55f,
+                    0.55f + _random.NextSingle() * 0.20f
+                );
+                break;
+
+            case CorticalLayer.LayerVI:
+                // L6: КОРТИКОТАЛАМИЧЕСКИЙ нисходящий аксон.
+                // Аналогично L5, но вертикальный дрейф ещё сильнее —
+                // аксон идёт к таламусу через белое вещество.
+                initDir = new Vector3(
+                    MathF.Cos(angle) * 0.45f,
+                    MathF.Sin(angle) * 0.45f,
+                    0.70f + _random.NextSingle() * 0.20f
+                );
+                break;
+
+            default:
+                initDir = new Vector3(
+                    MathF.Cos(angle) * 0.9f,
+                    MathF.Sin(angle) * 0.9f,
+                    0.2f + _random.NextSingle() * 0.2f
+                );
+                break;
+        }
+
+        initDir = Vector3.Normalize(initDir);
+
+        // ----------------------------------------------------------
+        //  СЛОЙ-СПЕЦИФИЧНАЯ ДЛИНА СЕГМЕНТОВ
+        //  L4 имеет короткие локальные сегменты, L2/L3 — длинные.
+        // ----------------------------------------------------------
+        float segLenFactor = layer switch
+        {
+            CorticalLayer.LayerIV => 0.65f,  // L4: короче (~390 мкм средний сегмент)
+            CorticalLayer.LayerV => 0.90f,  // L5: умеренные
+            CorticalLayer.LayerVI => 0.80f,  // L6: умеренно короче
+            _ => 1.00f,  // L2/L3: стандарт
+        };
+
+        // ----------------------------------------------------------
         //  РЕКУРСИВНЫЙ РОСТ ВЕТВЕЙ
         //  Используем стек вместо рекурсии для производительности.
         // ----------------------------------------------------------
-        // Стек: (текущий узел, оставшиеся ветвления, направление)
         var growthStack = new Stack<(AxonPoint node, int branchesLeft, Vector3 direction)>(32);
-
-        // Начальное направление: горизонтально с небольшим наклоном
-        float angle = _random.NextSingle() * MathF.PI * 2.0f; // случайный азимут
-        var initDir = new Vector3(
-            MathF.Cos(angle) * 0.9f,
-            MathF.Sin(angle) * 0.9f,
-            0.2f + _random.NextSingle() * 0.2f  // небольшой вертикальный компонент
-        );
-        initDir = Vector3.Normalize(initDir);
-
         growthStack.Push((current, totalBranchPoints, initDir));
 
         while (growthStack.Count > 0)
         {
             var (node, branchesLeft, direction) = growthStack.Pop();
 
-            // Длина текущего сегмента (варьируется биологически)
-            float segLen = MeanSegmentLengthUm * (0.6f + _random.NextSingle() * 0.8f);
+            // Длина текущего сегмента (варьируется биологически, с поправкой по слою)
+            float segLen = MeanSegmentLengthUm * segLenFactor * (0.6f + _random.NextSingle() * 0.8f);
             float stepLen = segLen / PointsPerSegment;
 
             // Рост сегмента от node до его конца
@@ -265,6 +396,55 @@ public sealed class MiniColumnDetailed : IDisposable
                 growthStack.Push((segEnd, branch2, Vector3.Normalize(dir2)));
             }
             // Иначе — терминальный сегмент (конец ветки = синаптический бутон)
+        }
+
+        // ----------------------------------------------------------
+        //  L5: ВОСХОДЯЩАЯ РЕКУРРЕНТНАЯ КОЛЛАТЕРАЛЬ
+        //
+        //  У нейронов слоя V характерна возвратная коллатераль,
+        //  которая поднимается обратно в слои II/III (апикальная
+        //  коллатераль). Она идёт ВВЕРХ (-Z в нашей СК).
+        //
+        //  Источник: Markram et al. 1997; Larkman & Mason 1990.
+        // ----------------------------------------------------------
+        if (layer == CorticalLayer.LayerV)
+        {
+            float collateralAngle = _random.NextSingle() * MathF.PI * 2.0f;
+            var collateralDir = new Vector3(
+                MathF.Cos(collateralAngle) * 0.5f,
+                MathF.Sin(collateralAngle) * 0.5f,
+                -0.70f  // ВВЕРХ (отрицательный Z = к поверхности коры)
+            );
+            collateralDir = Vector3.Normalize(collateralDir);
+
+            // Коллатераль имеет меньше ветвлений, чем основной арбор
+            int collateralBranches = Math.Max(1, totalBranchPoints / 3);
+
+            var collateralStack = new Stack<(AxonPoint node, int branchesLeft, Vector3 direction)>(16);
+            collateralStack.Push((current, collateralBranches, collateralDir));
+
+            while (collateralStack.Count > 0)
+            {
+                var (node, branchesLeft, direction) = collateralStack.Pop();
+
+                float segLen = MeanSegmentLengthUm * 0.70f * (0.6f + _random.NextSingle() * 0.8f);
+                float stepLen = segLen / PointsPerSegment;
+
+                AxonPoint segEnd = GrowSegment(node, direction, stepLen, PointsPerSegment);
+
+                if (branchesLeft > 0)
+                {
+                    int branch1 = branchesLeft / 2;
+                    int branch2 = branchesLeft - branch1 - 1;
+
+                    float spreadAngle = 0.4f + _random.NextSingle() * 0.5f;
+                    Vector3 dir1 = RotateVector(direction, spreadAngle, _random);
+                    Vector3 dir2 = RotateVector(direction, -spreadAngle, _random);
+
+                    collateralStack.Push((segEnd, branch1, Vector3.Normalize(dir1)));
+                    collateralStack.Push((segEnd, branch2, Vector3.Normalize(dir2)));
+                }
+            }
         }
 
         return root;
@@ -377,39 +557,30 @@ public sealed class MiniColumnDetailed : IDisposable
     /// </summary>
     private Synapse[] PlaceSynapses(AxonPoint root)
     {
-        // 1. Сначала собираем все отрезки (сегменты) дерева аксона.
-        // Используем легковесные кортежи (ValueTuple) для хранения структуры:
-        // Начальная координата, Конечная координата и Длина отрезка в мкм.
+        // 1. Собираем все отрезки (сегменты) дерева аксона.
         var segments = new List<(Vector3 Start, Vector3 End, float Length)>(capacity: 512);
 
-        // Стек для обхода дерева без рекурсии, что гарантирует максимальную производительность
         var traversalStack = new Stack<AxonPoint>(128);
         traversalStack.Push(root);
 
-        // Переменная для хранения общей длины всех ветвей аксона
         float totalLength = 0f;
 
-        // Обходим всё дерево аксона в глубину
         while (traversalStack.Count > 0)
         {
             var pt = traversalStack.Pop();
 
-            // Если у точки есть дочерние узлы (продолжения аксона)
             if (pt.Next != null)
             {
-                // Используем += 1 вместо запрещенного ++
                 for (int i = 0; i < pt.Next.Count; i += 1)
                 {
                     var child = pt.Next[i];
 
-                    // Вычисляем длину отрезка с помощью SIMD-совместимого метода System.Numerics
                     float length = Vector3.Distance(pt.Position, child.Position);
 
-                    // Записываем только валидные отрезки, имеющие ненулевую длину
                     if (length > 0f)
                     {
                         segments.Add((pt.Position, child.Position, length));
-                        totalLength += length; // Накапливаем общую длину
+                        totalLength += length;
                     }
 
                     traversalStack.Push(child);
@@ -419,7 +590,7 @@ public sealed class MiniColumnDetailed : IDisposable
 
         FastList<Synapse> synapses = new(SynapsesPerAxon);
 
-        // 2. Краевой случай: Если аксон вырожден (длина нулевая), то размещаем все синапсы в корне
+        // 2. Краевой случай: вырожденный аксон
         if (totalLength <= 0f || segments.Count == 0)
         {
             for (int s = 0; s < SynapsesPerAxon; s += 1)
@@ -429,38 +600,27 @@ public sealed class MiniColumnDetailed : IDisposable
             return synapses.ToArray();
         }
 
-        // 3. Вычисляем шаг, через который будут расставлены синапсы для идеальной равномерности
+        // 3. Шаг равномерного распределения синапсов
         float step = totalLength / SynapsesPerAxon;
 
-        // Переменная для отслеживания индекса текущего сегмента при линейном проходе
         int currentSegmentIdx = 0;
-
-        // Расстояние от начала текущего сегмента, на котором размещается очередной синапс
-        // Начинаем с половины шага, чтобы края аксона не были излишне "плотными"
         float currentDistInSegment = step * 0.5f;
 
-        // 4. Проходим по необходимому количеству синапсов и размещаем их
+        // 4. Расставляем синапсы равномерно
         for (int s = 0; s < SynapsesPerAxon; s += 1)
         {
-            // Если мы вышли за пределы длины текущего отрезка, переходим к следующему
-            // (цикл нужен для случаев, когда отрезки слишком короткие по сравнению с шагом)
-            while (currentDistInSegment > segments[currentSegmentIdx].Length && currentSegmentIdx < segments.Count - 1)
+            while (currentDistInSegment > segments[currentSegmentIdx].Length &&
+                   currentSegmentIdx < segments.Count - 1)
             {
                 currentDistInSegment -= segments[currentSegmentIdx].Length;
-                currentSegmentIdx += 1; // Увеличиваем индекс без использования ++
+                currentSegmentIdx += 1;
             }
 
-            // Получаем текущий сегмент аксона
             var seg = segments[currentSegmentIdx];
-
-            // Вычисляем долю (от 0.0 до 1.0) пройденного расстояния по отрезку
             float t = currentDistInSegment / seg.Length;
-
-            // Выполняем линейную интерполяцию для нахождения точной позиции синапса на отрезке
             var basePos = Vector3.Lerp(seg.Start, seg.End, t);
 
-            // 5. Добавляем небольшое случайное смещение (~1.5 мкм) для реализма,
-            // имитируя бутоны, расположенные на малом расстоянии от центральной оси аксона
+            // 5. Небольшое случайное смещение (~1.5 мкм) — бутоны en passant
             float jitter = 1.5f;
             var synPos = new Vector3(
                 basePos.X + (_random.NextSingle() - 0.5f) * jitter * 2f,
@@ -468,19 +628,19 @@ public sealed class MiniColumnDetailed : IDisposable
                 basePos.Z + (_random.NextSingle() - 0.5f) * jitter * 2f
             );
 
-            // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют
+            // Фильтруем синапсы внутри двойного радиуса колонки
             float r = ColumnRadiusUm * 2.0f;
             if (synPos.X > -r && synPos.X < r &&
-                    synPos.Y > -r && synPos.Y < r)
+                synPos.Y > -r && synPos.Y < r)
+            {
                 synapses.Add(new Synapse(synPos));
+            }
 
-            // Продвигаемся дальше по отрезку на заданный равномерный шаг
             currentDistInSegment += step;
         }
 
-        // Возвращаем массив готовых синапсов, равномерно расставленных по всему аксону
         return synapses.ToArray();
-    }        
+    }
 
     // ============================================================
     //  ПОИСК АКТИВНЫХ ЗОН (С ИСПОЛЬЗОВАНИЕМ TORCHSHARP)
@@ -488,14 +648,13 @@ public sealed class MiniColumnDetailed : IDisposable
     /// <summary>
     /// Ищет пространственные области (зоны) заданного радиуса,
     /// внутри которых присутствуют синапсы как минимум от N различных активных аксонов.
-    /// Алгоритм использует вокселизацию пространства и 3D-свертку на базе TorchSharp
+    /// Алгоритм использует вокселизацию пространства и 3D-свёртку на базе TorchSharp
     /// для точного математического поиска максимумов плотности в любой точке пространства
     /// (а не только с центрами в синапсах), после чего проводит дедупликацию.
     /// </summary>
     /// <param name="activityBits">Вектор, где 1.0f означает активность аксона.</param>
     /// <param name="radiusUm">Радиус поиска (мкм).</param>
     /// <param name="minActiveAxons">Минимальное количество уникальных активных аксонов в радиусе.</param>
-    /// <returns>Список найденных уникальных зон активности.</returns>
     public void FindActiveZones(
         float[] activityBits,
         float radiusUm,
@@ -507,10 +666,10 @@ public sealed class MiniColumnDetailed : IDisposable
         //  ШАГ 1: Извлечение индексов активных аксонов
         // ----------------------------------------------------------
         _activeAxons.Clear();
-        for (int i = 0; i < AxonCount; i += 1) 
-        {            
+        for (int i = 0; i < AxonCount; i += 1)
+        {
             if (Axons[i].Temp_IsActive = (activityBits[i] > 0.5f))
-            {                
+            {
                 _activeAxons.Add(i);
             }
         }
@@ -527,7 +686,7 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         //  ШАГ 2: Определение границ пространства и параметров сетки
         // ----------------------------------------------------------
-        float voxelSizeUm = 2.0f; // Orig: Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
+        float voxelSizeUm = 2.0f; // Шаг сетки (2 мкм) — баланс между точностью и памятью GPU/CPU
 
         SceneBounds sceneBounds = new();
 
@@ -537,7 +696,7 @@ public sealed class MiniColumnDetailed : IDisposable
             var synapses = Axons[_activeAxons[a]].Synapses;
             for (int s_Index = 0; s_Index < synapses.Length; s_Index += 1)
             {
-                sceneBounds.Update(synapses[s_Index].Position);                
+                sceneBounds.Update(synapses[s_Index].Position);
             }
         }
 
@@ -551,33 +710,25 @@ public sealed class MiniColumnDetailed : IDisposable
         int depth = (int)MathF.Ceiling((sceneBounds.ZMax - sceneBounds.ZMin) / voxelSizeUm);
 
         // ----------------------------------------------------------
-        // ШАГ 3: Создание входного тензора (Grid)
+        //  ШАГ 3: Создание входного тензора (Grid)
         // ----------------------------------------------------------
         long totalVoxels = (long)activeCount * depth * height * width;
 
-        // ==========================================================
-        // ПЕРЕИСПОЛЬЗОВАНИЕ ТЕНЗОРОВ (ABSOLUTE ZERO-ALLOCATION)
-        // ==========================================================
         if (_gridTensorBuffer is null)
             _gridTensorBuffer = new TensorBuffer(_device, totalVoxels);
         else
             _gridTensorBuffer.EnsureCapacity(totalVoxels);
 
-        // 1. Создаем срезы ровно под размер текущих данных
         using var gridTensor_Cpu_Flat = _gridTensorBuffer.Tensor_Cpu_Buffer!.slice(0, 0, totalVoxels, 1);
         using var gridTensor_device_Flat = _gridTensorBuffer.Tensor_device_Buffer.slice(0, 0, totalVoxels, 1);
 
-        // 2. Быстро очищаем память (зануляем) на уровне C++
         gridTensor_Cpu_Flat.zero_();
 
         long spatialSize = (long)depth * height * width;
         long areaSize = (long)height * width;
 
-        // 3. Получаем прямое окно (Span) в неуправляемую память CPU-тензора.
-        // Это работает мгновенно и не делает никаких копий.
         var gridTensorData = gridTensor_Cpu_Flat.data<float>();
 
-        // 4. Проецируем синапсы напрямую в память TorchSharp
         for (int a = 0; a < activeCount; a += 1)
         {
             var synapses = Axons[_activeAxons[a]].Synapses;
@@ -593,31 +744,27 @@ public sealed class MiniColumnDetailed : IDisposable
                 if (ix >= 0 && ix < width && iy >= 0 && iy < height && iz >= 0 && iz < depth)
                 {
                     long index = channelOffset + (iz * areaSize) + (iy * width) + ix;
-
-                    // Прямая запись в нативную память без P/Invoke!
-                    // Скорость записи идентична float* в C++
                     gridTensorData[index] = 1.0f;
                 }
             }
         }
 
-        // 5. Копируем данные из оперативной памяти (CPU) в видеопамять (Device)
         gridTensor_device_Flat.copy_(gridTensor_Cpu_Flat);
 
-        // 6. Формируем итоговый 5D-view для свертки
         Tensor gridTensor_device = gridTensor_device_Flat.view(1, activeCount, depth, height, width);
 
         // ----------------------------------------------------------
-        //  ШАГ 4: Создание сферического ядра для 3D-свертки
+        //  ШАГ 4: Создание сферического ядра для 3D-свёртки
         // ----------------------------------------------------------
         int kRad = (int)MathF.Ceiling(radiusUm / voxelSizeUm);
-        int kSize = kRad * 2 + 1; // Нечетный размер ядра для наличия четкого центра
+        int kSize = kRad * 2 + 1; // Нечётный размер ядра для наличия чёткого центра
 
         long weightElementsCount = activeCount * kSize * kSize * kSize;
         if (_weightTensorBuffer is null)
             _weightTensorBuffer = new TensorBuffer(_device, weightElementsCount);
         else
             _weightTensorBuffer.EnsureCapacity(weightElementsCount);
+
         using var weightTensor_Cpu_Flat = _weightTensorBuffer.Tensor_Cpu_Buffer!.slice(0, 0, weightElementsCount, 1);
         using var weightTensor_device_Flat = _weightTensorBuffer.Tensor_device_Buffer.slice(0, 0, weightElementsCount, 1);
         weightTensor_Cpu_Flat.zero_();
@@ -628,7 +775,9 @@ public sealed class MiniColumnDetailed : IDisposable
 
         // Формируем сферу. Если дистанция от центра <= радиус, ставим 1.0
         for (int kz = -kRad; kz <= kRad; kz += 1)
+        {
             for (int ky = -kRad; ky <= kRad; ky += 1)
+            {
                 for (int kx = -kRad; kx <= kRad; kx += 1)
                 {
                     float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSizeUm;
@@ -646,16 +795,18 @@ public sealed class MiniColumnDetailed : IDisposable
                         }
                     }
                 }
+            }
+        }
 
         weightTensor_device_Flat.copy_(weightTensor_Cpu_Flat);
 
-        // Тензор весов свертки: [OutChannels=activeCount, InChannels=1 (из-за groups), kD, kH, kW]
+        // Тензор весов свёртки: [OutChannels=activeCount, InChannels=1 (из-за groups), kD, kH, kW]
         using var weightTensor_device = weightTensor_device_Flat.view(activeCount, 1, kSize, kSize, kSize);
 
         // ----------------------------------------------------------
         //  ШАГ 5: Выполнение вычислений через TorchSharp
         // ----------------------------------------------------------
-        // Depthwise 3D свертка (каждый аксон обрабатывается независимо)
+        // Depthwise 3D свёртка (каждый аксон обрабатывается независимо)
         using var convResult_device = nn.functional.conv3d(
             gridTensor_device,
             weightTensor_device,
@@ -665,13 +816,13 @@ public sealed class MiniColumnDetailed : IDisposable
         // Бинаризуем результат: если > 0, значит синапсы этого аксона есть в радиусе R
         using var presentMask_device = convResult_device.gt(0.0f).to_type(ScalarType.Float32);
 
-        // Суммируем измерения вдоль каналов (dim=1), чтобы получить число уникальных аксонов
+        // Суммируем по каналам (dim=1), чтобы получить число уникальных аксонов
         using var activeAxonsCount_device = presentMask_device.sum(new long[] { 1 }, keepdim: false);
 
-        // Оставляем только те воксели, где число аксонов >= N
+        // Оставляем только воксели, где число аксонов >= N
         using var validZonesMask_device = activeAxonsCount_device.ge(minActiveAxons);
 
-        // Получаем индексы (координаты) всех успешных вокселей. 
+        // Получаем индексы (координаты) всех успешных вокселей.
         // Формат: [Кол-во вокселей, 4 (Batch, Z, Y, X)]
         using var nonZeroIndices_device = validZonesMask_device.nonzero();
 
@@ -745,18 +896,20 @@ public sealed class MiniColumnDetailed : IDisposable
 
     private readonly FastList<int> _activeAxons = new FastList<int>(capacity: AxonCount);
 
-    // Кэшированный тензор для переиспользования памяти
+    // Кэшированные тензоры для переиспользования памяти
     private TensorBuffer? _gridTensorBuffer;
-
     private TensorBuffer? _weightTensorBuffer;
 }
 
+// ============================================================
+//  БУФЕР ТЕНЗОРА (переиспользуемая память GPU/CPU)
+// ============================================================
 public class TensorBuffer : IDisposable
 {
     public TensorBuffer(Device device, long capacity)
     {
         Device = device;
-        Tensor_Buffer_Capacity = capacity; //Math.Max(totalVoxels, Tensor_Buffer_Capacity == 0 ? totalVoxels : Tensor_Buffer_Capacity * 2);
+        Tensor_Buffer_Capacity = capacity;
 
         Tensor_device_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: device).DetachFromDisposeScope();
         Tensor_Cpu_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
@@ -770,7 +923,7 @@ public class TensorBuffer : IDisposable
         Tensor_device_Buffer.Dispose();
         Tensor_Cpu_Buffer.Dispose();
 
-        Tensor_Buffer_Capacity = capacity; //Math.Max(totalVoxels, Tensor_Buffer_Capacity == 0 ? totalVoxels : Tensor_Buffer_Capacity * 2);
+        Tensor_Buffer_Capacity = capacity;
 
         Tensor_device_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: Device).DetachFromDisposeScope();
         Tensor_Cpu_Buffer = empty(new long[] { Tensor_Buffer_Capacity }, dtype: ScalarType.Float32, device: CPU).DetachFromDisposeScope();
@@ -780,7 +933,8 @@ public class TensorBuffer : IDisposable
 
     public Tensor Tensor_device_Buffer;
     public Tensor Tensor_Cpu_Buffer;
-    // Текущая вместимость (в элементах), чтобы понимать, когда нужно перевыделять память
+
+    /// <summary>Текущая вместимость (в элементах), чтобы понимать, когда нужно перевыделять память.</summary>
     public long Tensor_Buffer_Capacity = 0;
 
     public void Dispose()
@@ -789,69 +943,3 @@ public class TensorBuffer : IDisposable
         Tensor_Cpu_Buffer?.Dispose();
     }
 }
-
-
-//// ============================================================
-//    //  ВСПОМОГАТЕЛЬНАЯ ФУНКЦИЯ: ЯЧЕЙКА ПРОСТРАНСТВЕННОГО ИНДЕКСА
-//    // ============================================================
-//    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-//    private (int, int, int) GetCell(Vector3 pos)
-//    {
-//        int ix = (int)MathF.Floor(pos.X / _cellSizeUm);
-//        int iy = (int)MathF.Floor(pos.Y / _cellSizeUm);
-//        int iz = (int)MathF.Floor(pos.Z / _cellSizeUm);
-//        return (ix, iy, iz);
-//    }
-
-//// ----------------------------------------------------------
-////  ШАГ 3: Построить пространственный индекс по синапсам.
-////  Ячейка = cube со стороной _cellSize.
-////  После заполнения всех аксонов _cellSize берём
-////  как среднее расстояние между синапсами * 4.
-//// ----------------------------------------------------------
-//_cellSizeUm = 15.0f; // мкм, исходя из плотности синапсов
-
-//// ----------------------------------------------------------
-////  ПРОСТРАНСТВЕННЫЙ ИНДЕКС ДЛЯ БЫСТРОГО ПОИСКА СИНАПСОВ
-////
-////  Реализован как словарь: ключ = целочисленная 3D-ячейка
-////  (ix, iy, iz) пространственной решётки, значение = список
-////  (индекс_аксона, индекс_синапса).
-////
-////  Это позволяет при поиске зон радиуса R перебирать только
-////  синапсы в ближайших ячейках, а не все 200 × 10 000 = 2M.
-//// ----------------------------------------------------------
-//private readonly Dictionary<(int, int, int), FastList<(int axonIdx, int synIdx)>> _spatialIndex;
-
-///// <summary>Размер ячейки пространственного индекса (мкм).</summary>
-//private float _cellSizeUm;
-
-
-//// ============================================================
-////  ПОСТРОЕНИЕ ПРОСТРАНСТВЕННОГО ИНДЕКСА
-//// ============================================================
-///// <summary>
-///// Строит пространственный хэш-индекс для всех синапсов.
-///// Ключ = целочисленная ячейка (ix, iy, iz).
-///// Ячейка имеет размер _cellSize мкм.
-/////
-///// Это позволяет выполнять поиск за O(k) вместо O(2M),
-///// где k — число синапсов в нескольких соседних ячейках.
-///// </summary>
-//private void BuildSpatialIndex()
-//{
-//    for (int a = 0; a < AxonCount; a += 1)
-//    {
-//        var synapses = Axons[a].Synapses;
-//        for (int s_index = 0; s_index < synapses.Length; s_index += 1)
-//        {
-//            var cell = GetCell(synapses[s_index].Position);
-//            if (!_spatialIndex.TryGetValue(cell, out var list))
-//            {
-//                list = new FastList<(int, int)>(capacity: 8);
-//                _spatialIndex[cell] = list;
-//            }
-//            list.Add((a, s_index));
-//        }
-//    }
-//}
