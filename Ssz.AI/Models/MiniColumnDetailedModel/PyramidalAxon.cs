@@ -15,7 +15,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //  Источники: Mohan et al. 2015 (Cerebral Cortex),
 //             Bhatt et al. 2009 (activity-dependent branching).
 // ============================================================
-public sealed class Axon
+public sealed class PyramidalAxon : IAxon
 {
     /// <summary>Индекс аксона в миниколонке (0–199).</summary>
     public readonly int Index;
@@ -37,7 +37,13 @@ public sealed class Axon
 
     public bool Temp_IsActive;
 
-    public Axon(int index, AxonPoint root, Synapse[] synapses)
+    AxonPoint IAxon.Root => Root;
+
+    Synapse[] IAxon.Synapses => Synapses;
+
+    bool IAxon.IsActive => Temp_IsActive;    
+
+    public PyramidalAxon(int index, AxonPoint root, Synapse[] synapses)
     {
         Index = index;
         Root = root;

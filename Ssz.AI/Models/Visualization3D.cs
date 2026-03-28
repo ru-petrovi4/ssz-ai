@@ -34,28 +34,66 @@ public static class Visualization3D
         model3DScene.Points = new List<Point3DWithColor>(1024);
         model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
 
-        if (miniColumnDetailed.Temp_ActiveZones is not null)
+        AddActiveZones(model3DScene, miniColumnDetailed.Temp_PyramidalZones, System.Drawing.Color.White, ref sceneBounds);
+
+        AddAxons(
+            model3DScene,
+            miniColumnDetailed.PyramidalAxons,             
+            ref sceneBounds,
+            inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
+            activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF));
+
+        AddAxons(
+            model3DScene,
+            miniColumnDetailed.ThalamocorticalInput.Axons,            
+            ref sceneBounds,
+            inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
+            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
+
+        sceneBounds.Normalize(model3DScene);
+
+        return model3DScene;
+    }    
+
+    private static void AddActiveZones(Model3DScene model3DScene, FastList<ActiveZone>? activeZones, System.Drawing.Color color, ref SceneBounds sceneBounds)
+    {
+        if (activeZones is null)
+            return;        
+        
+        for (int i = 0; i < activeZones.Count; i += 1)
         {
-            int displayCount = Math.Min(miniColumnDetailed.Temp_ActiveZones.Count, 10000);
-            for (int i = 0; i < displayCount; i += 1)
+            var z = activeZones[i];
+
+            sceneBounds.Update(z.Center);
+            
+            model3DScene.Points!.Add(new Point3DWithColor
             {
-                var z = miniColumnDetailed.Temp_ActiveZones[i];
+                Position = z.Center,
+                Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            });
+        }        
+    }
 
-                sceneBounds.Update(z.Center);
+    private static void AddAxons(
+        Model3DScene model3DScene, 
+        IAxon[]? axons,         
+        ref SceneBounds sceneBounds,
+        System.Drawing.Color inactiveColor,
+        System.Drawing.Color activeColor)
+    {
+        if (axons is null)
+            return;
 
-                System.Drawing.Color color = System.Drawing.Color.White;
-                model3DScene.Points.Add(new Point3DWithColor
-                {
-                    Position = z.Center,
-                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                });
-            }
-        }
-
-        for (int i = 0; i < miniColumnDetailed.Axons.Length; i += 1) //
+        for (int i = 0; i < axons.Length; i += 1) //
         {
-            var axon = miniColumnDetailed.Axons[i];
-            model3DScene.Lines.AddRange(GetLines(null, axon.Root, ref sceneBounds, axon.Temp_IsActive));
+            var axon = axons[i];
+            model3DScene.Lines!.AddRange(GetLines(
+                null, 
+                axon.Root, 
+                ref sceneBounds, 
+                axon.IsActive,
+                inactiveColor,
+                activeColor));
 
             for (int j = 0; j < axon.Synapses.Length; j += 1)
             {
@@ -71,22 +109,24 @@ public static class Visualization3D
                 //});
             }
         }
-
-        sceneBounds.Normalize(model3DScene);
-
-        return model3DScene;
     }
 
-    public static List<List<Point3DWithColor>> GetLines(AxonPoint? preStartAxonPoint, AxonPoint startAxonPoint, ref SceneBounds sceneBounds, bool isActive)
+    private static List<List<Point3DWithColor>> GetLines(
+        AxonPoint? preStartAxonPoint, 
+        AxonPoint startAxonPoint, 
+        ref SceneBounds sceneBounds, 
+        bool isActive,
+        System.Drawing.Color inactiveColor,
+        System.Drawing.Color activeColor)
     {        
         List<List<Point3DWithColor>> lines = new(1024);
         List<Point3DWithColor> line = new();
 
         System.Drawing.Color color;
         if (isActive)
-            color = System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF);
+            color = activeColor;
         else
-            color = System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF);
+            color = inactiveColor;
 
         if (preStartAxonPoint is not null)
             line.Add(new Point3DWithColor
@@ -115,7 +155,13 @@ public static class Visualization3D
 
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
-                lines.AddRange(GetLines(axonPoint, axonPoint.Next[i], ref sceneBounds, isActive));
+                lines.AddRange(GetLines(
+                    axonPoint, 
+                    axonPoint.Next[i], 
+                    ref sceneBounds, 
+                    isActive,
+                    inactiveColor,
+                    activeColor));
             }
             break;
         }

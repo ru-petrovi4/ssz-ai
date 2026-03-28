@@ -903,9 +903,9 @@ public class Model01 : IDisposable
     public void Create_MiniColumnDetailed(Random random)
     {        
         Logger.LogInformation("=== Модель миниколонки коры мозга ===");
-        Logger.LogInformation($"Аксонов: {MiniColumnDetailedModel.MiniColumnDetailed.AxonCount}");
+        Logger.LogInformation($"Аксонов: {MiniColumnDetailedModel.MiniColumnDetailed.PyramidalAxonsCount}");
         Logger.LogInformation($"Синапсов на аксон: {MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon}");
-        Logger.LogInformation($"Всего синапсов: {(long)MiniColumnDetailedModel.MiniColumnDetailed.AxonCount * MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon:N0}");
+        Logger.LogInformation($"Всего синапсов: {(long)MiniColumnDetailedModel.MiniColumnDetailed.PyramidalAxonsCount * MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon:N0}");
         Logger.LogInformation($"");
 
         // ----------------------------------------------------------
@@ -958,7 +958,7 @@ public class Model01 : IDisposable
         }
         
         MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
-        var activeZones = MiniColumnDetailed.Temp_ActiveZones;        
+        var activeZones = MiniColumnDetailed.Temp_ConvergenceZones;        
 
         if (log && activeZones is not null)
         {
