@@ -82,6 +82,11 @@ public sealed class MiniColumnDetailed : IDisposable
     /// <summary>Радиус миниколонки в горизонтальной плоскости (мкм).</summary>
     public const float ColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
 
+    /// <summary>
+    ///    Радиус, внутри которого учитываются синапсы.
+    /// </summary>
+    public const float SynapsesRadiusUs = 30.0f;   // диаметр ~40 мкм
+
     /// <summary>Высота миниколонки (мкм), покрывает слои II–VI.</summary>
     public const float ColumnHeightUm = 2000.0f;
 
@@ -102,7 +107,7 @@ public sealed class MiniColumnDetailed : IDisposable
     public FastList<ActiveZone>? Temp_ThalamocorticalZones;
 
     /// <summary>Зоны совместной активации: рядом есть и Зоны 1, и Зоны 2 (Зоны 3).</summary>
-    public FastList<ActiveZone>? Temp_ConvergenceZones;
+    public FastList<ActiveZone>? Temp_ConvergenceZones;    
 
     /// <summary>
     /// Вычисляет зоны активных синапсов раздельно для пирамидальных аксонов
@@ -560,10 +565,8 @@ public sealed class MiniColumnDetailed : IDisposable
                 basePos.Z + (_random.NextSingle() - 0.5f) * jitter * 2f
             );
 
-            // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют
-            float r = ColumnRadiusUm * 2.0f;
-            if (synPos.X > -r && synPos.X < r &&
-                    synPos.Y > -r && synPos.Y < r)
+            // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют            
+            if (GetLengthXY(synPos) < SynapsesRadiusUs)
                 synapses.Add(new Synapse(synPos));
 
             // Продвигаемся дальше по отрезку на заданный равномерный шаг
@@ -844,6 +847,11 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         return result.Count > 0 ? result : null;
+    }
+
+    public static float GetLengthXY(Vector3 position)
+    {
+        return MathF.Sqrt((position.X * position.X) + (position.Y * position.Y));
     }
 
     private readonly FastList<int> _activePyramidalAxons = new FastList<int>(capacity: PyramidalAxonsCount);

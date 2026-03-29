@@ -43,12 +43,12 @@ public static class Visualization3D
             inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
             activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF));
 
-        AddAxons(
-            model3DScene,
-            miniColumnDetailed.ThalamocorticalInput.Axons,            
-            ref sceneBounds,
-            inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
-            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
+        //AddAxons(
+        //    model3DScene,
+        //    miniColumnDetailed.ThalamocorticalInput.Axons,            
+        //    ref sceneBounds,
+        //    inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
+        //    activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
 
         sceneBounds.Normalize(model3DScene);
 
@@ -149,19 +149,23 @@ public static class Visualization3D
                 break;
             if (axonPoint.Next.Count == 1)
             {
-                axonPoint = axonPoint.Next[0];
+                axonPoint = axonPoint.Next[0];                
                 continue;
             }
 
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
-                lines.AddRange(GetLines(
-                    axonPoint, 
-                    axonPoint.Next[i], 
-                    ref sceneBounds, 
-                    isActive,
-                    inactiveColor,
-                    activeColor));
+                AxonPoint nextAxonPoint = axonPoint.Next[i];
+                if (MiniColumnDetailed.GetLengthXY(nextAxonPoint.Position) < MiniColumnDetailed.SynapsesRadiusUs)
+                {
+                    lines.AddRange(GetLines(
+                        axonPoint,
+                        nextAxonPoint,
+                        ref sceneBounds,
+                        isActive,
+                        inactiveColor,
+                        activeColor));
+                }
             }
             break;
         }

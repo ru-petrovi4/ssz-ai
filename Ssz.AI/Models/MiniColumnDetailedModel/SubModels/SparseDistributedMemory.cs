@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Numerics;
 
-namespace Ssz.AI.Models.MiniColumnDetailedModel;
+namespace Ssz.AI.Models.MiniColumnDetailedModel.SubModels;
 
 public class SparseDistributedMemory
 {

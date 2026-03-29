@@ -433,8 +433,7 @@ public sealed class ThalamocorticalAxon : IAxon
 
         float step              = totalLength / totalSynapses;
         int   segIdx            = 0;
-        float distInSeg         = step * 0.5f;
-        float filterRadius      = columnRadiusUm * 2.5f; // чуть шире колонки
+        float distInSeg         = step * 0.5f;        
 
         for (int s = 0; s < totalSynapses; s += 1)
         {
@@ -456,11 +455,8 @@ public sealed class ThalamocorticalAxon : IAxon
             );
 
             // Фильтр: только бутоны внутри расширенного радиуса колонки
-            if (synPos.X > -filterRadius && synPos.X < filterRadius &&
-                synPos.Y > -filterRadius && synPos.Y < filterRadius)
-            {
+            if (MiniColumnDetailed.GetLengthXY(synPos) < MiniColumnDetailed.SynapsesRadiusUs)
                 synapses.Add(new Synapse(synPos));
-            }
 
             distInSeg += step;
         }
