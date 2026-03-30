@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -42,7 +42,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //
 //  Координатная система: совпадает с MiniColumnDetailed
 //    X, Y — горизонтальные оси (мкм)
-//    Z     — вертикальная ось (0 = поверхность, ↑ = глубже)
+//    Z     — вертикальная ось (0 = поверхность, отрицательные Z глубже)
 //
 //  Источники:
 //    - Blasdel & Lund 1983, J. Neurosci. 3:1389–1413
@@ -93,7 +93,7 @@ public sealed class ThalamocorticalAxon : IAxon
 
     // ----------------------------------------------------------
     //  ЦЕЛЕВЫЕ Z-ДИАПАЗОНЫ ПО ТИПАМ (мкм, система V1)
-    //  Слои в нашей СК (Z=0 поверхность, Z↑ глубже):
+    //  Слои в нашей СК (Z=0 поверхность, Z глубже):
     //    L1:    0–80
     //    L2/3:  80–600   (blob-зоны в верхней части)
     //    L4Cα:  600–750  (магноцеллюлярный вход)
@@ -101,12 +101,13 @@ public sealed class ThalamocorticalAxon : IAxon
     //    L5:    900–1400
     //    L6:    1400–2000
     // ----------------------------------------------------------
-    private const float MTargetZMin = 600.0f;   // L4Cα
-    private const float MTargetZMax = 750.0f;
-    private const float PTargetZMin = 750.0f;   // L4Cβ
-    private const float PTargetZMax = 900.0f;
-    private const float KTargetZMin = 0.0f;     // L1
-    private const float KTargetZMax = 80.0f;    // K также в blob L2/3 (Z~80–300)
+        
+    private const float KTargetZMax = 0.0f;    // K также в blob L2/3 (Z~80–300)
+    private const float KTargetZMin = -80.0f;     // L1
+    private const float MTargetZMax = -600.0f;
+    private const float MTargetZMin = -750.0f;   // L4Cα
+    private const float PTargetZMax = -750.0f;
+    private const float PTargetZMin = -900.0f;   // L4Cβ
 
     // ----------------------------------------------------------
     //  ДАННЫЕ АКСОНА
@@ -192,7 +193,7 @@ public sealed class ThalamocorticalAxon : IAxon
         //  ШАГ 1: Точка входа аксона в миниколонку
         //  Аксон приходит снизу из белого вещества.
         //  Точка входа — случайная позиция в пределах радиуса колонки
-        //  на Z = columnHeightUm + небольшой запас.
+        //  на Z вниз columnHeightUm + небольшой запас.
         // ----------------------------------------------------------
         float entryX, entryY;
         do
@@ -202,7 +203,7 @@ public sealed class ThalamocorticalAxon : IAxon
         }
         while (entryX * entryX + entryY * entryY > columnRadiusUm * columnRadiusUm);
 
-        float entryZ = columnHeightUm + 50.0f; // ~50 мкм ниже дна колонки
+        float entryZ = -columnHeightUm - 50.0f; // ~50 мкм ниже дна колонки
         var entryPos  = new Vector3(entryX, entryY, entryZ);
         var root      = new AxonPoint(entryPos);
 
@@ -214,9 +215,9 @@ public sealed class ThalamocorticalAxon : IAxon
         //  вертикально через белое вещество и нижние слои коры.
         // ----------------------------------------------------------
         float targetZ    = targetZMin + random.NextSingle() * (targetZMax - targetZMin);
-        float ascentDist = entryZ - targetZ; // расстояние подъёма
+        float ascentDist = targetZ - entryZ; // расстояние подъёма
         int   ascentSteps = Math.Max(4, (int)(ascentDist / 100.0f));
-        float stepZ       = -ascentDist / ascentSteps; // шаг вверх (уменьшение Z)
+        float stepZ       = ascentDist / ascentSteps; // шаг вверх (увеличение Z)
 
         AxonPoint current = root;
         float     jitter  = 2.0f; // мкм горизонтального блуждания на шаг

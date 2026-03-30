@@ -239,11 +239,12 @@ public sealed class MiniColumnDetailed : IDisposable
         // L V: 900–1400, L VI: 1400–2000
         ReadOnlySpan<(float zMin, float zMax, int neuronCount)> layers =
         [
-            (0f,    200f,   20),   // слой II
-            (200f,  600f,   50),   // слой III
-            (600f,  900f,   30),   // слой IV
-            (900f,  1400f,  60),   // слой V
-            (1400f, 2000f,  40),   // слой VI
+            (-80f,      0f,    0),   // слой I
+            (-200f,   -80f,   20),   // слой II
+            (-600f,  -200f,   50),   // слой III
+            (-900f,  -600f,   30),   // слой IV
+            (-1400f,  -900f,  60),   // слой V
+            (-2000f,  -1400f, 40),   // слой VI
         ];
         // Итого: 200 нейронов распределены по 5 слоям.
 
@@ -311,7 +312,7 @@ public sealed class MiniColumnDetailed : IDisposable
             var pos = new Vector3(
                 somaPos.X + (_random.NextSingle() - 0.5f) * jitter,
                 somaPos.Y + (_random.NextSingle() - 0.5f) * jitter,
-                somaPos.Z + p * aisStep  // идёт вниз (увеличение Z)
+                somaPos.Z - p * aisStep  // идёт вниз (уменьшение Z)
             );
             var next = new AxonPoint(pos);
             current.Next.Add(next);
@@ -330,7 +331,7 @@ public sealed class MiniColumnDetailed : IDisposable
         var initDir = new Vector3(
             MathF.Cos(angle) * 0.9f,
             MathF.Sin(angle) * 0.9f,
-            0.2f + _random.NextSingle() * 0.2f  // небольшой вертикальный компонент
+            -0.2f - _random.NextSingle() * 0.2f  // небольшой вертикальный компонент
         );
         initDir = Vector3.Normalize(initDir);
 
@@ -393,7 +394,7 @@ public sealed class MiniColumnDetailed : IDisposable
             var pos = current.Position + dir * stepLen;
 
             // Ограничение Z: аксон не выходит за пределы колонки
-            pos.Z = Math.Clamp(pos.Z, 0f, ColumnHeightUm);
+            pos.Z = Math.Clamp(pos.Z, -ColumnHeightUm, 0f);
 
             var next = new AxonPoint(pos);
             current.Next.Add(next);
