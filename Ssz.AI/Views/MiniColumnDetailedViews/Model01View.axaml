@@ -71,7 +71,12 @@
       <ScrollBar Name="LevelScrollBar5" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
     </Grid>
     <StackPanel Grid.Row="2" Orientation="Horizontal">
-      <model3D:Model3DControl Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" />
+      <Grid>        
+        <model3D:Model3DControl Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" />     
+        <Border Width="48" Height="48" x:Name="BusyImage" BorderBrush="Black" BorderThickness="2" Background="White" HorizontalAlignment="Right" VerticalAlignment="Top" Padding="2">
+          <Svg Path="/Assets/clock.svg" Stretch="Uniform"></Svg>
+        </Border>
+      </Grid>            
       <localViews:ImagesSet Name="ImagesSet1" Height="300" VerticalAlignment="Top" />      
     </StackPanel>
 </Grid>

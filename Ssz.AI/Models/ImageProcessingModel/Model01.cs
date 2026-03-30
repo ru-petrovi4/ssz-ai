@@ -1354,12 +1354,12 @@ public class Model01 : IDisposable
         /// <summary>
         ///     радиус зоны в мкм
         /// </summary>
-        public float ZoneRadiusUm { get; set; } = 7.0f;
+        public float ZoneRadiusUm { get; set; } = 14.0f;
 
         /// <summary>
         ///     минимум N уникальных активных аксонов
         /// </summary>
-        public int ActivatedSynapsesCount { get; set; } = 3;
+        public int ActivatedSynapsesCount { get; set; } = 4;
     }
 }
 

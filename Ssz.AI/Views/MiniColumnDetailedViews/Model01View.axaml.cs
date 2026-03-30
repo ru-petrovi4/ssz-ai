@@ -209,6 +209,19 @@ public partial class Model01View : UserControl
         Model!.Create_MiniColumnDetailed(_random);
     }
 
+    private bool RefreshTaskIsRunning
+    {
+        get { return _refreshTaskIsRunning; }  
+        set
+        {
+            _refreshTaskIsRunning = value;
+            if (_refreshTaskIsRunning)
+                BusyImage.IsVisible = true;
+            else 
+                BusyImage.IsVisible = false;
+        }
+    }
+
     private bool _refreshTaskIsRunning;
     private bool _refreshTaskIsPending;
 
@@ -216,13 +229,13 @@ public partial class Model01View : UserControl
     {
         Refresh_ImagesSet1();
 
-        if (_refreshTaskIsRunning)
+        if (RefreshTaskIsRunning)
         {
             _refreshTaskIsPending = true;
             return;
         }
 
-        _refreshTaskIsRunning = true;
+        RefreshTaskIsRunning = true;
 
         try
         {
@@ -242,7 +255,7 @@ public partial class Model01View : UserControl
         }
         finally
         {
-            _refreshTaskIsRunning = false;
+            RefreshTaskIsRunning = false;
         }
     }
 
