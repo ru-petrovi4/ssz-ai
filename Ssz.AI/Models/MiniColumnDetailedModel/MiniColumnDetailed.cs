@@ -85,7 +85,7 @@ public sealed class MiniColumnDetailed : IDisposable
     /// <summary>
     ///    Радиус, внутри которого учитываются синапсы.
     /// </summary>
-    public const float SynapsesRadiusUs = 30.0f;   // диаметр ~40 мкм
+    public const float SynapsesRadiusUs = 25.0f;   // диаметр ~40 мкм
 
     /// <summary>Высота миниколонки (мкм), покрывает слои II–VI.</summary>
     public const float ColumnHeightUm = 2000.0f;
