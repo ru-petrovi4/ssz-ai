@@ -1,4 +1,4 @@
-using Avalonia.Media;
+﻿using Avalonia.Media;
 using Ssz.Utils;
 using Ssz.Utils.Avalonia.Model3D;
 using System;

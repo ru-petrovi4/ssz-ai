@@ -1,4 +1,4 @@
-namespace Ssz.AI.Models.MiniColumnDetailedModel;
+﻿namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
 // ============================================================
 //  АКСОН

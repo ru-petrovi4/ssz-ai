@@ -1,4 +1,4 @@
-using Ssz.Utils;
+﻿using Ssz.Utils;
 using System.Collections.Generic;
 using System.Numerics;
 
