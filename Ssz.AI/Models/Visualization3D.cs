@@ -43,12 +43,12 @@ public static class Visualization3D
             inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
             activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF));
 
-        //AddAxons(
-        //    model3DScene,
-        //    miniColumnDetailed.ThalamocorticalInput.Axons,
-        //    ref sceneBounds,
-        //    inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
-        //    activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
+        AddAxons(
+            model3DScene,
+            miniColumnDetailed.ThalamocorticalInput.Axons,
+            ref sceneBounds,
+            inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
+            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
 
         sceneBounds.Normalize(model3DScene);
 
