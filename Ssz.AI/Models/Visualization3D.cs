@@ -41,14 +41,16 @@ public static class Visualization3D
             miniColumnDetailed.PyramidalAxons,             
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
-            activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF));
+            activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
+            hideFarLines: true);
 
         AddAxons(
             model3DScene,
             miniColumnDetailed.ThalamocorticalInput.Axons,
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
-            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44));
+            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
+            hideFarLines: false);
 
         sceneBounds.Normalize(model3DScene);
 
@@ -79,7 +81,8 @@ public static class Visualization3D
         IAxon[]? axons,         
         ref SceneBounds sceneBounds,
         System.Drawing.Color inactiveColor,
-        System.Drawing.Color activeColor)
+        System.Drawing.Color activeColor,
+        bool hideFarLines)
     {
         if (axons is null)
             return;
@@ -93,7 +96,8 @@ public static class Visualization3D
                 ref sceneBounds, 
                 axon.IsActive,
                 inactiveColor,
-                activeColor));
+                activeColor,
+                hideFarLines));
 
             for (int j = 0; j < axon.Synapses.Length; j += 1)
             {
@@ -117,7 +121,9 @@ public static class Visualization3D
         ref SceneBounds sceneBounds, 
         bool isActive,
         System.Drawing.Color inactiveColor,
-        System.Drawing.Color activeColor)
+        System.Drawing.Color activeColor,
+        bool hideFarLines
+        )
     {        
         List<List<Point3DWithColor>> lines = new(1024);
         List<Point3DWithColor> line = new();
@@ -156,7 +162,7 @@ public static class Visualization3D
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
                 AxonPoint nextAxonPoint = axonPoint.Next[i];
-                if (MiniColumnDetailed.GetLengthXY(nextAxonPoint.Position) < MiniColumnDetailed.SynapsesRadiusUs)
+                if (!hideFarLines || MiniColumnDetailed.GetLengthXY(nextAxonPoint.Position) < MiniColumnDetailed.SynapsesRadiusUs)
                 {
                     lines.AddRange(GetLines(
                         axonPoint,
@@ -164,7 +170,8 @@ public static class Visualization3D
                         ref sceneBounds,
                         isActive,
                         inactiveColor,
-                        activeColor));
+                        activeColor,
+                        hideFarLines));
                 }
             }
             break;

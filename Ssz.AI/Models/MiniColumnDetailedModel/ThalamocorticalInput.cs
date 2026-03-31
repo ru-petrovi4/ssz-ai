@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Ssz.Utils;
@@ -8,28 +8,47 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 // ============================================================
 //  ТАЛАМОКОРТИКАЛЬНЫЙ ВХОДНОЙ БЛОК МИНИКОЛОНКИ
 //
-//  Содержит все афферентные ЛКТ-аксоны, проецирующиеся
-//  в данную миниколонку первичной зрительной коры V1.
+//  Содержит ВСЕ афферентные ЛКТ-аксоны, синапсы которых
+//  попадают в данную миниколонку первичной зрительной коры V1.
 //
-//  Численные оценки количества ТК-аксонов на миниколонку:
+//  Включает два класса аксонов:
 //
-//    Всего LGN-нейронов (один глаз) ≈ 1.0–1.5 млн (человек)
-//    Площадь V1 ≈ 2500–3000 мм² (один полушарий)
-//    Площадь одной миниколонки ≈ π × 0.02² мм² ≈ 0.00126 мм²
-//    Миниколонок в V1 ≈ 2500 / 0.00126 ≈ ~2 млн
+//  1. «Собственные» аксоны (OwnAxons) — аксоны, чей ствол
+//     поднимается из WM непосредственно под данной колонкой.
+//     Точка входа равномерно случайна внутри columnRadiusUm.
 //
-//    Один магноцеллюлярный аксон покрывает ~0.3–0.4 мм²
-//    → ~300 миниколонок пересекает один аксон
-//    → на одну миниколонку приходится 1.5 M / (300 M×ratio)
+//  2. «Соседские» аксоны (NeighborAxons) — полностью смоделированные
+//     ТК-аксоны, чей геометрический центр арбора принадлежит соседней
+//     колонке, но сам арбор (из-за большого радиуса) перекрывается
+//     с данной колонкой.
 //
-//    Практическая оценка (Blasdel & Lund 1983; García-Marín 2019):
-//      M-аксонов на миниколонку:  ~3–5
-//      P-аксонов на миниколонку:  ~8–15
-//      K-аксонов на миниколонку:  ~2–4
+//     Биологическая основа:
+//       - M-арбор: диаметр ~600 мкм → один M-аксон охватывает
+//         ~300 миниколонок (диаметр 40 мкм каждая).
+//         → аксон, чей ствол входит на расстоянии до 280 мкм от центра
+//         данной колонки, может иметь синапсы внутри неё.
+//       - P-арбор: диаметр ~350 мкм → радиус перекрытия до 155 мкм.
+//       - K-арбор: диаметр ~250 мкм → радиус перекрытия до 105 мкм.
 //
-//    Здесь используем консервативные значения для одного
-//    глаза/поля зрения (монокулярный вход):
-//      M: 4, P: 10, K: 3  (итого 17 ТК-аксонов)
+//     Число «соседских» аксонов каждого типа оценивается как
+//     число аксонов в кольцевой зоне [columnRadius .. arborRadius].
+//     Источник: Blasdel & Lund 1983; García-Marín et al. 2019
+//
+//  Численные оценки «собственных» аксонов на миниколонку:
+//    M: 4, P: 10, K: 3  (итого 17)
+//    Источник: Callaway 1998; García-Marín et al. 2019
+//
+//  Численные оценки «соседских» аксонов:
+//    Площадь кольца [R_col .. R_arbor]:
+//      M: π(300²-20²)/π(300²) ≈ 0.996 × (M на колонку × кол-во колонок
+//         в кольце) — упрощённо берём 8 ближайших позиций × 4 = 32
+//         M-аксона, но большинство имеют лишь несколько синапсов внутри.
+//         Для модели достаточно взять ~8 соседских M-аксонов (из
+//         непосредственно примыкающих колонок).
+//    Аналогично: P-соседских ≈ 20, K-соседских ≈ 6.
+//
+//  Соседские аксоны моделируются ПОЛНОСТЬЮ (от WM снизу),
+//  с точкой входа в кольце [columnRadiusUm .. arborRadius].
 //
 //  Источники:
 //    - Blasdel & Lund 1983, J. Neurosci. 3:1389–1413
@@ -40,86 +59,198 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 public sealed class ThalamocorticalInput
 {
     // ----------------------------------------------------------
-    //  КОЛИЧЕСТВО ТК-АКСОНОВ ПО ТИПАМ (на одну миниколонку)
+    //  КОЛИЧЕСТВО СОБСТВЕННЫХ ТК-АКСОНОВ ПО ТИПАМ
     // ----------------------------------------------------------
 
-    /// <summary>Число магноцеллюлярных (M) аксонов на миниколонку.</summary>
-    public const int MAxonCount = 4;
+    /// <summary>Число собственных магноцеллюлярных (M) аксонов.</summary>
+    public const int OwnMAxonCount = 4;
 
-    /// <summary>Число парвоцеллюлярных (P) аксонов на миниколонку.</summary>
-    public const int PAxonCount = 10;
+    /// <summary>Число собственных парвоцеллюлярных (P) аксонов.</summary>
+    public const int OwnPAxonCount = 10;
 
-    /// <summary>Число конийоцеллюлярных (K) аксонов на миниколонку.</summary>
-    public const int KAxonCount = 3;
+    /// <summary>Число собственных конийоцеллюлярных (K) аксонов.</summary>
+    public const int OwnKAxonCount = 3;
 
-    /// <summary>Общее число таламокортикальных афферентных аксонов.</summary>
-    public const int TotalAxonCount = MAxonCount + PAxonCount + KAxonCount;
+    // ----------------------------------------------------------
+    //  КОЛИЧЕСТВО СОСЕДСКИХ ТК-АКСОНОВ ПО ТИПАМ
+    //
+    //  Соседские аксоны принадлежат соседним колонкам,
+    //  но их арборы (из-за большого диаметра) перекрывают данную.
+    //  Оценки основаны на плотности и радиусах арборов:
+    //    M (радиус 300 мкм): ~8 аксонов из ближайших колонок
+    //    P (радиус 175 мкм): ~20 аксонов
+    //    K (радиус 125 мкм): ~6 аксонов
+    // ----------------------------------------------------------
+
+    /// <summary>Число соседских M-аксонов, перекрывающих данную колонку.</summary>
+    public const int NeighborMAxonCount = 8;
+
+    /// <summary>Число соседских P-аксонов, перекрывающих данную колонку.</summary>
+    public const int NeighborPAxonCount = 20;
+
+    /// <summary>Число соседских K-аксонов, перекрывающих данную колонку.</summary>
+    public const int NeighborKAxonCount = 6;
+
+    // ----------------------------------------------------------
+    //  ИТОГОВЫЕ СЧЁТЧИКИ
+    // ----------------------------------------------------------
+
+    /// <summary>Общее число собственных ТК-аксонов.</summary>
+    public const int OwnAxonCount = OwnMAxonCount + OwnPAxonCount + OwnKAxonCount;
+
+    /// <summary>Общее число соседских ТК-аксонов.</summary>
+    public const int NeighborAxonCount = NeighborMAxonCount + NeighborPAxonCount + NeighborKAxonCount;
+
+    /// <summary>Суммарное число всех ТК-аксонов (собственных + соседских).</summary>
+    public const int TotalAxonCount = OwnAxonCount + NeighborAxonCount;
 
     // ----------------------------------------------------------
     //  ДАННЫЕ
     // ----------------------------------------------------------
 
-    /// <summary>Все таламокортикальные афферентные аксоны.</summary>
+    /// <summary>Все ТК-аксоны (собственные + соседские), единый массив.</summary>
     public readonly ThalamocorticalAxon[] Axons;
 
-    /// <summary>Только магноцеллюлярные аксоны (быстрый доступ).</summary>
-    public readonly ThalamocorticalAxon[] MAxons;
+    /// <summary>Только собственные M-аксоны.</summary>
+    public readonly ThalamocorticalAxon[] OwnMAxons;
 
-    /// <summary>Только парвоцеллюлярные аксоны (быстрый доступ).</summary>
-    public readonly ThalamocorticalAxon[] PAxons;
+    /// <summary>Только собственные P-аксоны.</summary>
+    public readonly ThalamocorticalAxon[] OwnPAxons;
 
-    /// <summary>Только конийоцеллюлярные аксоны (быстрый доступ).</summary>
-    public readonly ThalamocorticalAxon[] KAxons;
+    /// <summary>Только собственные K-аксоны.</summary>
+    public readonly ThalamocorticalAxon[] OwnKAxons;
+
+    /// <summary>
+    /// Все соседские аксоны (M + P + K из соседних колонок).
+    /// Моделируются полностью, от WM снизу, с точкой входа
+    /// в кольце columnRadius..arborRadius.
+    /// </summary>
+    public readonly ThalamocorticalAxon[] NeighborAxons;
 
     // ============================================================
     //  КОНСТРУКТОР
     // ============================================================
     /// <summary>
-    /// Генерирует все таламокортикальные входящие аксоны для миниколонки.
+    /// Генерирует все таламокортикальные входящие аксоны для миниколонки:
+    /// собственные (17 штук) и соседские (34 штуки).
+    /// Соседские аксоны моделируются полностью с самого низа (WM),
+    /// их точка входа смещена в кольцо [columnRadius .. arborRadius].
     /// </summary>
     /// <param name="random">Генератор случайных чисел.</param>
     /// <param name="columnRadiusUm">Радиус миниколонки (мкм).</param>
     /// <param name="columnHeightUm">Высота миниколонки (мкм).</param>
     public ThalamocorticalInput(Random random, float columnRadiusUm, float columnHeightUm)
     {
-        Axons  = new ThalamocorticalAxon[TotalAxonCount];
-        MAxons = new ThalamocorticalAxon[MAxonCount];
-        PAxons = new ThalamocorticalAxon[PAxonCount];
-        KAxons = new ThalamocorticalAxon[KAxonCount];
+        Axons        = new ThalamocorticalAxon[TotalAxonCount];
+        OwnMAxons    = new ThalamocorticalAxon[OwnMAxonCount];
+        OwnPAxons    = new ThalamocorticalAxon[OwnPAxonCount];
+        OwnKAxons    = new ThalamocorticalAxon[OwnKAxonCount];
+        NeighborAxons = new ThalamocorticalAxon[NeighborAxonCount];
 
-        int globalIdx = 0;
+        int globalIdx   = 0; // сквозной индекс в Axons[]
+        int neighborIdx = 0; // индекс в NeighborAxons[]
 
-        // Генерируем M-аксоны
-        for (int i = 0; i < MAxonCount; i += 1)
+        // --- Собственные M-аксоны ---
+        // Точка входа внутри columnRadiusUm — аксон «под своей» колонкой
+        for (int i = 0; i < OwnMAxonCount; i += 1)
         {
-            var axon          = ThalamocorticalAxon.Generate(
-                globalIdx, ThalamocorticalType.Magnocellular,
-                random, columnRadiusUm, columnHeightUm);
-            Axons[globalIdx]  = axon;
-            MAxons[i]         = axon;
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Magnocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: false);
+
+            Axons[globalIdx] = axon;
+            OwnMAxons[i]     = axon;
             globalIdx        += 1;
         }
 
-        // Генерируем P-аксоны
-        for (int i = 0; i < PAxonCount; i += 1)
+        // --- Собственные P-аксоны ---
+        for (int i = 0; i < OwnPAxonCount; i += 1)
         {
-            var axon          = ThalamocorticalAxon.Generate(
-                globalIdx, ThalamocorticalType.Parvocellular,
-                random, columnRadiusUm, columnHeightUm);
-            Axons[globalIdx]  = axon;
-            PAxons[i]         = axon;
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Parvocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: false);
+
+            Axons[globalIdx] = axon;
+            OwnPAxons[i]     = axon;
             globalIdx        += 1;
         }
 
-        // Генерируем K-аксоны
-        for (int i = 0; i < KAxonCount; i += 1)
+        // --- Собственные K-аксоны ---
+        for (int i = 0; i < OwnKAxonCount; i += 1)
         {
-            var axon          = ThalamocorticalAxon.Generate(
-                globalIdx, ThalamocorticalType.Koniocellular,
-                random, columnRadiusUm, columnHeightUm);
-            Axons[globalIdx]  = axon;
-            KAxons[i]         = axon;
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Koniocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: false);
+
+            Axons[globalIdx] = axon;
+            OwnKAxons[i]     = axon;
             globalIdx        += 1;
+        }
+
+        // --- Соседские M-аксоны ---
+        // entryInNeighborRing: true — точка входа в WM смещена в кольцо
+        // [columnRadiusUm .. MArborRadius], т.е. аксон принадлежит
+        // соседней колонке, но его арбор перекрывается с данной.
+        for (int i = 0; i < NeighborMAxonCount; i += 1)
+        {
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Magnocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: true);
+
+            Axons[globalIdx]         = axon;
+            NeighborAxons[neighborIdx] = axon;
+            globalIdx                += 1;
+            neighborIdx              += 1;
+        }
+
+        // --- Соседские P-аксоны ---
+        for (int i = 0; i < NeighborPAxonCount; i += 1)
+        {
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Parvocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: true);
+
+            Axons[globalIdx]           = axon;
+            NeighborAxons[neighborIdx] = axon;
+            globalIdx                  += 1;
+            neighborIdx                += 1;
+        }
+
+        // --- Соседские K-аксоны ---
+        for (int i = 0; i < NeighborKAxonCount; i += 1)
+        {
+            var axon = ThalamocorticalAxon.Generate(
+                globalIdx,
+                ThalamocorticalType.Koniocellular,
+                random,
+                columnRadiusUm,
+                columnHeightUm,
+                entryInNeighborRing: true);
+
+            Axons[globalIdx]           = axon;
+            NeighborAxons[neighborIdx] = axon;
+            globalIdx                  += 1;
+            neighborIdx                += 1;
         }
     }
 
@@ -127,36 +258,46 @@ public sealed class ThalamocorticalInput
     //  АКТИВАЦИЯ ВХОДЯЩЕГО ЗРИТЕЛЬНОГО СИГНАЛА
     // ============================================================
     /// <summary>
-    /// Устанавливает активность таламокортикальных аксонов
-    /// на основе вектора входящего зрительного сигнала.
+    /// Устанавливает активность собственных ТК-аксонов на основе
+    /// вектора входящего зрительного сигнала.
+    /// Соседские аксоны управляются отдельно через SetNeighborActivity.
     /// </summary>
-    /// <param name="mActivity">
-    ///   Активность M-аксонов: массив длиной MAxonCount,
-    ///   значения 0.0 (покой) или 1.0 (активен).
-    /// </param>
-    /// <param name="pActivity">
-    ///   Активность P-аксонов: массив длиной PAxonCount.
-    /// </param>
-    /// <param name="kActivity">
-    ///   Активность K-аксонов: массив длиной KAxonCount.
-    /// </param>
+    /// <param name="mActivity">Активность M-аксонов (длина OwnMAxonCount).</param>
+    /// <param name="pActivity">Активность P-аксонов (длина OwnPAxonCount).</param>
+    /// <param name="kActivity">Активность K-аксонов (длина OwnKAxonCount).</param>
     public void SetActivity(float[] mActivity, float[] pActivity, float[] kActivity)
     {
-        for (int i = 0; i < MAxonCount; i += 1)
-            MAxons[i].Temp_IsActive = mActivity[i] > 0.5f;
+        for (int i = 0; i < OwnMAxonCount; i += 1)
+            OwnMAxons[i].Temp_IsActive = mActivity[i] > 0.5f;
 
-        for (int i = 0; i < PAxonCount; i += 1)
-            PAxons[i].Temp_IsActive = pActivity[i] > 0.5f;
+        for (int i = 0; i < OwnPAxonCount; i += 1)
+            OwnPAxons[i].Temp_IsActive = pActivity[i] > 0.5f;
 
-        for (int i = 0; i < KAxonCount; i += 1)
-            KAxons[i].Temp_IsActive = kActivity[i] > 0.5f;
+        for (int i = 0; i < OwnKAxonCount; i += 1)
+            OwnKAxons[i].Temp_IsActive = kActivity[i] > 0.5f;
     }
 
     /// <summary>
-    /// Собирает все активные синаптические бутоны входящих ТК-аксонов.
-    /// Используется для определения зон активации в FindActiveZones.
+    /// Устанавливает активность соседских ТК-аксонов.
+    /// Вызывается при симуляции активности соседних миниколонок.
     /// </summary>
-    /// <returns>Список позиций активных ТК-синапсов внутри миниколонки.</returns>
+    /// <param name="neighborActivity">
+    /// Массив длиной NeighborAxonCount: 1.0 = активен, 0.0 = покой.
+    /// </param>
+    public void SetNeighborActivity(float[] neighborActivity)
+    {
+        for (int i = 0; i < NeighborAxonCount; i += 1)
+            NeighborAxons[i].Temp_IsActive = neighborActivity[i] > 0.5f;
+    }
+
+    // ============================================================
+    //  СБОР АКТИВНЫХ СИНАПТИЧЕСКИХ ПОЗИЦИЙ
+    // ============================================================
+    /// <summary>
+    /// Собирает позиции всех активных синапсов (собственных и соседских).
+    /// Используется в FindActiveZones для расчёта зон активации.
+    /// </summary>
+    /// <returns>Список позиций активных ТК-синапсов внутри колонки.</returns>
     public FastList<Vector3> GetActiveAfferentSynapsePositions()
     {
         var result = new FastList<Vector3>(TotalAxonCount * 1000);
@@ -167,6 +308,7 @@ public sealed class ThalamocorticalInput
                 continue;
 
             var synapses = Axons[a].Synapses;
+
             for (int s = 0; s < synapses.Length; s += 1)
                 result.Add(synapses[s].Position);
         }
