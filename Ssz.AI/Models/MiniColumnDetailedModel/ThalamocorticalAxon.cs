@@ -122,7 +122,7 @@ public sealed class ThalamocorticalAxon : IAxon
     //  Источник: Hendry & Reid 2000; Yabuta & Callaway 1998
     // ----------------------------------------------------------
 
-    // K: L1 + начало L2/3 (расширено с −80 до −250 мкм)
+    // K: L1 + начало L2/3
     private const float KTargetZMax = 0.0f;    // поверхность
     private const float KTargetZMin = -250.0f; // нижняя граница L3A
 

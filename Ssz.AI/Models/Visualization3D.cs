@@ -50,7 +50,7 @@ public static class Visualization3D
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
-            hideFarLines: false);
+            hideFarLines: true);
 
         sceneBounds.Normalize(model3DScene);
 
@@ -92,12 +92,10 @@ public static class Visualization3D
             var axon = axons[i];
             model3DScene.Lines!.AddRange(GetLines(
                 null, 
-                axon.Root, 
-                ref sceneBounds, 
+                axon.Root,                 
                 axon.IsActive,
                 inactiveColor,
-                activeColor,
-                hideFarLines));
+                activeColor));
 
             for (int j = 0; j < axon.Synapses.Length; j += 1)
             {
@@ -113,16 +111,30 @@ public static class Visualization3D
                 //});
             }
         }
+
+        if (hideFarLines)
+            foreach (var line in model3DScene.Lines!.ToArray())
+            {
+                bool farLine = line.All(l => MiniColumnDetailed.GetLengthXY(l.Position) > MiniColumnDetailed.SynapsesRadiusUs);
+                if (farLine)
+                    model3DScene.Lines.Remove(line);
+            }
+
+        foreach (var line in model3DScene.Lines!)
+        {
+            foreach (var p in line)
+            {
+                sceneBounds.Update(p.Position);
+            }
+        }
     }
 
     private static List<List<Point3DWithColor>> GetLines(
         AxonPoint? preStartAxonPoint, 
-        AxonPoint startAxonPoint, 
-        ref SceneBounds sceneBounds, 
+        AxonPoint startAxonPoint,         
         bool isActive,
         System.Drawing.Color inactiveColor,
-        System.Drawing.Color activeColor,
-        bool hideFarLines
+        System.Drawing.Color activeColor
         )
     {        
         List<List<Point3DWithColor>> lines = new(1024);
@@ -140,12 +152,10 @@ public static class Visualization3D
                 Position = preStartAxonPoint.Position,
                 Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
             });
-        lines.Add(line);
+        lines.Add(line);        
         AxonPoint axonPoint = startAxonPoint;
         for (; ; )
         {
-            sceneBounds.Update(axonPoint.Position);
-            
             line.Add(new Point3DWithColor
             {
                 Position = axonPoint.Position,
@@ -162,17 +172,13 @@ public static class Visualization3D
             for (int i = 0; i < axonPoint.Next.Count; i += 1)
             {
                 AxonPoint nextAxonPoint = axonPoint.Next[i];
-                if (!hideFarLines || MiniColumnDetailed.GetLengthXY(nextAxonPoint.Position) < MiniColumnDetailed.SynapsesRadiusUs)
-                {
-                    lines.AddRange(GetLines(
+
+                lines.AddRange(GetLines(
                         axonPoint,
                         nextAxonPoint,
-                        ref sceneBounds,
                         isActive,
                         inactiveColor,
-                        activeColor,
-                        hideFarLines));
-                }
+                        activeColor));
             }
             break;
         }
