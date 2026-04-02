@@ -42,17 +42,6 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //    4. Формирует несколько (~2–4) плоских кустистых арборов.
 //    5. Синаптические бутоны en passant по всей длине ветвей.
 //
-//  ИСПРАВЛЕНИЯ относительно предыдущей версии:
-//    [Пункт 1] Точка входа (entryX,entryY) ограничена радиусом арбора
-//              конкретного типа, а не columnRadiusUm (~20 мкм).
-//              Это отражает реальность: аксон из WM подходит
-//              к колонке сбоку, если его арбор большой.
-//    [Пункт 2] blobTargetZ для K-аксонов исправлен на отрицательные
-//              значения (−80..−300 мкм), что соответствует L2/3.
-//              В предыдущей версии использовались +80..+300 мкм,
-//              то есть выше поверхности коры — биологически невозможно.
-//    [Пункт 5] Диапазон Z для K-аксонов расширен до 0..−250 мкм
-//              (ранее только 0..−80 мкм / L1), чтобы охватить L3A.
 //
 //  Координатная система:
 //    X, Y — горизонтальные оси (мкм)
@@ -150,8 +139,6 @@ public sealed class ThalamocorticalAxon : IAxon
     /// <summary>Все синаптические бутоны этого афферента.</summary>
     public readonly Synapse[] Synapses;
 
-    public bool EntryInNeighborRing;
-
     /// <summary>Активность аксона: true — несёт входной сигнал.</summary>
     public bool Temp_IsActive;
 
@@ -186,8 +173,7 @@ public sealed class ThalamocorticalAxon : IAxon
         ThalamocorticalType  type,
         Random               random,
         float                columnRadiusUm,
-        float                columnHeightUm,
-        bool                 entryInNeighborRing)
+        float                columnHeightUm)
     {
         // Выбираем параметры арбора в зависимости от типа канала
         float arborRadius;
@@ -247,7 +233,7 @@ public sealed class ThalamocorticalAxon : IAxon
         //     данной колонки и оставляет синапсы внутри неё.
         //     Источник: Blasdel & Lund 1983 — M-арборы покрывают
         //     несколько миниколонок одновременно.
-        float entryMinRadius = entryInNeighborRing ? columnRadiusUm : 0.0f;
+        float entryMinRadius = 0.0f;
         float entryMaxRadius = arborRadius + columnRadiusUm; // всегда ограничено радиусом арбора
 
         float entryX, entryY;
@@ -416,10 +402,7 @@ public sealed class ThalamocorticalAxon : IAxon
 
         Synapse[] synapses = PlaceSynapses(root, synapsesCount, columnRadiusUm, random);
 
-        return new ThalamocorticalAxon(index, type, root, synapses)
-        {
-            EntryInNeighborRing = entryInNeighborRing
-        };
+        return new ThalamocorticalAxon(index, type, root, synapses);
     }
 
     // ============================================================
@@ -580,10 +563,8 @@ public sealed class ThalamocorticalAxon : IAxon
                 basePos.Y + (random.NextSingle() - 0.5f) * 2.0f,
                 basePos.Z + (random.NextSingle() - 0.5f) * 1.0f
             );
-
-            // Фильтр: принимаем синапсы в пределах расширенного радиуса колонки
-            if (MiniColumnDetailed.GetLengthXY(synPos) < MiniColumnDetailed.SynapsesRadiusUs)
-                synapses.Add(new Synapse(synPos));
+            
+            synapses.Add(new Synapse(synPos));
 
             distInSeg += step; // шагаем дальше
         }
