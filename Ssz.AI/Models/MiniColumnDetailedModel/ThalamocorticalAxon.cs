@@ -150,6 +150,8 @@ public sealed class ThalamocorticalAxon : IAxon
     /// <summary>Все синаптические бутоны этого афферента.</summary>
     public readonly Synapse[] Synapses;
 
+    public bool EntryInNeighborRing;
+
     /// <summary>Активность аксона: true — несёт входной сигнал.</summary>
     public bool Temp_IsActive;
 
@@ -185,7 +187,7 @@ public sealed class ThalamocorticalAxon : IAxon
         Random               random,
         float                columnRadiusUm,
         float                columnHeightUm,
-        bool                 entryInNeighborRing = false)
+        bool                 entryInNeighborRing)
     {
         // Выбираем параметры арбора в зависимости от типа канала
         float arborRadius;
@@ -414,7 +416,10 @@ public sealed class ThalamocorticalAxon : IAxon
 
         Synapse[] synapses = PlaceSynapses(root, synapsesCount, columnRadiusUm, random);
 
-        return new ThalamocorticalAxon(index, type, root, synapses);
+        return new ThalamocorticalAxon(index, type, root, synapses)
+        {
+            EntryInNeighborRing = entryInNeighborRing
+        };
     }
 
     // ============================================================

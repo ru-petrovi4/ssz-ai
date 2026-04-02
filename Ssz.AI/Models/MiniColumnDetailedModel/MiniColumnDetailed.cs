@@ -148,7 +148,7 @@ public sealed class MiniColumnDetailed : IDisposable
         _activeTcAxons.Clear();
         for (int i = 0; i < ThalamocorticalInput.TotalAxonCount; i += 1)
         {
-            bool isActive = ThalamocorticalInput.Axons[i].Temp_IsActive;
+            bool isActive = ThalamocorticalInput.ThalamocorticalAxons[i].Temp_IsActive;
             if (isActive)
                 _activeTcAxons.Add(i);
         }
@@ -638,7 +638,7 @@ public sealed class MiniColumnDetailed : IDisposable
         var groups = new Synapse[count][];
         for (int i = 0; i < count; i += 1)
         {
-            groups[i] = ThalamocorticalInput.Axons[indices[i]].Synapses;
+            groups[i] = ThalamocorticalInput.ThalamocorticalAxons[indices[i]].Synapses;
         }
         return (groups, count);
     }

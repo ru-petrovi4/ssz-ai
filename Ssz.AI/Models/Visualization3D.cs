@@ -46,7 +46,7 @@ public static class Visualization3D
 
         AddAxons(
             model3DScene,
-            miniColumnDetailed.ThalamocorticalInput.Axons,
+            miniColumnDetailed.ThalamocorticalInput.ThalamocorticalAxons.Where(a => !a.EntryInNeighborRing).ToArray(),
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),

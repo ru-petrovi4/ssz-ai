@@ -102,30 +102,18 @@ public sealed class ThalamocorticalInput
     public const int NeighborAxonCount = NeighborMAxonCount + NeighborPAxonCount + NeighborKAxonCount;
 
     /// <summary>Суммарное число всех ТК-аксонов (собственных + соседских).</summary>
-    public const int TotalAxonCount = OwnAxonCount + NeighborAxonCount;
+    public const int TotalAxonCount = OwnMAxonCount + OwnPAxonCount + OwnKAxonCount + NeighborMAxonCount + NeighborPAxonCount + NeighborKAxonCount;
 
     // ----------------------------------------------------------
     //  ДАННЫЕ
     // ----------------------------------------------------------
 
-    /// <summary>Все ТК-аксоны (собственные + соседские), единый массив.</summary>
-    public readonly ThalamocorticalAxon[] Axons;
-
-    /// <summary>Только собственные M-аксоны.</summary>
-    public readonly ThalamocorticalAxon[] OwnMAxons;
-
-    /// <summary>Только собственные P-аксоны.</summary>
-    public readonly ThalamocorticalAxon[] OwnPAxons;
-
-    /// <summary>Только собственные K-аксоны.</summary>
-    public readonly ThalamocorticalAxon[] OwnKAxons;
-
     /// <summary>
-    /// Все соседские аксоны (M + P + K из соседних колонок).
-    /// Моделируются полностью, от WM снизу, с точкой входа
+    /// Все ТК-аксоны (собственные + соседские), единый массив.
+    /// Соседские аксоны (M + P + K из соседних колонок) моделируются полностью, от WM снизу, с точкой входа
     /// в кольце columnRadius..arborRadius.
     /// </summary>
-    public readonly ThalamocorticalAxon[] NeighborAxons;
+    public readonly ThalamocorticalAxon[] ThalamocorticalAxons;    
 
     // ============================================================
     //  КОНСТРУКТОР
@@ -141,14 +129,9 @@ public sealed class ThalamocorticalInput
     /// <param name="columnHeightUm">Высота миниколонки (мкм).</param>
     public ThalamocorticalInput(Random random, float columnRadiusUm, float columnHeightUm)
     {
-        Axons        = new ThalamocorticalAxon[TotalAxonCount];
-        OwnMAxons    = new ThalamocorticalAxon[OwnMAxonCount];
-        OwnPAxons    = new ThalamocorticalAxon[OwnPAxonCount];
-        OwnKAxons    = new ThalamocorticalAxon[OwnKAxonCount];
-        NeighborAxons = new ThalamocorticalAxon[NeighborAxonCount];
+        ThalamocorticalAxons        = new ThalamocorticalAxon[TotalAxonCount];        
 
-        int globalIdx   = 0; // сквозной индекс в Axons[]
-        int neighborIdx = 0; // индекс в NeighborAxons[]
+        int globalIdx   = 0; // сквозной индекс в Axons[]        
 
         // --- Собственные M-аксоны ---
         // Точка входа внутри columnRadiusUm — аксон «под своей» колонкой
@@ -162,8 +145,7 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: false);
 
-            Axons[globalIdx] = axon;
-            OwnMAxons[i]     = axon;
+            ThalamocorticalAxons[globalIdx] = axon;            
             globalIdx        += 1;
         }
 
@@ -178,8 +160,7 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: false);
 
-            Axons[globalIdx] = axon;
-            OwnPAxons[i]     = axon;
+            ThalamocorticalAxons[globalIdx] = axon;            
             globalIdx        += 1;
         }
 
@@ -194,8 +175,7 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: false);
 
-            Axons[globalIdx] = axon;
-            OwnKAxons[i]     = axon;
+            ThalamocorticalAxons[globalIdx] = axon;            
             globalIdx        += 1;
         }
 
@@ -213,10 +193,8 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: true);
 
-            Axons[globalIdx]         = axon;
-            NeighborAxons[neighborIdx] = axon;
-            globalIdx                += 1;
-            neighborIdx              += 1;
+            ThalamocorticalAxons[globalIdx]         = axon;            
+            globalIdx                += 1;            
         }
 
         // --- Соседские P-аксоны ---
@@ -230,10 +208,8 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: true);
 
-            Axons[globalIdx]           = axon;
-            NeighborAxons[neighborIdx] = axon;
-            globalIdx                  += 1;
-            neighborIdx                += 1;
+            ThalamocorticalAxons[globalIdx]           = axon;            
+            globalIdx                  += 1;            
         }
 
         // --- Соседские K-аксоны ---
@@ -247,10 +223,8 @@ public sealed class ThalamocorticalInput
                 columnHeightUm,
                 entryInNeighborRing: true);
 
-            Axons[globalIdx]           = axon;
-            NeighborAxons[neighborIdx] = axon;
-            globalIdx                  += 1;
-            neighborIdx                += 1;
+            ThalamocorticalAxons[globalIdx]           = axon;            
+            globalIdx                  += 1;            
         }
     }
 
@@ -265,29 +239,10 @@ public sealed class ThalamocorticalInput
     /// <param name="mActivity">Активность M-аксонов (длина OwnMAxonCount).</param>
     /// <param name="pActivity">Активность P-аксонов (длина OwnPAxonCount).</param>
     /// <param name="kActivity">Активность K-аксонов (длина OwnKAxonCount).</param>
-    public void SetActivity(float[] mActivity, float[] pActivity, float[] kActivity)
+    public void SetActivity(float[] activity)
     {
-        for (int i = 0; i < OwnMAxonCount; i += 1)
-            OwnMAxons[i].Temp_IsActive = mActivity[i] > 0.5f;
-
-        for (int i = 0; i < OwnPAxonCount; i += 1)
-            OwnPAxons[i].Temp_IsActive = pActivity[i] > 0.5f;
-
-        for (int i = 0; i < OwnKAxonCount; i += 1)
-            OwnKAxons[i].Temp_IsActive = kActivity[i] > 0.5f;
-    }
-
-    /// <summary>
-    /// Устанавливает активность соседских ТК-аксонов.
-    /// Вызывается при симуляции активности соседних миниколонок.
-    /// </summary>
-    /// <param name="neighborActivity">
-    /// Массив длиной NeighborAxonCount: 1.0 = активен, 0.0 = покой.
-    /// </param>
-    public void SetNeighborActivity(float[] neighborActivity)
-    {
-        for (int i = 0; i < NeighborAxonCount; i += 1)
-            NeighborAxons[i].Temp_IsActive = neighborActivity[i] > 0.5f;
+        for (int i = 0; i < activity.Length; i += 1)
+            ThalamocorticalAxons[i].Temp_IsActive = activity[i] > 0.5f;
     }
 
     // ============================================================
@@ -304,10 +259,10 @@ public sealed class ThalamocorticalInput
 
         for (int a = 0; a < TotalAxonCount; a += 1)
         {
-            if (!Axons[a].Temp_IsActive)
+            if (!ThalamocorticalAxons[a].Temp_IsActive)
                 continue;
 
-            var synapses = Axons[a].Synapses;
+            var synapses = ThalamocorticalAxons[a].Synapses;
 
             for (int s = 0; s < synapses.Length; s += 1)
                 result.Add(synapses[s].Position);
