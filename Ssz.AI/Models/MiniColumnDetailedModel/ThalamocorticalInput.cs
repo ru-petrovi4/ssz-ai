@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Ssz.Utils;
@@ -83,13 +83,13 @@ public sealed class ThalamocorticalInput
     // ----------------------------------------------------------
 
     /// <summary>Число соседских M-аксонов, перекрывающих данную колонку.</summary>
-    public const int NeighborMAxonCount = 8;
+    public const int NeighborMAxonCount = 96;
 
     /// <summary>Число соседских P-аксонов, перекрывающих данную колонку.</summary>
-    public const int NeighborPAxonCount = 20;
+    public const int NeighborPAxonCount = 68;
 
     /// <summary>Число соседских K-аксонов, перекрывающих данную колонку.</summary>
-    public const int NeighborKAxonCount = 6;
+    public const int NeighborKAxonCount = 22;
 
     // ----------------------------------------------------------
     //  ИТОГОВЫЕ СЧЁТЧИКИ

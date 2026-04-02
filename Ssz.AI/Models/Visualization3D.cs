@@ -42,7 +42,7 @@ public static class Visualization3D
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
             activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
-            hideFarLines: true);
+            hideFarLines: false);
 
         AddAxons(
             model3DScene,
@@ -50,7 +50,7 @@ public static class Visualization3D
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
-            hideFarLines: true);
+            hideFarLines: false);
 
         sceneBounds.Normalize(model3DScene);
 

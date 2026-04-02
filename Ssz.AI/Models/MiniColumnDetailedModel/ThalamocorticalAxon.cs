@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -246,7 +246,7 @@ public sealed class ThalamocorticalAxon : IAxon
         //     Источник: Blasdel & Lund 1983 — M-арборы покрывают
         //     несколько миниколонок одновременно.
         float entryMinRadius = entryInNeighborRing ? columnRadiusUm : 0.0f;
-        float entryMaxRadius = arborRadius; // всегда ограничено радиусом арбора
+        float entryMaxRadius = arborRadius + columnRadiusUm; // всегда ограничено радиусом арбора
 
         float entryX, entryY;
         while (true)
@@ -403,8 +403,7 @@ public sealed class ThalamocorticalAxon : IAxon
                 arborRoot,
                 blobTargetZ,
                 KArborRadiusUm * 0.6f,
-                random,
-                targetZMin,   // fromZ: нижняя граница L1 (−250 мкм)
+                random,                
                 -300.0f);     // toZ:   нижняя граница blob-зоны (−300 мкм)
         }
 
@@ -429,14 +428,12 @@ public sealed class ThalamocorticalAxon : IAxon
     /// <param name="targetZ">Целевая глубина blob-зоны (мкм, отрицательная).</param>
     /// <param name="blobRadius">Радиус горизонтального арбора в blob-зоне (мкм).</param>
     /// <param name="random">Генератор случайных чисел.</param>
-    /// <param name="fromZ">Нижняя граница вертикального движения (мкм).</param>
     /// <param name="toZ">Верхняя граница blob-арбора (мкм).</param>
     private static void GrowKoniocellularBlobBranch(
         AxonPoint parentNode,
         float     targetZ,
         float     blobRadius,
-        Random    random,
-        float     fromZ,
+        Random    random,        
         float     toZ)
     {
         // Вертикальный «спуск» от L1 вглубь к blob-зоне L2/3.
