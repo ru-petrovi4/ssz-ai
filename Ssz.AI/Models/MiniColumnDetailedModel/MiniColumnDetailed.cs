@@ -663,7 +663,7 @@ public sealed class MiniColumnDetailed : IDisposable
         int minActiveAxons)
     {
         var groups = input.groups;
-        float voxelSizeUm = 10.0f; // Pyramidal: 2.0f;
+        float voxelSizeUm = 5.0f; // Pyramidal: 2.0f;
 
         // ---- Bounding box ----
         SceneBounds bounds = new();

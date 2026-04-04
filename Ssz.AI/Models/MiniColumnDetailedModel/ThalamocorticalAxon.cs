@@ -574,11 +574,7 @@ public sealed class ThalamocorticalAxon : IAxon
         var synapses = new FastList<Synapse>(totalSynapses);
 
         if (totalLength <= 0f || segments.Count == 0)
-        {
-            for (int s = 0; s < totalSynapses; s += 1)
-                synapses.Add(new Synapse(root.Position));
             return synapses.ToArray();
-        }
 
         float step      = totalLength / totalSynapses;
         int   segIdx    = 0;
@@ -602,7 +598,9 @@ public sealed class ThalamocorticalAxon : IAxon
                 basePos.Z + (random.NextSingle() - 0.5f) * 1.0f
             );
 
-            synapses.Add(new Synapse(synPos));
+            // TEMPCODE
+            if (synPos.Z >= PTargetZMin && synPos.Z <= MTargetZMax)
+                synapses.Add(new Synapse(synPos));
             distInSeg += step;
         }
 
