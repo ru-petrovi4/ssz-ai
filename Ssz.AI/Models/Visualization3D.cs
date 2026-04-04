@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media;
+using Ssz.AI.Helpers;
 using Ssz.AI.Models.MiniColumnDetailedModel;
 using Ssz.AI.Views;
 using Ssz.Utils;
@@ -36,17 +37,17 @@ public static class Visualization3D
 
         AddActiveZones(model3DScene, miniColumnDetailed.Temp_ThalamocorticalZones, System.Drawing.Color.White, ref sceneBounds);
 
-        AddAxons(
-            model3DScene,
-            miniColumnDetailed.PyramidalAxons,
-            ref sceneBounds,
-            inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
-            activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
-            hideFarLines: true);
+        //AddAxons(
+        //    model3DScene,
+        //    miniColumnDetailed.PyramidalAxons,
+        //    ref sceneBounds,
+        //    inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
+        //    activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
+        //    hideFarLines: true);
 
         AddAxons(
             model3DScene,
-            miniColumnDetailed.ThalamocorticalInput.ThalamocorticalAxons,
+            miniColumnDetailed.ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons,
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x66, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
@@ -115,7 +116,7 @@ public static class Visualization3D
         if (hideFarLines)
             foreach (var line in model3DScene.Lines!.ToArray())
             {
-                bool farLine = line.All(l => MiniColumnDetailed.GetLengthXY(l.Position) > MiniColumnDetailed.SynapsesRadiusUs);
+                bool farLine = line.All(l => MathHelper.GetLengthXY(l.Position) > MiniColumnDetailed.ColumnRadius_Extended_Um);
                 if (farLine)
                     model3DScene.Lines.Remove(line);
             }

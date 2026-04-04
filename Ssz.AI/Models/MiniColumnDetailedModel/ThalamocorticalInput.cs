@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
+using Ssz.AI.Helpers;
 using Ssz.Utils;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
@@ -9,105 +11,136 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 // ТАЛАМОКОРТИКАЛЬНЫЙ ВХОДНОЙ БЛОК МИНИКОЛОНКИ
 // ============================================================
 //
-// Биологическое обоснование числа аксонов:
+// ────────────────────────────────────────────────────────────
+// ПРИНЦИП ОТБОРА АКСОНОВ
+// ────────────────────────────────────────────────────────────
+// Критерий «влияет на данную миниколонку»:
 //
-// Плотность ТК-аксонов в V1 человека:
-//   ~1 417 аксонов/мм² (Mazade & Alonso 2017, Vis Neurosci 34:E007)
-//   Всего ~3.4 млн LGN-нейронов → ~2 399 мм² V1
-//   => 3.4×10⁶ / 2399 ≈ 1 417 /мм²
+//   Старый критерий (геометрия арбора → центр колонки):
+//     аксон учитывается, если его горизонтальный арбор
+//     ПЕРЕКРЫВАЕТ ЦЕНТР миниколонки.
+//     Эффективный радиус = arborRadius + columnRadius
 //
-// Соотношение M:P:K нейронов LGN человека:
-//   M (magnocellular)    ≈ 10% → 142 аксонов/мм²
-//   P (parvocellular)    ≈ 80% → 1 134 аксонов/мм²
-//   K (koniocellular)    ≈ 10% → 142 аксонов/мм²
-//   Источник: Solomon 2021, J Physiol 599:2893
+//   Новый критерий (арбор → дендрит любого нейрона колонки):
+//     аксон учитывается, если синапт его арбора ДОСТИГАЕТ
+//     ДЕНДРИТА любого нейрона, расположенного в колонке.
+//     Дендриты простираются за пределы колонки на dendriticReach.
+//     Эффективный радиус = arborRadius + columnRadius + dendriticReach
 //
-// Разделение K-аксонов на два подтипа (Casagrande et al. 2007,
-//   Cereb. Cortex 17:2334):
+// Биологическое обоснование dendriticReach:
+//   Горизонтальный охват базальных дендритов пирамидных клеток
+//   слоя 3 V1 макак составляет 194 ± 15 мкм (Amatrudo et al.
+//   2012, J. Neurosci. 32:1480–1491), откуда радиус ≈ 97 мкм.
+//   Апикальный туфт: горизонтальный охват ≈ 139 ± 15 мкм,
+//   радиус ≈ 70 мкм. Берётся более широкий из двух (базальный),
+//   т.к. базальные дендриты принимают входы из всех слоёв 2/3–4.
+//   Источник: Amatrudo et al. 2012, J. Neurosci. 32:1480–1491
+//             (сравнение V1 и dlPFC макак; Table 1).
 //
-//   K1/K2 (KoniocellularSuperficial):
-//     Вентральные K-слои LGN; проекция в L1 + L3A.
-//     В макаке K-слои 6 (K1–K6), из них вентральные — K1, K2.
-//     Доля: ~2/6 = 33% K-нейронов → ~47 аксонов/мм² (K_sup).
+// ────────────────────────────────────────────────────────────
+// ПЛОТНОСТЬ АКСОНОВ В V1 ЧЕЛОВЕКА
+// ────────────────────────────────────────────────────────────
+//   Всего  ~1 417 аксонов/мм² (Mazade & Alonso 2017, Vis Neurosci 34:E007)
+//   M  (~10% LGN):       142 /мм²
+//   P  (~80% LGN):     1 134 /мм²
+//   K_sup  (K1/K2 ≈ 33% K):  47 /мм²
+//   K_blob (K3–K6 ≈ 67% K):  95 /мм²
+//   Источник: Solomon 2021, J Physiol 599:2893;
+//             Casagrande et al. 2007, Cereb Cortex 17:2334
 //
-//   K3–K6 (KoniocellularBlob):
-//     Дорсальные K-слои LGN; проекция в CO-блобы L3Bα.
-//     Доля: ~4/6 = 67% K-нейронов → ~95 аксонов/мм² (K_blob).
+// ────────────────────────────────────────────────────────────
+// ПАРАМЕТРЫ МИНИКОЛОНКИ
+// ────────────────────────────────────────────────────────────
+//   Радиус ≈ 12.35 мкм (диаметр 24.7 мкм;
+//   Garcia-Marin et al. 2013, Cereb Cortex)
 //
-// Размер миниколонки V1 человека:
-//   Поперечный размер ≈ 24.7 мкм; spacing ≈ 30–50 мкм.
-//   Источник: Garcia-Marin et al. 2013, Cereb Cortex
+// ────────────────────────────────────────────────────────────
+// РАСЧЁТ ЧИСЛА АКСОНОВ
+// ────────────────────────────────────────────────────────────
+//   Формула: N = плотность × π × (arborRadius + columnRadius + dendriticReach)²
+//   dendriticReach = 97 мкм (базальные дендриты)
 //
-// Число аксонов, арборы которых ПЕРЕКРЫВАЮТ данную миниколонку:
-//   Формула: N = плотность_типа × площадь_арбора
+//   M:      142 × π × (300 + 12.35 + 97)² мкм² = 142 × π × 409.4² ≈  75
+//   P:    1 134 × π × (175 + 12.35 + 97)² мкм² =1134 × π × 284.4² ≈ 288
+//   K_sup:   47 × π × (137.5+12.35+97)² мкм²  =  47 × π × 246.8² ≈   9
+//   K_blob:  95 × π × (112.5+12.35+97)² мкм²  =  95 × π × 221.8² ≈  15
 //
-//   M (арбор r=300 мкм, площадь π×0.3²=0.2827 мм²):
-//     N_M = 142 × 0.2827 ≈ 40 аксонов
-//
-//   P (арбор r=175 мкм, площадь π×0.175²=0.0962 мм²):
-//     N_P = 1 134 × 0.0962 ≈ 109 аксонов
-//
-//   K_sup (K1/K2, арбор r=137.5 мкм, площадь π×0.1375²=0.0594 мм²):
-//     N_K_sup = 47 × 0.0594 ≈ 3 аксона
-//
-//   K_blob (K3–K6, арбор r=112.5 мкм, площадь π×0.1125²=0.0398 мм²):
-//     N_K_blob = 95 × 0.0398 ≈ 4 аксона
-//
-// ИТОГО: 40 + 109 + 3 + 4 = 156 аксонов на миниколонку.
-//
+//   ИТОГО: 75 + 288 + 9 + 15 = 387 аксонов на миниколонку.
 //
 // Источники:
 //   - Mazade & Alonso 2017, Vis Neurosci 34:E007
-//   - Solomon 2021, J Physiol 599:2893 (соотношение M:P:K)
-//   - Casagrande et al. 2007, Cereb. Cortex 17:2334–2345
-//     (K1/K2 → L1+L3A; K3–K6 → CO-blobs L3Bα)
-//   - Hendry & Reid 2000, Annu. Rev. Neurosci. 23:127–153
-//   - Andrews, Halpern, Purves 1997, J Neurosci 17:2859
-//   - Garcia-Marin et al. 2013/2024, Cereb Cortex
-//   - Blasdel & Lund 1983, J Neurosci 3:1389 (диаметры арборов)
+//   - Solomon 2021, J Physiol 599:2893
+//   - Casagrande et al. 2007, Cereb Cortex 17:2334–2345
+//   - Garcia-Marin et al. 2013, Cereb Cortex
+//   - Blasdel & Lund 1983, J Neurosci 3:1389
+//   - Amatrudo et al. 2012, J Neurosci 32:1480–1491
+//   - Hendry & Reid 2000, Annu Rev Neurosci 23:127–153
 // ============================================================
 
 public sealed class ThalamocorticalInput
 {
     // ----------------------------------------------------------
-    // КОЛИЧЕСТВО ТК-АКСОНОВ ПО ТИПАМ
+    // ДЕНДРИТНЫЙ ОХВАТ ПИРАМИДНЫХ КЛЕТОК V1
     // ----------------------------------------------------------
 
     ///
-    /// Число магноцеллюлярных (M) аксонов, покрывающих миниколонку.
-    /// N_M = 142/мм² × π×(300 мкм)² ≈ 40.
-    /// Источник: Mazade & Alonso 2017; Blasdel & Lund 1983.
+    /// Горизонтальный радиус базальных дендритов пирамидных клеток
+    /// слоя 3 в V1 (мкм). Определяет, насколько далеко за пределы
+    /// миниколонки дендриты нейронов могут принимать синаптические входы.
     ///
-    public const int MAxonCount = 40;
+    /// Значение 97 мкм — половина от 194 ± 15 мкм горизонтального
+    /// охвата базальных дендритов пирамид L3 V1 макак.
+    /// Источник: Amatrudo et al. 2012, J. Neurosci. 32:1480–1491 (Table 1).
+    ///
+    public const float DendriticReachUm = 97.0f;
+
+    // ----------------------------------------------------------
+    // КОЛИЧЕСТВО ТК-АКСОНОВ ПО ТИПАМ
+    //
+    // Расчёт: N = density × π × (arborRadius + columnRadius + DendriticReachUm)²
+    //
+    // Каждый аксон в массиве представляет один LGN-нейрон, чей
+    // горизонтальный арбор способен достигать дендритов хотя бы
+    // одного нейрона данной миниколонки.
+    // ----------------------------------------------------------
 
     ///
-    /// Число парвоцеллюлярных (P) аксонов, покрывающих миниколонку.
-    /// N_P = 1134/мм² × π×(175 мкм)² ≈ 109.
-    /// Источник: Mazade & Alonso 2017; Blasdel & Lund 1983.
+    /// Число M-аксонов, чьи арборы досягают дендритов нейронов миниколонки.
+    /// R_eff = 300 + 12.35 + 97 = 409.4 мкм
+    /// N_M = 142 × π × 0.4094² ≈ 75.
+    /// Источник: Mazade & Alonso 2017; Blasdel & Lund 1983;
+    ///           Amatrudo et al. 2012.
     ///
-    public const int PAxonCount = 109;
+    public const int MAxonCount = 75;
 
     ///
-    /// Число конийоцеллюлярных поверхностных (K_sup, K1/K2) аксонов.
-    /// Источник K1/K2: ~33% всех K-нейронов → ~47/мм².
-    /// N_K_sup = 47/мм² × π×(137.5 мкм)² ≈ 3.
-    /// Проекция: L1 + L3A (диффузный, простой арбор).
-    /// Источник: Casagrande et al. 2007; Hendry & Reid 2000.
+    /// Число P-аксонов, чьи арборы досягают дендритов нейронов миниколонки.
+    /// R_eff = 175 + 12.35 + 97 = 284.4 мкм
+    /// N_P = 1 134 × π × 0.2844² ≈ 288.
+    /// Источник: Mazade & Alonso 2017; Blasdel & Lund 1983;
+    ///           Amatrudo et al. 2012.
     ///
-    public const int KSupAxonCount = 3;
+    public const int PAxonCount = 288;
 
     ///
-    /// Число конийоцеллюлярных блоб-аксонов (K_blob, K3–K6).
-    /// Источник K3–K6: ~67% всех K-нейронов → ~95/мм².
-    /// N_K_blob = 95/мм² × π×(112.5 мкм)² ≈ 4.
-    /// Проекция: CO-блобы L3Bα (компактный, фокусированный арбор).
-    /// Источник: Casagrande et al. 2007; 2020 Cereb. Cortex review.
+    /// Число K_sup-аксонов (K1/K2), чьи арборы досягают дендритов нейронов.
+    /// R_eff = 137.5 + 12.35 + 97 = 246.8 мкм
+    /// N_K_sup = 47 × π × 0.2468² ≈ 9.
+    /// Источник: Casagrande et al. 2007; Amatrudo et al. 2012.
     ///
-    public const int KBlobAxonCount = 4;
+    public const int KSupAxonCount = 9;
 
     ///
-    /// Суммарное число всех ТК-аксонов, покрывающих миниколонку.
-    /// M(40) + P(109) + K_sup(3) + K_blob(4) = 156.
+    /// Число K_blob-аксонов (K3–K6), чьи арборы досягают дендритов нейронов.
+    /// R_eff = 112.5 + 12.35 + 97 = 221.8 мкм
+    /// N_K_blob = 95 × π × 0.2218² ≈ 15.
+    /// Источник: Casagrande et al. 2007; Amatrudo et al. 2012.
+    ///
+    public const int KBlobAxonCount = 15;
+
+    ///
+    /// Суммарное число ТК-аксонов.
+    /// M(75) + P(288) + K_sup(9) + K_blob(15) = 387.
     ///
     public const int TotalAxonCount = MAxonCount + PAxonCount + KSupAxonCount + KBlobAxonCount;
 
@@ -117,90 +150,91 @@ public sealed class ThalamocorticalInput
 
     ///
     /// Все ТК-аксоны (M + P + K_sup + K_blob), чьи горизонтальные
-    /// арборы достигают данной миниколонки.
+    /// арборы способны достигать дендритов нейронов данной миниколонки.
     ///
     public readonly ThalamocorticalAxon[] ThalamocorticalAxons;
+
+    public readonly ThalamocorticalAxon[] Top200_M_P_ThalamocorticalAxons;
 
     // ============================================================
     // КОНСТРУКТОР
     // ============================================================
 
     ///
-    /// Генерирует все таламокортикальные входящие аксоны для миниколонки.
-    /// Общее число: M(40) + P(109) + K_sup(3) + K_blob(4) = 156.
+    /// Генерирует все таламокортикальные входящие аксоны.
+    /// Критерий включения — арбор достигает дендритов нейронов
+    /// данной миниколонки (радиус захвата = arborRadius + columnRadius
+    /// + DendriticReachUm).
     ///
     /// <param name="random">Генератор случайных чисел.</param>
     /// <param name="columnRadiusUm">Радиус миниколонки (мкм).</param>
     /// <param name="columnHeightUm">Высота миниколонки (мкм).</param>
     public ThalamocorticalInput(Random random, float columnRadiusUm, float columnHeightUm)
     {
-        ThalamocorticalAxons = new ThalamocorticalAxon[TotalAxonCount];
+        FastList<ThalamocorticalAxon> thalamocorticalAxons = new (TotalAxonCount);
+        FastList<ThalamocorticalAxon> m_P_ThalamocorticalAxons = new(TotalAxonCount);
 
-        int globalIdx = 0;
-
-        // --- M-аксоны (магноцеллюлярные) ---
-        // 40 аксонов из слоёв 1–2 LGN → слой L4Cα (Z: −600..−750 мкм)
+        // --- M-аксоны (75) ---
+        // Арбор r=300 мкм; захват = 300 + 12.35 + 97 = 409.4 мкм.
+        // M-путь: движение, контраст → L4Cα (−600..−750 мкм).
         for (int i = 0; i < MAxonCount; i += 1)
         {
             var axon = ThalamocorticalAxon.Generate(
-                globalIdx,
                 ThalamocorticalType.Magnocellular,
                 random,
                 columnRadiusUm,
-                columnHeightUm);
-
-            ThalamocorticalAxons[globalIdx] = axon;
-            globalIdx += 1;
+                columnHeightUm,
+                DendriticReachUm);
+            thalamocorticalAxons.Add(axon);
+            m_P_ThalamocorticalAxons.Add(axon);
         }
 
-        // --- P-аксоны (парвоцеллюлярные) ---
-        // 109 аксонов из слоёв 3–6 LGN → слой L4Cβ (Z: −750..−900 мкм)
+        // --- P-аксоны (288) ---
+        // Арбор r=175 мкм; захват = 175 + 12.35 + 97 = 284.4 мкм.
+        // P-путь: форма, цвет → L4Cβ (−750..−900 мкм).
+        // Доминируют: плотность 1134/мм² × увеличенный эффективный
+        // радиус → 288 аксонов — основной источник сенсорного входа.
         for (int i = 0; i < PAxonCount; i += 1)
         {
             var axon = ThalamocorticalAxon.Generate(
-                globalIdx,
                 ThalamocorticalType.Parvocellular,
                 random,
                 columnRadiusUm,
-                columnHeightUm);
-
-            ThalamocorticalAxons[globalIdx] = axon;
-            globalIdx += 1;
+                columnHeightUm,
+                DendriticReachUm);
+            thalamocorticalAxons.Add(axon);
+            m_P_ThalamocorticalAxons.Add(axon);
         }
 
-        // --- K_sup-аксоны (конийоцеллюлярные, K1/K2) ---
-        // 3 аксона из вентральных K-слоёв LGN → L1 + L3A.
-        // Морфология: простой диффузный арбор; мало бутонов (~120).
-        // Источник: Casagrande et al. 2007; Hendry & Reid 2000.
+        // --- K_sup-аксоны (9) ---
+        // Арбор r=137.5 мкм; захват = 137.5 + 12.35 + 97 = 246.8 мкм.
+        // K1/K2: диффузный вход в L1 + L3A.
         for (int i = 0; i < KSupAxonCount; i += 1)
         {
             var axon = ThalamocorticalAxon.Generate(
-                globalIdx,
                 ThalamocorticalType.KoniocellularSuperficial,
                 random,
                 columnRadiusUm,
-                columnHeightUm);
-
-            ThalamocorticalAxons[globalIdx] = axon;
-            globalIdx += 1;
+                columnHeightUm,
+                DendriticReachUm);
+            thalamocorticalAxons.Add(axon);
         }
 
-        // --- K_blob-аксоны (конийоцеллюлярные, K3–K6) ---
-        // 4 аксона из дорсальных K-слоёв LGN → CO-блобы L3Bα.
-        // Морфология: компактный фокусированный арбор; 217 бутонов.
-        // 93% бутонов в L3Bα; редкие коллатерали в L1 и L4A (~2% каждая).
-        // Источник: Casagrande et al. 2007; 2020 Cereb. Cortex review.
+        // --- K_blob-аксоны (15) ---
+        // Арбор r=112.5 мкм; захват = 112.5 + 12.35 + 97 = 221.8 мкм.
+        // K3–K6: S-конус хроматика → CO-блобы L3Bα.
         for (int i = 0; i < KBlobAxonCount; i += 1)
         {
             var axon = ThalamocorticalAxon.Generate(
-                globalIdx,
                 ThalamocorticalType.KoniocellularBlob,
                 random,
                 columnRadiusUm,
-                columnHeightUm);
-
-            ThalamocorticalAxons[globalIdx] = axon;
-            globalIdx += 1;
+                columnHeightUm,
+                DendriticReachUm);
+            thalamocorticalAxons.Add(axon);
         }
+
+        ThalamocorticalAxons = thalamocorticalAxons.ToArray();
+        Top200_M_P_ThalamocorticalAxons = m_P_ThalamocorticalAxons.OrderBy(a => MathHelper.GetLengthXY(a.Root.Position)).Take(200).ToArray();
     }
 }

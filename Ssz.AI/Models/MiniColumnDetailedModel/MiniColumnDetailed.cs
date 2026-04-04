@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Collections;
 using TorchSharp;
 using static TorchSharp.torch;
+using Ssz.AI.Helpers;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
@@ -83,9 +84,9 @@ public sealed class MiniColumnDetailed : IDisposable
     public const float ColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
 
     /// <summary>
-    ///    Радиус, внутри которого учитываются синапсы.
+    ///    Радиус, внутри которого учитываются синапсы пирамидальных нейронов.
     /// </summary>
-    public const float SynapsesRadiusUs = 25.0f;   // диаметр ~40 мкм
+    public const float ColumnRadius_Extended_Um = 25.0f;   // диаметр ~40 мкм
 
     /// <summary>Высота миниколонки (мкм), покрывает слои II–VI.</summary>
     public const float ColumnHeightUm = 2000.0f;
@@ -134,23 +135,29 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         //  ШАГ 1: Индексы активных пирамидальных аксонов
         // ----------------------------------------------------------
-        _activePyramidalAxons.Clear();
-        //for (int i = 0; i < PyramidalAxonsCount; i += 1)
+        //_activePyramidalAxons.Clear();
+        //for (int i = 0; i < activityBits.Length; i += 1)
         //{
-        //    bool isActive = PyramidalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
-        //    if (isActive)
-        //        _activePyramidalAxons.Add(i);
+        //    if (i < PyramidalAxons.Length)
+        //    {
+        //        bool isActive = PyramidalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
+        //        if (isActive)
+        //            _activePyramidalAxons.Add(i);
+        //    }
         //}
 
         // ----------------------------------------------------------
         //  ШАГ 2: Индексы активных ТК-аксонов
         // ----------------------------------------------------------
         _activeTcAxons.Clear();
-        for (int i = 0; i < ThalamocorticalInput.TotalAxonCount; i += 1)
+        for (int i = 0; i < activityBits.Length; i += 1)
         {
-            bool isActive = ThalamocorticalInput.ThalamocorticalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
-            if (isActive)
-                _activeTcAxons.Add(i);
+            if (i < ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons.Length)
+            {
+                bool isActive = ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
+                if (isActive)
+                    _activeTcAxons.Add(i);
+            }
         }
 
         // ----------------------------------------------------------
@@ -567,7 +574,7 @@ public sealed class MiniColumnDetailed : IDisposable
             );
 
             // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют            
-            if (GetLengthXY(synPos) < SynapsesRadiusUs)
+            if (MathHelper.GetLengthXY(synPos) < ColumnRadius_Extended_Um)
                 synapses.Add(new Synapse(synPos));
 
             // Продвигаемся дальше по отрезку на заданный равномерный шаг
@@ -848,12 +855,7 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         return result.Count > 0 ? result : null;
-    }
-
-    public static float GetLengthXY(Vector3 position)
-    {
-        return MathF.Sqrt((position.X * position.X) + (position.Y * position.Y));
-    }
+    }    
 
     private readonly FastList<int> _activePyramidalAxons = new FastList<int>(capacity: PyramidalAxonsCount);
     private readonly FastList<int> _activeTcAxons = new FastList<int>(capacity: ThalamocorticalInput.TotalAxonCount);

@@ -1,6 +1,7 @@
 ﻿using Ssz.AI.Models;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using static TorchSharp.torch;
 
 namespace Ssz.AI.Helpers;
@@ -310,6 +311,11 @@ public static class MathHelper
     public static float GetLinearF(float min, float max, float valueNormalized)
     {
         return min + (max - min) * valueNormalized;
+    }
+
+    public static float GetLengthXY(Vector3 position)
+    {
+        return MathF.Sqrt((position.X * position.X) + (position.Y * position.Y));
     }
 
     // Предвычисленные константы для плотности.
