@@ -135,12 +135,12 @@ public sealed class MiniColumnDetailed : IDisposable
         //  ШАГ 1: Индексы активных пирамидальных аксонов
         // ----------------------------------------------------------
         _activePyramidalAxons.Clear();
-        for (int i = 0; i < PyramidalAxonsCount; i += 1)
-        {
-            bool isActive = PyramidalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
-            if (isActive)
-                _activePyramidalAxons.Add(i);
-        }
+        //for (int i = 0; i < PyramidalAxonsCount; i += 1)
+        //{
+        //    bool isActive = PyramidalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
+        //    if (isActive)
+        //        _activePyramidalAxons.Add(i);
+        //}
 
         // ----------------------------------------------------------
         //  ШАГ 2: Индексы активных ТК-аксонов
@@ -148,7 +148,7 @@ public sealed class MiniColumnDetailed : IDisposable
         _activeTcAxons.Clear();
         for (int i = 0; i < ThalamocorticalInput.TotalAxonCount; i += 1)
         {
-            bool isActive = ThalamocorticalInput.ThalamocorticalAxons[i].Temp_IsActive;
+            bool isActive = ThalamocorticalInput.ThalamocorticalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
             if (isActive)
                 _activeTcAxons.Add(i);
         }
@@ -656,7 +656,7 @@ public sealed class MiniColumnDetailed : IDisposable
         int minActiveAxons)
     {
         var groups = input.groups;
-        float voxelSizeUm = 2.0f;
+        float voxelSizeUm = 10.0f; // Pyramidal: 2.0f;
 
         // ---- Bounding box ----
         SceneBounds bounds = new();

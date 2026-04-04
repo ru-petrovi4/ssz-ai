@@ -958,7 +958,7 @@ public class Model01 : IDisposable
         }
         
         MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
-        var activeZones = MiniColumnDetailed.Temp_ConvergenceZones;        
+        var activeZones = MiniColumnDetailed.Temp_ThalamocorticalZones;        
 
         if (log && activeZones is not null)
         {
@@ -1354,7 +1354,7 @@ public class Model01 : IDisposable
         /// <summary>
         ///     радиус зоны в мкм
         /// </summary>
-        public float ZoneRadiusUm { get; set; } = 14.0f;
+        public float ZoneRadiusUm { get; set; } = 20.0f; // Pyramidal: 14.0f;
 
         /// <summary>
         ///     минимум N уникальных активных аксонов

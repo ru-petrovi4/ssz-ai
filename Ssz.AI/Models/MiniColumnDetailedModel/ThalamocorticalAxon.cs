@@ -7,113 +7,168 @@ using Ssz.Utils;
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
 // ============================================================
-//  ТАЛАМОКОРТИКАЛЬНЫЙ АКСОН (ЛКТ → V1)
+// ТАЛАМОКОРТИКАЛЬНЫЙ АКСОН (ЛКТ → V1)
 //
-//  Моделирует входящий афферентный аксон от латерального
-//  коленчатого тела (ЛКТ / LGN) к миниколонке первичной
-//  зрительной коры (V1).
+// Моделирует входящий афферентный аксон от латерального
+// коленчатого тела (ЛКТ / LGN) к миниколонке первичной
+// зрительной коры (V1).
 //
-//  Три типа по классификации LGN-каналов:
+// Четыре типа по классификации LGN-каналов:
 //
-//  Magnocellular (M) → слой 4Cα (Z ≈ −600..−750 мкм)
-//    - Движение, контраст, крупные рецептивные поля
-//    - Горизонтальный арбор ~550–640 мкм диаметр
-//    - ~6 490 синапсов на аксон (Blasdel & Lund 1983;
-//      Freund et al. 1989; García-Marín et al. 2019)
+// Magnocellular (M) → слой 4Cα (Z ≈ −600..−750 мкм)
+//   - Движение, контраст, крупные рецептивные поля
+//   - Горизонтальный арбор ~550–640 мкм диаметр
+//   - ~6 490 синапсов на аксон (Blasdel & Lund 1983;
+//     Freund et al. 1989; García-Marín et al. 2019)
 //
-//  Parvocellular (P) → слой 4Cβ (Z ≈ −750..−900 мкм)
-//    - Цвет, мелкие детали, медленное движение
-//    - Горизонтальный арбор ~300–400 мкм диаметр
-//    - ~3 500 синапсов (García-Marín et al. 2019, оценка)
+// Parvocellular (P) → слой 4Cβ (Z ≈ −750..−900 мкм)
+//   - Цвет, мелкие детали, медленное движение
+//   - Горизонтальный арбор ~300–400 мкм диаметр
+//   - ~3 500 синапсов (García-Marín et al. 2019, оценка)
 //
-//  Koniocellular (K) → слой 1 (Z ≈ 0..−80 мкм) +
-//                       blob-зоны L2/3 (Z ≈ −80..−250 мкм)
-//    - Цвет (S-конус), диффузный входной сигнал
-//    - Горизонтальный арбор ~200–300 мкм диаметр
-//    - ~1 500 синапсов (Callaway 1998; Hendry & Reid 2000)
+// KoniocellularSuperficial (K_sup, слои K1/K2 ЛКТ)
+//       → слой 1 + слой 3A (Z ≈ 0..−80 мкм и −80..−350 мкм)
+//   - Источник: вентральные K-слои LGN (K1, K2)
+//   - Морфология: простые, диффузные арборы в L1 и L3A
+//   - Горизонтальный арбор ~200–350 мкм диаметр
+//   - Бутонов МЕНЬШЕ, чем у K_blob; ≈ 90–150 бутонов
+//   - Функция: диффузные низко-акуитетные сигналы; связь
+//     с SuperiorColliculus через K1/K2
+//   - Источник: Casagrande et al. 2007 (Cereb. Cortex 17:2334);
+//     Hendry & Reid 2000 (Annu. Rev. Neurosci. 23:127)
 //
-//  Морфология (Callaway 1998; Blasdel & Lund 1983):
-//    1. Аксон приходит снизу из белого вещества.
-//       Точка входа в WM случайна в пределах радиуса арбора
-//       данного типа (не только под колонкой), т.к. один M-аксон
-//       охватывает ~600 мкм и может принадлежать соседней колонке.
-//    2. Поднимается вертикально до целевого слоя.
-//    3. В целевом слое разворачивается горизонтально.
-//    4. Формирует несколько (~2–4) плоских кустистых арборов.
-//    5. Синаптические бутоны en passant по всей длине ветвей.
+// KoniocellularBlob (K_blob, слои K3–K6 ЛКТ)
+//       → CO-блобы слоя 3Bα (Z ≈ −250..−450 мкм)
+//   - Источник: дорсальные K-слои LGN (K3, K4, K5, K6)
+//   - Морфология: компактные, фокусированные арборы
+//     строго в CO-блобах; редкие ветви в L1 (~2%) и L4A (~2%)
+//   - Горизонтальный арбор ~150–300 мкм диаметр (фокусированный)
+//   - Среднее число бутонов: 217 (диапазон 90–430, N=9 аксонов)
+//   - Функция: S-конус (синий–жёлтый) хроматический сигнал
+//     в CO-блобы; субстрат цветового зрения через blob-путь
+//   - Источник: Casagrande et al. 2007; Yabuta & Callaway 1998;
+//     Anatomy and Physiology of Macaque V1 (2020, Cereb. Cortex)
 //
+// Морфология (Callaway 1998; Blasdel & Lund 1983;
+//             Casagrande et al. 2007):
+//   1. Аксон приходит снизу из белого вещества.
+//      Точка входа в WM случайна в пределах радиуса арбора
+//      данного типа.
+//   2. Поднимается вертикально до целевого слоя.
+//   3. В целевом слое разворачивается горизонтально.
+//      K_blob: компактный арбор преимущественно в L3Bα.
+//      K_sup:  диффузный арбор преимущественно в L1,
+//              с дополнительной ветвью в L3A.
+//   4. Формирует несколько (~2–4) плоских кустистых арборов.
+//   5. Синаптические бутоны en passant по всей длине ветвей.
 //
-//  Координатная система:
-//    X, Y — горизонтальные оси (мкм)
-//    Z = 0 — поверхность коры, отрицательные Z — глубже
+// Координатная система:
+//   X, Y — горизонтальные оси (мкм)
+//   Z = 0 — поверхность коры, отрицательные Z — глубже
 //
-//  Источники:
-//    - Blasdel & Lund 1983, J. Neurosci. 3:1389–1413
-//    - Freund et al. 1989, J. Comp. Neurol. 289:315–336
-//    - Callaway 1998, Annu. Rev. Neurosci. 21:47–74
-//    - García-Marín et al. 2019, Cereb. Cortex 29:134–151
-//    - Hendry & Reid 2000, Annu. Rev. Neurosci. 23:127–153
-//    - Yabuta & Callaway 1998, J. Neurosci. 18:9489–9499
+// Источники:
+//   - Blasdel & Lund 1983, J. Neurosci. 3:1389–1413
+//   - Freund et al. 1989, J. Comp. Neurol. 289:315–336
+//   - Callaway 1998, Annu. Rev. Neurosci. 21:47–74
+//   - García-Marín et al. 2019, Cereb. Cortex 29:134–151
+//   - Hendry & Reid 2000, Annu. Rev. Neurosci. 23:127–153
+//   - Yabuta & Callaway 1998, J. Neurosci. 18:9489–9499
+//   - Casagrande et al. 2007, Cereb. Cortex 17:2334–2345
+//   - Anatomy and Physiology of Macaque V1/V2/MT 2020,
+//     Cereb. Cortex 30:3483–3502
 // ============================================================
 
-/// <summary>
+///
 /// Тип таламокортикального канала (LGN pathway).
 /// Определяет целевой слой, морфологию арбора и число синапсов.
-/// </summary>
+///
 public enum ThalamocorticalType
 {
-    /// <summary>Магноцеллюлярный путь: движение/контраст → L4Cα.</summary>
+    /// Магноцеллюлярный путь: движение/контраст → L4Cα.
     Magnocellular = 0,
-    /// <summary>Парвоцеллюлярный путь: цвет/детали → L4Cβ.</summary>
+    /// Парвоцеллюлярный путь: цвет/детали → L4Cβ.
     Parvocellular = 1,
-    /// <summary>Конийоцеллюлярный путь: S-конус цвет → L1 и blob L2/3.</summary>
-    Koniocellular = 2,
+    /// Конийоцеллюлярный поверхностный путь (K1/K2 ЛКТ):
+    /// низко-акуитетные + диффузные сигналы → L1 + L3A.
+    KoniocellularSuperficial = 2,
+    /// Конийоцеллюлярный блоб-путь (K3–K6 ЛКТ):
+    /// S-конус хроматический сигнал → CO-блобы L3Bα.
+    KoniocellularBlob = 3,
 }
 
-/// <summary>
+///
 /// Таламокортикальный афферентный аксон от ЛКТ к миниколонке V1.
 /// Моделирует пространственную траекторию и синаптические бутоны.
-/// </summary>
+///
 public sealed class ThalamocorticalAxon : IAxon
 {
     // ----------------------------------------------------------
-    //  ПАРАМЕТРЫ АРБОРОВ ПО ТИПАМ (мкм и синапсы)
+    // ПАРАМЕТРЫ АРБОРОВ ПО ТИПАМ (мкм и синапсы)
     // ----------------------------------------------------------
 
     // Magnocellular: арбор ~600 мкм диаметр, ~6490 синапсов
     // Источник: Blasdel & Lund 1983; García-Marín et al. 2019
     private const float MArborRadiusUm = 300.0f;
-    private const int MSynapsesCount = 6_490;
+    private const int   MSynapsesCount = 6_490;
 
     // Parvocellular: арбор ~350 мкм диаметр, ~3500 синапсов (оценка)
     // Источник: García-Marín et al. 2019
     private const float PArborRadiusUm = 175.0f;
-    private const int PSynapsesCount = 3_500;
+    private const int   PSynapsesCount = 3_500;
 
-    // Koniocellular: арбор ~250 мкм диаметр, ~1500 синапсов (оценка)
-    // Источник: Callaway 1998; Hendry & Reid 2000
-    private const float KArborRadiusUm = 125.0f;
-    private const int KSynapsesCount = 1_500;
+    // KoniocellularSuperficial (K1/K2):
+    //   арбор ~200–350 мкм диаметр (диффузный, простой)
+    //   Бутонов мало — меньше, чем у K_blob (~90–150)
+    //   Источник: Casagrande et al. 2007 (ключевой факт:
+    //   "K1/K2 axons give rise to fewer boutons than K3–K6")
+    private const float KSupArborRadiusUm = 137.5f;  // ~275 мкм диаметр
+    private const int   KSupSynapsesCount = 120;      // среднее между 90 и 150
+
+    // KoniocellularBlob (K3–K6):
+    //   арбор ~150–300 мкм диаметр, компактный, фокусированный
+    //   Среднее 217 бутонов (диапазон 90–430, N=9)
+    //   Источник: Casagrande et al. 2007; 2020 Cereb. Cortex review
+    private const float KBlobArborRadiusUm = 112.5f;  // ~225 мкм диаметр
+    private const int   KBlobSynapsesCount = 217;      // среднее по данным N=9
 
     // ----------------------------------------------------------
-    //  ЦЕЛЕВЫЕ Z-ДИАПАЗОНЫ ПО ТИПАМ (мкм)
-    //  Система координат: Z=0 — поверхность коры, Z < 0 — глубже.
+    // ЦЕЛЕВЫЕ Z-ДИАПАЗОНЫ ПО ТИПАМ (мкм)
+    // Система координат: Z=0 — поверхность коры, Z < 0 — глубже.
     //
-    //  L1:   Z =    0 ..  −80 мкм
-    //  L2/3: Z =  −80 .. −600 мкм  (blob-зоны: −80..−250 мкм)
-    //  L4Cα: Z = −600 .. −750 мкм  ← M-вход
-    //  L4Cβ: Z = −750 .. −900 мкм  ← P-вход
-    //  L5:   Z = −900 ..−1400 мкм
-    //  L6:   Z =−1400 ..−2000 мкм
+    // L1:          Z =    0 .. −80 мкм
+    // L2/3A:       Z =  −80 .. −350 мкм  (верхний L3A)
+    // L3Bα (блобы):Z = −350 .. −500 мкм  (нижний L3, CO-блобы)
+    // L4A:         Z = −500 .. −600 мкм
+    // L4Cα:        Z = −600 .. −750 мкм  ← M-вход
+    // L4Cβ:        Z = −750 .. −900 мкм  ← P-вход
+    // L5:          Z = −900 ..−1400 мкм
+    // L6:          Z =−1400 ..−2000 мкм
     //
-    //  [Пункт 5 ИСПРАВЛЕН]: K-аксоны теперь охватывают L1 + верх L2/3
-    //  (0..−250 мкм), а не только L1 (0..−80 мкм).
-    //  Источник: Hendry & Reid 2000; Yabuta & Callaway 1998
+    // K_sup (K1/K2): основной арбор в L1 (0..−80 мкм),
+    //                дополнительная ветвь в L3A (−80..−350 мкм)
+    //   Источник: Hendry & Reid 2000; Casagrande et al. 2007
+    //
+    // K_blob (K3–K6): основной арбор в CO-блобах L3Bα (−350..−500 мкм)
+    //                 с редкими коллатералями в L1 (~2%) и L4A (~2%)
+    //   Источник: Casagrande et al. 2007;
+    //             2020 review (93% бутонов в L3Bα)
     // ----------------------------------------------------------
 
-    // K: L1 + начало L2/3
-    private const float KTargetZMax = 0.0f;    // поверхность
-    private const float KTargetZMin = -250.0f; // нижняя граница L3A
+    // K_sup: L1 (основной арбор)
+    private const float KSupL1ZMax = 0.0f;
+    private const float KSupL1ZMin = -80.0f;
+
+    // K_sup: L3A (дополнительная ветвь)
+    private const float KSupL3AZMax = -80.0f;
+    private const float KSupL3AZMin = -350.0f;
+
+    // K_blob: L3Bα CO-блобы (основной арбор)
+    private const float KBlobZMax = -350.0f;
+    private const float KBlobZMin = -500.0f;
+
+    // K_blob: L4A (редкие коллатерали ~2% бутонов)
+    private const float KBlobL4AZMax = -500.0f;
+    private const float KBlobL4AZMin = -600.0f;
 
     // M: слой 4Cα
     private const float MTargetZMax = -600.0f;
@@ -124,29 +179,29 @@ public sealed class ThalamocorticalAxon : IAxon
     private const float PTargetZMin = -900.0f;
 
     // ----------------------------------------------------------
-    //  ДАННЫЕ АКСОНА
+    // ДАННЫЕ АКСОНА
     // ----------------------------------------------------------
 
-    /// <summary>Индекс аксона в массиве входящих афферентов.</summary>
+    /// Индекс аксона в массиве входящих афферентов.
     public readonly int Index;
 
-    /// <summary>Тип канала LGN.</summary>
+    /// Тип канала LGN.
     public readonly ThalamocorticalType Type;
 
-    /// <summary>Корневой узел дерева аксона (точка входа снизу из WM).</summary>
+    /// Корневой узел дерева аксона (точка входа снизу из WM).
     public readonly AxonPoint Root;
 
-    /// <summary>Все синаптические бутоны этого афферента.</summary>
+    /// Все синаптические бутоны этого афферента.
     public readonly Synapse[] Synapses;
 
-    /// <summary>Активность аксона: true — несёт входной сигнал.</summary>
+    /// Активность аксона: true — несёт входной сигнал.
     public bool Temp_IsActive;
 
     AxonPoint IAxon.Root     => Root;
     Synapse[] IAxon.Synapses => Synapses;
     bool      IAxon.IsActive => Temp_IsActive;
 
-    /// <summary>Создаёт аксон с уже построенным деревом и синапсами.</summary>
+    /// Создаёт аксон с уже построенным деревом и синапсами.
     public ThalamocorticalAxon(int index, ThalamocorticalType type,
         AxonPoint root, Synapse[] synapses)
     {
@@ -157,11 +212,11 @@ public sealed class ThalamocorticalAxon : IAxon
     }
 
     // ============================================================
-    //  ФАБРИЧНЫЙ МЕТОД: генерация одного ТК-аксона
+    // ФАБРИЧНЫЙ МЕТОД: генерация одного ТК-аксона
     // ============================================================
-    /// <summary>
+    ///
     /// Генерирует таламокортикальный афферентный аксон заданного типа.
-    /// </summary>
+    ///
     /// <param name="index">Индекс в массиве афферентов.</param>
     /// <param name="type">Тип LGN-канала.</param>
     /// <param name="random">Генератор случайных чисел.</param>
@@ -195,136 +250,148 @@ public sealed class ThalamocorticalAxon : IAxon
                 targetZMin    = PTargetZMin;
                 targetZMax    = PTargetZMax;
                 break;
-            default: // Koniocellular
-                arborRadius   = KArborRadiusUm;
-                synapsesCount = KSynapsesCount;
-                targetZMin    = KTargetZMin;
-                targetZMax    = KTargetZMax;
+            case ThalamocorticalType.KoniocellularSuperficial:
+                arborRadius   = KSupArborRadiusUm;
+                synapsesCount = KSupSynapsesCount;
+                // Основной арбор в L1
+                targetZMin    = KSupL1ZMin;
+                targetZMax    = KSupL1ZMax;
+                break;
+            default: // KoniocellularBlob
+                arborRadius   = KBlobArborRadiusUm;
+                synapsesCount = KBlobSynapsesCount;
+                // Основной арбор в CO-блобах L3Bα
+                targetZMin    = KBlobZMin;
+                targetZMax    = KBlobZMax;
                 break;
         }
 
         // ----------------------------------------------------------
-        //  ШАГ 1: Точка входа аксона в белом веществе (WM)
+        // ШАГ 1: Точка входа аксона в белом веществе (WM)
         //
-        //  [ИСПРАВЛЕНИЕ — пункт 1]:
-        //  Ранее точка входа ограничивалась columnRadiusUm (~20 мкм),
-        //  т.е. аксон всегда начинался строго под своей колонкой.
-        //  Это неверно: один M-аксон покрывает арбор диаметром ~600 мкм
-        //  и может принадлежать нейрону ЛКТ, чей ствол проходит на
-        //  расстоянии до arborRadius от центра данной колонки.
-        //
-        //  Теперь точка входа случайна в пределах радиуса арбора
-        //  (entryMaxRadius = arborRadius), что биологически корректно:
-        //  аксон поднимается из WM, немного смещённый от центра колонки,
-        //  и всё равно достигает нужного слоя горизонтальным арбором.
-        //  Источник: Blasdel & Lund 1983; García-Marín et al. 2019
+        // Точка входа случайна в пределах (arborRadius + columnRadiusUm),
+        // т.к. аксон может принадлежать нейрону ЛКТ из соседней
+        // топографической точки, чей горизонтальный арбор охватывает
+        // данную миниколонку.
+        // Источник: Blasdel & Lund 1983; Casagrande et al. 2007
         // ----------------------------------------------------------
 
-        // Определяем диапазон разброса точки входа в зависимости от режима:
-        //
-        //   entryInNeighborRing = false (собственный аксон):
-        //     Точка входа случайна внутри columnRadiusUm.
-        //     Аксон «принадлежит» данной колонке.
-        //
-        //   entryInNeighborRing = true (соседский аксон):
-        //     Точка входа случайна в КОЛЬЦЕ [columnRadiusUm .. arborRadius].
-        //     Ствол аксона поднимается из-под соседней колонки, но его
-        //     горизонтальный арбор (радиуса arborRadius) всё равно достигает
-        //     данной колонки и оставляет синапсы внутри неё.
-        //     Источник: Blasdel & Lund 1983 — M-арборы покрывают
-        //     несколько миниколонок одновременно.
         float entryMinRadius = 0.0f;
-        float entryMaxRadius = arborRadius + columnRadiusUm; // всегда ограничено радиусом арбора
+        float entryMaxRadius = arborRadius + columnRadiusUm;
 
         float entryX, entryY;
         while (true)
         {
-            // Равномерно случайная точка в квадрате [-R, +R]²
             entryX = (random.NextSingle() * 2.0f - 1.0f) * entryMaxRadius;
             entryY = (random.NextSingle() * 2.0f - 1.0f) * entryMaxRadius;
 
             float rSq = entryX * entryX + entryY * entryY;
 
-            // Принимаем точку только в допустимом кольце [min..max]
             if (rSq > entryMaxRadius * entryMaxRadius) continue;
             if (rSq < entryMinRadius * entryMinRadius) continue;
             break;
         }
 
-        // Точка входа — глубже дна колонки на ~50 мкм (подход из WM)
-        float entryZ = -columnHeightUm - 50.0f;
+        float entryZ  = -columnHeightUm - 50.0f;
         var   entryPos = new Vector3(entryX, entryY, entryZ);
         var   root     = new AxonPoint(entryPos);
 
         // ----------------------------------------------------------
-        //  ШАГ 2: Вертикальный ствол (ascent, подъём)
+        // ШАГ 2: Вертикальный ствол (ascent, подъём)
         //
-        //  Аксон поднимается от WM (entryZ ≈ −2050 мкм) к целевому
-        //  слою (targetZ ≈ −650..−900 мкм для M/P, 0..−250 мкм для K).
-        //  Шаг 100 мкм, небольшие горизонтальные блуждания ±2 мкм.
-        //  Источник: Callaway 1998 — ТК аксоны идут преимущественно
-        //  вертикально через WM и нижние слои коры.
+        // Аксон поднимается от WM к целевому слою.
+        // Шаг 100 мкм, небольшие горизонтальные блуждания ±2 мкм.
+        // Источник: Callaway 1998
         // ----------------------------------------------------------
 
-        // Случайный целевой Z внутри диапазона целевого слоя
-        float targetZ = targetZMin + random.NextSingle() * (targetZMax - targetZMin);
-
-        // Суммарное расстояние подъёма (положительное: Z растёт вверх к 0)
-        float ascentDist  = targetZ - entryZ;
+        float targetZ    = targetZMin + random.NextSingle() * (targetZMax - targetZMin);
+        float ascentDist = targetZ - entryZ;
         int   ascentSteps = Math.Max(4, (int)(ascentDist / 100.0f));
-        float stepZ       = ascentDist / ascentSteps;
+        float stepZ      = ascentDist / ascentSteps;
 
         AxonPoint current = root;
-        float     jitter  = 2.0f; // мкм горизонтального блуждания на шаг
+        float     jitter  = 2.0f;
 
         for (int s = 0; s < ascentSteps; s += 1)
         {
             var pos = new Vector3(
                 current.Position.X + (random.NextSingle() - 0.5f) * jitter,
                 current.Position.Y + (random.NextSingle() - 0.5f) * jitter,
-                current.Position.Z + stepZ   // шаг вверх (к 0)
+                current.Position.Z + stepZ
             );
             var next = new AxonPoint(pos);
             current.Next.Add(next);
             current = next;
         }
 
-        // current теперь находится в целевом слое (Z ≈ targetZ)
         AxonPoint arborRoot = current;
 
         // ----------------------------------------------------------
-        //  ШАГ 3: Горизонтальный арбор в целевом слое
+        // ШАГ 3: Горизонтальный арбор в целевом слое
         //
-        //  2–4 первичных ветви расходятся равномерно по азимуту
-        //  с небольшим случайным отклонением. Каждая ветвь
-        //  имеет 1–3 вторичных подветви.
-        //  Длина первичной ветви: 60–80% радиуса арбора.
-        //  Источник: Blasdel & Lund 1983; García-Marín et al. 2019
+        // Для K_sup и K_blob используются специализированные
+        // методы построения (см. ниже).
+        // Для M и P — общий метод растущих ветвей.
+        //
+        // Источник: Blasdel & Lund 1983; Casagrande et al. 2007
         // ----------------------------------------------------------
 
-        int primaryBranches = 2 + random.Next(0, 3); // 2–4 основных ветви
+        switch (type)
+        {
+            case ThalamocorticalType.KoniocellularSuperficial:
+                GrowKoniocellularSuperficialArbor(arborRoot, arborRadius, random);
+                break;
+
+            case ThalamocorticalType.KoniocellularBlob:
+                GrowKoniocellularBlobArbor(arborRoot, arborRadius, random);
+                break;
+
+            default:
+                GrowStandardArbor(arborRoot, arborRadius, targetZMin, targetZMax, random);
+                break;
+        }
+
+        // ----------------------------------------------------------
+        // ШАГ 4: Размещение синаптических бутонов en passant
+        //        по всей длине дерева аксона.
+        // ----------------------------------------------------------
+
+        Synapse[] synapses = PlaceSynapses(root, synapsesCount, columnRadiusUm, random);
+
+        return new ThalamocorticalAxon(index, type, root, synapses);
+    }
+
+    // ============================================================
+    // ГОРИЗОНТАЛЬНЫЙ АРБОР ДЛЯ M И P АКСОНОВ
+    // ============================================================
+    ///
+    /// Строит стандартный горизонтальный арбор (для M и P типов).
+    /// 2–4 первичные ветви + 1–3 подветви на каждую.
+    /// Источник: Blasdel & Lund 1983; García-Marín et al. 2019
+    ///
+    private static void GrowStandardArbor(
+        AxonPoint arborRoot,
+        float     arborRadius,
+        float     targetZMin,
+        float     targetZMax,
+        Random    random)
+    {
+        int primaryBranches = 2 + random.Next(0, 3); // 2–4
 
         for (int b = 0; b < primaryBranches; b += 1)
         {
-            // Равномерное распределение азимутов + случайный джиттер ±0.2 рад
             float branchAngle = (float)(b * Math.PI * 2.0 / primaryBranches)
                                 + (random.NextSingle() - 0.5f) * 0.4f;
-
-            // Длина первичной ветви: 60–80% радиуса арбора
-            float branchLen     = arborRadius * (0.60f + random.NextSingle() * 0.20f);
-            int   branchSteps   = Math.Max(4, (int)(branchLen / 40.0f));
-            float branchStepXY  = branchLen / branchSteps;
-
-            // Вертикальный дрейф внутри слоя: 15% ширины слоя
+            float branchLen   = arborRadius * (0.60f + random.NextSingle() * 0.20f);
+            int   branchSteps = Math.Max(4, (int)(branchLen / 40.0f));
+            float branchStepXY = branchLen / branchSteps;
             float verticalDrift = MathF.Abs(targetZMax - targetZMin) * 0.15f;
 
             AxonPoint branchCurrent = arborRoot;
 
             for (int s = 0; s < branchSteps; s += 1)
             {
-                // Угол слегка меандрирует (±0.09 рад ~ ±5° на шаг)
                 float curAngle = branchAngle + (random.NextSingle() - 0.5f) * 0.18f;
-
                 var pos = new Vector3(
                     branchCurrent.Position.X + MathF.Cos(curAngle) * branchStepXY,
                     branchCurrent.Position.Y + MathF.Sin(curAngle) * branchStepXY,
@@ -343,13 +410,11 @@ public sealed class ThalamocorticalAxon : IAxon
 
             for (int sb = 0; sb < subBranches; sb += 1)
             {
-                // Угол подветви: ответвляется от основного на ±0.6 рад
-                float subAngle  = branchAngle + (random.NextSingle() - 0.5f) * 1.2f;
-                float subLen    = arborRadius * (0.20f + random.NextSingle() * 0.25f);
-                int   subSteps  = Math.Max(2, (int)(subLen / 40.0f));
+                float subAngle = branchAngle + (random.NextSingle() - 0.5f) * 1.2f;
+                float subLen   = arborRadius * (0.20f + random.NextSingle() * 0.25f);
+                int   subSteps = Math.Max(2, (int)(subLen / 40.0f));
                 float subStepXY = subLen / subSteps;
 
-                // Подветвь стартует из корня арбора (arborRoot)
                 AxonPoint subCurrent = arborRoot;
 
                 for (int s = 0; s < subSteps; s += 1)
@@ -369,75 +434,243 @@ public sealed class ThalamocorticalAxon : IAxon
                 }
             }
         }
-
-        // ----------------------------------------------------------
-        //  ШАГ 4 (только для K-аксонов): дополнительный арбор
-        //  в blob-зонах L2/3
-        //
-        //  [ИСПРАВЛЕНИЕ — пункт 2]:
-        //  В предыдущей версии blobTargetZ = +80..+300 мкм,
-        //  что выше поверхности коры (физически невозможно).
-        //  Исправлено: blobTargetZ = −80..−300 мкм (глубже
-        //  поверхности, слои L2/3 blob-зоны).
-        //  Источник: Hendry & Reid 2000; Yabuta & Callaway 1998
-        // ----------------------------------------------------------
-
-        if (type == ThalamocorticalType.Koniocellular)
-        {
-            // Blob-зона L2/3: Z = −80..−300 мкм (отрицательные значения!)
-            float blobTargetZ = -(80.0f + random.NextSingle() * 220.0f);
-
-            GrowKoniocellularBlobBranch(
-                arborRoot,
-                blobTargetZ,
-                KArborRadiusUm * 0.6f,
-                random,                
-                -300.0f);     // toZ:   нижняя граница blob-зоны (−300 мкм)
-        }
-
-        // ----------------------------------------------------------
-        //  ШАГ 5: Размещение синаптических бутонов равномерно
-        //  по всей длине дерева аксона.
-        // ----------------------------------------------------------
-
-        Synapse[] synapses = PlaceSynapses(root, synapsesCount, columnRadiusUm, random);
-
-        return new ThalamocorticalAxon(index, type, root, synapses);
     }
 
     // ============================================================
-    //  ВСПОМОГАТЕЛЬНЫЙ МЕТОД: BLOB-ВЕТВЬ ДЛЯ K-АКСОНОВ
+    // ГОРИЗОНТАЛЬНЫЙ АРБОР ДЛЯ K_sup (K1/K2): L1 + L3A
     // ============================================================
-    /// <summary>
-    /// Строит дополнительную ветвь K-аксона, уходящую вверх от L1
-    /// к blob-зонам слоя 2/3 (Z = −80..−300 мкм).
-    /// </summary>
-    /// <param name="parentNode">Узел-родитель в арборе (в L1).</param>
-    /// <param name="targetZ">Целевая глубина blob-зоны (мкм, отрицательная).</param>
-    /// <param name="blobRadius">Радиус горизонтального арбора в blob-зоне (мкм).</param>
-    /// <param name="random">Генератор случайных чисел.</param>
-    /// <param name="toZ">Верхняя граница blob-арбора (мкм).</param>
-    private static void GrowKoniocellularBlobBranch(
-        AxonPoint parentNode,
-        float     targetZ,
-        float     blobRadius,
-        Random    random,        
-        float     toZ)
+    ///
+    /// Строит диффузный арбор K_sup аксона:
+    ///   - Основной арбор в L1 (0..−80 мкм) — 2–3 простые ветви
+    ///   - Дополнительная ветвь (с вероятностью ~0.8) в L3A (−80..−350 мкм)
+    ///
+    /// Биологическое обоснование:
+    ///   K1/K2 аксоны — морфологически простые, с меньшим числом
+    ///   бутонов, преимущественно в L1 и L3A.
+    ///   Источник: Casagrande et al. 2007 — "K1/K2 tend to branch
+    ///   in cortical layers 1 and 3A", "morphologically simple".
+    ///   Hendry & Reid 2000 — "dorsal-most pair relays low-acuity
+    ///   visual information to layer I of V1".
+    ///
+    private static void GrowKoniocellularSuperficialArbor(
+        AxonPoint arborRoot,
+        float     arborRadius,
+        Random    random)
     {
-        // Вертикальный «спуск» от L1 вглубь к blob-зоне L2/3.
-        // fromZ ≈ −250 мкм (нижняя граница L1 после исправления),
-        // targetZ ≈ −80..−300 мкм.
-        // Разница (targetZ − fromZ) может быть положительной или
-        // отрицательной в зависимости от случайного targetZ.
-        float ascentDist = targetZ - parentNode.Position.Z;
-        int   steps      = Math.Max(3, (int)(MathF.Abs(ascentDist) / 50.0f));
-        float stepZ      = ascentDist / steps;
+        // --- Основной арбор в L1 (простой, 2–3 ветви) ---
+        int l1Branches = 2 + random.Next(0, 2); // 2–3
+
+        for (int b = 0; b < l1Branches; b += 1)
+        {
+            float angle   = (float)(b * Math.PI * 2.0 / l1Branches)
+                            + (random.NextSingle() - 0.5f) * 0.5f;
+            float len     = arborRadius * (0.50f + random.NextSingle() * 0.30f);
+            int   steps   = Math.Max(3, (int)(len / 35.0f));
+            float stepXY  = len / steps;
+
+            AxonPoint cur = arborRoot;
+
+            for (int s = 0; s < steps; s += 1)
+            {
+                float a   = angle + (random.NextSingle() - 0.5f) * 0.20f;
+                var   pos = new Vector3(
+                    cur.Position.X + MathF.Cos(a) * stepXY,
+                    cur.Position.Y + MathF.Sin(a) * stepXY,
+                    Math.Clamp(
+                        cur.Position.Z + (random.NextSingle() - 0.5f) * 8.0f,
+                        KSupL1ZMin,    // −80 мкм
+                        KSupL1ZMax)    //   0 мкм
+                );
+                var next = new AxonPoint(pos);
+                cur.Next.Add(next);
+                cur = next;
+            }
+        }
+
+        // --- Дополнительная ветвь в L3A (~80% вероятность) ---
+        // K1/K2 часто имеют простые ответвления в L3A, но не у всех.
+        // Источник: Casagrande et al. 2007 ("tend to branch in 3A")
+        if (random.NextSingle() < 0.80f)
+        {
+            float l3aTargetZ = KSupL3AZMax + random.NextSingle() * (KSupL3AZMin - KSupL3AZMax);
+
+            // Вертикальный переход L1 → L3A
+            float descentDist = l3aTargetZ - arborRoot.Position.Z;
+            int   descSteps   = Math.Max(3, (int)(MathF.Abs(descentDist) / 50.0f));
+            float descStepZ   = descentDist / descSteps;
+
+            AxonPoint descCur = arborRoot;
+
+            for (int s = 0; s < descSteps; s += 1)
+            {
+                var pos = new Vector3(
+                    descCur.Position.X + (random.NextSingle() - 0.5f) * 4.0f,
+                    descCur.Position.Y + (random.NextSingle() - 0.5f) * 4.0f,
+                    descCur.Position.Z + descStepZ
+                );
+                var next = new AxonPoint(pos);
+                descCur.Next.Add(next);
+                descCur = next;
+            }
+
+            // Горизонтальный арбор в L3A: 1–2 простые ветви
+            int l3aBranches = 1 + random.Next(0, 2); // 1–2
+
+            for (int b = 0; b < l3aBranches; b += 1)
+            {
+                float angle  = random.NextSingle() * MathF.PI * 2.0f;
+                float len    = arborRadius * (0.30f + random.NextSingle() * 0.30f);
+                int   steps  = Math.Max(2, (int)(len / 35.0f));
+                float stepXY = len / steps;
+
+                AxonPoint brCur = descCur;
+
+                for (int s = 0; s < steps; s += 1)
+                {
+                    float a   = angle + (random.NextSingle() - 0.5f) * 0.25f;
+                    var   pos = new Vector3(
+                        brCur.Position.X + MathF.Cos(a) * stepXY,
+                        brCur.Position.Y + MathF.Sin(a) * stepXY,
+                        Math.Clamp(
+                            brCur.Position.Z + (random.NextSingle() - 0.5f) * 15.0f,
+                            KSupL3AZMin,    // −350 мкм
+                            KSupL3AZMax)    //  −80 мкм
+                    );
+                    var next = new AxonPoint(pos);
+                    brCur.Next.Add(next);
+                    brCur = next;
+                }
+            }
+        }
+    }
+
+    // ============================================================
+    // ГОРИЗОНТАЛЬНЫЙ АРБОР ДЛЯ K_blob (K3–K6): CO-блобы L3Bα
+    // ============================================================
+    ///
+    /// Строит компактный фокусированный арбор K_blob аксона:
+    ///   - Основной арбор строго в CO-блобах L3Bα (−350..−500 мкм)
+    ///     — 2–3 компактные ветви, меандрирующие внутри blob-зоны
+    ///   - Редкие коллатерали в L1 (~10% вероятность) и L4A (~10%)
+    ///
+    /// Биологическое обоснование:
+    ///   K3–K6 аксоны — морфологически сложные, фокусированные
+    ///   в CO-блобах. 93% бутонов в L3Bα, ~2% в L1, ~2% в L4A.
+    ///   Источник: Casagrande et al. 2007 — "terminate as complex,
+    ///   focused arbors in the CO blobs in layer 3Bα";
+    ///   2020 review — "93% of boutons in L3Bα (named 3Bα in
+    ///   Casagrande et al. 2007)"; среднее 217 бутонов (N=9).
+    ///
+    private static void GrowKoniocellularBlobArbor(
+        AxonPoint arborRoot,
+        float     arborRadius,
+        Random    random)
+    {
+        // --- Основной арбор в CO-блобах L3Bα (компактный) ---
+        // 2–3 ветви; арбор фокусированный, не диффузный.
+        // Горизонтальный размер ≈ 150–250 мкм диаметр.
+        int primaryBranches = 2 + random.Next(0, 2); // 2–3
+
+        for (int b = 0; b < primaryBranches; b += 1)
+        {
+            float angle    = (float)(b * Math.PI * 2.0 / primaryBranches)
+                             + (random.NextSingle() - 0.5f) * 0.4f;
+            // Ветви короче и плотнее, чем у M и P — фокусированный арбор
+            float len      = arborRadius * (0.55f + random.NextSingle() * 0.25f);
+            int   steps    = Math.Max(3, (int)(len / 30.0f));
+            float stepXY   = len / steps;
+            float vDrift   = MathF.Abs(KBlobZMax - KBlobZMin) * 0.10f; // небольшой дрейф
+
+            AxonPoint cur = arborRoot;
+
+            for (int s = 0; s < steps; s += 1)
+            {
+                float a   = angle + (random.NextSingle() - 0.5f) * 0.15f;
+                var   pos = new Vector3(
+                    cur.Position.X + MathF.Cos(a) * stepXY,
+                    cur.Position.Y + MathF.Sin(a) * stepXY,
+                    Math.Clamp(
+                        cur.Position.Z + (random.NextSingle() - 0.5f) * vDrift,
+                        KBlobZMin,    // −500 мкм
+                        KBlobZMax)    // −350 мкм
+                );
+                var next = new AxonPoint(pos);
+                cur.Next.Add(next);
+                cur = next;
+            }
+
+            // 1–2 подветви внутри CO-блоба
+            int subBranches = 1 + random.Next(0, 2);
+
+            for (int sb = 0; sb < subBranches; sb += 1)
+            {
+                float subAngle  = angle + (random.NextSingle() - 0.5f) * 1.0f;
+                float subLen    = arborRadius * (0.15f + random.NextSingle() * 0.20f);
+                int   subSteps  = Math.Max(2, (int)(subLen / 30.0f));
+                float subStepXY = subLen / subSteps;
+
+                AxonPoint subCur = arborRoot;
+
+                for (int s = 0; s < subSteps; s += 1)
+                {
+                    float a   = subAngle + (random.NextSingle() - 0.5f) * 0.15f;
+                    var   pos = new Vector3(
+                        subCur.Position.X + MathF.Cos(a) * subStepXY,
+                        subCur.Position.Y + MathF.Sin(a) * subStepXY,
+                        Math.Clamp(
+                            subCur.Position.Z + (random.NextSingle() - 0.5f) * vDrift,
+                            KBlobZMin,
+                            KBlobZMax)
+                    );
+                    var next = new AxonPoint(pos);
+                    subCur.Next.Add(next);
+                    subCur = next;
+                }
+            }
+        }
+
+        // --- Редкие коллатерали в L1 (~10% вероятность) ---
+        // 2% бутонов → ~10% аксонов имеют одну ветвь в L1.
+        // Источник: 2020 review (2% бутонов в L1 у K3–K6 аксонов)
+        if (random.NextSingle() < 0.10f)
+        {
+            GrowKBlobCollateral(arborRoot, random, KSupL1ZMin, KSupL1ZMax,
+                arborRadius * 0.30f);
+        }
+
+        // --- Редкие коллатерали в L4A (~10% вероятность) ---
+        // 2% бутонов → ~10% аксонов имеют одну ветвь в L4A.
+        // Источник: 2020 review (2% бутонов в L4A у K3–K6 аксонов)
+        if (random.NextSingle() < 0.10f)
+        {
+            GrowKBlobCollateral(arborRoot, random, KBlobL4AZMin, KBlobL4AZMax,
+                arborRadius * 0.25f);
+        }
+    }
+
+    // ============================================================
+    // ВСПОМОГАТЕЛЬНЫЙ МЕТОД: РЕДКАЯ КОЛЛАТЕРАЛЬ K_blob
+    // ============================================================
+    ///
+    /// Строит одиночную редкую коллатераль K_blob аксона
+    /// в нецелевом слое (L1 или L4A).
+    ///
+    private static void GrowKBlobCollateral(
+        AxonPoint parentNode,
+        Random    random,
+        float     toZMin,
+        float     toZMax,
+        float     collateralRadius)
+    {
+        float targetZ     = toZMin + random.NextSingle() * (toZMax - toZMin);
+        float ascentDist  = targetZ - parentNode.Position.Z;
+        int   steps       = Math.Max(3, (int)(MathF.Abs(ascentDist) / 50.0f));
+        float stepZ       = ascentDist / steps;
 
         AxonPoint current = parentNode;
 
         for (int s = 0; s < steps; s += 1)
         {
-            // Небольшое горизонтальное блуждание ±1.5 мкм
             var pos = new Vector3(
                 current.Position.X + (random.NextSingle() - 0.5f) * 3.0f,
                 current.Position.Y + (random.NextSingle() - 0.5f) * 3.0f,
@@ -448,56 +681,44 @@ public sealed class ThalamocorticalAxon : IAxon
             current = next;
         }
 
-        // Горизонтальный арбор в blob-зоне: 2–3 ветви
-        int primaryBranches = 2 + random.Next(0, 2);
+        // Одна короткая ветвь в целевом слое
+        float angle  = random.NextSingle() * MathF.PI * 2.0f;
+        float len    = collateralRadius * (0.5f + random.NextSingle() * 0.5f);
+        int   bSteps = Math.Max(2, (int)(len / 30.0f));
+        float stepXY = len / bSteps;
 
-        for (int b = 0; b < primaryBranches; b += 1)
+        AxonPoint bCur = current;
+
+        for (int s = 0; s < bSteps; s += 1)
         {
-            float angle    = random.NextSingle() * MathF.PI * 2.0f;
-            float len      = blobRadius * (0.5f + random.NextSingle() * 0.5f);
-            int   subSteps = Math.Max(3, (int)(len / 35.0f));
-            float stepXY   = len / subSteps;
-
-            AxonPoint bCurrent = current;
-
-            for (int s = 0; s < subSteps; s += 1)
-            {
-                float a = angle + (random.NextSingle() - 0.5f) * 0.25f;
-                var pos = new Vector3(
-                    bCurrent.Position.X + MathF.Cos(a) * stepXY,
-                    bCurrent.Position.Y + MathF.Sin(a) * stepXY,
-                    Math.Clamp(
-                        bCurrent.Position.Z + (random.NextSingle() - 0.5f) * 10.0f,
-                        toZ,       // нижняя граница blob-зоны
-                        targetZ + 60.0f) // верхняя граница
-                );
-                var next = new AxonPoint(pos);
-                bCurrent.Next.Add(next);
-                bCurrent = next;
-            }
+            float a   = angle + (random.NextSingle() - 0.5f) * 0.25f;
+            var   pos = new Vector3(
+                bCur.Position.X + MathF.Cos(a) * stepXY,
+                bCur.Position.Y + MathF.Sin(a) * stepXY,
+                Math.Clamp(
+                    bCur.Position.Z + (random.NextSingle() - 0.5f) * 8.0f,
+                    toZMin,
+                    toZMax)
+            );
+            var next = new AxonPoint(pos);
+            bCur.Next.Add(next);
+            bCur = next;
         }
     }
 
     // ============================================================
-    //  РАЗМЕЩЕНИЕ СИНАПТИЧЕСКИХ БУТОНОВ
+    // РАЗМЕЩЕНИЕ СИНАПТИЧЕСКИХ БУТОНОВ
     // ============================================================
-    /// <summary>
+    ///
     /// Равномерно расставляет синаптические бутоны en passant
     /// по всей длине дерева аксона (от входа WM до концевых ветвей).
-    /// Алгоритм: строит список отрезков, вычисляет суммарную длину,
-    /// шагает с постоянным интервалом вдоль всего дерева.
-    /// </summary>
-    /// <param name="root">Корень дерева аксона.</param>
-    /// <param name="totalSynapses">Количество синапсов для размещения.</param>
-    /// <param name="columnRadiusUm">Радиус миниколонки (мкм).</param>
-    /// <param name="random">Генератор случайных чисел.</param>
+    ///
     private static Synapse[] PlaceSynapses(
         AxonPoint root,
         int       totalSynapses,
         float     columnRadiusUm,
         Random    random)
     {
-        // --- Собираем все отрезки дерева (обход в глубину без рекурсии) ---
         var   segments    = new List<(Vector3 Start, Vector3 End, float Length)>(256);
         var   stack       = new Stack<AxonPoint>(64);
         float totalLength = 0f;
@@ -528,7 +749,6 @@ public sealed class ThalamocorticalAxon : IAxon
 
         var synapses = new FastList<Synapse>(totalSynapses);
 
-        // Краевой случай: вырожденное дерево — всё в корне
         if (totalLength <= 0f || segments.Count == 0)
         {
             for (int s = 0; s < totalSynapses; s += 1)
@@ -536,17 +756,12 @@ public sealed class ThalamocorticalAxon : IAxon
             return synapses.ToArray();
         }
 
-        // --- Равномерное размещение по длине ---
-        // Шаг между синапсами: суммарная длина / число синапсов.
-        // Первый синапс смещён на полшага от начала, чтобы
-        // краевые области не были перегружены бутонами.
-        float step       = totalLength / totalSynapses;
-        int   segIdx     = 0;
-        float distInSeg  = step * 0.5f; // начальное смещение
+        float step     = totalLength / totalSynapses;
+        int   segIdx   = 0;
+        float distInSeg = step * 0.5f;
 
         for (int s = 0; s < totalSynapses; s += 1)
         {
-            // Пропускаем отрезки, длина которых меньше текущего расстояния
             while (distInSeg > segments[segIdx].Length && segIdx < segments.Count - 1)
             {
                 distInSeg -= segments[segIdx].Length;
@@ -554,19 +769,17 @@ public sealed class ThalamocorticalAxon : IAxon
             }
 
             var   seg     = segments[segIdx];
-            float t       = distInSeg / seg.Length;              // доля [0..1] по отрезку
-            var   basePos = Vector3.Lerp(seg.Start, seg.End, t); // точная 3D-позиция
+            float t       = distInSeg / seg.Length;
+            var   basePos = Vector3.Lerp(seg.Start, seg.End, t);
 
-            // Случайное смещение ~1 мкм (биологический размер бутона en passant)
             var synPos = new Vector3(
                 basePos.X + (random.NextSingle() - 0.5f) * 2.0f,
                 basePos.Y + (random.NextSingle() - 0.5f) * 2.0f,
                 basePos.Z + (random.NextSingle() - 0.5f) * 1.0f
             );
-            
-            synapses.Add(new Synapse(synPos));
 
-            distInSeg += step; // шагаем дальше
+            synapses.Add(new Synapse(synPos));
+            distInSeg += step;
         }
 
         return synapses.ToArray();

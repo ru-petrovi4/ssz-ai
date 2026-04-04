@@ -34,21 +34,21 @@ public static class Visualization3D
         model3DScene.Points = new List<Point3DWithColor>(1024);
         model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
 
-        AddActiveZones(model3DScene, miniColumnDetailed.Temp_PyramidalZones, System.Drawing.Color.White, ref sceneBounds);
+        AddActiveZones(model3DScene, miniColumnDetailed.Temp_ThalamocorticalZones, System.Drawing.Color.White, ref sceneBounds);
 
         AddAxons(
             model3DScene,
-            miniColumnDetailed.PyramidalAxons,             
+            miniColumnDetailed.PyramidalAxons,
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
             activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
-            hideFarLines: false);
+            hideFarLines: true);
 
         AddAxons(
             model3DScene,
             miniColumnDetailed.ThalamocorticalInput.ThalamocorticalAxons,
             ref sceneBounds,
-            inactiveColor: System.Drawing.Color.FromArgb(0xFF, 0x00, 0x00),
+            inactiveColor: System.Drawing.Color.FromArgb(0x66, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
             hideFarLines: false);
 
