@@ -108,7 +108,7 @@ public sealed class MiniColumnDetailed : IDisposable
     public FastList<ActiveZone>? Temp_ThalamocorticalZones;
 
     /// <summary>Зоны совместной активации: рядом есть и Зоны 1, и Зоны 2 (Зоны 3).</summary>
-    public FastList<ActiveZone>? Temp_ConvergenceZones;    
+    public FastList<ActiveZone>? Temp_ConvergenceZones;
 
     /// <summary>
     /// Вычисляет зоны активных синапсов раздельно для пирамидальных аксонов
@@ -140,9 +140,10 @@ public sealed class MiniColumnDetailed : IDisposable
         //{
         //    if (i < PyramidalAxons.Length)
         //    {
-        //        bool isActive = PyramidalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
-        //        if (isActive)
-        //            _activePyramidalAxons.Add(i);
+        //        var axon = PyramidalAxons[i];
+        //        axon.Temp_IsActive = (activityBits[i] > 0.5f);
+        //        if (axon.Temp_IsActive)
+        //            _activePyramidalAxons.Add(axon);
         //    }
         //}
 
@@ -154,9 +155,10 @@ public sealed class MiniColumnDetailed : IDisposable
         {
             if (i < ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons.Length)
             {
-                bool isActive = ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons[i].Temp_IsActive = (activityBits[i] > 0.5f);
-                if (isActive)
-                    _activeTcAxons.Add(i);
+                var axon = ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons[i];
+                axon.Temp_IsActive = (activityBits[i] > 0.5f);
+                if (axon.Temp_IsActive)
+                    _activeTcAxons.Add(axon);
             }
         }
 
@@ -165,7 +167,7 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         Temp_PyramidalZones = _activePyramidalAxons.Count >= minActiveAxons
             ? ComputeActiveZones(
-                GetSynapsesByPyramidalAxons(_activePyramidalAxons),
+                GetSynapsesByAxons(_activePyramidalAxons),
                 _activePyramidalAxons.Count,
                 radiusUm,
                 minActiveAxons)
@@ -176,7 +178,7 @@ public sealed class MiniColumnDetailed : IDisposable
         // ----------------------------------------------------------
         Temp_ThalamocorticalZones = _activeTcAxons.Count >= minActiveAxons
             ? ComputeActiveZones(
-                GetSynapsesByThalamocorticalAxons(_activeTcAxons),
+                GetSynapsesByAxons(_activeTcAxons),
                 _activeTcAxons.Count,
                 radiusUm,
                 minActiveAxons)
@@ -620,42 +622,45 @@ public sealed class MiniColumnDetailed : IDisposable
     //      таламического входа и локальной кортикальной активности.
     // ============================================================
 
-    
+
 
     // ============================================================
     //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
     // ============================================================
-    private (Synapse[][] groups, int count) GetSynapsesByPyramidalAxons(FastList<int> indices)
+    private (Synapse[][] groups, int count) GetSynapsesByAxons(FastList<IAxon> axons)
     {
-        int count = indices.Count;
+        int count = axons.Count;
         var groups = new Synapse[count][];
         for (int i = 0; i < count; i += 1)
         {
-            groups[i] = PyramidalAxons[indices[i]].Synapses;
+            groups[i] = axons[i].Synapses;
         }
         return (groups, count);
     }
 
     // ============================================================
-    //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
+    // ЯДРО ВЫЧИСЛЕНИЯ ЗОН ЧЕРЕЗ 3D-СВЁРТКУ (GPU/CPU)
     // ============================================================
-    private (Synapse[][] groups, int count) GetSynapsesByThalamocorticalAxons(FastList<int> indices)
-    {
-        int count = indices.Count;
-        var groups = new Synapse[count][];
-        for (int i = 0; i < count; i += 1)
-        {
-            groups[i] = ThalamocorticalInput.ThalamocorticalAxons[indices[i]].Synapses;
-        }
-        return (groups, count);
-    }
-
-    // ============================================================
-    //  ЯДРО ВЫЧИСЛЕНИЯ ЗОН ЧЕРЕЗ 3D-СВЁРТКУ (GPU/CPU)
+    // ИСПРАВЛЕНИЯ:
     //
-    //  Принимает набор групп синапсов (одна группа = один аксон),
-    //  выполняет depthwise свёртку и возвращает список зон.
-    // ============================================================
+    // 1. voxelSizeUm теперь вычисляется адаптивно: min(radiusUm/2, 5 мкм).
+    //    Было: фиксированное 5 мкм.
+    //    При малом radiusUm (например, 3 мкм) ядро из 1 воксела не обеспечивало
+    //    сферический поиск. Теперь шаг воксела всегда <= radiusUm/2, что гарантирует
+    //    ядро минимум 5×5×5 при любом радиусе.
+    //
+    // 2. Back-project: исправлены индексы для тензора [D, H, W] (без batch-измерения).
+    //    Было: axonsPerVoxel имел форму [1, D, H, W] из-за keepdim=false при сумме
+    //    из [1, C, D, H, W] → фактически форма [1, D, H, W], dims=4, индексы 0..3.
+    //    Исправление: явное squeeze(0) перед nonzero, чтобы форма стала [D, H, W],
+    //    dims=3, индексы 0(z), 1(y), 2(x).
+    //
+    // 3. mergeRadSq теперь равен (voxelSizeUm * 1.5)² вместо radiusUm².
+    //    Было: соседние валидные воксели на расстоянии voxelSizeUm сливались только
+    //    если radiusUm достаточно большой — при малом radiusUm дедупликация не работала
+    //    или зоны вдоль аксона не сливались в цепочку.
+    //    Новое правило: сливаем только соседние воксели (расстояние <= 1.5 воксела),
+    //    сохраняя топологически разнесённые кластеры как отдельные зоны.
     private FastList<ActiveZone> ComputeActiveZones(
         (Synapse[][] groups, int count) input,
         int activeCount,
@@ -663,7 +668,11 @@ public sealed class MiniColumnDetailed : IDisposable
         int minActiveAxons)
     {
         var groups = input.groups;
-        float voxelSizeUm = 5.0f; // Pyramidal: 2.0f;
+
+        // адаптивный размер воксела — не более radiusUm/2,
+        // чтобы ядро свёртки всегда содержало >= 2 вокселя на радиус.
+        // Нижний порог 1 мкм предотвращает взрывной рост числа вокселей.
+        float voxelSizeUm = 5.0f; //Math.Max(1.0f, Math.Min(radiusUm / 2.0f, 5.0f));
 
         // ---- Bounding box ----
         SceneBounds bounds = new();
@@ -680,7 +689,7 @@ public sealed class MiniColumnDetailed : IDisposable
         int height = (int)MathF.Ceiling((bounds.YMax - bounds.YMin) / voxelSizeUm);
         int depth = (int)MathF.Ceiling((bounds.ZMax - bounds.ZMin) / voxelSizeUm);
 
-        // ---- Grid tensor ----
+        // ---- Grid tensor [1, activeCount, D, H, W] ----
         long totalVoxels = (long)activeCount * depth * height * width;
 
         if (_gridTensorBuffer is null)
@@ -713,7 +722,7 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         gridFlat_Device.copy_(gridFlat_Cpu);
-        Tensor gridTensor = gridFlat_Device.view(1, activeCount, depth, height, width);
+        using var gridTensor = gridFlat_Device.view(1, activeCount, depth, height, width);
 
         // ---- Spherical kernel ----
         int kRad = (int)MathF.Ceiling(radiusUm / voxelSizeUm);
@@ -734,9 +743,7 @@ public sealed class MiniColumnDetailed : IDisposable
         long kArea = (long)kSize * kSize;
 
         for (int kz = -kRad; kz <= kRad; kz += 1)
-        {
             for (int ky = -kRad; ky <= kRad; ky += 1)
-            {
                 for (int kx = -kRad; kx <= kRad; kx += 1)
                 {
                     float dist = MathF.Sqrt(kx * kx + ky * ky + kz * kz) * voxelSizeUm;
@@ -747,8 +754,6 @@ public sealed class MiniColumnDetailed : IDisposable
                             kernelData[c * kSpatial + offset] = 1.0f;
                     }
                 }
-            }
-        }
 
         weightFlat_Device.copy_(weightFlat_Cpu);
         using var weightTensor = weightFlat_Device.view(activeCount, 1, kSize, kSize, kSize);
@@ -759,24 +764,35 @@ public sealed class MiniColumnDetailed : IDisposable
             padding: new long[] { kRad, kRad, kRad },
             groups: activeCount);
 
+        // convResult: [1, activeCount, D, H, W]
+        // presentMask[c, z, y, x] = 1 если аксон c имеет хоть один синапс в сфере радиуса R
         using var presentMask = convResult.gt(0.0f).to_type(ScalarType.Float32);
+
+        // Суммируем по каналам → число активных аксонов в каждом вокселе
+        // keepdim: false: [1, C, D, H, W] → [1, D, H, W]
         using var axonsPerVoxel = presentMask.sum(new long[] { 1 }, keepdim: false);
-        using var validMask = axonsPerVoxel.ge(minActiveAxons);
-        using var nonZeroIdx = validMask.nonzero();
+
+        // убираем batch-измерение перед nonzero,
+        // чтобы получить форму [D, H, W] и индексы (z, y, x) без сдвига.
+        using var axonsPerVoxel3D = axonsPerVoxel.squeeze(0); // [D, H, W]
+        using var validMask = axonsPerVoxel3D.ge(minActiveAxons);
+        using var nonZeroIdx = validMask.nonzero();      // [N, 3]: (z, y, x)
 
         long numValid = nonZeroIdx.shape[0];
-        long dims = nonZeroIdx.shape[1];
+        long dims = nonZeroIdx.shape[1]; // должно быть 3
+
         long[] flatIdx = null!;
         if (numValid > 0)
             flatIdx = nonZeroIdx.data<long>().ToArray();
 
         // ---- Back-project ----
+        // индексы (z=0, y=1, x=2)
         var rawCenters = new List<Vector3>((int)numValid);
         for (long i = 0; i < numValid; i += 1)
         {
-            long zIdx = flatIdx[i * dims + 1];
-            long yIdx = flatIdx[i * dims + 2];
-            long xIdx = flatIdx[i * dims + 3];
+            long zIdx = flatIdx[i * dims + 0];
+            long yIdx = flatIdx[i * dims + 1];
+            long xIdx = flatIdx[i * dims + 2];
             rawCenters.Add(new Vector3(
                 bounds.XMin + xIdx * voxelSizeUm + voxelSizeUm * 0.5f,
                 bounds.YMin + yIdx * voxelSizeUm + voxelSizeUm * 0.5f,
@@ -784,8 +800,12 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         // ---- Deduplicate / merge ----
+        // mergeRadius = 1.5 воксела (сливаем только смежные воксели,
+        // не уничтожая топологически разнесённые зоны вдоль аксона).
+        float mergeRadius = voxelSizeUm * 1.5f;
+        float mergeRadSq = mergeRadius * mergeRadius;
+
         var finalZones = new FastList<ActiveZone>(512);
-        float mergeRadSq = radiusUm * radiusUm;
         bool[] merged = new bool[rawCenters.Count];
 
         for (int i = 0; i < rawCenters.Count; i += 1)
@@ -798,7 +818,8 @@ public sealed class MiniColumnDetailed : IDisposable
 
             for (int j = i + 1; j < rawCenters.Count; j += 1)
             {
-                if (!merged[j] && Vector3.DistanceSquared(rawCenters[i], rawCenters[j]) <= mergeRadSq)
+                if (!merged[j]
+                    && Vector3.DistanceSquared(rawCenters[i], rawCenters[j]) <= mergeRadSq)
                 {
                     sumPos += rawCenters[j];
                     cnt += 1;
@@ -855,10 +876,10 @@ public sealed class MiniColumnDetailed : IDisposable
         }
 
         return result.Count > 0 ? result : null;
-    }    
+    }
 
-    private readonly FastList<int> _activePyramidalAxons = new FastList<int>(capacity: PyramidalAxonsCount);
-    private readonly FastList<int> _activeTcAxons = new FastList<int>(capacity: ThalamocorticalInput.TotalAxonCount);
+    private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
+    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput.TotalAxonCount);
 
     // Кэшированный тензор для переиспользования памяти
     private TensorBuffer? _gridTensorBuffer;

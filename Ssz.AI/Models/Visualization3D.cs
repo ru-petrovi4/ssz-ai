@@ -35,7 +35,7 @@ public static class Visualization3D
         model3DScene.Points = new List<Point3DWithColor>(1024);
         model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
 
-        //AddActiveZones(model3DScene, miniColumnDetailed.Temp_ThalamocorticalZones, System.Drawing.Color.White, ref sceneBounds);
+        AddActiveZones(model3DScene, miniColumnDetailed.Temp_ThalamocorticalZones, System.Drawing.Color.White, ref sceneBounds);
 
         //AddAxons(
         //    model3DScene,
@@ -104,12 +104,12 @@ public static class Visualization3D
 
                 sceneBounds.Update(s.Position);
 
-                System.Drawing.Color color = System.Drawing.Color.Cyan;
-                model3DScene.Points!.Add(new Point3DWithColor
-                {
-                    Position = s.Position,
-                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                });
+                //System.Drawing.Color color = System.Drawing.Color.Cyan;
+                //model3DScene.Points!.Add(new Point3DWithColor
+                //{
+                //    Position = s.Position,
+                //    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+                //});
             }
         }
 
