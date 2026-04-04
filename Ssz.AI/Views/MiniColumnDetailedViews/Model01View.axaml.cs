@@ -22,6 +22,7 @@ using Tensorflow.Keras.Saving.SavedModel;
 using Ssz.AI.ViewModels;
 using Ssz.AI.Models.ImageProcessingModel;
 using OfficeOpenXml.Table.PivotTable;
+using Avalonia.Input;
 
 namespace Ssz.AI.Views.MiniColumnDetailedViews;
 
@@ -81,6 +82,24 @@ public partial class Model01View : UserControl
         //}
 
         Unloaded += Model01View_Unloaded;
+
+        KeyDown += (sender, e) =>
+        {
+            if (e.Key == Key.Right)
+            {
+                var sb = LevelScrollBar0!;
+                double step = 0.5;
+                sb.Value = Math.Min(sb.Maximum, sb.Value + step);
+                e.Handled = true; // предотвращаем двойное срабатывание
+            }
+            else if (e.Key == Key.Left)
+            {
+                var sb = LevelScrollBar0!;
+                double step = -0.5;
+                sb.Value = Math.Min(sb.Maximum, sb.Value + step);
+                e.Handled = true; // предотвращаем двойное срабатывание
+            }
+        };
     }
 
     private void Model01View_Unloaded(object? sender, RoutedEventArgs e)
