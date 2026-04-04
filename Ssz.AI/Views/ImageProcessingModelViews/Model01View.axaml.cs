@@ -46,7 +46,7 @@ public partial class Model01View : UserControl
 
         Unloaded += Model01View_Unloaded;
 
-        if (false)
+        if (true)
         {
             Reset();
             Refresh_ImagesSet();

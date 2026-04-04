@@ -318,6 +318,11 @@ public static class MathHelper
         return MathF.Sqrt((position.X * position.X) + (position.Y * position.Y));
     }
 
+    public static float GetRandom(Random random, float average, float range)
+    {
+        return random.NextSingle() * range + (average - range / 2.0f);
+    }
+
     // Предвычисленные константы для плотности.
     // SqrtTwoPi = sqrt(2 * π).
     private static readonly float SqrtTwoPi = MathF.Sqrt(2.0f * MathF.PI);

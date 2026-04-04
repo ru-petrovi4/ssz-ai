@@ -125,8 +125,14 @@ public class Retina : ISerializableModelObject
                     CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
                     CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
                 };
-                detector.GradientMagnitude_Average = templateDetector.GradientMagnitude_Average;
-                detector.GradientAngle_Average = templateDetector.GradientAngle_Average;                            
+                detector.GradientMagnitude_Average = MathHelper.GetRandom(
+                    initializationRandom,
+                    templateDetector.GradientMagnitude_Average,
+                    range: Constants.GradientMagnitudeDelta);
+                detector.GradientAngle_Average = MathHelper.NormalizeAngle(MathHelper.GetRandom(
+                    initializationRandom,
+                    templateDetector.GradientAngle_Average,
+                    range: MathHelper.DegreesToRadians(Constants.GradientAngleDegreeDelta)));                
                 detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
                 //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
 
