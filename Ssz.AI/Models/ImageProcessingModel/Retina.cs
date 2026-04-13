@@ -305,7 +305,7 @@ public class Retina : ISerializableModelObject
             }
         }
 
-        float min_ActivatedDelta_NormAbsMax = Single.MaxValue;
+        float min_ActivatedDeltaAbsMax = Single.MaxValue;
         for (; ; )
         {
             float activatedTotalAverage = 0.0f;
@@ -323,23 +323,23 @@ public class Retina : ISerializableModelObject
             }
             activatedTotalAverage /= gradientSamples.Count;                        
 
-            float activatedDelta_NormAbsMax = Single.MinValue;            
+            float activatedDeltaAbsMax = Single.MinValue;            
             for (int s_Index = 0; s_Index < gradientSamples.Count; s_Index += 1)
             {
                 var gradientSample = gradientSamples[s_Index];                
-                float activatedDelta_NormAbs = MathF.Abs(gradientSample.Temp_ActivatedTotal - activatedTotalAverage) / activatedTotalAverage;
-                if (activatedDelta_NormAbs > activatedDelta_NormAbsMax)
-                    activatedDelta_NormAbsMax = activatedDelta_NormAbs;
+                float activatedDeltaAbs = MathF.Abs(gradientSample.Temp_ActivatedTotal - activatedTotalAverage) / activatedTotalAverage;
+                if (activatedDeltaAbs > activatedDeltaAbsMax)
+                    activatedDeltaAbsMax = activatedDeltaAbs;
             }
 
-            Logger.LogInformation($"Retina.CalculateDetectorDensities, activatedDelta_NormAbsMax: {activatedDelta_NormAbsMax}");
+            Logger.LogInformation($"Retina.CalculateDetectorDensities, activatedDelta_NormAbsMax: {activatedDeltaAbsMax}");
 
-            if (activatedDelta_NormAbsMax > min_ActivatedDelta_NormAbsMax - 0.00001f)
+            if (activatedDeltaAbsMax > min_ActivatedDeltaAbsMax - 0.001f) // Working: 0.00001f
                 break;
 
-            if (activatedDelta_NormAbsMax < min_ActivatedDelta_NormAbsMax)
+            if (activatedDeltaAbsMax < min_ActivatedDeltaAbsMax)
             {
-                min_ActivatedDelta_NormAbsMax = activatedDelta_NormAbsMax;
+                min_ActivatedDeltaAbsMax = activatedDeltaAbsMax;
                 for (int d_Index = 0; d_Index < templateDetectors.Count; d_Index += 1)
                 {
                     optimal_TemplateDetectors[d_Index].Temp_Density = templateDetectors[d_Index].Temp_Density;
@@ -501,6 +501,37 @@ public class Detector : IOwnedDataSerializable
     public bool CalculateIsActivated(GradientInPoint gradientInPoint)
     {
         if (gradientInPoint.Magnitude < Retina.Constants.MinGradientMagnitudeInclusive || 
+                gradientInPoint.Magnitude >= Retina.Constants.MaxGradientMagnitudeExclusive)
+            return false;
+
+        GradientRange detectorGradientRange = Retina.DetectorGradientRanges[(int)gradientInPoint.Magnitude, (int)MathHelper.RadiansToDegrees((float)gradientInPoint.Angle)]!;
+
+        bool activated = GradientMagnitude_Average >= detectorGradientRange.GradientMagnitude_LowerInclusive &&
+            GradientMagnitude_Average < detectorGradientRange.GradientMagnitude_UpperExclusive;
+        if (activated)
+            return true;
+
+        // [-pi, pi)
+        float gradientAngleMinInclusive = detectorGradientRange.GradientAngle_LowerInclusive;
+        float gradientAngleMaxExclusive = detectorGradientRange.GradientAngle_UpperExclusive;
+        if (MathF.Abs(gradientAngleMinInclusive - gradientAngleMaxExclusive) < MathF.PI / 180)
+            return true;
+
+        if (gradientAngleMaxExclusive > gradientAngleMinInclusive)
+            activated = (GradientAngle_Average >= gradientAngleMinInclusive) && (GradientAngle_Average < gradientAngleMaxExclusive);
+        else
+            activated = (GradientAngle_Average >= gradientAngleMinInclusive) || (GradientAngle_Average < gradientAngleMaxExclusive);
+        return activated;
+    }
+
+    /// <summary>
+    /// Активация по AND
+    /// </summary>
+    /// <param name="gradientInPoint"></param>
+    /// <returns></returns>
+    public bool CalculateIsActivated_Obsolete(GradientInPoint gradientInPoint)
+    {
+        if (gradientInPoint.Magnitude < Retina.Constants.MinGradientMagnitudeInclusive ||
                 gradientInPoint.Magnitude >= Retina.Constants.MaxGradientMagnitudeExclusive)
             return false;
 

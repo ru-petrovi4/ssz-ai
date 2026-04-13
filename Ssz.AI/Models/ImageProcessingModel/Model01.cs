@@ -90,7 +90,7 @@ public class Model01 : IDisposable
                 imagesPath: @"Data\Images(500x500).npy"
                 );
         else
-            (inputImagesLabels, inputImageDatas, inputImagesSize) = (new byte[0], new byte[0][], new PixelSize());
+            (inputImagesLabels, inputImageDatas, inputImagesSize) = (new byte[0], new byte[0][], new PixelSize(500, 500));
 
         StereoInput.GenerateOwnedData(
                     inputImagesSize,
@@ -348,16 +348,19 @@ public class Model01 : IDisposable
         }
         float cortexMemory_BitsCountAverage = 0;
         int sampleProcessedCount = 0;
-        for (int sample_Index = 0; sample_Index < StereoInput.StereoInputSamples.Length; sample_Index += 1)
+        int inputSamplesCount;
+        if (isIdeal)
+            inputSamplesCount = 10000;
+        else
+            inputSamplesCount = StereoInput.StereoInputSamples.Length;
+        for (int sample_Index = 0; sample_Index < inputSamplesCount; sample_Index += 1)
         {
             cancellationToken.ThrowIfCancellationRequested();
-
-            var stereoInputSample = StereoInput.StereoInputSamples[sample_Index];
 
             if (isIdeal)
                 (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetRandomIdealCortexMemory(random);
             else
-                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, stereoInputSample);
+                (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetCortexMemory(random, StereoInput.StereoInputSamples[sample_Index]);
 
             int cortexMemory_BitsCount = (int)TensorPrimitives.Sum(cortexMemory.Hash);
             cortexMemory_BitsCountAverage += cortexMemory_BitsCount;
@@ -371,14 +374,14 @@ public class Model01 : IDisposable
                 sampleProcessedCount += 1;
             }
         }
-        if (StereoInput.StereoInputSamples.Length > 0)
-            cortexMemory_BitsCountAverage /= StereoInput.StereoInputSamples.Length;
-        Logger.LogInformation($"Samples: {sampleProcessedCount}/{StereoInput.StereoInputSamples.Length}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
+        if (inputSamplesCount > 0)
+            cortexMemory_BitsCountAverage /= inputSamplesCount;
+        Logger.LogInformation($"Samples: {sampleProcessedCount}/{inputSamplesCount}; cortexMemory_BitsCountAverage: {cortexMemory_BitsCountAverage};");
 
         float averageSamlesCount = (float)sampleProcessedCount / Cortex.Temp_IdealPinwheelMemories.Count(m => m.Temp_SimilarMemories!.Count > 0);
         int maxSamplesCount = (int)(averageSamlesCount * 1.5f);
 
-        FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(StereoInput.StereoInputSamples.Length);
+        FastList<(Memory, MiniColumn)> memoriesToProcess = new FastList<(Memory, MiniColumn)>(inputSamplesCount);
         for (int m_index = 0; m_index < Cortex.Temp_IdealPinwheelMemories.Count; m_index += 1)
         {
             var idealPinwheelMemory = Cortex.Temp_IdealPinwheelMemories[m_index];
@@ -1216,32 +1219,35 @@ public class Model01 : IDisposable
     {
         SampleVisualisation imageVisualisation = new();
 
-        StereoInputSample stereoInputSample = StereoInput.StereoInputSamples[cortexMemory.StereoInputSample_Index];
-
-        Bitmap retinaFullImage;
-        DenseMatrix<GradientInPoint> gradientMatrix;        
-        if (cortexMemory.RetinaImageData_IsRightEye)
-        {
-            retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.RightRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
-            gradientMatrix = stereoInputSample.RightEye_GradientMatrix;            
-        }
-        else
-        {
-            retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.LeftRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
-            gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;            
-        }
-
         float horizontal_Pixels_K = Constants.RetinaImagePixelSize.Width / Constants.RetinaImageAngle;
-        float vertical_Pixels_K =  Constants.RetinaImagePixelSize.Height / Constants.RetinaImageAngle;        
+        float vertical_Pixels_K = Constants.RetinaImagePixelSize.Height / Constants.RetinaImageAngle;
         int centerX = (int)(Constants.RetinaImagePixelSize.Width / 2.0f + cortexMemory.Main_RetinaXAngle * horizontal_Pixels_K);
-        int centerY = (int)(Constants.RetinaImagePixelSize.Height / 2.0f + cortexMemory.Main_RetinaYAngle * vertical_Pixels_K);        
+        int centerY = (int)(Constants.RetinaImagePixelSize.Height / 2.0f + cortexMemory.Main_RetinaYAngle * vertical_Pixels_K);
         double radius = Constants.FullFieldOfViewDiameter_MiniColumn_Angle * vertical_Pixels_K / 2.0f;
 
-        imageVisualisation.FullImage = retinaFullImage;
+        if (cortexMemory.StereoInputSample_Index < StereoInput.StereoInputSamples.Length)
+        {
+            StereoInputSample stereoInputSample = StereoInput.StereoInputSamples[cortexMemory.StereoInputSample_Index];
 
-        imageVisualisation.Image = BitmapHelper.GetSubBitmap(retinaFullImage, centerX, centerY, radius);
+            Bitmap retinaFullImage;
+            DenseMatrix<GradientInPoint> gradientMatrix;
+            if (cortexMemory.RetinaImageData_IsRightEye)
+            {
+                retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.RightRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+                gradientMatrix = stereoInputSample.RightEye_GradientMatrix;
+            }
+            else
+            {
+                retinaFullImage = MNIST_Ex_Helper.GetBitmap(stereoInputSample.LeftRetinaImageData, Constants.RetinaImagePixelSize.Width, Constants.RetinaImagePixelSize.Height);
+                gradientMatrix = stereoInputSample.LeftEye_GradientMatrix;
+            }                       
 
-        imageVisualisation.GradientImage = BitmapHelper.GetSubBitmap(Visualisation.GetGradientBitmap(gradientMatrix), centerX, centerY, radius);
+            imageVisualisation.FullImage = retinaFullImage;
+
+            imageVisualisation.Image = BitmapHelper.GetSubBitmap(retinaFullImage, centerX, centerY, radius);
+
+            imageVisualisation.GradientImage = BitmapHelper.GetSubBitmap(Visualisation.GetGradientBitmap(gradientMatrix), centerX, centerY, radius);
+        }
 
         imageVisualisation.DetectorsActivationImage = BitmapHelper.GetSubBitmap(
             Visualisation.GetBitmapFromActivatedDetectors(cortexMemory.Temp_DetectorsActivated, 
@@ -1301,7 +1307,7 @@ public class Model01 : IDisposable
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount { get; set; } = 700;
+        public int MiniColumnVisibleDetectorsCount { get; set; } = 300; //700;
 
         public int HashLength => 200;
 

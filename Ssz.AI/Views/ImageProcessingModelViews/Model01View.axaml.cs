@@ -748,7 +748,7 @@ public partial class Model01View : UserControl
         Model = new Model01(_random, new Model01.Options
         {
             OnlyCenterHyperColumn = OnlyCenterHyperColumn,
-            LoadImagesSamplesFile = true,
+            LoadImagesSamplesFile = false,
         });
     }
 
