@@ -52,12 +52,12 @@ public class Cortex_Simplified : ISerializableModelObject
                     double centerX = minCenterX + mcx * deltaCenterX;
                     double centerY = minCenterY + mcy * deltaCenterY;
 
-                    List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
+                    List<GradientComplexDetector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.Detectors.Dimensions[1]; dJ += 1)
-                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.Detectors.Dimensions[0]; dI += 1)
+                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
+                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
                         {
-                            Detector detector = retina.Detectors[dI, dJ];
+                            var detector = retina.GradientComplex_Detectors[dI, dJ]!;
                             double r = Math.Sqrt((detector.CenterXPixels - centerX) * (detector.CenterXPixels - centerX) + (detector.CenterYPixels - centerY) * (detector.CenterYPixels - centerY));
                             if (r < DetectorsVisibleRadiusPixels)
                                 miniColumnDetectors.Add(detector);
@@ -78,7 +78,7 @@ public class Cortex_Simplified : ISerializableModelObject
                 }
             }            
 
-        HashSet<Detector> subArea_DetectorsHashSet = new(retina.Detectors.Dimensions[0] * retina.Detectors.Dimensions[1]);
+        HashSet<GradientComplexDetector> subArea_DetectorsHashSet = new(retina.GradientComplex_Detectors.Dimensions[0] * retina.GradientComplex_Detectors.Dimensions[1]);
         List<MiniColumn> subArea_MiniColumns = new List<MiniColumn>(constants.CalculationsSubAreaRadius_MiniColumns is not null ?
             constants.CalculationsSubArea_MiniColumns_Count :
             MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]);
@@ -164,7 +164,7 @@ public class Cortex_Simplified : ISerializableModelObject
     public MiniColumn? CenterMiniColumn { get; private set; }       
 
     public MiniColumn[] SubArea_MiniColumns { get; } = null!;
-    public Detector[] SubArea_Detectors { get; } = null!;        
+    public GradientComplexDetector[] SubArea_Detectors { get; } = null!;        
     public double SubArea_MiniColumns_Radius;
 
     public Autoencoder InputAutoencoder { get; } = null!;
@@ -256,7 +256,7 @@ public class Cortex_Simplified : ISerializableModelObject
 
     public class MiniColumn : IMiniColumn, IMiniColumnActivity, ISerializableModelObject
     {
-        public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<Detector> detectors, double centerX, double centerY)
+        public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<GradientComplexDetector> detectors, double centerX, double centerY)
         {
             Constants = constants;
             Detectors = detectors;
@@ -275,7 +275,7 @@ public class Cortex_Simplified : ISerializableModelObject
 
         public readonly IConstantsObsolete Constants;
 
-        public readonly List<Detector> Detectors;
+        public readonly List<GradientComplexDetector> Detectors;
 
         /// <summary>
         ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)

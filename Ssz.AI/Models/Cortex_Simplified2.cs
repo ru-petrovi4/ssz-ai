@@ -23,11 +23,11 @@ namespace Ssz.AI.Models
         {
             Constants = constants;
 
-            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.Detectors.Data.Length];
+            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.GradientComplex_Detectors.Data.Length];
 
-            foreach (var d_index in Enumerable.Range(0, rightEye.Retina.Detectors.Data.Length))
+            foreach (var d_index in Enumerable.Range(0, rightEye.Retina.GradientComplex_Detectors.Data.Length))
             {
-                Detector detetctor = rightEye.Retina.Detectors.Data[d_index];
+                Detector detetctor = rightEye.Retina.GradientComplex_Detectors.Data[d_index];
                 DetectorCorrelation detectorCorrelation = new();
 
                 detectorCorrelation.RangeLeftUpperX = detetctor.DI - Constants.DependantDetectorsRangeWidthCount / 2;
@@ -39,12 +39,12 @@ namespace Ssz.AI.Models
                     detectorCorrelation.RangeLeftUpperY = 0;
 
                 detectorCorrelation.RangeRightBottomX = detetctor.DI + Constants.DependantDetectorsRangeWidthCount / 2;
-                if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.Detectors.Dimensions[0])
-                    detectorCorrelation.RangeRightBottomX = leftEye.Retina.Detectors.Dimensions[0];
+                if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.GradientComplex_Detectors.Dimensions[0])
+                    detectorCorrelation.RangeRightBottomX = leftEye.Retina.GradientComplex_Detectors.Dimensions[0];
 
                 detectorCorrelation.RangeRightBottomY = detetctor.DJ + Constants.DependantDetectorsRangeHeightCount / 2;
-                if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.Detectors.Dimensions[1])
-                    detectorCorrelation.RangeRightBottomY = leftEye.Retina.Detectors.Dimensions[1];
+                if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.GradientComplex_Detectors.Dimensions[1])
+                    detectorCorrelation.RangeRightBottomY = leftEye.Retina.GradientComplex_Detectors.Dimensions[1];
 
                 detectorCorrelation.CorrelationMatrix = new MatrixFloat_ColumnMajor(
                     detectorCorrelation.RangeRightBottomX - detectorCorrelation.RangeLeftUpperX,
@@ -101,7 +101,7 @@ namespace Ssz.AI.Models
 
                 var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
                 leftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
-                var leftEye_Detectors = leftEye.Retina.Detectors;
+                var leftEye_Detectors = leftEye.Retina.GradientComplex_Detectors;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: leftEye_Detectors.Data.Length,
@@ -113,7 +113,7 @@ namespace Ssz.AI.Models
                 
                 var rightEye_GradientMatrix = stereoInputImage.RightEye_GradientMatrix;
                 rightEye.Retina.CalculateRetinaPoints(rightEye_GradientMatrix);
-                var rightEye_Detectors = rightEye.Retina.Detectors;
+                var rightEye_Detectors = rightEye.Retina.GradientComplex_Detectors;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: rightEye_Detectors.Data.Length,

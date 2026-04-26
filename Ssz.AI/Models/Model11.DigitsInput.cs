@@ -886,7 +886,7 @@ namespace Ssz.AI.Models
 
             var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
             LeftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
-            var leftEye_Detectors = LeftEye.Retina.Detectors;
+            var leftEye_Detectors = LeftEye.Retina.GradientComplex_Detectors;
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: leftEye_Detectors.Data.Length,

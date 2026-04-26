@@ -597,7 +597,7 @@ public class Model01 : IDisposable
         
         LeftEye.Retina.CalculateRetinaPoints(stereoInputSample.LeftEye_GradientMatrix);        
         
-        FastList<Detector> detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_Detectors;        
+        var detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_Detectors;        
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];

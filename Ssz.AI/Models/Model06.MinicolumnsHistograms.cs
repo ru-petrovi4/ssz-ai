@@ -90,11 +90,11 @@ namespace Ssz.AI.Models
                 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dJ in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dI in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
+            foreach (int dJ in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[0]))
                 {
-                    Detector d = Retina.Detectors[dI, dJ];
+                    Detector d = Retina.GradientComplex_Detectors[dI, dJ];
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }
@@ -187,11 +187,11 @@ namespace Ssz.AI.Models
 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
-            foreach (int dJ in Enumerable.Range(0, Retina.Detectors.Dimensions[1]))
-                foreach (int dI in Enumerable.Range(0, Retina.Detectors.Dimensions[0]))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
+            foreach (int dJ in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[0]))
                 {
-                    Detector d = Retina.Detectors[dI, dJ];
+                    Detector d = Retina.GradientComplex_Detectors[dI, dJ];
                     if (d.Temp_IsActivated)
                         activatedDetectors.Add(d);
                 }

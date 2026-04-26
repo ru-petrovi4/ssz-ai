@@ -582,7 +582,7 @@ public static class Visualisation
         return bitmap;
     }
 
-    public static Bitmap GetBitmapFromActivatedDetectors(List<Detector> activatedDetectors)
+    public static Bitmap GetBitmapFromActivatedDetectors(IEnumerable<Detector> activatedDetectors)
     {
         int width = MNISTHelper.MNISTImageWidthPixels * 10;
         int height = MNISTHelper.MNISTImageHeightPixels * 10;

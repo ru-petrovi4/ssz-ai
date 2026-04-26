@@ -291,7 +291,7 @@ namespace Ssz.AI.Models
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            float[] input_Hash = new float[Retina.Detectors.Data.Length];
+            float[] input_Hash = new float[Retina.GradientComplex_Detectors.Data.Length];
 
             Cortex.InputAutoencoder.CosineSimilarity = float.MaxValue;
             float cosineSimilarity;
@@ -319,10 +319,10 @@ namespace Ssz.AI.Models
 
                         Parallel.For(
                             fromInclusive: 0,
-                            toExclusive: Retina.Detectors.Data.Length,
+                            toExclusive: Retina.GradientComplex_Detectors.Data.Length,
                             d_index =>
                             {
-                                var d = Retina.Detectors.Data[d_index];
+                                var d = Retina.GradientComplex_Detectors.Data[d_index];
                                 input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                             });
 
@@ -362,10 +362,10 @@ namespace Ssz.AI.Models
 
                 Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: Retina.Detectors.Data.Length,
+                    toExclusive: Retina.GradientComplex_Detectors.Data.Length,
                     d_index =>
                     {
-                        var d = Retina.Detectors.Data[d_index];
+                        var d = Retina.GradientComplex_Detectors.Data[d_index];
                         input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                     });
 

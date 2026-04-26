@@ -172,7 +172,7 @@ namespace Ssz.AI.Models
             DenseMatrix<GradientInPoint> gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             Retina.CalculateRetinaPoints(gradientMatrix);
-            List<Detector> activatedDetectors = new List<Detector>(Retina.Detectors.Dimensions[0] * Retina.Detectors.Dimensions[1]);
+            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
