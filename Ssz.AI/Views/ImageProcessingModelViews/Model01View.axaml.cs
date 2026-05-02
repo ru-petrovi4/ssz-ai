@@ -145,7 +145,7 @@ public partial class Model01View : UserControl
                 Model.Logger.LogInformation("StartProcessSomIdealN Finished.");
             });
 
-            var imageWithDesc = (ImageWithDesc)(Model.GetImageWithDescs(
+            var imageWithDesc = (ImageWithDesc)(Model.Get_ImageProcessingModel_VisualizationWithDescs(
                 _random,
                 ColorLowScrollBar.Value,
                 ColorHighScrollBar.Value)[5]);
@@ -248,7 +248,7 @@ public partial class Model01View : UserControl
 
     private void PutInitialMemoriesPinwheel_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model.PutMemories_Pinwheel(_random, inMiniColumn_CortexMemoriesCount: 1);
+        Model.PutPinwheel_MemoriesAndSomWeights(_random, inMiniColumn_CortexMemoriesCount: 1);
 
         Refresh_ImagesSet();
     }
@@ -755,7 +755,7 @@ public partial class Model01View : UserControl
     private void Refresh_ImagesSet()
     {
         ImagesSet1_TextBlock.Text = Model.Cortex.Temp_InputCurrentDesc;
-        ImagesSet1.MainItemsControl.ItemsSource = Model.GetImageWithDescs(
+        ImagesSet1.MainItemsControl.ItemsSource = Model.Get_ImageProcessingModel_VisualizationWithDescs(
             _random, 
             ColorLowScrollBar.Value,
             ColorHighScrollBar.Value);

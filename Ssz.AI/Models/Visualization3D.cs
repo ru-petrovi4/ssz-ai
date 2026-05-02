@@ -14,19 +14,39 @@ namespace Ssz.AI.Models;
 
 public static class Visualization3D
 {
-    //public static void ShowPoints(System.Drawing.Image[] images)
-    //{
-    //    var window = new Window
-    //    {
-    //        Width = 1500,
-    //        Height = 600,
-    //        Content = new Model3DView()
-    //    };
+    public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed_CombinatorinalSpace miniColumnDetailed)
+    {
+        Model3DScene model3DScene = new();
 
-    //    window.Show();
-    //}
+        SceneBounds sceneBounds = new();
 
-    public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed miniColumnDetailed)
+        model3DScene.Points = new List<Point3DWithColor>(1024);
+        model3DScene.Lines = new List<List<Point3DWithColor>>(1024);
+
+        AddActiveZones(model3DScene, miniColumnDetailed.Temp_ThalamocorticalZones, System.Drawing.Color.White, ref sceneBounds);
+
+        //AddAxons(
+        //    model3DScene,
+        //    miniColumnDetailed.PyramidalAxons,
+        //    ref sceneBounds,
+        //    inactiveColor: System.Drawing.Color.FromArgb(0x00, 0x00, 0xFF),
+        //    activeColor: System.Drawing.Color.FromArgb(0x44, 0x44, 0xFF),
+        //    hideFarLines: true);
+
+        AddAxons(
+            model3DScene,
+            miniColumnDetailed.ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons,
+            ref sceneBounds,
+            inactiveColor: System.Drawing.Color.FromArgb(0x66, 0x00, 0x00),
+            activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
+            hideFarLines: false);
+
+        sceneBounds.Normalize(model3DScene);
+
+        return model3DScene;
+    }
+
+    public static Model3DScene Get_MiniColumnDetailed_Model3DScene(Ssz.AI.Models.MiniColumnDetailedModel.MiniColumnDetailed_FullSetOfNeurons miniColumnDetailed)
     {
         Model3DScene model3DScene = new();        
                 
@@ -116,7 +136,8 @@ public static class Visualization3D
         if (hideFarLines)
             foreach (var line in model3DScene.Lines!.ToArray())
             {
-                bool farLine = line.All(l => MathHelper.GetLengthXY(l.Position) > MiniColumnDetailed.ColumnRadius_Extended_Um);
+                // !!! Warning !!!
+                bool farLine = line.All(l => MathHelper.GetLengthXY(l.Position) > MiniColumnDetailed_FullSetOfNeurons.ColumnRadius_Extended_Um);
                 if (farLine)
                     model3DScene.Lines.Remove(line);
             }

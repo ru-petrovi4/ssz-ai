@@ -10,17 +10,17 @@ public interface IRetinaConstants
 {
     PixelSize RetinaImagePixelSize { get; }
 
-    float RetinaImageAngle { get; }    
+    float RetinaImageAngle { get; }
 
     /// <summary>
     ///     Оценочный максимальный градиент.
     /// </summary>
-    int MaxGradientMagnitudeExclusive { get; }
+    float MaxGradientMagnitudeExclusive { get; }
 
     /// <summary>
     ///     Минимальная чувствительность к модулю градиента
     /// </summary>
-    double MinGradientMagnitudeInclusive { get; }
+    float MinGradientMagnitudeInclusive { get; }
 
     /// <summary>
     ///     For internal calculations of Detectors densities.

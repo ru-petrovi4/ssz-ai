@@ -172,7 +172,7 @@ namespace Ssz.AI.Models
             DenseMatrix<GradientInPoint> gradientMatrix = SobelOperator.ApplySobel(resizedBitmap, MNISTHelper.MNISTImageWidthPixels, MNISTHelper.MNISTImageHeightPixels);
 
             Retina.CalculateRetinaPoints(gradientMatrix);
-            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
+            List<Detector> activatedDetectors = new List<Detector>(Retina.DetectingPoints_Matrix.Dimensions[0] * Retina.DetectingPoints_Matrix.Dimensions[1]);
             Parallel.For(
                     fromInclusive: 0,
                     toExclusive: Cortex.SubArea_Detectors.Length,
@@ -214,13 +214,13 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
-            public double MinGradientMagnitudeInclusive => 5;
+            public float MinGradientMagnitudeInclusive => 5;
 
             public float GradientMagnitudeDelta => 10;
 
             public float GradientAngleDegreeDelta => 10;
 
-            public int MaxGradientMagnitudeExclusive => 1200;
+            public float MaxGradientMagnitudeExclusive => 1200;
 
             public int AngleRangeDegreeMin { get; set; } = 120;
 

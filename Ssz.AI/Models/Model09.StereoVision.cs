@@ -196,13 +196,13 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
-            public double MinGradientMagnitudeInclusive => 5;
+            public float MinGradientMagnitudeInclusive => 5;
 
             public float GradientMagnitudeDelta => 10;
 
             public float GradientAngleDegreeDelta => 10;
 
-            public int MaxGradientMagnitudeExclusive => 1200;
+            public float MaxGradientMagnitudeExclusive => 1200;
 
             public int AngleRangeDegreeMin { get; set; } = 60;
 

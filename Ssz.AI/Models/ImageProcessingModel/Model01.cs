@@ -140,9 +140,9 @@ public class Model01 : IDisposable
 
         // Optimization
         HashSet<RetinaPoint> toCalculateRetinaPoints = new();
-        foreach (var d in Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[0]].Temp_LeftEye_Detectors)
+        foreach (var d in Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[0]].Temp_LeftEye_GradientComplexDetectors)
         {
-            foreach (var rp in d.Temp_RetinaPoints)
+            foreach (var rp in d.DetectingPoint.Temp_RetinaPoints)
             {
                 toCalculateRetinaPoints.Add(rp);
             }
@@ -175,11 +175,11 @@ public class Model01 : IDisposable
 
     public Cortex Cortex = null!;
 
-    public MiniColumnDetailed? MiniColumnDetailed;
+    public MiniColumnDetailed_CombinatorinalSpace? MiniColumnDetailed;
 
     public StateInfo StateInfo = new();
 
-    public VisualizationWithDesc[] GetImageWithDescs(
+    public VisualizationWithDesc[] Get_ImageProcessingModel_VisualizationWithDescs(
         Random random,
         double filterColorLow,
         double filterColorHigh)
@@ -191,7 +191,7 @@ public class Model01 : IDisposable
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
 
-        Cortex.CalculateSomCortexMemories(random);
+        Cortex.CalculateSomWeightsEquivalentCortexMemories(random);
 
         return [
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Cortex.Temp_LastMiniColumn_SampleVisualisation?.FullImage),
@@ -204,7 +204,7 @@ public class Model01 : IDisposable
                     Desc = $"Видимые миниколонкой детекторы." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
                     Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" },
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomWeightsEquivalentCortexMemories, ii => ii.GradientAngleMagnitude_Color, filterColorLow, filterColorHigh)),
                     Desc = $"SOM. Модуль и угол." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r0.Image),
                     Desc = $"SOM. Максимальное расстояние до соседей; Min: {r0.ValueMin:F03}; Max: {r0.ValueMax:F03}" },
@@ -217,21 +217,21 @@ public class Model01 : IDisposable
             ];
     }
 
-    public VisualizationWithDesc[] GetImageWithDescs_MiniColumnDetailed1(
+    public VisualizationWithDesc[] Get_MiniColumnDetailed_VisualizationWithDescs(
         Random random)
     {
         var r2 = Visualisation.GetBitmapFromMiniColumsValue(Cortex,
                         (MiniColumn mc) => mc.Temp_TotalEnergy);
 
         return [
-                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomCortexMemories, ii => ii.GradientAngleMagnitude_Color)),
+                new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(Visualisation.GetBitmapFromMiniColumsMemoriesColor(Cortex, mc => mc.Temp_SomWeightsEquivalentCortexMemories, ii => ii.GradientAngleMagnitude_Color)),
                     Desc = $"SOM. Модуль и угол." },
                 new ImageWithDesc { Image = BitmapHelper.ConvertImageToAvaloniaBitmap(r2.Image),
                     Desc = $"Энергия (минимизируем); Min: {r2.ValueMin:F03}; Max: {r2.ValueMax:F03}" }                
             ];
     }
 
-    public Model3DScene? GetImageWithDescs_MiniColumnDetailed2(
+    public Model3DScene? Get_MiniColumnDetailed_Model3DScene(
         Random random)
     {
         if (MiniColumnDetailed is null)
@@ -240,7 +240,7 @@ public class Model01 : IDisposable
         return Visualization3D.Get_MiniColumnDetailed_Model3DScene(MiniColumnDetailed);
     }
 
-    public void PutMemories_Pinwheel(Random random, int inMiniColumn_CortexMemoriesCount)
+    public void PutPinwheel_MemoriesAndSomWeights(Random random, int inMiniColumn_CortexMemoriesCount)
     {
         if (Cortex.MiniColumns is null)
             return;       
@@ -463,23 +463,14 @@ public class Model01 : IDisposable
         await refreshAction();
     }
 
-    public async Task CalculateTestMemoryWithSomAsync(Random random, CancellationToken cancellationToken)
+    public async Task TestMemory_FindBestForMemoryMiniColumn_SomAsync(Random random, CancellationToken cancellationToken)
     {
         if (Cortex.MiniColumns is null)
             return;
 
         await Task.Delay(0);
 
-        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
-
-        Memory cortexMemory = Cortex.GetIdealCortexMemory(            
-            MathHelper.DegreesToRadians(Constants.TestGradientAngleDegrees),
-            Constants.TestGradientMagnitude,
-            Constants.TestGradientWidthRelative,
-            Constants.TestGradientPositionRelative,
-            LeftEye,
-            hyperColumnCenter_MiniColumn: nearest_HyperColumnCenter_MiniColumn,
-            main_MiniColumn: nearest_HyperColumnCenter_MiniColumn);        
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory(random);
 
         MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(
             cortexMemory, 
@@ -597,7 +588,7 @@ public class Model01 : IDisposable
         
         LeftEye.Retina.CalculateRetinaPoints(stereoInputSample.LeftEye_GradientMatrix);        
         
-        var detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_Detectors;        
+        var detectors = nearest_HyperColumnCenter_MiniColumn.Temp_LeftEye_GradientComplexDetectors;        
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
@@ -904,21 +895,10 @@ public class Model01 : IDisposable
     }
 
     public void Create_MiniColumnDetailed(Random random)
-    {        
-        Logger.LogInformation("=== Модель миниколонки коры мозга ===");
-        Logger.LogInformation($"Аксонов: {MiniColumnDetailedModel.MiniColumnDetailed.PyramidalAxonsCount}");
-        Logger.LogInformation($"Синапсов на аксон: {MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon}");
-        Logger.LogInformation($"Всего синапсов: {(long)MiniColumnDetailedModel.MiniColumnDetailed.PyramidalAxonsCount * MiniColumnDetailedModel.MiniColumnDetailed.SynapsesPerAxon:N0}");
-        Logger.LogInformation($"");
-
-        // ----------------------------------------------------------
-        //  СОЗДАНИЕ МИНИКОЛОНКИ
-        //  На ~200 аксонов × 10 000 синапсов = 2 000 000 синапсов.
-        //  Построение занимает несколько секунд.
-        // ----------------------------------------------------------
-        Console.Write("Генерация миниколонки...");
+    {   
+        Console.Write("Генерация комбинаторного пространства...");
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        MiniColumnDetailed = new MiniColumnDetailed(random);
+        MiniColumnDetailed = new MiniColumnDetailed_CombinatorinalSpace(random);
         sw.Stop();
         Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
         Logger.LogInformation($"");
@@ -929,7 +909,7 @@ public class Model01 : IDisposable
         if (MiniColumnDetailed is null)
             return;
 
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColum) = GetTestCortexMemory(random);
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory(random);
 
         bool log = false;
 
@@ -1273,9 +1253,9 @@ public class Model01 : IDisposable
 
         public float RetinaImageAngle { get; set; } = MathHelper.DegreesToRadians(0.5f); // Full image: MathHelper.DegreesToRadians(0.5f);
 
-        public int MaxGradientMagnitudeExclusive => 1200; // Исходя из гистограммы
+        public float MaxGradientMagnitudeExclusive => 1200; // Исходя из гистограммы
 
-        public double MinGradientMagnitudeInclusive => 20; // Исходя из гистограммы 20
+        public float MinGradientMagnitudeInclusive => 20; // Исходя из гистограммы 20
 
         public float GradientMagnitudeDelta => 10;
 

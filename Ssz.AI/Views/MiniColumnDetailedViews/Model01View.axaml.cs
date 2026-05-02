@@ -221,9 +221,9 @@ public partial class Model01View : UserControl
             LoadImagesSamplesFile = false,
         });
 
-        Model!.PutMemories_Pinwheel(_random, 1);
+        Model!.PutPinwheel_MemoriesAndSomWeights(_random, 1);
 
-        Model!.Cortex.CalculateSomCortexMemories(_random);
+        Model!.Cortex.CalculateSomWeightsEquivalentCortexMemories(_random);
 
         Model!.Create_MiniColumnDetailed(_random);
     }
@@ -283,9 +283,9 @@ public partial class Model01View : UserControl
         if (Model is null)
             return;
 
-        await Model!.CalculateTestMemoryWithSomAsync(_random, CancellationToken.None);
+        await Model!.TestMemory_FindBestForMemoryMiniColumn_SomAsync(_random, CancellationToken.None);
 
-        ImagesSet1.MainItemsControl.ItemsSource = Model!.GetImageWithDescs_MiniColumnDetailed1(
+        ImagesSet1.MainItemsControl.ItemsSource = Model!.Get_MiniColumnDetailed_VisualizationWithDescs(
             _random);
     }
 
@@ -294,7 +294,7 @@ public partial class Model01View : UserControl
         if (Model is null)
             return;
 
-        MainModel3DControl.Data = Model!.GetImageWithDescs_MiniColumnDetailed2(
+        MainModel3DControl.Data = Model!.Get_MiniColumnDetailed_Model3DScene(
             _random);
     }
 

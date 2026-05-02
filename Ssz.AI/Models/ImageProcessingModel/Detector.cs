@@ -9,15 +9,7 @@ namespace Ssz.AI.Models.ImageProcessingModel;
 
 public abstract class Detector : IOwnedDataSerializable
 {
-    public Retina Retina = null!;
-
-    public int DI;
-
-    public int DJ;
-
-    public double CenterXPixels;
-
-    public double CenterYPixels;    
+    public DetectingPoint DetectingPoint = null!;
 
     public int BitIndexInHash;
 
@@ -25,9 +17,7 @@ public abstract class Detector : IOwnedDataSerializable
 
     public int Temp_IsActivatedCount;
 
-    public float Temp_Density;
-
-    public FastList<RetinaPoint> Temp_RetinaPoints = null!;
+    public float Temp_Density;    
 
     public FastList<FeaturesVectorSample> Temp_FeaturesVectorSamples = null!;
 
@@ -65,9 +55,9 @@ public class SimpleDetector : Detector
     /// </summary>
     public override bool CalculateIsActivated()
     {
-        for (int rp_Index = 0; rp_Index < Temp_RetinaPoints.Count; rp_Index += 1)
+        for (int rp_Index = 0; rp_Index < DetectingPoint.Temp_RetinaPoints.Count; rp_Index += 1)
         {
-            bool activated = CalculateIsActivated(ref Temp_RetinaPoints[rp_Index].FeaturesVector);
+            bool activated = CalculateIsActivated(ref DetectingPoint.Temp_RetinaPoints[rp_Index].FeaturesVector);
             if (activated)
                 return true;
         }
@@ -134,9 +124,9 @@ public class GradientComplexDetector : Detector
     /// </summary>
     public override bool CalculateIsActivated()
     {
-        for (int rp_Index = 0; rp_Index < Temp_RetinaPoints.Count; rp_Index += 1)
+        for (int rp_Index = 0; rp_Index < DetectingPoint.Temp_RetinaPoints.Count; rp_Index += 1)
         {
-            bool activated = CalculateIsActivated(ref Temp_RetinaPoints[rp_Index].FeaturesVector);
+            bool activated = CalculateIsActivated(ref DetectingPoint.Temp_RetinaPoints[rp_Index].FeaturesVector);
             if (activated)
                 return true;
         }
@@ -152,16 +142,16 @@ public class GradientComplexDetector : Detector
     {
         float gradientMagnitude = featuresVector[FeaturesVector.GradientMagnitude_Index];        
 
-        if (gradientMagnitude < Retina.Constants.MinGradientMagnitudeInclusive ||
-                gradientMagnitude >= Retina.Constants.MaxGradientMagnitudeExclusive)
+        if (gradientMagnitude < DetectingPoint.Retina.Constants.MinGradientMagnitudeInclusive ||
+                gradientMagnitude >= DetectingPoint.Retina.Constants.MaxGradientMagnitudeExclusive)
             return false;
 
         float gradientAngle = featuresVector[FeaturesVector.GradientAngle_Index];
 
         int gradientMagnitude_AsIndex =  (int)gradientMagnitude;
         int gradientAngle_AsIndex = (int)MathHelper.RadiansToDegrees((float)gradientAngle);
-        DetectorValueRange gradientMagnitude_DetectorValueRange = Retina.GradientMagnitude_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
-        DetectorValueRange gradientAngle_DetectorValueRange = Retina.GradientAngle_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
+        DetectorValueRange gradientMagnitude_DetectorValueRange = DetectingPoint.Retina.GradientMagnitude_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
+        DetectorValueRange gradientAngle_DetectorValueRange = DetectingPoint.Retina.GradientAngle_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
 
         bool activated = GradientMagnitude_Average >= gradientMagnitude_DetectorValueRange.LowerInclusive &&
             GradientMagnitude_Average < gradientMagnitude_DetectorValueRange.UpperExclusive;
@@ -183,7 +173,7 @@ public class GradientComplexDetector : Detector
 
     public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstantsObsolete constants, Vector2 offset = default)
     {
-        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(CenterXPixels - offset.X, CenterYPixels - offset.Y, gradientMatrix);
+        (double magnitude, double angle) = MathHelper.GetInterpolatedGradient_Obsolete(DetectingPoint.CenterXPixels - offset.X, DetectingPoint.CenterYPixels - offset.Y, gradientMatrix);
 
         if (magnitude < constants.MinGradientMagnitudeInclusive)
             return false;

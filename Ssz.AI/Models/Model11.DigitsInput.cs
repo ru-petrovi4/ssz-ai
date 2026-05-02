@@ -382,14 +382,14 @@ namespace Ssz.AI.Models
             //    (int)(Cortex.CenterMiniColumn!.CenterYPixels * 10),
             //    (int)(Cortex.DetectorsVisibleRadiusPixels * 10));
 
-            var activatedDetectors = Cortex.SubAreaOrAll_Detectors.Where(d => d.Temp_IsActivated).ToArray();
+            var activatedDetectors = Cortex.SubAreaOrAll_Detectors.Select(dp => dp.GradientComplex_Detector!).Where(d => d.Temp_IsActivated).ToArray();
             var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(
                 activatedDetectors, 
                 Constants.RetinaImagePixelSize.Width, 
                 Constants.RetinaImagePixelSize.Height,
                 ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels);
 
-            var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn!.Detectors.Where(d => d.Temp_IsActivated).ToList();
+            var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn!.Detectors.Where(d => d.GradientComplex_Detector!.Temp_IsActivated).ToList();
 
             var activityColorImage = Visualisation.GetBitmapFromMiniColums_ActivityColor(Cortex);
 
@@ -886,14 +886,14 @@ namespace Ssz.AI.Models
 
             var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
             LeftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
-            var leftEye_Detectors = LeftEye.Retina.GradientComplex_Detectors;
+            var leftEye_Detectors = LeftEye.Retina.DetectingPoints_Matrix;
             Parallel.For(
                 fromInclusive: 0,
                 toExclusive: leftEye_Detectors.Data.Length,
                 d_index =>
                 {
                     var d = leftEye_Detectors.Data[d_index]!;
-                    d.Temp_IsActivated = d.CalculateIsActivated();
+                    d.GradientComplex_Detector!.Temp_IsActivated = d.GradientComplex_Detector!.CalculateIsActivated();
                 });
 
             // TEMPCODE
@@ -1196,13 +1196,13 @@ namespace Ssz.AI.Models
 
             public int DiscreteOptimizedVector_PrimaryBitsCount { get; set; } = 7;
 
-            public double MinGradientMagnitudeInclusive => 42;
+            public float MinGradientMagnitudeInclusive => 42;
 
             public float GradientMagnitudeDelta => 10;
 
             public float GradientAngleDegreeDelta => 10;
 
-            public int MaxGradientMagnitudeExclusive => 1200;            
+            public float MaxGradientMagnitudeExclusive => 1200;            
 
             public int MagnitudeRangesCount => 3;            
 

@@ -34,12 +34,12 @@
 					<model3D:Model3DControl Grid.Row="1" Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" Data="{Binding Data}" />
 				</Grid>
 			</DataTemplate>
-			<DataTemplate DataType="vm:Plot2DWithDesc">
+			<!--<DataTemplate DataType="vm:Plot2DWithDesc">
 				<Grid RowDefinitions="*,4*" Margin="5">
 					<TextBlock Text="{Binding Desc}" TextWrapping="Wrap" Width="{Binding #Plot2DControl.Bounds.Height}" />
 					<oxy:PlotView Grid.Row="1" Width="{Binding #Plot2DControl.Bounds.Height}" Name="Plot2DControl" Model="{Binding Model}" />
 				</Grid>
-			</DataTemplate>
+			</DataTemplate>-->
 		</ItemsControl.DataTemplates>
 	</ItemsControl>
 	<!--</ScrollViewer>-->

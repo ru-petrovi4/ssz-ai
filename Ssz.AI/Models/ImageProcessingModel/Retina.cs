@@ -42,16 +42,12 @@ public class Retina : ISerializableModelObject
     /// </summary>
     public DenseMatrix<DetectorValueRange?> GradientMagnitude_DetectorValueRanges = new();
 
-    public DenseMatrix<SimpleDetector?> GradientMagnitude_Detectors = new();    
-
     /// <summary>
     ///     Диапазоны для детекторов в зависимости от угла градиента (в градусах).
     /// </summary>
     public DenseMatrix<DetectorValueRange?> GradientAngle_DetectorValueRanges = new();
 
-    public DenseMatrix<SimpleDetector?> GradientAngle_Detectors = new();
-
-    public DenseMatrix<GradientComplexDetector?> GradientComplex_Detectors = new();
+    public DenseMatrix<DetectingPoint?> DetectingPoints_Matrix = new();
 
     public DenseMatrix<float> GradientMagnitude_Average_IdealPinwheel_MiniColumns = new();
 
@@ -71,7 +67,7 @@ public class Retina : ISerializableModelObject
         float gradientMagnitudeRange_Samples = Constants.DetectorRange_MiniColumns * inIdealPinwheelMiniColumn_Samples; // 5.0 уже плохо собирается
         float gradientAngleRange_MiniColumns = Constants.DetectorRange_MiniColumns; // 5.0 уже плохо собирается
 
-        GradientMagnitude_Average_IdealPinwheel_MiniColumns = new DenseMatrix<float>(Constants.MaxGradientMagnitudeExclusive, 360);
+        GradientMagnitude_Average_IdealPinwheel_MiniColumns = new DenseMatrix<float>((int)Constants.MaxGradientMagnitudeExclusive, 360);
         for (int gradientMagnitude = 0; gradientMagnitude < GradientMagnitude_DetectorValueRanges.Dimensions[0]; gradientMagnitude += 1)
         {
             float samples = GradientMagnitude_AccumulativeDistribution[gradientMagnitude];
@@ -83,7 +79,7 @@ public class Retina : ISerializableModelObject
             }
         }
 
-        GradientMagnitude_DetectorValueRanges = new DenseMatrix<DetectorValueRange?>(Constants.MaxGradientMagnitudeExclusive, 360);
+        GradientMagnitude_DetectorValueRanges = new DenseMatrix<DetectorValueRange?>((int)Constants.MaxGradientMagnitudeExclusive, 360);
         for (int gradientMagnitude = 0; gradientMagnitude < GradientMagnitude_DetectorValueRanges.Dimensions[0]; gradientMagnitude += 1)
         {
             float samples = GradientMagnitude_AccumulativeDistribution[gradientMagnitude];            
@@ -113,7 +109,7 @@ public class Retina : ISerializableModelObject
             }
         }
 
-        GradientAngle_DetectorValueRanges = new DenseMatrix<DetectorValueRange?>(Constants.MaxGradientMagnitudeExclusive, 360);
+        GradientAngle_DetectorValueRanges = new DenseMatrix<DetectorValueRange?>((int)Constants.MaxGradientMagnitudeExclusive, 360);
         for (int gradientMagnitude = 0; gradientMagnitude < GradientAngle_DetectorValueRanges.Dimensions[0]; gradientMagnitude += 1)
         {
             float samples = GradientMagnitude_AccumulativeDistribution[gradientMagnitude];
@@ -147,69 +143,9 @@ public class Retina : ISerializableModelObject
 
         int width = (int)(Constants.RetinaImagePixelSize.Width / Constants.RetinaDetectorsDeltaPixels);
         int height = (int)(Constants.RetinaImagePixelSize.Height / Constants.RetinaDetectorsDeltaPixels);
-        
-        GradientMagnitude_Detectors = new DenseMatrix<SimpleDetector?>(width, height);
-        //float[] detectorDensities_Accumulative = DistributionHelper.GetAccumulativeDistribution(templateDetectors.Select(d => d.Temp_Density).ToArray());
-        //foreach (int dJ in Enumerable.Range(0, height))
-        //    foreach (int dI in Enumerable.Range(0, width))
-        //    {
-        //        int index = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative);
-        //        Detector templateDetector = templateDetectors[index];
-
-        //        Detector detector = new()
-        //        {
-        //            Retina = this,
-        //            DI = dI,
-        //            DJ = dJ,
-        //            CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
-        //            CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
-        //        };
-        //        detector.Average = MathHelper.GetRandom(
-        //            initializationRandom,
-        //            templateDetector.Average,
-        //            range: Constants.GradientMagnitudeDelta);
-        //        detector.GradientAngle_Average = MathHelper.NormalizeAngle(MathHelper.GetRandom(
-        //            initializationRandom,
-        //            templateDetector.GradientAngle_Average,
-        //            range: MathHelper.DegreesToRadians(Constants.GradientAngleDegreeDelta)));                
-        //        detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
-        //        //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
-
-        //        GradientMagnitude_Detectors[dI, dJ] = detector;
-        //    }
-
-        GradientAngle_Detectors = new DenseMatrix<SimpleDetector?>(width, height);
-        //float[] detectorDensities_Accumulative = DistributionHelper.GetAccumulativeDistribution(templateDetectors.Select(d => d.Temp_Density).ToArray());
-        //foreach (int dJ in Enumerable.Range(0, height))
-        //    foreach (int dI in Enumerable.Range(0, width))
-        //    {
-        //        int index = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative);
-        //        Detector templateDetector = templateDetectors[index];
-
-        //        Detector detector = new()
-        //        {
-        //            Retina = this,
-        //            DI = dI,
-        //            DJ = dJ,
-        //            CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
-        //            CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
-        //        };
-        //        detector.Average = MathHelper.GetRandom(
-        //            initializationRandom,
-        //            templateDetector.Average,
-        //            range: Constants.GradientMagnitudeDelta);
-        //        detector.GradientAngle_Average = MathHelper.NormalizeAngle(MathHelper.GetRandom(
-        //            initializationRandom,
-        //            templateDetector.GradientAngle_Average,
-        //            range: MathHelper.DegreesToRadians(Constants.GradientAngleDegreeDelta)));
-        //        detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
-        //        //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
-
-        //        GradientAngle_Detectors[dI, dJ] = detector;
-        //    }
 
         FastList<GradientComplexDetector> templateDetectors = CalculateTemplate_GradientComplexDetectors(initializationRandom, Constants);
-        GradientComplex_Detectors = new DenseMatrix<GradientComplexDetector?>(width, height);
+        DetectingPoints_Matrix = new DenseMatrix<DetectingPoint?>(width, height);
         float[] detectorDensities_Accumulative = DistributionHelper.GetAccumulativeDistribution(templateDetectors.Select(d => d.Temp_Density).ToArray());
         foreach (int dJ in Enumerable.Range(0, height))
             foreach (int dI in Enumerable.Range(0, width))
@@ -217,26 +153,37 @@ public class Retina : ISerializableModelObject
                 int index = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative);
                 GradientComplexDetector templateDetector = templateDetectors[index];
 
-                GradientComplexDetector detector = new()
+                DetectingPoint detectingPoint = new()
                 {
                     Retina = this,
                     DI = dI,
                     DJ = dJ,
                     CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
                     CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
+
+                    GradientMagnitude_Detector = new(),
+                    GradientAngle_Detector = new(),
+                    GradientComplex_Detector = new(),
                 };
-                detector.GradientMagnitude_Average = MathHelper.GetRandom(
-                    initializationRandom,
-                    templateDetector.GradientMagnitude_Average,
-                    range: Constants.GradientMagnitudeDelta);
-                detector.GradientAngle_Average = MathHelper.NormalizeAngle(MathHelper.GetRandom(
-                    initializationRandom,
-                    templateDetector.GradientAngle_Average,
-                    range: MathHelper.DegreesToRadians(Constants.GradientAngleDegreeDelta)));
-                detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
+                // Magnitude Average
+                detectingPoint.GradientMagnitude_Detector.Average =
+                    detectingPoint.GradientComplex_Detector.GradientMagnitude_Average = MathHelper.GetRandom(
+                        initializationRandom,
+                        templateDetector.GradientMagnitude_Average,
+                        range: Constants.GradientMagnitudeDelta);
+                // Angle Average
+                detectingPoint.GradientAngle_Detector.Average =
+                    detectingPoint.GradientComplex_Detector.GradientAngle_Average = MathHelper.NormalizeAngle(MathHelper.GetRandom(
+                        initializationRandom,
+                        templateDetector.GradientAngle_Average,
+                        range: MathHelper.DegreesToRadians(Constants.GradientAngleDegreeDelta)));
+                // BitIndexInHash
+                detectingPoint.GradientMagnitude_Detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
+                detectingPoint.GradientAngle_Detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
+                detectingPoint.GradientComplex_Detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
                 //dataToDisplayHolder.Distribution[(int)MathHelper.RadiansToDegrees(detector.GradientAngleMax)] += 1;
 
-                GradientComplex_Detectors[dI, dJ] = detector;
+                DetectingPoints_Matrix[dI, dJ] = detectingPoint;
             }
 
         TestDetectorDensities(initializationRandom, templateDetectors, detectorDensities_Accumulative);        
@@ -255,22 +202,22 @@ public class Retina : ISerializableModelObject
         });
 
         float detectorFieldOfViewRadiusPixels = Constants.DetectorFieldOfViewRadiusPixels;
-        foreach (int dJ in Enumerable.Range(0, GradientComplex_Detectors.Dimensions[1]))
-            foreach (int dI in Enumerable.Range(0, GradientComplex_Detectors.Dimensions[0]))
+        foreach (int dJ in Enumerable.Range(0, DetectingPoints_Matrix.Dimensions[1]))
+            foreach (int dI in Enumerable.Range(0, DetectingPoints_Matrix.Dimensions[0]))
             {
-                Detector detector = GradientComplex_Detectors[dI, dJ]!;
-                detector.Temp_RetinaPoints = new FastList<RetinaPoint>((int)(MathF.PI * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels) * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels)));
+                DetectingPoint detectingPoint = DetectingPoints_Matrix[dI, dJ]!;
+                detectingPoint.Temp_RetinaPoints = new FastList<RetinaPoint>((int)(MathF.PI * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels) * (1 + detectorFieldOfViewRadiusPixels / Constants.RetinaPointDeltaPixels)));
 
-                for (int rpJ = (int)((detector.CenterYPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpJ < (int)((detector.CenterYPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpJ < Temp_RetinaPoints.Dimensions[1]; rpJ += 1)
-                    for (int rpI = (int)((detector.CenterXPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpI < (int)((detector.CenterXPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpI < Temp_RetinaPoints.Dimensions[0]; rpI += 1)
+                for (int rpJ = (int)((detectingPoint.CenterYPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpJ < (int)((detectingPoint.CenterYPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpJ < Temp_RetinaPoints.Dimensions[1]; rpJ += 1)
+                    for (int rpI = (int)((detectingPoint.CenterXPixels - detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels); rpI < (int)((detectingPoint.CenterXPixels + detectorFieldOfViewRadiusPixels) / Constants.RetinaPointDeltaPixels) && rpI < Temp_RetinaPoints.Dimensions[0]; rpI += 1)
                     {
                         if (rpI < 0 || rpJ < 0)
                             continue;
 
                         RetinaPoint retinaPoint = Temp_RetinaPoints[rpI, rpJ]!;
-                        double rPixels = Math.Sqrt((detector.CenterXPixels - retinaPoint.CenterXPixels) * (detector.CenterXPixels - retinaPoint.CenterXPixels) + (detector.CenterYPixels - retinaPoint.CenterYPixels) * (detector.CenterYPixels - retinaPoint.CenterYPixels));
+                        double rPixels = Math.Sqrt((detectingPoint.CenterXPixels - retinaPoint.CenterXPixels) * (detectingPoint.CenterXPixels - retinaPoint.CenterXPixels) + (detectingPoint.CenterYPixels - retinaPoint.CenterYPixels) * (detectingPoint.CenterYPixels - retinaPoint.CenterYPixels));
                         if (rPixels < detectorFieldOfViewRadiusPixels)
-                            detector.Temp_RetinaPoints.Add(retinaPoint);
+                            detectingPoint.Temp_RetinaPoints.Add(retinaPoint);
                     }
             }
 
@@ -311,11 +258,9 @@ public class Retina : ISerializableModelObject
         using (writer.EnterBlock(1))
         {
             writer.WriteArrayOfUInt64(GradientMagnitude_AccumulativeDistribution);
-            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientMagnitude_DetectorValueRanges, writer, context);
-            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientMagnitude_Detectors, writer, context);
-            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientAngle_DetectorValueRanges, writer, context);
-            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientAngle_Detectors, writer, context);
-            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientComplex_Detectors, writer, context);
+            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientMagnitude_DetectorValueRanges, writer, context);            
+            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(GradientAngle_DetectorValueRanges, writer, context);            
+            Helpers.SerializationHelper.SerializeOwnedData_DenseMatrix(DetectingPoints_Matrix, writer, context);
             GradientMagnitude_Average_IdealPinwheel_MiniColumns.SerializeOwnedData(writer, context);
         }
     }
@@ -328,25 +273,9 @@ public class Retina : ISerializableModelObject
             { 
                 case 1:
                     GradientMagnitude_AccumulativeDistribution = reader.ReadArrayOfUInt64();
-                    GradientMagnitude_DetectorValueRanges = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new DetectorValueRange());
-                    GradientMagnitude_Detectors = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new SimpleDetector
-                    {
-                        Retina = this,
-                        DI = dI,
-                        DJ = dJ,
-                        CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
-                        CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
-                    });
-                    GradientAngle_DetectorValueRanges = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new DetectorValueRange());
-                    GradientAngle_Detectors = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new SimpleDetector
-                    {
-                        Retina = this,
-                        DI = dI,
-                        DJ = dJ,
-                        CenterXPixels = dI * Constants.RetinaDetectorsDeltaPixels,
-                        CenterYPixels = dJ * Constants.RetinaDetectorsDeltaPixels,
-                    });
-                    GradientComplex_Detectors = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new GradientComplexDetector
+                    GradientMagnitude_DetectorValueRanges = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new DetectorValueRange());                    
+                    GradientAngle_DetectorValueRanges = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new DetectorValueRange());                    
+                    DetectingPoints_Matrix = Helpers.SerializationHelper.DeserializeOwnedData_DenseMatrix(reader, context, (int dI, int dJ) => new DetectingPoint
                     {
                         Retina = this,
                         DI = dI,
@@ -372,20 +301,14 @@ public class Retina : ISerializableModelObject
             {                
                 float gradientAngle = MathHelper.DegreesToRadians(gradientAngleDegree);
 
-                GradientComplexDetector detector = new GradientComplexDetector
-                {
-                    Retina = this,                    
-                };
+                GradientComplexDetector detector = new GradientComplexDetector();
                 detector.GradientMagnitude_Average = gradientMagnitude;
                 detector.GradientAngle_Average = gradientAngle;
                 detector.Temp_FeaturesVectorSamples = new FastList<FeaturesVectorSample>(300);
                 detector.Temp_Density = 1.0f;
                 templateDetectors.Add(detector);
 
-                detector = new GradientComplexDetector
-                {
-                    Retina = this,
-                };
+                detector = new GradientComplexDetector();
                 detector.GradientMagnitude_Average = gradientMagnitude;
                 detector.GradientAngle_Average = gradientAngle;
                 optimal_TemplateDetectors.Add(detector);
@@ -498,56 +421,56 @@ public class Retina : ISerializableModelObject
 
     private void TestDetectorDensities(Random initializationRandom, FastList<GradientComplexDetector> templateDetectors, float[] detectorDensities_Accumulative)
     {
-        GradientComplexDetector[] testDetectors = new GradientComplexDetector[Constants.MiniColumnVisibleDetectorsCount];
-        for (int d_Index = 0; d_Index < testDetectors.Length; d_Index += 1)
-        {
-            int index = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative);
-            GradientComplexDetector templateDetector = templateDetectors[index];
+        //GradientComplexDetector[] testDetectors = new GradientComplexDetector[Constants.MiniColumnVisibleDetectorsCount];
+        //for (int d_Index = 0; d_Index < testDetectors.Length; d_Index += 1)
+        //{
+        //    int index = DistributionHelper.GetRandom(initializationRandom, detectorDensities_Accumulative);
+        //    GradientComplexDetector templateDetector = templateDetectors[index];
 
-            GradientComplexDetector detector = new GradientComplexDetector()
-            {
-                Retina = this,
-            };
-            detector.GradientMagnitude_Average = templateDetector.GradientMagnitude_Average;
-            detector.GradientAngle_Average = templateDetector.GradientAngle_Average;
-            detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
+        //    GradientComplexDetector detector = new GradientComplexDetector()
+        //    {
+        //        Retina = this,
+        //    };
+        //    detector.GradientMagnitude_Average = templateDetector.GradientMagnitude_Average;
+        //    detector.GradientAngle_Average = templateDetector.GradientAngle_Average;
+        //    detector.BitIndexInHash = initializationRandom.Next(Constants.HashLength);
 
-            testDetectors[d_Index] = detector;
-        }        
+        //    testDetectors[d_Index] = detector;
+        //}        
 
-        DataToDisplayHolder dataToDisplayHolder = DataToDisplayHolder.Instance;
-        dataToDisplayHolder.DistributionXMin = 0.0f;
-        dataToDisplayHolder.DistributionXMax = Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta;
-        dataToDisplayHolder.Distribution = new ulong[(int)(Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta) + 1];
+        //DataToDisplayHolder dataToDisplayHolder = DataToDisplayHolder.Instance;
+        //dataToDisplayHolder.DistributionXMin = 0.0f;
+        //dataToDisplayHolder.DistributionXMax = Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta;
+        //dataToDisplayHolder.Distribution = new ulong[(int)(Constants.MaxGradientMagnitudeExclusive / Constants.GradientMagnitudeDelta) + 1];
 
-        for (int gradientMagnitude = (int)Constants.MinGradientMagnitudeInclusive; gradientMagnitude < Constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)Constants.GradientMagnitudeDelta)
-        {
-            int activatedCount = 0;
-            for (int gradientAngleDegree = 0; gradientAngleDegree < 360; gradientAngleDegree += (int)Constants.GradientAngleDegreeDelta)
-            {
-                float angle = MathHelper.DegreesToRadians(gradientAngleDegree);
-                FeaturesVector featuresVector = new();
-                featuresVector[FeaturesVector.GradientMagnitude_Index] = gradientMagnitude;
-                featuresVector[FeaturesVector.GradientAngle_Index] = angle;
-                //{
-                //    GradX = gradientMagnitude * Math.Cos(angle),
-                //    GradY = gradientMagnitude * Math.Sin(angle),                    
-                //};
+        //for (int gradientMagnitude = (int)Constants.MinGradientMagnitudeInclusive; gradientMagnitude < Constants.MaxGradientMagnitudeExclusive; gradientMagnitude += (int)Constants.GradientMagnitudeDelta)
+        //{
+        //    int activatedCount = 0;
+        //    for (int gradientAngleDegree = 0; gradientAngleDegree < 360; gradientAngleDegree += (int)Constants.GradientAngleDegreeDelta)
+        //    {
+        //        float angle = MathHelper.DegreesToRadians(gradientAngleDegree);
+        //        FeaturesVector featuresVector = new();
+        //        featuresVector[FeaturesVector.GradientMagnitude_Index] = gradientMagnitude;
+        //        featuresVector[FeaturesVector.GradientAngle_Index] = angle;
+        //        //{
+        //        //    GradX = gradientMagnitude * Math.Cos(angle),
+        //        //    GradY = gradientMagnitude * Math.Sin(angle),                    
+        //        //};
 
-                for (int d_Index = 0; d_Index < testDetectors.Length; d_Index += 1)
-                {
-                    var detector = testDetectors[d_Index];                    
-                    if (detector.CalculateIsActivated(ref featuresVector))
-                    {
-                        activatedCount += 1;
-                        detector.Temp_IsActivatedCount += 1;
-                    }
-                }
-            }
-            dataToDisplayHolder.Distribution[(int)(gradientMagnitude / Constants.GradientMagnitudeDelta)] = (ulong)(activatedCount * Constants.GradientAngleDegreeDelta / 360);
-        }
+        //        for (int d_Index = 0; d_Index < testDetectors.Length; d_Index += 1)
+        //        {
+        //            var detector = testDetectors[d_Index];                    
+        //            if (detector.CalculateIsActivated(ref featuresVector))
+        //            {
+        //                activatedCount += 1;
+        //                detector.Temp_IsActivatedCount += 1;
+        //            }
+        //        }
+        //    }
+        //    dataToDisplayHolder.Distribution[(int)(gradientMagnitude / Constants.GradientMagnitudeDelta)] = (ulong)(activatedCount * Constants.GradientAngleDegreeDelta / 360);
+        //}
 
-        Logger.LogInformation($"TestDetectorDensities: " + String.Join(", ", dataToDisplayHolder.Distribution.Select((v, i) => $"{v}")));
+        //Logger.LogInformation($"TestDetectorDensities: " + String.Join(", ", dataToDisplayHolder.Distribution.Select((v, i) => $"{v}")));
     }
 }
 

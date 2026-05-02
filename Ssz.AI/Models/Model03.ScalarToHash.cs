@@ -3,9 +3,6 @@ using Avalonia.Layout;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json;
 using OpenCvSharp;
-using OxyPlot;
-using OxyPlot.Avalonia;
-using OxyPlot.Axes;
 using Ssz.AI.Grafana;
 using Ssz.AI.Helpers;
 using Ssz.AI.ViewModels;
@@ -63,72 +60,73 @@ namespace Ssz.AI.Models
 
         public VisualizationWithDesc[] GetImageWithDescs0(float value)
         {
-            return [
-                new Plot2DWithDesc { Model = CreatePlotModel(value),
-                    Desc = $"Косинусное расстояние до других значений" },                
-                ];
+            //return [
+            //    new Plot2DWithDesc { Model = CreatePlotModel(value),
+            //        Desc = $"Косинусное расстояние до других значений" },                
+            //    ];
+            return [];
         }
 
-        private PlotModel CreatePlotModel(float value)
-        {
-            var model = new PlotModel { Title = "Косинусное расстояние" };
+        //private PlotModel CreatePlotModel(float value)
+        //{
+        //    var model = new PlotModel { Title = "Косинусное расстояние" };
 
-            model.Axes.Add(new OxyPlot.Axes.LinearAxis
-            {
-                Position = AxisPosition.Left,
-                Title = "Косинусное расстояние",
-                Minimum = 0,
-                Maximum = 1
-            });
+        //    model.Axes.Add(new OxyPlot.Axes.LinearAxis
+        //    {
+        //        Position = AxisPosition.Left,
+        //        Title = "Косинусное расстояние",
+        //        Minimum = 0,
+        //        Maximum = 1
+        //    });
 
-            model.Axes.Add(new OxyPlot.Axes.LinearAxis
-            {
-                Position = AxisPosition.Bottom,
-                Title = "Величина",
-                Minimum = 0,
-                Maximum = 1
-            });
+        //    model.Axes.Add(new OxyPlot.Axes.LinearAxis
+        //    {
+        //        Position = AxisPosition.Bottom,
+        //        Title = "Величина",
+        //        Minimum = 0,
+        //        Maximum = 1
+        //    });
 
-            var series = new OxyPlot.Series.LineSeries { MarkerType = MarkerType.Circle };
+        //    var series = new OxyPlot.Series.LineSeries { MarkerType = MarkerType.Circle };
 
-            if (K0 > 0.0f)
-            {                
-                int bigsCount = (int)(1.0f / K0);
-                var value_BigToHashIndices = new int[bigsCount];
-                foreach(int i in Enumerable.Range(0, bigsCount))
-                {
-                    value_BigToHashIndices[i] = _longCode_ToHashIndices[(int)(K0 * i * _longCode_ToHashIndices.Length)];
-                }
+        //    if (K0 > 0.0f)
+        //    {                
+        //        int bigsCount = (int)(1.0f / K0);
+        //        var value_BigToHashIndices = new int[bigsCount];
+        //        foreach(int i in Enumerable.Range(0, bigsCount))
+        //        {
+        //            value_BigToHashIndices[i] = _longCode_ToHashIndices[(int)(K0 * i * _longCode_ToHashIndices.Length)];
+        //        }
 
-                Array.Clear(_baseHash);
-                Hash.ValueToHash(
-                    value,
-                    value_BigToHashIndices,
-                    _longCode_ToHashIndices,
-                    bigRadius: K1,
-                    smallRadius: K2,                    
-                    _baseHash);
-                float delta = 1.0f / _longCode_ToHashIndices.Length;
-                for (float v = 0.0f; v < 1.0; v += delta)
-                {
-                    Array.Clear(_compareHash);
-                    Hash.ValueToHash(
-                        v,
-                        value_BigToHashIndices,
-                        _longCode_ToHashIndices,
-                        bigRadius: K1,
-                        smallRadius: K2,                        
-                        _compareHash);
-                    float cosineSimilarity = TensorPrimitives.CosineSimilarity(_baseHash, _compareHash);
-                    if (float.IsNaN(cosineSimilarity) || float.IsInfinity(cosineSimilarity))
-                        cosineSimilarity = 0.0f;
-                    series.Points.Add(new DataPoint(v, cosineSimilarity));
-                }
-            }            
+        //        Array.Clear(_baseHash);
+        //        Hash.ValueToHash(
+        //            value,
+        //            value_BigToHashIndices,
+        //            _longCode_ToHashIndices,
+        //            bigRadius: K1,
+        //            smallRadius: K2,                    
+        //            _baseHash);
+        //        float delta = 1.0f / _longCode_ToHashIndices.Length;
+        //        for (float v = 0.0f; v < 1.0; v += delta)
+        //        {
+        //            Array.Clear(_compareHash);
+        //            Hash.ValueToHash(
+        //                v,
+        //                value_BigToHashIndices,
+        //                _longCode_ToHashIndices,
+        //                bigRadius: K1,
+        //                smallRadius: K2,                        
+        //                _compareHash);
+        //            float cosineSimilarity = TensorPrimitives.CosineSimilarity(_baseHash, _compareHash);
+        //            if (float.IsNaN(cosineSimilarity) || float.IsInfinity(cosineSimilarity))
+        //                cosineSimilarity = 0.0f;
+        //            series.Points.Add(new DataPoint(v, cosineSimilarity));
+        //        }
+        //    }            
 
-            model.Series.Add(series);
-            return model;
-        }
+        //    model.Series.Add(series);
+        //    return model;
+        //}
 
         private float[] _baseHash = null!;
         private float[] _compareHash = null!;

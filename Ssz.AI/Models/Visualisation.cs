@@ -574,8 +574,8 @@ public static class Visualisation
             foreach (var detector in detectors)
             {
                 bitmap.SetPixel(
-                        (int)(detector.CenterXPixels / retinaDetectorsDeltaPixels), 
-                        (int)(detector.CenterYPixels / retinaDetectorsDeltaPixels), 
+                        (int)(detector.DetectingPoint.CenterXPixels / retinaDetectorsDeltaPixels), 
+                        (int)(detector.DetectingPoint.CenterYPixels / retinaDetectorsDeltaPixels), 
                         Color.FromArgb(255, 200, 200, 200));
             }
 
@@ -599,7 +599,7 @@ public static class Visualisation
 
         foreach (var detector in activatedDetectors)
         {
-            bitmap.SetPixel((int)(detector.CenterXPixels * 10.0), (int)(detector.CenterYPixels * 10.0), Color.FromArgb(255, 200, 200, 200));
+            bitmap.SetPixel((int)(detector.DetectingPoint.CenterXPixels * 10.0), (int)(detector.DetectingPoint.CenterYPixels * 10.0), Color.FromArgb(255, 200, 200, 200));
         }
 
         return bitmap;

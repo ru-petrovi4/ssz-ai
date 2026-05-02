@@ -54,13 +54,13 @@ public class Cortex_Simplified : ISerializableModelObject
 
                     List<GradientComplexDetector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
-                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
+                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                         {
-                            var detector = retina.GradientComplex_Detectors[dI, dJ]!;
+                            var detector = retina.DetectingPoints_Matrix[dI, dJ]!;
                             double r = Math.Sqrt((detector.CenterXPixels - centerX) * (detector.CenterXPixels - centerX) + (detector.CenterYPixels - centerY) * (detector.CenterYPixels - centerY));
                             if (r < DetectorsVisibleRadiusPixels)
-                                miniColumnDetectors.Add(detector);
+                                miniColumnDetectors.Add(detector.GradientComplex_Detector!);
                         }
 
                     MiniColumn miniColumn = new MiniColumn(
@@ -78,7 +78,7 @@ public class Cortex_Simplified : ISerializableModelObject
                 }
             }            
 
-        HashSet<GradientComplexDetector> subArea_DetectorsHashSet = new(retina.GradientComplex_Detectors.Dimensions[0] * retina.GradientComplex_Detectors.Dimensions[1]);
+        HashSet<GradientComplexDetector> subArea_DetectorsHashSet = new(retina.DetectingPoints_Matrix.Dimensions[0] * retina.DetectingPoints_Matrix.Dimensions[1]);
         List<MiniColumn> subArea_MiniColumns = new List<MiniColumn>(constants.CalculationsSubAreaRadius_MiniColumns is not null ?
             constants.CalculationsSubArea_MiniColumns_Count :
             MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]);

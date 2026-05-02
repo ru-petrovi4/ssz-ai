@@ -278,30 +278,41 @@ public partial class Cortex : ISerializableModelObject
             float detectorsVisibleRadiusPixels = Constants.FullFieldOfViewDiameter_MiniColumn_Angle * yPixels_K / 2.0f;            
             float centerXPixels = Constants.RetinaImagePixelSize.Width / 2.0f + miniColumn.MCX * MiniColumn_XAngle_K * yPixels_K;
             float centerYPixels = Constants.RetinaImagePixelSize.Height / 2.0f + miniColumn.MCY * MiniColumn_YAngle_K * yPixels_K;
-            miniColumn.Temp_LeftEye_Detectors = new FastList<GradientComplexDetector>(Constants.MiniColumnVisibleDetectorsCount);
-            for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
-                for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
+            miniColumn.Temp_LeftEye_DetectingPoint_List = new FastList<DetectingPoint>(Constants.MiniColumnVisibleDetectorsCount);
+            miniColumn.Temp_LeftEye_SimpleDetectors = new FastList<SimpleDetector>(Constants.MiniColumnVisibleDetectorsCount * 2);
+            miniColumn.Temp_LeftEye_GradientComplexDetectors = new FastList<GradientComplexDetector>(Constants.MiniColumnVisibleDetectorsCount);
+            for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                 {
                     if (dI < 0 || dJ < 0)
                         continue;
 
-                    var detector = leftEye.Retina.GradientComplex_Detectors[dI, dJ]!;
-                    double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                    var detectingPoint = leftEye.Retina.DetectingPoints_Matrix[dI, dJ]!;
+                    double rPixels = Math.Sqrt((detectingPoint.CenterXPixels - centerXPixels) * (detectingPoint.CenterXPixels - centerXPixels) + (detectingPoint.CenterYPixels - centerYPixels) * (detectingPoint.CenterYPixels - centerYPixels));
                     if (rPixels < detectorsVisibleRadiusPixels)
-                        miniColumn.Temp_LeftEye_Detectors.Add(detector);
-                }
-            miniColumn.Temp_RightEye_Detectors = new FastList<GradientComplexDetector>(Constants.MiniColumnVisibleDetectorsCount);
-            for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
-                for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
-                {
-                    if (dI < 0 || dJ < 0)
-                        continue;
+                    {
+                        miniColumn.Temp_LeftEye_DetectingPoint_List.Add(detectingPoint);
 
-                    var detector = rightEye.Retina.GradientComplex_Detectors[dI, dJ]!;
-                    double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
-                    if (rPixels < detectorsVisibleRadiusPixels)
-                        miniColumn.Temp_RightEye_Detectors.Add(detector);
+                        if (detectingPoint.GradientMagnitude_Detector is not null)
+                            miniColumn.Temp_LeftEye_SimpleDetectors.Add(detectingPoint.GradientMagnitude_Detector);
+                        if (detectingPoint.GradientAngle_Detector is not null)
+                            miniColumn.Temp_LeftEye_SimpleDetectors.Add(detectingPoint.GradientAngle_Detector);
+                        if (detectingPoint.GradientComplex_Detector is not null)
+                            miniColumn.Temp_LeftEye_GradientComplexDetectors.Add(detectingPoint.GradientComplex_Detector);
+                    }
                 }
+            //miniColumn.Temp_RightEye_GradientComplexDetectors = new FastList<GradientComplexDetector>(Constants.MiniColumnVisibleDetectorsCount);
+            //for (int dJ = (int)((centerYPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
+            //    for (int dI = (int)((centerXPixels - detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + detectorsVisibleRadiusPixels) / Constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
+            //    {
+            //        if (dI < 0 || dJ < 0)
+            //            continue;
+
+            //        var detector = rightEye.Retina.GradientComplex_Detectors[dI, dJ]!;
+            //        double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+            //        if (rPixels < detectorsVisibleRadiusPixels)
+            //            miniColumn.Temp_RightEye_GradientComplexDetectors.Add(detector);
+            //    }
         }
 
         // Находим ближайшие миниколонки для каждой миниколонки
@@ -578,9 +589,9 @@ public partial class Cortex : ISerializableModelObject
         eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
         FastList<GradientComplexDetector> detectors;
         if (eye.IsRightEye)
-            detectors = main_MiniColumn.Temp_RightEye_Detectors;
+            detectors = main_MiniColumn.Temp_RightEye_GradientComplexDetectors;
         else
-            detectors = main_MiniColumn.Temp_LeftEye_Detectors;
+            detectors = main_MiniColumn.Temp_LeftEye_GradientComplexDetectors;
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
@@ -627,9 +638,9 @@ public partial class Cortex : ISerializableModelObject
         int activatedDetectorsCount = 0;
         FastList<GradientComplexDetector> detectors;
         if (eye.IsRightEye)
-            detectors = main_MiniColumn.Temp_RightEye_Detectors;
+            detectors = main_MiniColumn.Temp_RightEye_GradientComplexDetectors;
         else
-            detectors = main_MiniColumn.Temp_LeftEye_Detectors;
+            detectors = main_MiniColumn.Temp_LeftEye_GradientComplexDetectors;
         for (int d_index = 0; d_index < detectors.Count; d_index += 1)
         {
             var detector = detectors[d_index];
@@ -687,7 +698,7 @@ public partial class Cortex : ISerializableModelObject
         }
     }
 
-    public void CalculateSomCortexMemories(Random random)
+    public void CalculateSomWeightsEquivalentCortexMemories(Random random)
     {
         for (int mc_index = 0; mc_index < MiniColumns.Count; mc_index += 1)
             //Parallel.For(
@@ -697,12 +708,12 @@ public partial class Cortex : ISerializableModelObject
         {
             MiniColumn miniColumn = MiniColumns[mc_index];
 
-            miniColumn.Temp_SomCortexMemories.Clear();
+            miniColumn.Temp_SomWeightsEquivalentCortexMemories.Clear();
 
             Memory? idealPinwheelMemory_Best = GetIdealPinwheelMemory_Best(miniColumn.Temp_SomWeights, random);                
 
             if (idealPinwheelMemory_Best is not null)
-                miniColumn.Temp_SomCortexMemories.Add(idealPinwheelMemory_Best);
+                miniColumn.Temp_SomWeightsEquivalentCortexMemories.Add(idealPinwheelMemory_Best);
         }
     }
 
@@ -799,11 +810,15 @@ public partial class Cortex : ISerializableModelObject
         /////     Окружающие миниколонки в радиусе примерно 1 гиперколонки.
         /////     <para>(r^2, MiniColumn)</para>        
         ///// </summary>
-        //public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;
+        //public FastList<(float, MiniColumn)> Temp_K_2HyperColumnMiniColumns = null!;        
 
-        public FastList<GradientComplexDetector> Temp_LeftEye_Detectors = null!;
+        public FastList<DetectingPoint> Temp_LeftEye_DetectingPoint_List = null!;
+        public FastList<SimpleDetector> Temp_LeftEye_SimpleDetectors = null!;
+        public FastList<GradientComplexDetector> Temp_LeftEye_GradientComplexDetectors = null!;
 
-        public FastList<GradientComplexDetector> Temp_RightEye_Detectors = null!;
+        public FastList<DetectingPoint> Temp_RightEye_DetectingPoint_List = null!;
+        public FastList<SimpleDetector> Temp_RightEye_SimpleDetectors = null!;
+        public FastList<GradientComplexDetector> Temp_RightEye_GradientComplexDetectors = null!;
 
         /// <summary>
         ///     <para>!!! Сама миниколонка !!! и окружающие миниколонки в радиусе примерно 2.0 * HyperColumnDefinedRadius_MiniColumns.</para>
@@ -863,7 +878,7 @@ public partial class Cortex : ISerializableModelObject
         /// <summary>
         ///     Визуализация SOM
         /// </summary>
-        public FastList<Memory?> Temp_SomCortexMemories = null!;        
+        public FastList<Memory?> Temp_SomWeightsEquivalentCortexMemories = null!;        
 
         public float[] Temp_SomWeights = null!;
 
@@ -888,7 +903,7 @@ public partial class Cortex : ISerializableModelObject
             Temp_SameFieldOfViewMiniColumns = new FastList<MiniColumn>((int)(Math.PI * sameFieldOfViewRadius_MiniColumns * sameFieldOfViewRadius_MiniColumns + 5));
             Temp_AdjacentMiniColumns = new FastList<(double, MiniColumn)>(6);
             Temp_CortexMemories = new(10);
-            Temp_SomCortexMemories = new(1);
+            Temp_SomWeightsEquivalentCortexMemories = new(1);
 
             Temp_NearestMiniColumns = new FastList<(double, MiniColumn)>((int)(Math.PI * nearestRadius_MiniColumns * nearestRadius_MiniColumns + 5));
             Temp_NearestMiniColumns2 = new FastList<(float, MiniColumn)>();

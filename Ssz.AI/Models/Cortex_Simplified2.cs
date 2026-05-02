@@ -23,11 +23,11 @@ namespace Ssz.AI.Models
         {
             Constants = constants;
 
-            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.GradientComplex_Detectors.Data.Length];
+            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.DetectingPoints_Matrix.Data.Length];
 
-            foreach (var d_index in Enumerable.Range(0, rightEye.Retina.GradientComplex_Detectors.Data.Length))
+            foreach (var d_index in Enumerable.Range(0, rightEye.Retina.DetectingPoints_Matrix.Data.Length))
             {
-                Detector detetctor = rightEye.Retina.GradientComplex_Detectors.Data[d_index];
+                var detetctor = rightEye.Retina.DetectingPoints_Matrix.Data[d_index]!;
                 DetectorCorrelation detectorCorrelation = new();
 
                 detectorCorrelation.RangeLeftUpperX = detetctor.DI - Constants.DependantDetectorsRangeWidthCount / 2;
@@ -39,12 +39,12 @@ namespace Ssz.AI.Models
                     detectorCorrelation.RangeLeftUpperY = 0;
 
                 detectorCorrelation.RangeRightBottomX = detetctor.DI + Constants.DependantDetectorsRangeWidthCount / 2;
-                if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.GradientComplex_Detectors.Dimensions[0])
-                    detectorCorrelation.RangeRightBottomX = leftEye.Retina.GradientComplex_Detectors.Dimensions[0];
+                if (detectorCorrelation.RangeRightBottomX > leftEye.Retina.DetectingPoints_Matrix.Dimensions[0])
+                    detectorCorrelation.RangeRightBottomX = leftEye.Retina.DetectingPoints_Matrix.Dimensions[0];
 
                 detectorCorrelation.RangeRightBottomY = detetctor.DJ + Constants.DependantDetectorsRangeHeightCount / 2;
-                if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.GradientComplex_Detectors.Dimensions[1])
-                    detectorCorrelation.RangeRightBottomY = leftEye.Retina.GradientComplex_Detectors.Dimensions[1];
+                if (detectorCorrelation.RangeRightBottomY > leftEye.Retina.DetectingPoints_Matrix.Dimensions[1])
+                    detectorCorrelation.RangeRightBottomY = leftEye.Retina.DetectingPoints_Matrix.Dimensions[1];
 
                 detectorCorrelation.CorrelationMatrix = new MatrixFloat_ColumnMajor(
                     detectorCorrelation.RangeRightBottomX - detectorCorrelation.RangeLeftUpperX,
@@ -101,26 +101,26 @@ namespace Ssz.AI.Models
 
                 var leftEye_GradientMatrix = stereoInputImage.LeftEye_GradientMatrix;
                 leftEye.Retina.CalculateRetinaPoints(leftEye_GradientMatrix);
-                var leftEye_Detectors = leftEye.Retina.GradientComplex_Detectors;
+                var leftEye_Detectors = leftEye.Retina.DetectingPoints_Matrix;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: leftEye_Detectors.Data.Length,
                     d_index =>
                     {
                         var d = leftEye_Detectors.Data[d_index]!;
-                        d.Temp_IsActivated = d.CalculateIsActivated();
+                        d.GradientComplex_Detector!.Temp_IsActivated = d.GradientComplex_Detector!.CalculateIsActivated();
                     });
                 
                 var rightEye_GradientMatrix = stereoInputImage.RightEye_GradientMatrix;
                 rightEye.Retina.CalculateRetinaPoints(rightEye_GradientMatrix);
-                var rightEye_Detectors = rightEye.Retina.GradientComplex_Detectors;
+                var rightEye_Detectors = rightEye.Retina.DetectingPoints_Matrix;
                 Parallel.For(
                     fromInclusive: 0,
                     toExclusive: rightEye_Detectors.Data.Length,
                     d_index =>
                     {
                         var d = rightEye_Detectors.Data[d_index]!;
-                        d.Temp_IsActivated = d.CalculateIsActivated();
+                        d.GradientComplex_Detector!.Temp_IsActivated = d.GradientComplex_Detector!.CalculateIsActivated();
                     });
 
                 Parallel.For(
@@ -134,8 +134,8 @@ namespace Ssz.AI.Models
                         {
                             for (int dx = detectorCorrelation.RangeLeftUpperX; dx < detectorCorrelation.RangeRightBottomX; dx += 1)
                             {
-                                var leftEye_Detector_IsActivated = leftEye_Detectors[dx, dy].Temp_IsActivated;
-                                if (leftEye_Detector_IsActivated && rightEye_Detector.Temp_IsActivated)
+                                var leftEye_Detector_IsActivated = leftEye_Detectors[dx, dy]!.GradientComplex_Detector!.Temp_IsActivated;
+                                if (leftEye_Detector_IsActivated && rightEye_Detector!.GradientComplex_Detector!.Temp_IsActivated)
                                 {
                                     detectorCorrelation.CorrelationMatrix[dx - detectorCorrelation.RangeLeftUpperX, dy - detectorCorrelation.RangeLeftUpperY] += 1.0f;
                                 }

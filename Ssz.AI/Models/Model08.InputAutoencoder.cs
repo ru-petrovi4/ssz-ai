@@ -291,7 +291,7 @@ namespace Ssz.AI.Models
 
             Stopwatch sw = Stopwatch.StartNew();
 
-            float[] input_Hash = new float[Retina.GradientComplex_Detectors.Data.Length];
+            float[] input_Hash = new float[Retina.DetectingPoints_Matrix.Data.Length];
 
             Cortex.InputAutoencoder.CosineSimilarity = float.MaxValue;
             float cosineSimilarity;
@@ -319,11 +319,11 @@ namespace Ssz.AI.Models
 
                         Parallel.For(
                             fromInclusive: 0,
-                            toExclusive: Retina.GradientComplex_Detectors.Data.Length,
+                            toExclusive: Retina.DetectingPoints_Matrix.Data.Length,
                             d_index =>
                             {
-                                var d = Retina.GradientComplex_Detectors.Data[d_index];
-                                input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
+                                var d = Retina.DetectingPoints_Matrix.Data[d_index]!;
+                                input_Hash[d_index] = d.GradientComplex_Detector!.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                             });
 
                         cosineSimilarity = Cortex.InputAutoencoder.Calculate(input_Hash, learningRate: 0.01f);
@@ -362,11 +362,11 @@ namespace Ssz.AI.Models
 
                 Parallel.For(
                     fromInclusive: 0,
-                    toExclusive: Retina.GradientComplex_Detectors.Data.Length,
+                    toExclusive: Retina.DetectingPoints_Matrix.Data.Length,
                     d_index =>
                     {
-                        var d = Retina.GradientComplex_Detectors.Data[d_index];
-                        input_Hash[d_index] = d.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
+                        var d = Retina.DetectingPoints_Matrix.Data[d_index]!;
+                        input_Hash[d_index] = d.GradientComplex_Detector!.GetIsActivated_Obsolete(gradientMatrix, Constants) ? 1.0f : 0.0f;
                     });
 
                 Cortex.InputAutoencoder.Calculate_ForwardPass(input_Hash);
@@ -709,13 +709,13 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 300;
 
-            public double MinGradientMagnitudeInclusive => 5;
+            public float MinGradientMagnitudeInclusive => 5;
 
             public float GradientMagnitudeDelta => 10;
 
             public float GradientAngleDegreeDelta => 10;
 
-            public int MaxGradientMagnitudeExclusive => 1200;
+            public float MaxGradientMagnitudeExclusive => 1200;
 
             public int AngleRangeDegreeMin { get; set; } = 60;
 

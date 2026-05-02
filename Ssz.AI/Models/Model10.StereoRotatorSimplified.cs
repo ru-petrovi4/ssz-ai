@@ -177,13 +177,13 @@ namespace Ssz.AI.Models
 
             CalculateDetectorsAndActivityAndSuperActivity(0.5f, gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
-            foreach (int dJ in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[1]))
-                foreach (int dI in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[0]))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.DetectingPoints_Matrix.Dimensions[0] * Retina.DetectingPoints_Matrix.Dimensions[1]);
+            foreach (int dJ in Enumerable.Range(0, Retina.DetectingPoints_Matrix.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.DetectingPoints_Matrix.Dimensions[0]))
                 {
-                    Detector d = Retina.GradientComplex_Detectors[dI, dJ];
-                    if (d.Temp_IsActivated)
-                        activatedDetectors.Add(d);
+                    var d = Retina.DetectingPoints_Matrix[dI, dJ]!;
+                    if (d.GradientComplex_Detector!.Temp_IsActivated)
+                        activatedDetectors.Add(d.GradientComplex_Detector!);
                 }
             var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
@@ -285,13 +285,13 @@ namespace Ssz.AI.Models
 
             //GetSuperActivitiyMaxInfo(gradientMatrix, activitiyMaxInfo);
 
-            List<Detector> activatedDetectors = new List<Detector>(Retina.GradientComplex_Detectors.Dimensions[0] * Retina.GradientComplex_Detectors.Dimensions[1]);
-            foreach (int dJ in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[1]))
-                foreach (int dI in Enumerable.Range(0, Retina.GradientComplex_Detectors.Dimensions[0]))
+            List<Detector> activatedDetectors = new List<Detector>(Retina.DetectingPoints_Matrix.Dimensions[0] * Retina.DetectingPoints_Matrix.Dimensions[1]);
+            foreach (int dJ in Enumerable.Range(0, Retina.DetectingPoints_Matrix.Dimensions[1]))
+                foreach (int dI in Enumerable.Range(0, Retina.DetectingPoints_Matrix.Dimensions[0]))
                 {
-                    Detector d = Retina.GradientComplex_Detectors[dI, dJ];
-                    if (d.Temp_IsActivated)
-                        activatedDetectors.Add(d);
+                    var d = Retina.DetectingPoints_Matrix[dI, dJ]!;
+                    if (d.GradientComplex_Detector!.Temp_IsActivated)
+                        activatedDetectors.Add(d.GradientComplex_Detector!);
                 }
             var detectorsActivationBitmap = Visualisation.GetBitmapFromActivatedDetectors(activatedDetectors);
 
@@ -856,13 +856,13 @@ namespace Ssz.AI.Models
 
             public int AngleRangeDegree_LimitMagnitude { get; set; } = 1200;
 
-            public double MinGradientMagnitudeInclusive => 5;
+            public float MinGradientMagnitudeInclusive => 5;
 
             public float GradientMagnitudeDelta => 10;
 
             public float GradientAngleDegreeDelta => 10;
 
-            public int MaxGradientMagnitudeExclusive => 1200;
+            public float MaxGradientMagnitudeExclusive => 1200;
 
             public int AngleRangeDegreeMin { get; set; } = 120;
 

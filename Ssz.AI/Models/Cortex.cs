@@ -100,7 +100,7 @@ namespace Ssz.AI.Models
         {
             Constants = constants;
 
-            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.GradientComplex_Detectors.Data.Length];
+            DetectorCorrelations = new DetectorCorrelation[rightEye.Retina.DetectingPoints_Matrix.Data.Length];
 
             //foreach (var di in Enumerable.Range(0, rightEye.Retina.Detectors.Data.Length))
             //{
@@ -155,24 +155,24 @@ namespace Ssz.AI.Models
                         double centerXPixels = minCenterXPixels + mcx * deltaCenterXPixels;
                         double centerYPixels = minCenterYPixels + mcy * deltaCenterYPixels;
 
-                        List<Detector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
+                        List<DetectingPoint> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
 
-                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
-                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                             {
-                                Detector detector = leftEye.Retina.GradientComplex_Detectors[dI, dJ];
-                                double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                                var detectorsSet = leftEye.Retina.DetectingPoints_Matrix[dI, dJ]!;
+                                double rPixels = Math.Sqrt((detectorsSet.CenterXPixels - centerXPixels) * (detectorsSet.CenterXPixels - centerXPixels) + (detectorsSet.CenterYPixels - centerYPixels) * (detectorsSet.CenterYPixels - centerYPixels));
                                 if (rPixels < DetectorsVisibleRadiusPixels)
-                                    miniColumnDetectors.Add(detector);
+                                    miniColumnDetectors.Add(detectorsSet);
                             }
 
-                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.GradientComplex_Detectors.Dimensions[1]; dJ += 1)
-                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.GradientComplex_Detectors.Dimensions[0]; dI += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                             {
-                                Detector detector = rightEye.Retina.GradientComplex_Detectors[dI, dJ];
-                                double rPixels = Math.Sqrt((detector.CenterXPixels - centerXPixels) * (detector.CenterXPixels - centerXPixels) + (detector.CenterYPixels - centerYPixels) * (detector.CenterYPixels - centerYPixels));
+                                var detectorsSet = rightEye.Retina.DetectingPoints_Matrix[dI, dJ]!;
+                                double rPixels = Math.Sqrt((detectorsSet.CenterXPixels - centerXPixels) * (detectorsSet.CenterXPixels - centerXPixels) + (detectorsSet.CenterYPixels - centerYPixels) * (detectorsSet.CenterYPixels - centerYPixels));
                                 if (rPixels < DetectorsVisibleRadiusPixels)
-                                    miniColumnDetectors.Add(detector);
+                                    miniColumnDetectors.Add(detectorsSet);
                             }
 
                         MiniColumn miniColumn = new MiniColumn(
@@ -190,7 +190,7 @@ namespace Ssz.AI.Models
                     }
                 }
 
-            HashSet<Detector> subAreaOrAll_DetectorsHashSet = new(2 * leftEye.Retina.GradientComplex_Detectors.Dimensions[0] * leftEye.Retina.GradientComplex_Detectors.Dimensions[1]);
+            HashSet<DetectingPoint> subAreaOrAll_DetectorsHashSet = new(2 * leftEye.Retina.DetectingPoints_Matrix.Dimensions[0] * leftEye.Retina.DetectingPoints_Matrix.Dimensions[1]);
             List<MiniColumn> subAreaOrAll_MiniColumns = new(constants.CalculationsSubAreaRadius_MiniColumns is not null ? ((IConstantsObsolete)constants).CalculationsSubArea_MiniColumns_Count : (MiniColumns.Dimensions[0] * MiniColumns.Dimensions[1]));
 
             foreach (int mcy in Enumerable.Range(0, MiniColumns.Dimensions[1]))
@@ -285,7 +285,7 @@ namespace Ssz.AI.Models
         /// <summary>
         ///     Sub Area or All Detectors
         /// </summary>
-        public Detector[] SubAreaOrAll_Detectors { get; } = null!;
+        public DetectingPoint[] SubAreaOrAll_Detectors { get; } = null!;
 
         public double CalculationSubAreaRadius_MiniColumns_Value;
 
@@ -444,7 +444,7 @@ namespace Ssz.AI.Models
 
         public class MiniColumn : IMiniColumn, IMiniColumnActivity, ISerializableModelObject
         {
-            public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<Detector> detectors, double centerXPixels, double centerYPixels)
+            public MiniColumn(IConstantsObsolete constants, int mcx, int mcy, List<DetectingPoint> detectors, double centerXPixels, double centerYPixels)
             {
                 Constants = constants;
                 Detectors = detectors;
@@ -465,7 +465,7 @@ namespace Ssz.AI.Models
 
             public readonly IConstantsObsolete Constants;
 
-            public readonly List<Detector> Detectors;
+            public readonly List<DetectingPoint> Detectors;
 
             /// <summary>
             ///     Индекс миниколонки в матрице по оси X (горизонтально вправо)
@@ -586,8 +586,8 @@ namespace Ssz.AI.Models
 
                 foreach (var detector in Detectors)
                 {
-                    if (detector.Temp_IsActivated)
-                        hash[detector.BitIndexInHash] = 1.0f;
+                    if (detector.GradientComplex_Detector!.Temp_IsActivated)
+                        hash[detector.GradientComplex_Detector!.BitIndexInHash] = 1.0f;
                 }
             }
 
