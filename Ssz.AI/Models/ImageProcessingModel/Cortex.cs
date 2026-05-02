@@ -546,7 +546,7 @@ public partial class Cortex : ISerializableModelObject
         //    break;
         //}
 
-        return GetIdealCortexMemory(            
+        return GetIdealCortexMemory_GradientComplexDetectors(            
             gradientAngle,
             gradientMagnitude,
             testGradientWidthRelative,
@@ -556,7 +556,7 @@ public partial class Cortex : ISerializableModelObject
             main_MiniColumn);
     }
 
-    public Memory GetIdealCortexMemory(               
+    public Memory GetIdealCortexMemory_GradientComplexDetectors(               
         float testGradientAngle,
         float testGradientMagnitude,
         float testGradientWidthRelative,
@@ -586,6 +586,58 @@ public partial class Cortex : ISerializableModelObject
             testGradientPositionRelative,
             Constants.RetinaImagePixelSize.Width,
             Constants.RetinaImagePixelSize.Height);        
+        eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
+        FastList<GradientComplexDetector> detectors;
+        if (eye.IsRightEye)
+            detectors = main_MiniColumn.Temp_RightEye_GradientComplexDetectors;
+        else
+            detectors = main_MiniColumn.Temp_LeftEye_GradientComplexDetectors;
+        for (int d_index = 0; d_index < detectors.Count; d_index += 1)
+        {
+            var detector = detectors[d_index];
+            detector.Temp_IsActivated = detector.CalculateIsActivated();
+            if (detector.Temp_IsActivated)
+                memory.Hash[detector.BitIndexInHash] = 1.0f;
+        }
+#if DEBUG
+        memory.Temp_DetectorsActivated = detectors.Where(d => d.Temp_IsActivated).ToArray();
+#endif        
+
+        CreateCortexMemoryColors(memory, hyperColumnCenter_MiniColumn);
+
+        return memory;
+    }
+
+    public Memory GetIdealCortexMemory_SimpleDetectors(
+        float testGradientAngle,
+        float testGradientMagnitude,
+        float testGradientWidthRelative,
+        float testGradientPositionRelative,
+        Eye eye,
+        MiniColumn hyperColumnCenter_MiniColumn,
+        MiniColumn main_MiniColumn)
+    {
+        Memory memory = new();
+
+        memory.Hash = new float[Constants.HashLength];
+
+        memory.GradientAngle = testGradientAngle;
+        memory.GradientMagnitude = testGradientMagnitude;
+        memory.Main_MiniColumnIndex = main_MiniColumn.Index;
+        memory.Main_RetinaXAngle = main_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.Main_RetinaYAngle = main_MiniColumn.MCY * MiniColumn_YAngle_K;
+
+        memory.HyperColumnCenter_MiniColumnIndex = hyperColumnCenter_MiniColumn!.Index;
+        memory.HyperColumnCenter_RetinaXAngle = hyperColumnCenter_MiniColumn.MCX * MiniColumn_XAngle_K;
+        memory.HyperColumnCenter_RetinaYAngle = hyperColumnCenter_MiniColumn.MCY * MiniColumn_YAngle_K;
+
+        DenseMatrix<GradientInPoint> eye_GradientMatrix = SobelOperator.ApplySobel(
+            testGradientAngle,
+            testGradientMagnitude,
+            testGradientWidthRelative,
+            testGradientPositionRelative,
+            Constants.RetinaImagePixelSize.Width,
+            Constants.RetinaImagePixelSize.Height);
         eye.Retina.CalculateRetinaPoints(eye_GradientMatrix);
         FastList<GradientComplexDetector> detectors;
         if (eye.IsRightEye)

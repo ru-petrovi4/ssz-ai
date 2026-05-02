@@ -571,7 +571,7 @@ public class Model01 : IDisposable
         MiniColumn idealAngleMagnitude_MiniColumn = nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns
             [random.Next(nearest_HyperColumnCenter_MiniColumn.Temp_HyperColumnStrict_MiniColumns.Count)];
 
-        Cortex.Memory idealCortexMemory = Cortex.GetIdealCortexMemory(                        
+        Cortex.Memory idealCortexMemory = Cortex.GetIdealCortexMemory_GradientComplexDetectors(                        
             testGradientAngle: MathHelper.NormalizeAngle(2.0f * MathF.PI * random.NextSingle()),
             testGradientMagnitude: (float)(Constants.MinGradientMagnitudeInclusive + (Constants.MaxGradientMagnitudeExclusive - Constants.MinGradientMagnitudeInclusive) * random.NextSingle()),
             Constants.TestGradientWidthRelative,
@@ -607,7 +607,7 @@ public class Model01 : IDisposable
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];        
 
-        Cortex.Memory cortexMemory = Cortex.GetIdealCortexMemory(
+        Cortex.Memory cortexMemory = Cortex.GetIdealCortexMemory_GradientComplexDetectors(
             MathHelper.DegreesToRadians(Constants.TestGradientAngleDegrees),
             Constants.TestGradientMagnitude,
             Constants.TestGradientWidthRelative,
