@@ -42,6 +42,8 @@ namespace Ssz.AI.Models
 
         public T[] Data { get; private set; } = null!;
 
+        public bool HasTheSameValue { get; set; }
+
         public T this[int i, int j]
         {
             get => Data[i * Dimensions[1] + j];
@@ -61,6 +63,7 @@ namespace Ssz.AI.Models
         {
             var clone = new DenseMatrix<T>(Dimensions);
             Array.Copy(Data, clone.Data, Data.Length);
+            clone.HasTheSameValue = HasTheSameValue;
             return clone;
         }
 
@@ -75,6 +78,7 @@ namespace Ssz.AI.Models
             {
                 writer.WriteArray(Dimensions);
                 writer.WriteArray(Data);
+                writer.Write(HasTheSameValue);
             }
         }
 
@@ -87,6 +91,7 @@ namespace Ssz.AI.Models
                     case 1:
                         Dimensions = reader.ReadArray<int>()!;
                         Data = reader.ReadArray<T>()!;
+                        HasTheSameValue = reader.ReadBoolean();
                         break;                    
                 }
             }

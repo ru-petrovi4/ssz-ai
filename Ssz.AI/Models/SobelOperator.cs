@@ -86,6 +86,12 @@ namespace Ssz.AI.Models
                 Magnitude = gradientMagnitude,
                 Angle = gradientAngle
             };
+            if (gradientWidthRelative == 1.0f && gradientPositionRelative == 0.5f)
+            {
+                Array.Fill(gradientMatrix.Data, gradientInPoint);
+                gradientMatrix.HasTheSameValue = true;
+                return gradientMatrix;
+            }
 
             // Толщина в \"пикселях\" по X
             double lineWidth = gradientWidthRelative * width;

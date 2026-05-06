@@ -1,8 +1,12 @@
-﻿using Ssz.Utils;
+﻿using Ssz.AI.Models.Primitives;
+using Ssz.Utils;
 using Ssz.Utils.Serialization;
 
 namespace Ssz.AI.Models.ImageProcessingModel;
 
+/// <summary>
+///    Детектирующая точка. Набор детекторов разных типов в одной точке.
+/// </summary>
 public class DetectingPoint : IOwnedDataSerializable
 {
     public Retina Retina = null!;
@@ -32,8 +36,8 @@ public class DetectingPoint : IOwnedDataSerializable
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        GradientMagnitude_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(null);
-        GradientAngle_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(null);
+        GradientMagnitude_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(FeaturesVector.GradientMagnitude_Index), null);
+        GradientAngle_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(FeaturesVector.GradientAngle_Index), null);
         GradientComplex_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<GradientComplexDetector>(null);
     }
 }

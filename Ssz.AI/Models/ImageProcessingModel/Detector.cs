@@ -13,13 +13,7 @@ public abstract class Detector : IOwnedDataSerializable
 
     public int BitIndexInHash;
 
-    public bool Temp_IsActivated;
-
-    public int Temp_IsActivatedCount;
-
-    public float Temp_Density;    
-
-    public FastList<FeaturesVectorSample> Temp_FeaturesVectorSamples = null!;
+    public bool Temp_IsActivated;    
 
     public abstract void SerializeOwnedData(SerializationWriter writer, object? context);
 
@@ -33,6 +27,17 @@ public abstract class Detector : IOwnedDataSerializable
 
 public class SimpleDetector : Detector
 {
+    #region construction and destruction
+
+    public SimpleDetector(int featuresVector_Index)
+    {
+        FeaturesVector_Index = featuresVector_Index;
+    }
+
+    #endregion
+
+    public readonly int FeaturesVector_Index;
+
     /// <summary>
     ///     Detecting value average.
     /// </summary>
@@ -66,30 +71,42 @@ public class SimpleDetector : Detector
 
     public bool CalculateIsActivated(ref FeaturesVector featuresVector)
     {
+        float value = featuresVector[FeaturesVector_Index];
+
+        if (FeaturesVector_Index == FeaturesVector.GradientMagnitude_Index)
+        {
+            if (value < DetectingPoint.Retina.Constants.MinGradientMagnitudeInclusive ||
+                    value >= DetectingPoint.Retina.Constants.MaxGradientMagnitudeExclusive)
+                return false;
+
+            int gradientMagnitude_AsIndex = (int)value;
+            int gradientAngle_AsIndex = DetectingPoint.Retina.GradientMagnitude_DetectorValueRanges.Dimensions[1] / 2;
+            DetectorValueRange gradientMagnitude_DetectorValueRange = DetectingPoint.Retina.GradientMagnitude_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
+
+            return Average >= gradientMagnitude_DetectorValueRange.LowerInclusive &&
+                Average < gradientMagnitude_DetectorValueRange.UpperExclusive;
+        }
+        else if (FeaturesVector_Index == FeaturesVector.GradientAngle_Index)
+        {
+            int gradientMagnitude_AsIndex = DetectingPoint.Retina.GradientAngle_DetectorValueRanges.Dimensions[0] / 2;
+            int gradientAngle_AsIndex = (int)MathHelper.RadiansToDegrees((float)value);
+            DetectorValueRange gradientAngle_DetectorValueRange = DetectingPoint.Retina.GradientAngle_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
+
+            // [-pi, pi)
+            float gradientAngleMinInclusive = gradientAngle_DetectorValueRange.LowerInclusive;
+            float gradientAngleMaxExclusive = gradientAngle_DetectorValueRange.UpperExclusive;
+            if (MathF.Abs(gradientAngleMinInclusive - gradientAngleMaxExclusive) < MathF.PI / 180)
+                return true;
+
+            bool activated;
+            if (gradientAngleMaxExclusive > gradientAngleMinInclusive)
+                activated = (Average >= gradientAngleMinInclusive) && (Average < gradientAngleMaxExclusive);
+            else
+                activated = (Average >= gradientAngleMinInclusive) || (Average < gradientAngleMaxExclusive);
+            return activated;
+        }
+
         return false;
-
-        //if (gradientInPoint.Magnitude < Retina.Constants.MinGradientMagnitudeInclusive ||
-        //        gradientInPoint.Magnitude >= Retina.Constants.MaxGradientMagnitudeExclusive)
-        //    return false;
-
-        //GradientRange detectorGradientRange = Retina.DetectorGradientRanges[(int)gradientInPoint.Magnitude, (int)MathHelper.RadiansToDegrees((float)gradientInPoint.Angle)]!;
-
-        //bool activated = Average >= gradientMagnitude_DetectorValueRange.LowerInclusive &&
-        //    Average < gradientMagnitude_DetectorValueRange.UpperExclusive;
-        //if (activated)
-        //    return true;
-
-        //// [-pi, pi)
-        //float gradientAngleMinInclusive = gradientAngle_DetectorValueRange.LowerInclusive;
-        //float gradientAngleMaxExclusive = gradientAngle_DetectorValueRange.UpperExclusive;
-        //if (MathF.Abs(gradientAngleMinInclusive - gradientAngleMaxExclusive) < MathF.PI / 180)
-        //    return true;
-
-        //if (gradientAngleMaxExclusive > gradientAngleMinInclusive)
-        //    activated = (GradientAngle_Average >= gradientAngleMinInclusive) && (GradientAngle_Average < gradientAngleMaxExclusive);
-        //else
-        //    activated = (GradientAngle_Average >= gradientAngleMinInclusive) || (GradientAngle_Average < gradientAngleMaxExclusive);
-        //return activated;
     }
 }
 

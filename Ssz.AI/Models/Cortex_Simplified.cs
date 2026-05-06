@@ -27,7 +27,7 @@ public class Cortex_Simplified : ISerializableModelObject
         //PositiveK = new float[Constants.MiniColumnsMaxDistance + 1];
         //NegativeK = new float[Constants.MiniColumnsMaxDistance + 1];
 
-        DetectorsVisibleRadiusPixels = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.RetinaDetectorsDeltaPixels * constants.RetinaDetectorsDeltaPixels / Math.PI);
+        DetectorsVisibleRadiusPixels = Math.Sqrt(constants.MiniColumnVisibleDetectingPointsCount * constants.DetectingPointDeltaPixels * constants.DetectingPointDeltaPixels / Math.PI);
 
         MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth_MiniColumns, constants.CortexHeight_MiniColumns);
         double minCenterX = DetectorsVisibleRadiusPixels;
@@ -52,10 +52,10 @@ public class Cortex_Simplified : ISerializableModelObject
                     double centerX = minCenterX + mcx * deltaCenterX;
                     double centerY = minCenterY + mcy * deltaCenterY;
 
-                    List<GradientComplexDetector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
+                    List<GradientComplexDetector> miniColumnDetectors = new(constants.MiniColumnVisibleDetectingPointsCount);
 
-                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
-                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
+                    for (int dJ = (int)((centerY - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dJ < (int)((centerY + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dJ < retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                        for (int dI = (int)((centerX - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dI < (int)((centerX + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dI < retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                         {
                             var detector = retina.DetectingPoints_Matrix[dI, dJ]!;
                             double r = Math.Sqrt((detector.CenterXPixels - centerX) * (detector.CenterXPixels - centerX) + (detector.CenterYPixels - centerY) * (detector.CenterYPixels - centerY));

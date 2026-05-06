@@ -147,7 +147,7 @@ public class Model01 : IDisposable
                 toCalculateRetinaPoints.Add(rp);
             }
         }
-        LeftEye.Retina.Temp_ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
+        LeftEye.Retina.ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
 
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
@@ -470,7 +470,7 @@ public class Model01 : IDisposable
 
         await Task.Delay(0);
 
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory(random);
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_GradientComplexDetectors(random);
 
         MiniColumn? bestForMemoryMiniColumn = FindBestForMemoryMiniColumn_Som(
             cortexMemory, 
@@ -603,11 +603,26 @@ public class Model01 : IDisposable
         return (cortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
-    private (Memory, MiniColumn) GetTestCortexMemory(Random random)
+    private (Memory, MiniColumn) GetTestCortexMemory_GradientComplexDetectors(Random random)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];        
 
         Cortex.Memory cortexMemory = Cortex.GetIdealCortexMemory_GradientComplexDetectors(
+            MathHelper.DegreesToRadians(Constants.TestGradientAngleDegrees),
+            Constants.TestGradientMagnitude,
+            Constants.TestGradientWidthRelative,
+            Constants.TestGradientPositionRelative,
+            LeftEye,
+            hyperColumnCenter_MiniColumn: nearest_HyperColumnCenter_MiniColumn,
+            main_MiniColumn: nearest_HyperColumnCenter_MiniColumn);
+        return (cortexMemory, nearest_HyperColumnCenter_MiniColumn);
+    }    
+
+    private (Memory, MiniColumn) GetTestCortexMemory_SimpleDetectors(Random random)
+    {
+        MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
+
+        Cortex.Memory cortexMemory = Cortex.GetIdealCortexMemory_SimpleDetectors(
             MathHelper.DegreesToRadians(Constants.TestGradientAngleDegrees),
             Constants.TestGradientMagnitude,
             Constants.TestGradientWidthRelative,
@@ -909,7 +924,7 @@ public class Model01 : IDisposable
         if (MiniColumnDetailed is null)
             return;
 
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory(random);
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_GradientComplexDetectors(random);
 
         bool log = false;
 
@@ -1233,10 +1248,10 @@ public class Model01 : IDisposable
             Visualisation.GetBitmapFromActivatedDetectors(cortexMemory.Temp_DetectorsActivated, 
                 Constants.RetinaImagePixelSize.Width,
                 Constants.RetinaImagePixelSize.Height,
-                ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
-            (int)(centerX / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
-            (int)(centerY / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels),
-            (int)(radius / ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels));
+                ((IRetinaConstants)Constants).DetectingPointDeltaPixels),
+            (int)(centerX / ((IRetinaConstants)Constants).DetectingPointDeltaPixels),
+            (int)(centerY / ((IRetinaConstants)Constants).DetectingPointDeltaPixels),
+            (int)(radius / ((IRetinaConstants)Constants).DetectingPointDeltaPixels));
 
         return imageVisualisation;
     }    
@@ -1287,9 +1302,9 @@ public class Model01 : IDisposable
         /// <summary>
         ///     Количество детекторов, видимых одной миниколонкой
         /// </summary>
-        public int MiniColumnVisibleDetectorsCount { get; set; } = 300; //700;
+        public int MiniColumnVisibleDetectingPointsCount { get; set; } = 300; //700;
 
-        public int HashLength => 200;
+        public int HashLength => 20;
 
         public int CortexWidth_MiniColumns => 100;
 
@@ -1333,9 +1348,9 @@ public class Model01 : IDisposable
 
         public float TestGradientMagnitude { get; set; } = 600;
 
-        public float TestGradientWidthRelative { get; set; } = 0.3f;
+        public float TestGradientWidthRelative { get; set; } = 1.0f;
 
-        public float TestGradientPositionRelative { get; set; } = 0.0f;
+        public float TestGradientPositionRelative { get; set; } = 0.5f;
 
         /// <summary>
         ///     радиус зоны в мкм

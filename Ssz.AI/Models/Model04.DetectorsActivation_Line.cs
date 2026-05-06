@@ -246,12 +246,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали              
             /// </summary>
-            public float RetinaDetectorsDeltaPixels { get; set; } = 0.1f;
+            public float DetectingPointDeltaPixels { get; set; } = 0.1f;
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 250;
+            public int MiniColumnVisibleDetectingPointsCount => 250;
 
             public int HashLength => 200;
 
@@ -372,6 +372,14 @@ namespace Ssz.AI.Models
             public float DetectorRange_MiniColumns => throw new NotImplementedException();
 
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
+
+            public float TestGradientAngleDegrees { get; set; } = 0;
+
+            public float TestGradientMagnitude { get; set; } = 600;
+
+            public float TestGradientWidthRelative { get; set; } = 1.0f;
+
+            public float TestGradientPositionRelative { get; set; } = 0.5f;
         }
     }
 }

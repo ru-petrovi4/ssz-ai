@@ -130,7 +130,7 @@ namespace Ssz.AI.Models
             //    DetectorCorrelations[di] = detectorCorrelation;
             //}
 
-            DetectorsVisibleRadiusPixels = Math.Sqrt(constants.MiniColumnVisibleDetectorsCount * constants.RetinaDetectorsDeltaPixels * constants.RetinaDetectorsDeltaPixels / Math.PI);
+            DetectorsVisibleRadiusPixels = Math.Sqrt(constants.MiniColumnVisibleDetectingPointsCount * constants.DetectingPointDeltaPixels * constants.DetectingPointDeltaPixels / Math.PI);
 
             MiniColumns = new DenseMatrix<MiniColumn>(constants.CortexWidth_MiniColumns, constants.CortexHeight_MiniColumns);
             double minCenterXPixels = DetectorsVisibleRadiusPixels;
@@ -155,10 +155,10 @@ namespace Ssz.AI.Models
                         double centerXPixels = minCenterXPixels + mcx * deltaCenterXPixels;
                         double centerYPixels = minCenterYPixels + mcy * deltaCenterYPixels;
 
-                        List<DetectingPoint> miniColumnDetectors = new(constants.MiniColumnVisibleDetectorsCount);
+                        List<DetectingPoint> miniColumnDetectors = new(constants.MiniColumnVisibleDetectingPointsCount);
 
-                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < leftEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
-                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < leftEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dJ < leftEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dI < leftEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                             {
                                 var detectorsSet = leftEye.Retina.DetectingPoints_Matrix[dI, dJ]!;
                                 double rPixels = Math.Sqrt((detectorsSet.CenterXPixels - centerXPixels) * (detectorsSet.CenterXPixels - centerXPixels) + (detectorsSet.CenterYPixels - centerYPixels) * (detectorsSet.CenterYPixels - centerYPixels));
@@ -166,8 +166,8 @@ namespace Ssz.AI.Models
                                     miniColumnDetectors.Add(detectorsSet);
                             }
 
-                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dJ < rightEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
-                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.RetinaDetectorsDeltaPixels) && dI < rightEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
+                        for (int dJ = (int)((centerYPixels - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dJ < (int)((centerYPixels + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dJ < rightEye.Retina.DetectingPoints_Matrix.Dimensions[1]; dJ += 1)
+                            for (int dI = (int)((centerXPixels - DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels); dI < (int)((centerXPixels + DetectorsVisibleRadiusPixels) / constants.DetectingPointDeltaPixels) && dI < rightEye.Retina.DetectingPoints_Matrix.Dimensions[0]; dI += 1)
                             {
                                 var detectorsSet = rightEye.Retina.DetectingPoints_Matrix[dI, dJ]!;
                                 double rPixels = Math.Sqrt((detectorsSet.CenterXPixels - centerXPixels) * (detectorsSet.CenterXPixels - centerXPixels) + (detectorsSet.CenterYPixels - centerYPixels) * (detectorsSet.CenterYPixels - centerYPixels));

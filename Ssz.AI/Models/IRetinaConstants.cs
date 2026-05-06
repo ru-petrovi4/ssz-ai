@@ -56,18 +56,26 @@ public interface IRetinaConstants
     float FullFieldOfViewDiameter_MiniColumn_Angle { get; }
 
     /// <summary>
-    ///     Количество детекторов, видимых одной миниколонкой
+    ///     Количество детектирующих точек, видимых одной миниколонкой
     /// </summary>
-    int MiniColumnVisibleDetectorsCount { get; }
+    int MiniColumnVisibleDetectingPointsCount { get; }
 
-    float RetinaDetectorsDeltaPixels => RetinaDetectorsDeltaAngle * RetinaImagePixelSize.Height / RetinaImageAngle;
+    float DetectingPointDeltaPixels => DetectingPointDeltaAngle * RetinaImagePixelSize.Height / RetinaImageAngle;
 
-    float RetinaDetectorsDeltaAngle => FullFieldOfViewDiameter_MiniColumn_Angle / (2.0f * MathF.Sqrt(MiniColumnVisibleDetectorsCount / MathF.PI));
+    float DetectingPointDeltaAngle => FullFieldOfViewDiameter_MiniColumn_Angle / (2.0f * MathF.Sqrt(MiniColumnVisibleDetectingPointsCount / MathF.PI));
 
     /// <summary>
     ///     Длина хэш-вектора
     /// </summary>
     int HashLength { get; }
 
-    float DetectorRange_MiniColumns { get; }    
+    float DetectorRange_MiniColumns { get; }
+
+    float TestGradientAngleDegrees { get; set; }
+
+    float TestGradientMagnitude { get; set; }
+
+    float TestGradientWidthRelative { get; set; }
+
+    float TestGradientPositionRelative { get; set; }
 }

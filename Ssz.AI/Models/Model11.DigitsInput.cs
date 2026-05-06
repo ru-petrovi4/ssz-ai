@@ -48,7 +48,7 @@ namespace Ssz.AI.Models
             constants.RetinaImagePixelSize = new PixelSize((int)(200 * subImageRect.Width), (int)(200 * subImageRect.Height));
 
             float minicolumnFieldRadiusPixels = constants.RetinaImagePixelSize.Width / (detectorsFieldsWidthCount * 2.0f);
-            constants.RetinaDetectorsDeltaPixels = MathF.Sqrt(MathF.PI * minicolumnFieldRadiusPixels * minicolumnFieldRadiusPixels / constants.MiniColumnVisibleDetectorsCount);
+            constants.DetectingPointDeltaPixels = MathF.Sqrt(MathF.PI * minicolumnFieldRadiusPixels * minicolumnFieldRadiusPixels / constants.MiniColumnVisibleDetectingPointsCount);
             constants.PhysicalImageCenter.Z = (constants.PhysicalImageSize.Width / 2.0f) / MathF.Tan(MathHelper.DegreesToRadians(imageRadiusDegrees));
 
             Constants = constants;
@@ -387,7 +387,7 @@ namespace Ssz.AI.Models
                 activatedDetectors, 
                 Constants.RetinaImagePixelSize.Width, 
                 Constants.RetinaImagePixelSize.Height,
-                ((IRetinaConstants)Constants).RetinaDetectorsDeltaPixels);
+                ((IRetinaConstants)Constants).DetectingPointDeltaPixels);
 
             var forMinicolumn_ActivatedDetectors = Cortex.CenterMiniColumn!.Detectors.Where(d => d.GradientComplex_Detector!.Temp_IsActivated).ToList();
 
@@ -1221,12 +1221,12 @@ namespace Ssz.AI.Models
             /// <summary>
             ///     Расстояние между детекторами по горизонтали и вертикали
             /// </summary>
-            public float RetinaDetectorsDeltaPixels { get; set; } = 0.5f;            
+            public float DetectingPointDeltaPixels { get; set; } = 0.5f;            
 
             /// <summary>
             ///     Количество детекторов, видимых одной миниколонкой
             /// </summary>
-            public int MiniColumnVisibleDetectorsCount => 500;  // ORIG 250         
+            public int MiniColumnVisibleDetectingPointsCount => 500;  // ORIG 250         
 
             public int HashLength => 300;
 
@@ -1352,6 +1352,14 @@ namespace Ssz.AI.Models
             public float DetectorRange_MiniColumns => throw new NotImplementedException();
 
             int IRetinaConstants.HyperColumnDefinedRadius_MiniColumns => throw new NotImplementedException();
+
+            public float TestGradientAngleDegrees { get; set; } = 0;
+
+            public float TestGradientMagnitude { get; set; } = 600;
+
+            public float TestGradientWidthRelative { get; set; } = 1.0f;
+
+            public float TestGradientPositionRelative { get; set; } = 0.5f;
         }
     }
 }
