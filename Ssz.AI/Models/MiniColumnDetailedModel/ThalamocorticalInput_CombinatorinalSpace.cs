@@ -77,7 +77,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //   - Hendry & Reid 2000, Annu Rev Neurosci 23:127–153
 // ============================================================
 
-public sealed class ThalamocorticalInput
+public sealed class ThalamocorticalInput_CombinatorinalSpace
 {
     // ----------------------------------------------------------
     // ДЕНДРИТНЫЙ ОХВАТ ПИРАМИДНЫХ КЛЕТОК V1
@@ -152,9 +152,9 @@ public sealed class ThalamocorticalInput
     /// Все ТК-аксоны (M + P + K_sup + K_blob), чьи горизонтальные
     /// арборы способны достигать дендритов нейронов данной миниколонки.
     ///
-    public readonly ThalamocorticalAxon[] ThalamocorticalAxons;
+    public readonly ThalamocorticalAxon_CombinatorinalSpace[] ThalamocorticalAxons;
 
-    public readonly ThalamocorticalAxon[] Top200_M_P_ThalamocorticalAxons;
+    public readonly ThalamocorticalAxon_CombinatorinalSpace[] TopHashLength_M_P_ThalamocorticalAxons;
 
     // ============================================================
     // КОНСТРУКТОР
@@ -169,17 +169,17 @@ public sealed class ThalamocorticalInput
     /// <param name="random">Генератор случайных чисел.</param>
     /// <param name="columnRadiusUm">Радиус миниколонки (мкм).</param>
     /// <param name="columnHeightUm">Высота миниколонки (мкм).</param>
-    public ThalamocorticalInput(Random random, float columnRadiusUm, float columnHeightUm)
+    public ThalamocorticalInput_CombinatorinalSpace(Random random, float columnRadiusUm, float columnHeightUm, IRetinaConstants constants)
     {
-        FastList<ThalamocorticalAxon> thalamocorticalAxons = new (TotalAxonCount);
-        FastList<ThalamocorticalAxon> m_P_ThalamocorticalAxons = new(TotalAxonCount);
+        FastList<ThalamocorticalAxon_CombinatorinalSpace> thalamocorticalAxons = new (TotalAxonCount);
+        FastList<ThalamocorticalAxon_CombinatorinalSpace> m_P_ThalamocorticalAxons = new(TotalAxonCount);
 
         // --- M-аксоны (75) ---
         // Арбор r=300 мкм; захват = 300 + 12.35 + 97 = 409.4 мкм.
         // M-путь: движение, контраст → L4Cα (−600..−750 мкм).
         for (int i = 0; i < MAxonCount; i += 1)
         {
-            var axon = ThalamocorticalAxon.Generate(
+            var axon = ThalamocorticalAxon_CombinatorinalSpace.Generate(
                 ThalamocorticalType.Magnocellular,
                 random,
                 columnRadiusUm,
@@ -196,7 +196,7 @@ public sealed class ThalamocorticalInput
         // радиус → 288 аксонов — основной источник сенсорного входа.
         for (int i = 0; i < PAxonCount; i += 1)
         {
-            var axon = ThalamocorticalAxon.Generate(
+            var axon = ThalamocorticalAxon_CombinatorinalSpace.Generate(
                 ThalamocorticalType.Parvocellular,
                 random,
                 columnRadiusUm,
@@ -211,7 +211,7 @@ public sealed class ThalamocorticalInput
         // K1/K2: диффузный вход в L1 + L3A.
         for (int i = 0; i < KSupAxonCount; i += 1)
         {
-            var axon = ThalamocorticalAxon.Generate(
+            var axon = ThalamocorticalAxon_CombinatorinalSpace.Generate(
                 ThalamocorticalType.KoniocellularSuperficial,
                 random,
                 columnRadiusUm,
@@ -225,7 +225,7 @@ public sealed class ThalamocorticalInput
         // K3–K6: S-конус хроматика → CO-блобы L3Bα.
         for (int i = 0; i < KBlobAxonCount; i += 1)
         {
-            var axon = ThalamocorticalAxon.Generate(
+            var axon = ThalamocorticalAxon_CombinatorinalSpace.Generate(
                 ThalamocorticalType.KoniocellularBlob,
                 random,
                 columnRadiusUm,
@@ -235,6 +235,6 @@ public sealed class ThalamocorticalInput
         }
 
         ThalamocorticalAxons = thalamocorticalAxons.ToArray();
-        Top200_M_P_ThalamocorticalAxons = m_P_ThalamocorticalAxons.OrderBy(a => MathHelper.GetLengthXY(a.Root.Position)).Take(200).ToArray();
+        TopHashLength_M_P_ThalamocorticalAxons = m_P_ThalamocorticalAxons.OrderBy(a => MathHelper.GetLengthXY(a.Root.Position)).Take(constants.HashLength).ToArray();
     }
 }

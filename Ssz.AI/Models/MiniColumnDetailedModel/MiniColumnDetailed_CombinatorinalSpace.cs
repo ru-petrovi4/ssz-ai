@@ -40,7 +40,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// правдоподобной морфологией и 10 000 синапсов каждый.
     /// </summary>
     /// <param name="random">Seed для генератора случайных чисел.</param>
-    public MiniColumnDetailed_CombinatorinalSpace(Random random)
+    public MiniColumnDetailed_CombinatorinalSpace(Random random, IRetinaConstants constants)
     {
         _random = random;
         _device = cuda.is_available() ? CUDA : CPU;
@@ -64,7 +64,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
             PyramidalAxons[i] = new PyramidalAxon(i, root, synapses);
         }
 
-        ThalamocorticalInput = new ThalamocorticalInput(_random, ColumnRadiusUm, ColumnHeightUm);
+        ThalamocorticalInput = new ThalamocorticalInput_CombinatorinalSpace(_random, ColumnRadiusUm, ColumnHeightUm, constants);
     }
 
     public void Dispose()
@@ -96,7 +96,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     // ----------------------------------------------------------
 
     /// <summary>Число аксонов в миниколонке.</summary>
-    public const int PyramidalAxonsCount = 200;
+    public const int PyramidalAxonsCount = 0;
 
     /// <summary>Число исходящих синапсов на каждый аксон.</summary>
     public const int SynapsesPerAxon = 10_000; // Orig^10_000;
@@ -153,9 +153,9 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         _activeTcAxons.Clear();
         for (int i = 0; i < activityBits.Length; i += 1)
         {
-            if (i < ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons.Length)
+            if (i < ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons.Length)
             {
-                var axon = ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons[i];
+                var axon = ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons[i];
                 axon.Temp_IsActive = (activityBits[i] > 0.5f);
                 if (axon.Temp_IsActive)
                     _activeTcAxons.Add(axon);
@@ -221,7 +221,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// <summary>Все 200 аксонов миниколонки.</summary>
     public readonly PyramidalAxon[] PyramidalAxons;
 
-    public readonly ThalamocorticalInput ThalamocorticalInput;
+    public readonly ThalamocorticalInput_CombinatorinalSpace ThalamocorticalInput;
 
     // ----------------------------------------------------------
     //  ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ
@@ -274,7 +274,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
                 while (x * x + y * y > ColumnRadiusUm * ColumnRadiusUm);
 
                 float z = zMin + _random.NextSingle() * (zMax - zMin);
-                positions[idx] = new Vector3(x, y, z);
+                if (idx < positions.Length)
+                    positions[idx] = new Vector3(x, y, z);
                 idx += 1;
             }
         }
@@ -879,7 +880,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     }
 
     private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
-    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput.TotalAxonCount);
+    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput_CombinatorinalSpace.TotalAxonCount);
 
     // Кэшированный тензор для переиспользования памяти
     private TensorBuffer? _gridTensorBuffer;

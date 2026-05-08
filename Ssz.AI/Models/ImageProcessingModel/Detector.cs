@@ -29,8 +29,9 @@ public class SimpleDetector : Detector
 {
     #region construction and destruction
 
-    public SimpleDetector(int featuresVector_Index)
+    public SimpleDetector(DetectingPoint detectingPoint, int featuresVector_Index)
     {
+        DetectingPoint = detectingPoint;
         FeaturesVector_Index = featuresVector_Index;
     }
 
@@ -69,7 +70,7 @@ public class SimpleDetector : Detector
         return false;
     }
 
-    public bool CalculateIsActivated(ref FeaturesVector featuresVector)
+    private bool CalculateIsActivated(ref FeaturesVector featuresVector)
     {
         float value = featuresVector[FeaturesVector_Index];
 
@@ -112,6 +113,15 @@ public class SimpleDetector : Detector
 
 public class GradientComplexDetector : Detector
 {
+    #region construction and destruction
+
+    public GradientComplexDetector(DetectingPoint detectingPoint)
+    {
+        DetectingPoint = detectingPoint;
+    }
+
+    #endregion
+
     /// <summary>
     ///     [0, Constants.MaxGradientMagnitudeInclusive)
     /// </summary>
@@ -155,7 +165,7 @@ public class GradientComplexDetector : Detector
     /// </summary>
     /// <param name="gradientInPoint"></param>
     /// <returns></returns>
-    public bool CalculateIsActivated(ref FeaturesVector featuresVector)
+    private bool CalculateIsActivated(ref FeaturesVector featuresVector)
     {
         float gradientMagnitude = featuresVector[FeaturesVector.GradientMagnitude_Index];        
 

@@ -36,8 +36,8 @@ public class DetectingPoint : IOwnedDataSerializable
 
     public void DeserializeOwnedData(SerializationReader reader, object? context)
     {
-        GradientMagnitude_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(FeaturesVector.GradientMagnitude_Index), null);
-        GradientAngle_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(FeaturesVector.GradientAngle_Index), null);
-        GradientComplex_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<GradientComplexDetector>(null);
+        GradientMagnitude_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(this, FeaturesVector.GradientMagnitude_Index), null);
+        GradientAngle_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<SimpleDetector>(() => new SimpleDetector(this, FeaturesVector.GradientAngle_Index), null);
+        GradientComplex_Detector = reader.ReadOwnedDataSerializable_NullableFixedType<GradientComplexDetector>(() => new GradientComplexDetector(this), null);
     }
 }

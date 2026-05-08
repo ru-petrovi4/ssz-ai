@@ -60,15 +60,9 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //   - Amatrudo et al. 2012, J. Neurosci. 32:1480–1491
 // ============================================================
 
-public enum ThalamocorticalType
-{
-    Magnocellular             = 0,
-    Parvocellular             = 1,
-    KoniocellularSuperficial  = 2,
-    KoniocellularBlob         = 3,
-}
 
-public sealed class ThalamocorticalAxon : IAxon
+
+public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
 {
     // ----------------------------------------------------------
     // ПАРАМЕТРЫ АРБОРОВ ПО ТИПАМ
@@ -120,7 +114,7 @@ public sealed class ThalamocorticalAxon : IAxon
     Synapse[] IAxon.Synapses => Synapses;
     bool      IAxon.IsActive => Temp_IsActive;
 
-    public ThalamocorticalAxon(
+    public ThalamocorticalAxon_CombinatorinalSpace(
         ThalamocorticalType type,
         AxonPoint root, 
         Synapse[] synapses)
@@ -148,7 +142,7 @@ public sealed class ThalamocorticalAxon : IAxon
     ///   от центра колонки. Значение по умолчанию 97 мкм
     ///   (Amatrudo et al. 2012, J. Neurosci. 32:1480).
     /// </param>
-    public static ThalamocorticalAxon Generate(        
+    public static ThalamocorticalAxon_CombinatorinalSpace Generate(        
         ThalamocorticalType  type,
         Random               random,
         float                columnRadiusUm,
@@ -272,7 +266,7 @@ public sealed class ThalamocorticalAxon : IAxon
         // ----------------------------------------------------------
 
         Synapse[] synapses = PlaceSynapses(root, synapsesCount, columnRadiusUm, random);
-        return new ThalamocorticalAxon(type, root, synapses);
+        return new ThalamocorticalAxon_CombinatorinalSpace(type, root, synapses);
     }
 
     // ============================================================

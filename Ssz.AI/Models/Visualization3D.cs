@@ -35,7 +35,7 @@ public static class Visualization3D
 
         AddAxons(
             model3DScene,
-            miniColumnDetailed.ThalamocorticalInput.Top200_M_P_ThalamocorticalAxons,
+            miniColumnDetailed.ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons,
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x66, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),

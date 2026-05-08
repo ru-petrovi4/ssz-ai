@@ -139,15 +139,15 @@ public class Model01 : IDisposable
         Cortex.Prepare(LeftEye, RightEye, random);
 
         // Optimization
-        HashSet<RetinaPoint> toCalculateRetinaPoints = new();
-        foreach (var d in Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[0]].Temp_LeftEye_GradientComplexDetectors)
-        {
-            foreach (var rp in d.DetectingPoint.Temp_RetinaPoints)
-            {
-                toCalculateRetinaPoints.Add(rp);
-            }
-        }
-        LeftEye.Retina.ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
+        //HashSet<RetinaPoint> toCalculateRetinaPoints = new();
+        //foreach (var d in Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[0]].Temp_LeftEye_GradientComplexDetectors)
+        //{
+        //    foreach (var rp in d.DetectingPoint.Temp_RetinaPoints)
+        //    {
+        //        toCalculateRetinaPoints.Add(rp);
+        //    }
+        //}
+        //LeftEye.Retina.ToCalculateRetinaPoints = new FastList<RetinaPoint>(toCalculateRetinaPoints.ToArray());
 
         DataToDisplayHolder.GradientDistribution = leftEye_GradientDistribution;
     }
@@ -913,7 +913,7 @@ public class Model01 : IDisposable
     {   
         Console.Write("Генерация комбинаторного пространства...");
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        MiniColumnDetailed = new MiniColumnDetailed_CombinatorinalSpace(random);
+        MiniColumnDetailed = new MiniColumnDetailed_CombinatorinalSpace(random, Constants);
         sw.Stop();
         Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
         Logger.LogInformation($"");
@@ -924,7 +924,7 @@ public class Model01 : IDisposable
         if (MiniColumnDetailed is null)
             return;
 
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_GradientComplexDetectors(random);
+        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_SimpleDetectors(random);
 
         bool log = false;
 
