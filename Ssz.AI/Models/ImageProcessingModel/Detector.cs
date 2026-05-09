@@ -70,6 +70,8 @@ public class SimpleDetector : Detector
         return false;
     }
 
+    #region private functions
+
     private bool CalculateIsActivated(ref FeaturesVector featuresVector)
     {
         float value = featuresVector[FeaturesVector_Index];
@@ -109,6 +111,8 @@ public class SimpleDetector : Detector
 
         return false;
     }
+
+    #endregion    
 }
 
 public class GradientComplexDetector : Detector
@@ -160,6 +164,8 @@ public class GradientComplexDetector : Detector
         return false;
     }
 
+    #region private functions
+
     /// <summary>
     /// Активация по AND
     /// </summary>
@@ -167,7 +173,7 @@ public class GradientComplexDetector : Detector
     /// <returns></returns>
     private bool CalculateIsActivated(ref FeaturesVector featuresVector)
     {
-        float gradientMagnitude = featuresVector[FeaturesVector.GradientMagnitude_Index];        
+        float gradientMagnitude = featuresVector[FeaturesVector.GradientMagnitude_Index];
 
         if (gradientMagnitude < DetectingPoint.Retina.Constants.MinGradientMagnitudeInclusive ||
                 gradientMagnitude >= DetectingPoint.Retina.Constants.MaxGradientMagnitudeExclusive)
@@ -175,7 +181,7 @@ public class GradientComplexDetector : Detector
 
         float gradientAngle = featuresVector[FeaturesVector.GradientAngle_Index];
 
-        int gradientMagnitude_AsIndex =  (int)gradientMagnitude;
+        int gradientMagnitude_AsIndex = (int)gradientMagnitude;
         int gradientAngle_AsIndex = (int)MathHelper.RadiansToDegrees((float)gradientAngle);
         DetectorValueRange gradientMagnitude_DetectorValueRange = DetectingPoint.Retina.GradientMagnitude_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
         DetectorValueRange gradientAngle_DetectorValueRange = DetectingPoint.Retina.GradientAngle_DetectorValueRanges[gradientMagnitude_AsIndex, gradientAngle_AsIndex]!;
@@ -197,6 +203,8 @@ public class GradientComplexDetector : Detector
             activated = (GradientAngle_Average >= gradientAngleMinInclusive) || (GradientAngle_Average < gradientAngleMaxExclusive);
         return activated;
     }
+
+    #endregion
 
     public bool GetIsActivated_Obsolete(GradientInPoint[,] gradientMatrix, IConstantsObsolete constants, Vector2 offset = default)
     {
