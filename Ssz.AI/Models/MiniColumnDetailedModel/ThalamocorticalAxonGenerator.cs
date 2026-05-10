@@ -97,11 +97,9 @@ public static class ThalamocorticalAxonGenerator
     private const float ARBOR_Z_SPREAD = 100f;
 
     /// <summary>
-    /// Число уровней бинарного ветвления ПОСЛЕ первичного веера.
-    /// 2 уровня на каждую первичную ветвь; итого конечных ветвей:
-    ///   primaryBranches * 2^BRANCH_LEVELS (от 8 до 16 — реалистично для M-аксона).
+    /// Число уровней бинарного ветвления ПОСЛЕ первичного веера.    
     /// </summary>
-    private const int BRANCH_LEVELS = 2;
+    private const int BRANCH_LEVELS = 10;
 
     /// <summary>Шаг точек вдоль ветвей арбора. Мкм.</summary>
     private const float BRANCH_STEP_MKM = 15f;
@@ -130,12 +128,11 @@ public static class ThalamocorticalAxonGenerator
     private const float TERMINAL_CLUSTER_RADIUS = 5f;
 
     // ─── Пространственное расположение аксонов ──────────────────────────────
-    /// <summary>
-    /// Шаг гексагональной решётки аксонов в плоскости XY. Мкм.
-    /// Соответствует шагу окулярно-доминантных колонок (~570 мкм, Hubel et al. 1978).
+    /// <summary>    
     /// Каждый «узел» решётки — центр арбора одного M-нейрона ЛКТ.
+    /// нужно ~63–100
     /// </summary>
-    private const float GRID_SPACING_MKM = 500f;
+    private const float GRID_SPACING_MKM = 63f;
 
     /// <summary>
     /// Радиус поиска на решётке: насколько далеко от (0,0) берём узлы,
@@ -175,23 +172,23 @@ public static class ThalamocorticalAxonGenerator
 
     // ── Построение одного аксона ────────────────────────────────────────────
 
-    private static Axon BuildAxon(Vector2 arborCenter, Random rng)
+    private static Axon BuildAxon(Vector2 arborCenter, Random random)
     {
-        float arborRadius = SampleArborRadius(rng);
+        float arborRadius = RandomArborRadius(random);
 
         // Случайное число первичных ветвей: 2, 3 или 4
-        int primaryBranches = rng.Next(2, 5); // [2, 4] включительно
+        int primaryBranches = random.Next(2, 5); // [2, 4] включительно
 
-        float startX = arborCenter.X + (float)(rng.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
-        float startY = arborCenter.Y + (float)(rng.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
+        float startX = arborCenter.X + (float)(random.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
+        float startY = arborCenter.Y + (float)(random.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
         var rootPos = new Vector3(startX, startY, AXON_START_Z);
 
         AxonPoint root = new AxonPoint(rootPos);
 
-        AxonPoint layerEntry = BuildTrunk(root, arborCenter, rng);
+        AxonPoint layerEntry = BuildTrunk(root, arborCenter, random);
 
         var synapsePositions = new List<Vector3>();
-        BuildPrimaryFan(layerEntry, arborCenter, arborRadius, primaryBranches, rng, synapsePositions);
+        BuildPrimaryFan(layerEntry, arborCenter, arborRadius, primaryBranches, random, synapsePositions);
 
         var synapses = new Synapse[synapsePositions.Count];
         for (int i = 0; i < synapsePositions.Count; i++)
@@ -202,7 +199,7 @@ public static class ThalamocorticalAxonGenerator
 
     // ── Ствол аксона (белое вещество → вход в 4Cα) ─────────────────────────
 
-    private static AxonPoint BuildTrunk(AxonPoint root, Vector2 arborCenter, Random rng)
+    private static AxonPoint BuildTrunk(AxonPoint root, Vector2 arborCenter, Random random)
     {
         AxonPoint current = root;
         float z = AXON_START_Z + TRUNK_STEP_MKM;
@@ -213,8 +210,8 @@ public static class ThalamocorticalAxonGenerator
             float x = root.Position.X + t * (arborCenter.X - root.Position.X);
             float y = root.Position.Y + t * (arborCenter.Y - root.Position.Y);
 
-            x += (float)(rng.NextDouble() - 0.5) * 5f;
-            y += (float)(rng.NextDouble() - 0.5) * 5f;
+            x += (float)(random.NextDouble() - 0.5) * 5f;
+            y += (float)(random.NextDouble() - 0.5) * 5f;
 
             var next = new AxonPoint(new Vector3(x, y, z));
             current.AddNext(next);
@@ -248,47 +245,47 @@ public static class ThalamocorticalAxonGenerator
         Vector2 arborCenter,
         float arborRadius,
         int primaryBranches,
-        Random rng,
+        Random random,
         List<Vector3> synapses)
     {
         // Равномерно распределённые базовые углы + шум ±15°
-        double baseAngle = rng.NextDouble() * 2 * Math.PI;
+        double baseAngle = random.NextDouble() * 2 * Math.PI;
         var angles = new double[primaryBranches];
         for (int i = 0; i < primaryBranches; i++)
             angles[i] = baseAngle + i * (2 * Math.PI / primaryBranches)
-                        + (rng.NextDouble() - 0.5) * 0.52; // ±~15°
+                        + (random.NextDouble() - 0.5) * 0.52; // ±~15°
 
         switch (primaryBranches)
         {
             case 2:
                 // Прямая бинарная развилка из start
-                BuildBranch(start, angles[0], arborRadius, 0, rng, synapses);
-                BuildBranch(start, angles[1], arborRadius, 0, rng, synapses);
+                BuildBranch(start, angles[0], arborRadius, 0, random, synapses);
+                BuildBranch(start, angles[1], arborRadius, 0, random, synapses);
                 break;
 
             case 3:
                 // Первая ветвь — прямо из start
-                BuildBranch(start, angles[0], arborRadius, 0, rng, synapses);
+                BuildBranch(start, angles[0], arborRadius, 0, random, synapses);
                 // Узел-развилка на небольшом расстоянии от start по среднему направлению
                 {
-                    AxonPoint fork = MakeForkNode(start, angles[1], angles[2], rng);
+                    AxonPoint fork = MakeForkNode(start, angles[1], angles[2], random);
                     start.AddNext(fork);
-                    BuildBranch(fork, angles[1], arborRadius, 0, rng, synapses);
-                    BuildBranch(fork, angles[2], arborRadius, 0, rng, synapses);
+                    BuildBranch(fork, angles[1], arborRadius, 0, random, synapses);
+                    BuildBranch(fork, angles[2], arborRadius, 0, random, synapses);
                 }
                 break;
 
             case 4:
                 // Два узла-развилки, оба дочерних у start
                 {
-                    AxonPoint fork0 = MakeForkNode(start, angles[0], angles[1], rng);
-                    AxonPoint fork1 = MakeForkNode(start, angles[2], angles[3], rng);
+                    AxonPoint fork0 = MakeForkNode(start, angles[0], angles[1], random);
+                    AxonPoint fork1 = MakeForkNode(start, angles[2], angles[3], random);
                     start.AddNext(fork0);
                     start.AddNext(fork1);
-                    BuildBranch(fork0, angles[0], arborRadius, 0, rng, synapses);
-                    BuildBranch(fork0, angles[1], arborRadius, 0, rng, synapses);
-                    BuildBranch(fork1, angles[2], arborRadius, 0, rng, synapses);
-                    BuildBranch(fork1, angles[3], arborRadius, 0, rng, synapses);
+                    BuildBranch(fork0, angles[0], arborRadius, 0, random, synapses);
+                    BuildBranch(fork0, angles[1], arborRadius, 0, random, synapses);
+                    BuildBranch(fork1, angles[2], arborRadius, 0, random, synapses);
+                    BuildBranch(fork1, angles[3], arborRadius, 0, random, synapses);
                 }
                 break;
         }
@@ -301,13 +298,13 @@ public static class ThalamocorticalAxonGenerator
     /// чтобы развилка выглядела анатомически правдоподобно.
     /// Синапсы на промежуточных узлах-развилках не создаются.
     /// </summary>
-    private static AxonPoint MakeForkNode(AxonPoint from, double angle0, double angle1, Random rng)
+    private static AxonPoint MakeForkNode(AxonPoint from, double angle0, double angle1, Random random)
     {
         double midAngle = (angle0 + angle1) / 2.0;
         float dist = BRANCH_STEP_MKM * 2f;
         float x = from.Position.X + (float)Math.Cos(midAngle) * dist;
         float y = from.Position.Y + (float)Math.Sin(midAngle) * dist;
-        float z = from.Position.Z + (float)(rng.NextDouble() - 0.5) * 6f;
+        float z = from.Position.Z + (float)(random.NextDouble() - 0.5) * 6f;
         z = Math.Max(z, LAYER_BOTTOM_Z);
         z = Math.Min(z, LAYER_TOP_Z);
         return new AxonPoint(new Vector3(x, y, z));
@@ -330,7 +327,7 @@ public static class ThalamocorticalAxonGenerator
         double angle,
         float arborRadius,
         int level,
-        Random rng,
+        Random random,
         List<Vector3> synapses)
     {
         float segmentLength = arborRadius / (float)Math.Pow(2, level);
@@ -340,7 +337,7 @@ public static class ThalamocorticalAxonGenerator
         float dy = (float)Math.Sin(angle);
 
         float branchZ = LAYER_BOTTOM_Z
-            + (float)(rng.NextDouble()) * ARBOR_Z_SPREAD
+            + (float)(random.NextDouble()) * ARBOR_Z_SPREAD
             + (level * ARBOR_Z_SPREAD / (BRANCH_LEVELS + 1));
         branchZ = Math.Min(branchZ, LAYER_TOP_Z);
 
@@ -352,7 +349,7 @@ public static class ThalamocorticalAxonGenerator
         float zStep = (branchZ - z) / (segmentLength / BRANCH_STEP_MKM + 1);
 
         float nextSynapseAt = SYNAPSE_STEP_MKM
-            + (float)(rng.NextDouble() - 0.5) * 2 * SYNAPSE_STEP_JITTER;
+            + (float)(random.NextDouble() - 0.5) * 2 * SYNAPSE_STEP_JITTER;
 
         while (distCovered < segmentLength)
         {
@@ -360,8 +357,8 @@ public static class ThalamocorticalAxonGenerator
             x += dx * step;
             y += dy * step;
             z += zStep * (step / BRANCH_STEP_MKM);
-            x += (float)(rng.NextDouble() - 0.5) * 3f;
-            y += (float)(rng.NextDouble() - 0.5) * 3f;
+            x += (float)(random.NextDouble() - 0.5) * 3f;
+            y += (float)(random.NextDouble() - 0.5) * 3f;
 
             var pt = new AxonPoint(new Vector3(x, y, z));
             current.AddNext(pt);
@@ -372,11 +369,11 @@ public static class ThalamocorticalAxonGenerator
             if (distCovered >= nextSynapseAt)
             {
                 synapses.Add(new Vector3(
-                    x + (float)(rng.NextDouble() - 0.5) * 1.5f,
-                    y + (float)(rng.NextDouble() - 0.5) * 1.5f,
-                    z + (float)(rng.NextDouble() - 0.5) * 1.5f));
+                    x + (float)(random.NextDouble() - 0.5) * 1.5f,
+                    y + (float)(random.NextDouble() - 0.5) * 1.5f,
+                    z + (float)(random.NextDouble() - 0.5) * 1.5f));
                 nextSynapseAt = distCovered + SYNAPSE_STEP_MKM
-                    + (float)(rng.NextDouble() - 0.5) * 2 * SYNAPSE_STEP_JITTER;
+                    + (float)(random.NextDouble() - 0.5) * 2 * SYNAPSE_STEP_JITTER;
             }
         }
 
@@ -384,23 +381,23 @@ public static class ThalamocorticalAxonGenerator
         for (int t = 0; t < TERMINAL_CLUSTER_COUNT; t++)
         {
             synapses.Add(new Vector3(
-                x + (float)(rng.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS,
-                y + (float)(rng.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS,
-                z + (float)(rng.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS));
+                x + (float)(random.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS,
+                y + (float)(random.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS,
+                z + (float)(random.NextDouble() - 0.5) * 2 * TERMINAL_CLUSTER_RADIUS));
         }
 
         // Рекурсивное бинарное ветвление (строго 2 дочерних у current)
         if (level < BRANCH_LEVELS - 1)
         {
             double spread = Math.PI / 5.0; // угол расхождения дочерних ветвей ~36°
-            BuildBranch(current, angle - spread, arborRadius, level + 1, rng, synapses);
-            BuildBranch(current, angle + spread, arborRadius, level + 1, rng, synapses);
+            BuildBranch(current, angle - spread, arborRadius, level + 1, random, synapses);
+            BuildBranch(current, angle + spread, arborRadius, level + 1, random, synapses);
         }
     }
 
     // ── Вспомогательные методы ───────────────────────────────────────────────
 
-    private static List<Vector2> GenerateHexGridCenters(Random rng)
+    private static List<Vector2> GenerateHexGridCenters(Random random)
     {
         var centers = new List<Vector2>();
         float h = GRID_SPACING_MKM;
@@ -413,18 +410,18 @@ public static class ThalamocorticalAxonGenerator
             {
                 float x = col * hx + (row % 2 != 0 ? hx / 2f : 0f);
                 float y = row * hy;
-                x += (float)(rng.NextDouble() - 0.5) * 2 * h * 0.15f;
-                y += (float)(rng.NextDouble() - 0.5) * 2 * h * 0.15f;
+                x += (float)(random.NextDouble() - 0.5) * 2 * h * 0.15f;
+                y += (float)(random.NextDouble() - 0.5) * 2 * h * 0.15f;
                 centers.Add(new Vector2(x, y));
             }
         }
         return centers;
     }
 
-    private static float SampleArborRadius(Random rng)
+    private static float RandomArborRadius(Random random)
     {
-        double u1 = 1.0 - rng.NextDouble();
-        double u2 = 1.0 - rng.NextDouble();
+        double u1 = 1.0 - random.NextDouble();
+        double u2 = 1.0 - random.NextDouble();
         double normal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2);
         float radius = 400f + (float)(normal * 70f);
         return Math.Clamp(radius, ARBOR_RADIUS_MIN, ARBOR_RADIUS_MAX);
