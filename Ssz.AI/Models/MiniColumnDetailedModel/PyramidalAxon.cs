@@ -17,8 +17,11 @@
 // ============================================================
 public sealed class PyramidalAxon : IAxon
 {
-    /// <summary>Индекс аксона в миниколонке (0–199).</summary>
-    public readonly int Index;
+    public PyramidalAxon(AxonPoint root, Synapse[] synapses)
+    {        
+        Root = root;
+        Synapses = synapses;
+    }
 
     /// <summary>
     /// Корневой узел дерева аксона — точка начала (AIS, у сомы).
@@ -30,10 +33,7 @@ public sealed class PyramidalAxon : IAxon
     /// Все 10 000 исходящих синапсов этого аксона.
     /// Координаты синапсов близки к точкам аксонального дерева.
     /// </summary>
-    public readonly Synapse[] Synapses;
-
-    /// <summary>Соответствующий бит в векторе активности (0–199).</summary>
-    public int BitIndex => Index;
+    public readonly Synapse[] Synapses;    
 
     public bool Temp_IsActive;
 
@@ -41,12 +41,5 @@ public sealed class PyramidalAxon : IAxon
 
     Synapse[] IAxon.Synapses => Synapses;
 
-    bool IAxon.IsActive => Temp_IsActive;    
-
-    public PyramidalAxon(int index, AxonPoint root, Synapse[] synapses)
-    {
-        Index = index;
-        Root = root;
-        Synapses = synapses;
-    }
+    bool IAxon.IsActive => Temp_IsActive;        
 }

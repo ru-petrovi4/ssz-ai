@@ -13,33 +13,10 @@ using Ssz.AI.Helpers;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
-// ============================================================
-//  МИНИКОЛОНКА КОРЫ МОЗГА
-//
-//  Параметры, соответствующие анатомии человека:
-//    - Диаметр: ~40 мкм (диапазон 30–50 мкм)
-//    - Высота (слои II–VI): ~2000 мкм
-//    - Нейронов: 80–120 реально, здесь 200 (задание)
-//
-//  Координатная система (мкм):
-//    X, Y — горизонтальные оси в плоскости коры
-//    Z     — вертикальная ось (глубина слоёв, 0 = поверхность)
-//
-//  Источник: Buxhoeveden & Casanova 2002 (Brain),
-//            Wikipedia: Cortical minicolumn.
-// ============================================================
 public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 {
     #region construction and destruction
-
-    // ============================================================
-    //  КОНСТРУКТОР: ГЕНЕРАЦИЯ ВСЕЙ МИНИКОЛОНКИ
-    // ============================================================
-    /// <summary>
-    /// Создаёт миниколонку: генерирует 200 аксонов с биологически
-    /// правдоподобной морфологией и 10 000 синапсов каждый.
-    /// </summary>
-    /// <param name="random">Seed для генератора случайных чисел.</param>
+    
     public MiniColumnDetailed_CombinatorinalSpace(Random random, IRetinaConstants constants)
     {
         _random = random;
@@ -59,12 +36,10 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         // ----------------------------------------------------------
         for (int i = 0; i < PyramidalAxonsCount; i += 1)
         {
-            AxonPoint root = GrowPyramidalAxon(pyramidalSomaPositions[i], i);
-            Synapse[] synapses = PlaceSynapses(root);
-            PyramidalAxons[i] = new PyramidalAxon(i, root, synapses);
+            PyramidalAxons[i] = GrowPyramidalAxon(pyramidalSomaPositions[i], i);
         }
 
-        ThalamocorticalInput = new ThalamocorticalInput_CombinatorinalSpace(_random, ColumnRadiusUm, ColumnHeightUm, constants);
+        ThalamocorticalInput = new ThalamocorticalInput_CombinatorinalSpace(_random, MiniColumnRadiusUm, MiniColumnHeightUm, constants);
     }
 
     public void Dispose()
@@ -81,15 +56,15 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     // ----------------------------------------------------------
 
     /// <summary>Радиус миниколонки в горизонтальной плоскости (мкм).</summary>
-    public const float ColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
+    public const float MiniColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
 
     /// <summary>
     ///    Радиус, внутри которого учитываются синапсы пирамидальных нейронов.
     /// </summary>
-    public const float ColumnRadius_Extended_Um = 25.0f;   // диаметр ~40 мкм
+    public const float MiniColumnRadius_Extended_Um = 25.0f;   // диаметр ~40 мкм
 
     /// <summary>Высота миниколонки (мкм), покрывает слои II–VI.</summary>
-    public const float ColumnHeightUm = 2000.0f;
+    public const float MiniColumnHeightUm = 2000.0f;
 
     // ----------------------------------------------------------
     //  ПАРАМЕТРЫ АКСОНОВ
@@ -98,8 +73,9 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// <summary>Число аксонов в миниколонке.</summary>
     public const int PyramidalAxonsCount = 0;
 
-    /// <summary>Число исходящих синапсов на каждый аксон.</summary>
-    public const int SynapsesPerAxon = 10_000; // Orig^10_000;
+    public readonly PyramidalAxon[] PyramidalAxons;
+
+    public readonly ThalamocorticalInput_CombinatorinalSpace ThalamocorticalInput;
 
     /// <summary>Активные зоны пирамидальных аксонов (Зоны 1).</summary>
     public FastList<ActiveZone>? Temp_PyramidalZones;
@@ -114,7 +90,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// Вычисляет зоны активных синапсов раздельно для пирамидальных аксонов
     /// и таламокортикальных афферентов, а затем находит их зоны конвергенции.
     /// </summary>
-    /// <param name="activityBits">Активность локальных аксонов (длина AxonCount).</param>
+    /// <param name="tcActivityBits">Активность локальных аксонов (длина AxonCount).</param>
     /// <param name="radiusUm">Радиус поиска для отдельных зон (мкм).</param>
     /// <param name="minActiveAxons">Минимум уникальных активных аксонов в одной зоне.</param>
     /// <param name="convergenceRadiusUm">
@@ -122,7 +98,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     ///   они считаются зоной конвергенции (Зона 3). По умолчанию равно radiusUm.
     /// </param>
     public void FindActiveZones(
-        float[] activityBits,
+        float[] tcActivityBits,
         float radiusUm,
         int minActiveAxons,
         float convergenceRadiusUm = -1f)
@@ -133,56 +109,38 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         using var disposeScope = torch.NewDisposeScope();
 
         // ----------------------------------------------------------
-        //  ШАГ 1: Индексы активных пирамидальных аксонов
-        // ----------------------------------------------------------
-        //_activePyramidalAxons.Clear();
-        //for (int i = 0; i < activityBits.Length; i += 1)
-        //{
-        //    if (i < PyramidalAxons.Length)
-        //    {
-        //        var axon = PyramidalAxons[i];
-        //        axon.Temp_IsActive = (activityBits[i] > 0.5f);
-        //        if (axon.Temp_IsActive)
-        //            _activePyramidalAxons.Add(axon);
-        //    }
-        //}
-
-        // ----------------------------------------------------------
-        //  ШАГ 2: Индексы активных ТК-аксонов
-        // ----------------------------------------------------------
-        _activeTcAxons.Clear();
-        for (int i = 0; i < activityBits.Length; i += 1)
-        {
-            if (i < ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons.Length)
-            {
-                var axon = ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons[i];
-                axon.Temp_IsActive = (activityBits[i] > 0.5f);
-                if (axon.Temp_IsActive)
-                    _activeTcAxons.Add(axon);
-            }
-        }
-
-        // ----------------------------------------------------------
         //  ЗОНЫ 1: Пирамидальные аксоны
         // ----------------------------------------------------------
-        Temp_PyramidalZones = _activePyramidalAxons.Count >= minActiveAxons
-            ? ComputeActiveZones(
-                GetSynapsesByAxons(_activePyramidalAxons),
-                _activePyramidalAxons.Count,
-                radiusUm,
-                minActiveAxons)
-            : null;
+        _activePyramidalAxons.Clear(); // Пока не заполняем
+        if (_activePyramidalAxons.Count >= minActiveAxons)
+            Temp_PyramidalZones = ComputeActiveZones(
+                    GetSynapsesByAxons(_activePyramidalAxons),                    
+                    radiusUm,
+                    minActiveAxons);
+        else
+            Temp_PyramidalZones = null;
 
         // ----------------------------------------------------------
         //  ЗОНЫ 2: Таламокортикальные аксоны
         // ----------------------------------------------------------
-        Temp_ThalamocorticalZones = _activeTcAxons.Count >= minActiveAxons
-            ? ComputeActiveZones(
-                GetSynapsesByAxons(_activeTcAxons),
-                _activeTcAxons.Count,
-                radiusUm,
-                minActiveAxons)
-            : null;
+        _activeTcAxons.Clear();
+        for (int i = 0; i < tcActivityBits.Length; i += 1)
+        {
+            if (i < ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons.Length)
+            {
+                var axon = ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons[i];
+                axon.Temp_IsActive = (tcActivityBits[i] > 0.5f);
+                if (axon.Temp_IsActive)
+                    _activeTcAxons.Add(axon);
+            }
+        }
+        if (_activeTcAxons.Count >= minActiveAxons)
+            Temp_ThalamocorticalZones = ComputeActiveZones(
+                    GetSynapsesByAxons(_activeTcAxons),                    
+                    radiusUm,
+                    minActiveAxons);
+        else
+            Temp_ThalamocorticalZones = null;
 
         // ----------------------------------------------------------
         //  ЗОНЫ 3: Конвергенция (Зоны 1 рядом с Зонами 2)
@@ -193,43 +151,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
             convergenceRadiusUm);
     }
 
-    #endregion
-
-    /// <summary>
-    /// Среднее число точек ветвления аксона.
-    /// По данным Bhatt et al. 2009: среднее 4.5, диапазон 0–17.
-    /// </summary>
-    private const float MeanBranchPoints = 4.5f;
-
-    /// <summary>
-    /// Средняя длина сегмента аксона между ветвлениями (мкм).
-    /// Из данных: суммарная длина ~5–20 мм, ветвлений ~4–8 =>
-    /// сегмент ~500–1000 мкм. Используем 600 мкм.
-    /// </summary>
-    private const float MeanSegmentLengthUm = 600.0f;
-
-    /// <summary>
-    /// Число промежуточных точек на каждом сегменте аксона.
-    /// Определяет детализацию траектории аксона.
-    /// </summary>
-    private const int PointsPerSegment = 8;
-
-    // ----------------------------------------------------------
-    //  ДАННЫЕ МИНИКОЛОНКИ
-    // ----------------------------------------------------------
-
-    /// <summary>Все 200 аксонов миниколонки.</summary>
-    public readonly PyramidalAxon[] PyramidalAxons;
-
-    public readonly ThalamocorticalInput_CombinatorinalSpace ThalamocorticalInput;
-
-    // ----------------------------------------------------------
-    //  ГЕНЕРАТОР СЛУЧАЙНЫХ ЧИСЕЛ
-    //  Инициализируется с фиксированным seed для воспроизводимости.
-    // ----------------------------------------------------------
-    private readonly Random _random;
-
-    private readonly Device _device;
+    #endregion    
 
     // ============================================================
     //  ГЕНЕРАЦИЯ ПОЗИЦИЙ СОМ
@@ -268,10 +190,10 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
                 float x, y;
                 do
                 {
-                    x = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
-                    y = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
+                    x = (_random.NextSingle() * 2.0f - 1.0f) * MiniColumnRadiusUm;
+                    y = (_random.NextSingle() * 2.0f - 1.0f) * MiniColumnRadiusUm;
                 }
-                while (x * x + y * y > ColumnRadiusUm * ColumnRadiusUm);
+                while (x * x + y * y > MiniColumnRadiusUm * MiniColumnRadiusUm);
 
                 float z = zMin + _random.NextSingle() * (zMax - zMin);
                 if (idx < positions.Length)
@@ -285,350 +207,17 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 
     // ============================================================
     //  РОСТ АКСОНА
-    // ============================================================
-    /// <summary>
-    /// Строит дерево аксона, начиная с позиции сомы.
-    ///
-    /// Биологически правдоподобная морфология:
-    ///   1. AIS (axon initial segment): ~60–80 мкм вертикально вниз
-    ///   2. Горизонтальное распространение по слою с ветвлениями
-    ///   3. Бинарные ветвления, среднее число ~4.5 на аксон
-    ///   4. Угловые отклонения сегментов: плавная кривая (Perlin-like)
-    ///
-    /// Координаты: X,Y — горизонталь, Z — вертикаль (глубина).
-    /// </summary>
-    private AxonPoint GrowPyramidalAxon(Vector3 somaPos, int axonIdx)
+    // ============================================================    
+    private PyramidalAxon GrowPyramidalAxon(Vector3 somaPos, int axonIdx)
     {
-        // Случайное число точек ветвления: Poisson-подобное ~4.5
-        int totalBranchPoints = SamplePoissonBranchCount();
-
-        // Создаём корневой узел в точке сомы
-        var root = new AxonPoint(somaPos);
-
-        // ----------------------------------------------------------
-        //  AIS: аксон выходит из основания сомы и идёт вертикально
-        //  вниз ~60–100 мкм. Это биологически правильно — AIS
-        //  всегда направлен перпендикулярно поверхности коры.
-        // ----------------------------------------------------------
-        float aisLength = 60.0f + _random.NextSingle() * 40.0f; // 60–100 мкм
-        int aisPoints = 4;
-        float aisStep = aisLength / aisPoints;
-
-        AxonPoint current = root;
-        for (int p = 1; p <= aisPoints; p += 1)
-        {
-            // Небольшое горизонтальное отклонение (реалистичная кривизна)
-            float jitter = 1.5f;
-            var pos = new Vector3(
-                somaPos.X + (_random.NextSingle() - 0.5f) * jitter,
-                somaPos.Y + (_random.NextSingle() - 0.5f) * jitter,
-                somaPos.Z - p * aisStep  // идёт вниз (уменьшение Z)
-            );
-            var next = new AxonPoint(pos);
-            current.Next.Add(next);
-            current = next;
-        }
-
-        // ----------------------------------------------------------
-        //  РЕКУРСИВНЫЙ РОСТ ВЕТВЕЙ
-        //  Используем стек вместо рекурсии для производительности.
-        // ----------------------------------------------------------
-        // Стек: (текущий узел, оставшиеся ветвления, направление)
-        var growthStack = new Stack<(AxonPoint node, int branchesLeft, Vector3 direction)>(32);
-
-        // Начальное направление: горизонтально с небольшим наклоном
-        float angle = _random.NextSingle() * MathF.PI * 2.0f; // случайный азимут
-        var initDir = new Vector3(
-            MathF.Cos(angle) * 0.9f,
-            MathF.Sin(angle) * 0.9f,
-            -0.2f - _random.NextSingle() * 0.2f  // небольшой вертикальный компонент
-        );
-        initDir = Vector3.Normalize(initDir);
-
-        growthStack.Push((current, totalBranchPoints, initDir));
-
-        while (growthStack.Count > 0)
-        {
-            var (node, branchesLeft, direction) = growthStack.Pop();
-
-            // Длина текущего сегмента (варьируется биологически)
-            float segLen = MeanSegmentLengthUm * (0.6f + _random.NextSingle() * 0.8f);
-            float stepLen = segLen / PointsPerSegment;
-
-            // Рост сегмента от node до его конца
-            AxonPoint segEnd = GrowPyramidalAxonSegment(node, direction, stepLen, PointsPerSegment);
-
-            // Ветвление: если ещё есть ветвления — делим на 2 ветки
-            if (branchesLeft > 0)
-            {
-                int branch1 = branchesLeft / 2;
-                int branch2 = branchesLeft - branch1 - 1;
-
-                // Угол расходящихся ветвей: ~30–60 градусов
-                float spreadAngle = 0.4f + _random.NextSingle() * 0.5f; // ~23–52°
-                Vector3 dir1 = RotateVector(direction, spreadAngle, _random);
-                Vector3 dir2 = RotateVector(direction, -spreadAngle, _random);
-
-                growthStack.Push((segEnd, branch1, Vector3.Normalize(dir1)));
-                growthStack.Push((segEnd, branch2, Vector3.Normalize(dir2)));
-            }
-            // Иначе — терминальный сегмент (конец ветки = синаптический бутон)
-        }
-
-        return root;
+        // TODO
+        return new PyramidalAxon(new AxonPoint(new Vector3()), new Synapse[0]);        
     }
-
-    // ============================================================
-    //  РОСТ ОДНОГО СЕГМЕНТА АКСОНА
-    // ============================================================
-    /// <summary>
-    /// Строит линейный сегмент аксона из нескольких точек.
-    /// Добавляет небольшой случайный изгиб (биологически:
-    /// аксоны не прямые, а плавно искривлённые).
-    /// Возвращает последнюю точку сегмента.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private AxonPoint GrowPyramidalAxonSegment(AxonPoint start, Vector3 direction,
-                                  float stepLen, int numPoints)
-    {
-        AxonPoint current = start;
-        Vector3 dir = direction;
-
-        for (int p = 0; p < numPoints; p += 1)
-        {
-            // Случайное малое отклонение направления (изгиб аксона)
-            // Максимальное отклонение ~10° на шаг
-            float bendAngle = (float)(_random.NextDouble() - 0.5) * 0.18f;
-            dir = Vector3.Normalize(RotateVector(dir, bendAngle, _random));
-
-            var pos = current.Position + dir * stepLen;
-
-            // Ограничение Z: аксон не выходит за пределы колонки
-            pos.Z = Math.Clamp(pos.Z, -ColumnHeightUm, 0f);
-
-            var next = new AxonPoint(pos);
-            current.Next.Add(next);
-            current = next;
-        }
-
-        return current;
-    }
-
-    // ============================================================
-    //  ВРАЩЕНИЕ ВЕКТОРА
-    // ============================================================
-    /// <summary>
-    /// Поворачивает вектор v на угол angle вокруг случайной оси,
-    /// перпендикулярной v. Используется для создания ветвлений
-    /// и изгибов аксона.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector3 RotateVector(Vector3 v, float angle, Random random)
-    {
-        // Находим произвольную ось, перпендикулярную v
-        // Используем метод Хьюза–Мёллера для устойчивости
-        Vector3 perp;
-        if (MathF.Abs(v.X) <= MathF.Abs(v.Y) && MathF.Abs(v.X) <= MathF.Abs(v.Z))
-            perp = new Vector3(0, -v.Z, v.Y);
-        else if (MathF.Abs(v.Y) <= MathF.Abs(v.Z))
-            perp = new Vector3(-v.Z, 0, v.X);
-        else
-            perp = new Vector3(-v.Y, v.X, 0);
-
-        perp = Vector3.Normalize(perp);
-
-        // Поворачиваем ось в горизонтальной плоскости случайно
-        float phi = (float)(random.NextDouble() * Math.PI * 2.0);
-        Vector3 crossV = Vector3.Cross(v, perp);
-        Vector3 rotAxis = perp * MathF.Cos(phi) + crossV * MathF.Sin(phi);
-        rotAxis = Vector3.Normalize(rotAxis);
-
-        // Формула Родрига: v_rot = v*cos(a) + (axis×v)*sin(a) + axis*(axis·v)*(1-cos(a))
-        float cosA = MathF.Cos(angle);
-        float sinA = MathF.Sin(angle);
-        float dot = Vector3.Dot(rotAxis, v);
-        return v * cosA + Vector3.Cross(rotAxis, v) * sinA + rotAxis * dot * (1f - cosA);
-    }
-
-    // ============================================================
-    //  ВЫБОРКА ЧИСЛА ВЕТВЛЕНИЙ (ПУАССОН-ПОДОБНОЕ)
-    // ============================================================
-    /// <summary>
-    /// Сэмплирует число точек ветвления для одного аксона.
-    /// Среднее λ = 4.5 (по Bhatt et al. 2009).
-    /// Использует алгоритм Кнута для генерации Пуассона.
-    /// </summary>
-    private int SamplePoissonBranchCount()
-    {
-        const double lambda = 4.5;
-        double L = Math.Exp(-lambda);
-        double p = 1.0;
-        int k = 0;
-        do
-        {
-            k += 1;
-            p *= _random.NextDouble();
-        }
-        while (p > L);
-        // Ограничиваем диапазон [1, 12] для адекватной топологии дерева
-        return Math.Clamp(k - 1, 1, 12);
-    }
-
-    // ============================================================
-    //  РАЗМЕЩЕНИЕ СИНАПСОВ НА ДЕРЕВЕ АКСОНА
-    // ============================================================
-    /// <summary>
-    /// Размещает синапсы равномерно по всей длине аксона.
-    /// Алгоритм собирает все сегменты (отрезки между узлами аксона),
-    /// вычисляет их суммарную длину и распределяет синапсы
-    /// строго с одинаковым интервалом вдоль ветвей (с небольшим шумом).
-    /// </summary>
-    private Synapse[] PlaceSynapses(AxonPoint root)
-    {
-        // 1. Сначала собираем все отрезки (сегменты) дерева аксона.
-        // Используем легковесные кортежи (ValueTuple) для хранения структуры:
-        // Начальная координата, Конечная координата и Длина отрезка в мкм.
-        var segments = new List<(Vector3 Start, Vector3 End, float Length)>(capacity: 512);
-
-        // Стек для обхода дерева без рекурсии, что гарантирует максимальную производительность
-        var traversalStack = new Stack<AxonPoint>(128);
-        traversalStack.Push(root);
-
-        // Переменная для хранения общей длины всех ветвей аксона
-        float totalLength = 0f;
-
-        // Обходим всё дерево аксона в глубину
-        while (traversalStack.Count > 0)
-        {
-            var pt = traversalStack.Pop();
-
-            // Если у точки есть дочерние узлы (продолжения аксона)
-            if (pt.Next != null)
-            {
-                // Используем += 1 вместо запрещенного ++
-                for (int i = 0; i < pt.Next.Count; i += 1)
-                {
-                    var child = pt.Next[i];
-
-                    // Вычисляем длину отрезка с помощью SIMD-совместимого метода System.Numerics
-                    float length = Vector3.Distance(pt.Position, child.Position);
-
-                    // Записываем только валидные отрезки, имеющие ненулевую длину
-                    if (length > 0f)
-                    {
-                        segments.Add((pt.Position, child.Position, length));
-                        totalLength += length; // Накапливаем общую длину
-                    }
-
-                    traversalStack.Push(child);
-                }
-            }
-        }
-
-        FastList<Synapse> synapses = new(SynapsesPerAxon);
-
-        // 2. Краевой случай: Если аксон вырожден (длина нулевая), то размещаем все синапсы в корне
-        if (totalLength <= 0f || segments.Count == 0)
-        {
-            for (int s = 0; s < SynapsesPerAxon; s += 1)
-            {
-                synapses.Add(new Synapse(root.Position));
-            }
-            return synapses.ToArray();
-        }
-
-        // 3. Вычисляем шаг, через который будут расставлены синапсы для идеальной равномерности
-        float step = totalLength / SynapsesPerAxon;
-
-        // Переменная для отслеживания индекса текущего сегмента при линейном проходе
-        int currentSegmentIdx = 0;
-
-        // Расстояние от начала текущего сегмента, на котором размещается очередной синапс
-        // Начинаем с половины шага, чтобы края аксона не были излишне "плотными"
-        float currentDistInSegment = step * 0.5f;
-
-        // 4. Проходим по необходимому количеству синапсов и размещаем их
-        for (int s = 0; s < SynapsesPerAxon; s += 1)
-        {
-            // Если мы вышли за пределы длины текущего отрезка, переходим к следующему
-            // (цикл нужен для случаев, когда отрезки слишком короткие по сравнению с шагом)
-            while (currentDistInSegment > segments[currentSegmentIdx].Length && currentSegmentIdx < segments.Count - 1)
-            {
-                currentDistInSegment -= segments[currentSegmentIdx].Length;
-                currentSegmentIdx += 1; // Увеличиваем индекс без использования ++
-            }
-
-            // Получаем текущий сегмент аксона
-            var seg = segments[currentSegmentIdx];
-
-            // Вычисляем долю (от 0.0 до 1.0) пройденного расстояния по отрезку
-            float t = currentDistInSegment / seg.Length;
-
-            // Выполняем линейную интерполяцию для нахождения точной позиции синапса на отрезке
-            var basePos = Vector3.Lerp(seg.Start, seg.End, t);
-
-            // 5. Добавляем небольшое случайное смещение (~1.5 мкм) для реализма,
-            // имитируя бутоны, расположенные на малом расстоянии от центральной оси аксона
-            float jitter = 1.5f;
-            var synPos = new Vector3(
-                basePos.X + (_random.NextSingle() - 0.5f) * jitter * 2f,
-                basePos.Y + (_random.NextSingle() - 0.5f) * jitter * 2f,
-                basePos.Z + (_random.NextSingle() - 0.5f) * jitter * 2f
-            );
-
-            // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют            
-            if (MathHelper.GetLengthXY(synPos) < ColumnRadius_Extended_Um)
-                synapses.Add(new Synapse(synPos));
-
-            // Продвигаемся дальше по отрезку на заданный равномерный шаг
-            currentDistInSegment += step;
-        }
-
-        // Возвращаем массив готовых синапсов, равномерно расставленных по всему аксону
-        return synapses.ToArray();
-    }
-
-    // ============================================================
-    //  ПОИСК АКТИВНЫХ ЗОН (С ИСПОЛЬЗОВАНИЕМ TORCHSHARP)
-    // ============================================================
-    /// <summary>
-    /// Ищет пространственные области (зоны) заданного радиуса,
-    /// внутри которых присутствуют синапсы как минимум от N различных активных аксонов.
-    /// Алгоритм использует вокселизацию пространства и 3D-свертку на базе TorchSharp
-    /// для точного математического поиска максимумов плотности в любой точке пространства
-    /// (а не только с центрами в синапсах), после чего проводит дедупликацию.
-    /// </summary>
-    /// <param name="activityBits">Вектор, где 1.0f означает активность аксона.</param>
-    /// <param name="radiusUm">Радиус поиска (мкм).</param>
-    /// <param name="minActiveAxons">Минимальное количество уникальных активных аксонов в радиусе.</param>
-    /// <returns>Список найденных уникальных зон активности.</returns>
-    // ============================================================
-    //  ПОИСК АКТИВНЫХ ЗОН
-    //
-    //  Метод выполняет три независимых прохода через GPU-свёртку:
-    //
-    //    Зоны 1 (Temp_PyramidalZones):
-    //      Пространственные кластеры, где синапсы >= minActiveAxons
-    //      различных ПИРАМИДАЛЬНЫХ аксонов попадают в радиус radiusUm.
-    //
-    //    Зоны 2 (Temp_ThalamocorticalZones):
-    //      Аналогичные кластеры, но только для ВХОДЯЩИХ ЛКТ-аксонов.
-    //      Т.е. места, где таламический зрительный сигнал плотно
-    //      сходится в пространстве миниколонки.
-    //
-    //    Зоны 3 (Temp_ConvergenceZones):
-    //      Зоны схождения: позиции, где хотя бы одна Зона 1 и хотя бы
-    //      одна Зона 2 находятся в пределах convergenceRadiusUm.
-    //      Биологически это потенциальные зоны синаптической интеграции
-    //      таламического входа и локальной кортикальной активности.
-    // ============================================================
-
-
-
+    
     // ============================================================
     //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
     // ============================================================
-    private (Synapse[][] groups, int count) GetSynapsesByAxons(FastList<IAxon> axons)
+    private Synapse[][] GetSynapsesByAxons(FastList<IAxon> axons)
     {
         int count = axons.Count;
         var groups = new Synapse[count][];
@@ -636,7 +225,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         {
             groups[i] = axons[i].Synapses;
         }
-        return (groups, count);
+        return groups;
     }
 
     // ============================================================
@@ -663,12 +252,11 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     //    Новое правило: сливаем только соседние воксели (расстояние <= 1.5 воксела),
     //    сохраняя топологически разнесённые кластеры как отдельные зоны.
     private FastList<ActiveZone> ComputeActiveZones(
-        (Synapse[][] groups, int count) input,
-        int activeCount,
+        Synapse[][] activeSynapsesGroups,        
         float radiusUm,
         int minActiveAxons)
     {
-        var groups = input.groups;
+        int activeCount = activeSynapsesGroups.Length;
 
         // адаптивный размер воксела — не более radiusUm/2,
         // чтобы ядро свёртки всегда содержало >= 2 вокселя на радиус.
@@ -679,9 +267,9 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         SceneBounds bounds = new();
         for (int a = 0; a < activeCount; a += 1)
         {
-            var synapses = groups[a];
-            for (int s = 0; s < synapses.Length; s += 1)
-                bounds.Update(synapses[s].Position);
+            var activeSynapses = activeSynapsesGroups[a];
+            for (int s = 0; s < activeSynapses.Length; s += 1)
+                bounds.Update(activeSynapses[s].Position);
         }
         bounds.XMin -= radiusUm; bounds.YMin -= radiusUm; bounds.ZMin -= radiusUm;
         bounds.XMax += radiusUm; bounds.YMax += radiusUm; bounds.ZMax += radiusUm;
@@ -708,11 +296,11 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 
         for (int a = 0; a < activeCount; a += 1)
         {
-            var synapses = groups[a];
+            var activeSynapses = activeSynapsesGroups[a];
             long channelOffset = (long)a * spatialSize;
-            for (int s = 0; s < synapses.Length; s += 1)
+            for (int s = 0; s < activeSynapses.Length; s += 1)
             {
-                var p = synapses[s].Position;
+                var p = activeSynapses[s].Position;
                 int ix = (int)((p.X - bounds.XMin) / voxelSizeUm);
                 int iy = (int)((p.Y - bounds.YMin) / voxelSizeUm);
                 int iz = (int)((p.Z - bounds.ZMin) / voxelSizeUm);
@@ -878,14 +466,18 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 
         return result.Count > 0 ? result : null;
     }
+    
+    private readonly Random _random;
 
-    private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
-    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput_CombinatorinalSpace.TotalAxonCount);
+    private readonly Device _device;    
 
     // Кэшированный тензор для переиспользования памяти
     private TensorBuffer? _gridTensorBuffer;
 
     private TensorBuffer? _weightTensorBuffer;
+
+    private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
+    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput_CombinatorinalSpace.TotalAxonCount);
 }
 
 public class TensorBuffer : IDisposable

@@ -61,10 +61,10 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         {
             AxonPoint root = GrowPyramidalAxon(pyramidalSomaPositions[i], i);
             Synapse[] synapses = PlaceSynapses(root);
-            PyramidalAxons[i] = new PyramidalAxon(i, root, synapses);
+            PyramidalAxons[i] = new PyramidalAxon(root, synapses);
         }
 
-        ThalamocorticalInput = new ThalamocorticalInput_FullSetOfNeurons(_random, ColumnRadiusUm, ColumnHeightUm);
+        ThalamocorticalInput = new ThalamocorticalInput_FullSetOfNeurons(_random, MiniColumnRadiusUm, MiniColumnHeightUm);
     }
 
     public void Dispose()
@@ -81,15 +81,15 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
     // ----------------------------------------------------------
 
     /// <summary>Радиус миниколонки в горизонтальной плоскости (мкм).</summary>
-    public const float ColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
+    public const float MiniColumnRadiusUm = 20.0f;   // диаметр ~40 мкм
 
     /// <summary>
     ///    Радиус, внутри которого учитываются синапсы пирамидальных нейронов.
     /// </summary>
-    public const float ColumnRadius_Extended_Um = 25.0f;   // диаметр ~40 мкм
+    public const float MiniColumnRadius_Extended_Um = 25.0f;   // диаметр ~40 мкм
 
     /// <summary>Высота миниколонки (мкм), покрывает слои II–VI.</summary>
-    public const float ColumnHeightUm = 2000.0f;
+    public const float MiniColumnHeightUm = 2000.0f;
 
     // ----------------------------------------------------------
     //  ПАРАМЕТРЫ АКСОНОВ
@@ -167,8 +167,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         // ----------------------------------------------------------
         Temp_PyramidalZones = _activePyramidalAxons.Count >= minActiveAxons
             ? ComputeActiveZones(
-                GetSynapsesByAxons(_activePyramidalAxons),
-                _activePyramidalAxons.Count,
+                GetSynapsesByAxons(_activePyramidalAxons),               
                 radiusUm,
                 minActiveAxons)
             : null;
@@ -178,8 +177,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         // ----------------------------------------------------------
         Temp_ThalamocorticalZones = _activeTcAxons.Count >= minActiveAxons
             ? ComputeActiveZones(
-                GetSynapsesByAxons(_activeTcAxons),
-                _activeTcAxons.Count,
+                GetSynapsesByAxons(_activeTcAxons),                
                 radiusUm,
                 minActiveAxons)
             : null;
@@ -268,10 +266,10 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
                 float x, y;
                 do
                 {
-                    x = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
-                    y = (_random.NextSingle() * 2.0f - 1.0f) * ColumnRadiusUm;
+                    x = (_random.NextSingle() * 2.0f - 1.0f) * MiniColumnRadiusUm;
+                    y = (_random.NextSingle() * 2.0f - 1.0f) * MiniColumnRadiusUm;
                 }
-                while (x * x + y * y > ColumnRadiusUm * ColumnRadiusUm);
+                while (x * x + y * y > MiniColumnRadiusUm * MiniColumnRadiusUm);
 
                 float z = zMin + _random.NextSingle() * (zMax - zMin);
                 positions[idx] = new Vector3(x, y, z);
@@ -403,7 +401,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
             var pos = current.Position + dir * stepLen;
 
             // Ограничение Z: аксон не выходит за пределы колонки
-            pos.Z = Math.Clamp(pos.Z, -ColumnHeightUm, 0f);
+            pos.Z = Math.Clamp(pos.Z, -MiniColumnHeightUm, 0f);
 
             var next = new AxonPoint(pos);
             current.Next.Add(next);
@@ -576,7 +574,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
             );
 
             // Создаем новый синапс только, если он примерно внутри миниколонки. Остальные не интересуют            
-            if (MathHelper.GetLengthXY(synPos) < ColumnRadius_Extended_Um)
+            if (MathHelper.GetLengthXY(synPos) < MiniColumnRadius_Extended_Um)
                 synapses.Add(new Synapse(synPos));
 
             // Продвигаемся дальше по отрезку на заданный равномерный шаг
@@ -627,7 +625,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
     // ============================================================
     //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
     // ============================================================
-    private (Synapse[][] groups, int count) GetSynapsesByAxons(FastList<IAxon> axons)
+    private Synapse[][] GetSynapsesByAxons(FastList<IAxon> axons)
     {
         int count = axons.Count;
         var groups = new Synapse[count][];
@@ -635,7 +633,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         {
             groups[i] = axons[i].Synapses;
         }
-        return (groups, count);
+        return groups;
     }
 
     // ============================================================
@@ -662,12 +660,11 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
     //    Новое правило: сливаем только соседние воксели (расстояние <= 1.5 воксела),
     //    сохраняя топологически разнесённые кластеры как отдельные зоны.
     private FastList<ActiveZone> ComputeActiveZones(
-        (Synapse[][] groups, int count) input,
-        int activeCount,
+        Synapse[][] groups,        
         float radiusUm,
         int minActiveAxons)
     {
-        var groups = input.groups;
+        int activeCount = groups.Length;
 
         // адаптивный размер воксела — не более radiusUm/2,
         // чтобы ядро свёртки всегда содержало >= 2 вокселя на радиус.

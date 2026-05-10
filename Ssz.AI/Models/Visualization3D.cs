@@ -137,7 +137,7 @@ public static class Visualization3D
             foreach (var line in model3DScene.Lines!.ToArray())
             {
                 // !!! Warning !!!
-                bool farLine = line.All(l => MathHelper.GetLengthXY(l.Position) > MiniColumnDetailed_FullSetOfNeurons.ColumnRadius_Extended_Um);
+                bool farLine = line.All(l => MathHelper.GetLengthXY(l.Position) > MiniColumnDetailed_FullSetOfNeurons.MiniColumnRadius_Extended_Um);
                 if (farLine)
                     model3DScene.Lines.Remove(line);
             }

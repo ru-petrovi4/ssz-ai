@@ -9,8 +9,7 @@ public interface IAxon
     public AxonPoint Root { get; }
 
     /// <summary>
-    /// Все 10 000 исходящих синапсов этого аксона.
-    /// Координаты синапсов близки к точкам аксонального дерева.
+    /// Все исходящие синапсы этого аксона.    
     /// </summary>
     public Synapse[] Synapses { get; }
 
