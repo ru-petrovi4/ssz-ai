@@ -22,7 +22,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         _random = random;
         _device = cuda.is_available() ? CUDA : CPU;
 
-        PyramidalAxons = new PyramidalAxon[PyramidalAxonsCount];
+        PyramidalAxons = new Axon[PyramidalAxonsCount];
 
         // ----------------------------------------------------------
         //  ШАГ 1: Разместить 200 сом в цилиндре миниколонки.
@@ -73,7 +73,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// <summary>Число аксонов в миниколонке.</summary>
     public const int PyramidalAxonsCount = 0;
 
-    public readonly PyramidalAxon[] PyramidalAxons;
+    public readonly Axon[] PyramidalAxons;
 
     public readonly ThalamocorticalInput_CombinatorinalSpace ThalamocorticalInput;
 
@@ -126,9 +126,9 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         _activeTcAxons.Clear();
         for (int i = 0; i < tcActivityBits.Length; i += 1)
         {
-            if (i < ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons.Length)
+            if (i < ThalamocorticalInput.ThalamocorticalAxons.Length)
             {
-                var axon = ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons[i];
+                var axon = ThalamocorticalInput.ThalamocorticalAxons[i];
                 axon.Temp_IsActive = (tcActivityBits[i] > 0.5f);
                 if (axon.Temp_IsActive)
                     _activeTcAxons.Add(axon);
@@ -208,16 +208,16 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     // ============================================================
     //  РОСТ АКСОНА
     // ============================================================    
-    private PyramidalAxon GrowPyramidalAxon(Vector3 somaPos, int axonIdx)
+    private Axon GrowPyramidalAxon(Vector3 somaPos, int axonIdx)
     {
         // TODO
-        return new PyramidalAxon(new AxonPoint(new Vector3()), new Synapse[0]);        
+        return new Axon(new AxonPoint(new Vector3()), new Synapse[0]);        
     }
     
     // ============================================================
     //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
     // ============================================================
-    private Synapse[][] GetSynapsesByAxons(FastList<IAxon> axons)
+    private Synapse[][] GetSynapsesByAxons(FastList<Axon> axons)
     {
         int count = axons.Count;
         var groups = new Synapse[count][];
@@ -476,8 +476,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 
     private TensorBuffer? _weightTensorBuffer;
 
-    private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
-    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput_CombinatorinalSpace.TotalAxonCount);
+    private readonly FastList<Axon> _activePyramidalAxons = new FastList<Axon>(capacity: PyramidalAxonsCount);
+    private readonly FastList<Axon> _activeTcAxons = new FastList<Axon>(256);
 }
 
 public class TensorBuffer : IDisposable

@@ -68,7 +68,7 @@ public enum ThalamocorticalType
     KoniocellularBlob         = 3,
 }
 
-public sealed class ThalamocorticalAxon_FullSetOfNeurons : IAxon
+public sealed class ThalamocorticalAxon_FullSetOfNeurons : Axon
 {
     // ----------------------------------------------------------
     // ПАРАМЕТРЫ АРБОРОВ ПО ТИПАМ
@@ -111,23 +111,15 @@ public sealed class ThalamocorticalAxon_FullSetOfNeurons : IAxon
     // ДАННЫЕ АКСОНА
     // ----------------------------------------------------------
     
-    public readonly ThalamocorticalType Type;
-    public readonly AxonPoint           Root;
-    public readonly Synapse[]           Synapses;
-    public          bool                Temp_IsActive;
-
-    AxonPoint IAxon.Root     => Root;
-    Synapse[] IAxon.Synapses => Synapses;
-    bool      IAxon.IsActive => Temp_IsActive;
+    public readonly ThalamocorticalType Type;    
 
     public ThalamocorticalAxon_FullSetOfNeurons(
-        ThalamocorticalType type,
-        AxonPoint root, 
-        Synapse[] synapses)
+            ThalamocorticalType type,
+            AxonPoint root, 
+            Synapse[] synapses) :
+        base(root, synapses)
     {        
-        Type     = type;
-        Root     = root;
-        Synapses = synapses;
+        Type     = type;        
     }
 
     // ============================================================

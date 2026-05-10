@@ -45,7 +45,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         _random = random;
         _device = cuda.is_available() ? CUDA : CPU;
 
-        PyramidalAxons = new PyramidalAxon[PyramidalAxonsCount];
+        PyramidalAxons = new Axon[PyramidalAxonsCount];
 
         // ----------------------------------------------------------
         //  ШАГ 1: Разместить 200 сом в цилиндре миниколонки.
@@ -61,7 +61,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         {
             AxonPoint root = GrowPyramidalAxon(pyramidalSomaPositions[i], i);
             Synapse[] synapses = PlaceSynapses(root);
-            PyramidalAxons[i] = new PyramidalAxon(root, synapses);
+            PyramidalAxons[i] = new Axon(root, synapses);
         }
 
         ThalamocorticalInput = new ThalamocorticalInput_FullSetOfNeurons(_random, MiniColumnRadiusUm, MiniColumnHeightUm);
@@ -217,7 +217,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
     // ----------------------------------------------------------
 
     /// <summary>Все 200 аксонов миниколонки.</summary>
-    public readonly PyramidalAxon[] PyramidalAxons;
+    public readonly Axon[] PyramidalAxons;
 
     public readonly ThalamocorticalInput_FullSetOfNeurons ThalamocorticalInput;
 
@@ -622,7 +622,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
     // ============================================================
     //  ВСПОМОГАТЕЛЬНЫЙ: СБОР СИНАПСОВ ПО СПИСКУ АКТИВНЫХ АКСОНОВ
     // ============================================================
-    private Synapse[][] GetSynapsesByAxons(FastList<IAxon> axons)
+    private Synapse[][] GetSynapsesByAxons(FastList<Axon> axons)
     {
         int count = axons.Count;
         var groups = new Synapse[count][];
@@ -872,8 +872,8 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
         return result.Count > 0 ? result : null;
     }
 
-    private readonly FastList<IAxon> _activePyramidalAxons = new FastList<IAxon>(capacity: PyramidalAxonsCount);
-    private readonly FastList<IAxon> _activeTcAxons = new FastList<IAxon>(capacity: ThalamocorticalInput_FullSetOfNeurons.TotalAxonCount);
+    private readonly FastList<Axon> _activePyramidalAxons = new FastList<Axon>(capacity: PyramidalAxonsCount);
+    private readonly FastList<Axon> _activeTcAxons = new FastList<Axon>(capacity: ThalamocorticalInput_FullSetOfNeurons.TotalAxonCount);
 
     // Кэшированный тензор для переиспользования памяти
     private TensorBuffer? _gridTensorBuffer;

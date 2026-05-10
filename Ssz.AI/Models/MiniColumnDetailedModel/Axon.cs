@@ -1,10 +1,34 @@
-﻿using Ssz.Utils;
-using System;
-using System.Collections.Generic;
-using System.Numerics;
+﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
+
+// ============================================================
+//  АКСОН
+//  Биологический аксон нейрона коры мозга.
+// ============================================================
+public class Axon
+{
+    public Axon(AxonPoint root, Synapse[] synapses)
+    {        
+        Root = root;
+        Synapses = synapses;
+    }
+
+    /// <summary>
+    /// Корневой узел дерева аксона — точка начала (AIS, у сомы).
+    /// Всё дерево обходится через Next-ссылки.
+    /// </summary>
+    public readonly AxonPoint Root;
+
+    /// <summary>
+    /// Все 10 000 исходящих синапсов этого аксона.
+    /// Координаты синапсов близки к точкам аксонального дерева.
+    /// </summary>
+    public readonly Synapse[] Synapses;    
+
+    public bool Temp_IsActive;
+}
 
 // ============================================================
 //  ТОЧКА АКСОНА
@@ -42,3 +66,4 @@ public struct NextAxonPoints
 
     private AxonPoint _element0; // остальное генерируется компилятором
 }
+

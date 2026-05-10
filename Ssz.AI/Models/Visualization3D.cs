@@ -35,7 +35,7 @@ public static class Visualization3D
 
         AddAxons(
             model3DScene,
-            miniColumnDetailed.ThalamocorticalInput.TopHashLength_M_P_ThalamocorticalAxons,
+            miniColumnDetailed.ThalamocorticalInput.ThalamocorticalAxons,
             ref sceneBounds,
             inactiveColor: System.Drawing.Color.FromArgb(0x66, 0x00, 0x00),
             activeColor: System.Drawing.Color.FromArgb(0xFF, 0x44, 0x44),
@@ -99,7 +99,7 @@ public static class Visualization3D
 
     private static void AddAxons(
         Model3DScene model3DScene, 
-        IAxon[]? axons,         
+        Axon[]? axons,         
         ref SceneBounds sceneBounds,
         System.Drawing.Color inactiveColor,
         System.Drawing.Color activeColor,
@@ -114,7 +114,7 @@ public static class Visualization3D
             model3DScene.Lines!.AddRange(GetLines(
                 null, 
                 axon.Root,                 
-                axon.IsActive,
+                axon.Temp_IsActive,
                 inactiveColor,
                 activeColor));
 
