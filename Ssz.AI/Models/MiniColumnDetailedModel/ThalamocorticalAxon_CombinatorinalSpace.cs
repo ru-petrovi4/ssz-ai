@@ -238,7 +238,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                 current.Position.Z + stepZ
             );
             var next = new AxonPoint(pos);
-            current.Next.Add(next);
+            current.AddNext(next);
             current = next;
         }
 
@@ -304,7 +304,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                         targetZMin, targetZMax)
                 );
                 var next = new AxonPoint(pos);
-                branchCurrent.Next.Add(next);
+                branchCurrent.AddNext(next);
                 branchCurrent = next;
             }
 
@@ -328,7 +328,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                             targetZMin, targetZMax)
                     );
                     var next = new AxonPoint(pos);
-                    subCurrent.Next.Add(next);
+                    subCurrent.AddNext(next);
                     subCurrent = next;
                 }
             }
@@ -364,7 +364,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                         KSupL1ZMin, KSupL1ZMax)
                 );
                 var next = new AxonPoint(pos);
-                cur.Next.Add(next);
+                cur.AddNext(next);
                 cur = next;
             }
         }
@@ -384,7 +384,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                     descCur.Position.Z + descStepZ
                 );
                 var next = new AxonPoint(pos);
-                descCur.Next.Add(next);
+                descCur.AddNext(next);
                 descCur = next;
             }
 
@@ -407,7 +407,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                             KSupL3AZMin, KSupL3AZMax)
                     );
                     var next = new AxonPoint(pos);
-                    brCur.Next.Add(next);
+                    brCur.AddNext(next);
                     brCur = next;
                 }
             }
@@ -445,7 +445,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                         KBlobZMin, KBlobZMax)
                 );
                 var next = new AxonPoint(pos);
-                cur.Next.Add(next);
+                cur.AddNext(next);
                 cur = next;
             }
 
@@ -468,7 +468,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                             KBlobZMin, KBlobZMax)
                     );
                     var next = new AxonPoint(pos);
-                    subCur.Next.Add(next);
+                    subCur.AddNext(next);
                     subCur = next;
                 }
             }
@@ -506,7 +506,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                 current.Position.Z + stepZ
             );
             var next = new AxonPoint(pos);
-            current.Next.Add(next);
+            current.AddNext(next);
             current = next;
         }
 
@@ -526,7 +526,7 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
                     toZMin, toZMax)
             );
             var next = new AxonPoint(pos);
-            bCur.Next.Add(next);
+            bCur.AddNext(next);
             bCur = next;
         }
     }
@@ -549,19 +549,16 @@ public sealed class ThalamocorticalAxon_CombinatorinalSpace : IAxon
         while (stack.Count > 0)
         {
             var pt = stack.Pop();
-            if (pt.Next != null)
+            for (int i = 0; i < pt.NextCount; i += 1)
             {
-                for (int i = 0; i < pt.Next.Count; i += 1)
+                var child = pt.Next[i];
+                float len = Vector3.Distance(pt.Position, child.Position);
+                if (len > 0f)
                 {
-                    var   child = pt.Next[i];
-                    float len   = Vector3.Distance(pt.Position, child.Position);
-                    if (len > 0f)
-                    {
-                        segments.Add((pt.Position, child.Position, len));
-                        totalLength += len;
-                    }
-                    stack.Push(child);
+                    segments.Add((pt.Position, child.Position, len));
+                    totalLength += len;
                 }
+                stack.Push(child);
             }
         }
 

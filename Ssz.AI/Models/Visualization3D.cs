@@ -183,15 +183,15 @@ public static class Visualization3D
                 Position = axonPoint.Position,
                 Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
             });
-            if (axonPoint.Next.Count == 0)
+            if (axonPoint.NextCount == 0)
                 break;
-            if (axonPoint.Next.Count == 1)
+            if (axonPoint.NextCount == 1)
             {
                 axonPoint = axonPoint.Next[0];                
                 continue;
             }
 
-            for (int i = 0; i < axonPoint.Next.Count; i += 1)
+            for (int i = 0; i < axonPoint.NextCount; i += 1)
             {
                 AxonPoint nextAxonPoint = axonPoint.Next[i];
 

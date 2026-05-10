@@ -322,7 +322,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
                 somaPos.Z - p * aisStep  // идёт вниз (уменьшение Z)
             );
             var next = new AxonPoint(pos);
-            current.Next.Add(next);
+            current.AddNext(next);
             current = next;
         }
 
@@ -404,7 +404,7 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
             pos.Z = Math.Clamp(pos.Z, -MiniColumnHeightUm, 0f);
 
             var next = new AxonPoint(pos);
-            current.Next.Add(next);
+            current.AddNext(next);
             current = next;
         }
 
@@ -500,25 +500,22 @@ public sealed class MiniColumnDetailed_FullSetOfNeurons : IDisposable
             var pt = traversalStack.Pop();
 
             // Если у точки есть дочерние узлы (продолжения аксона)
-            if (pt.Next != null)
+            // Используем += 1 вместо запрещенного ++
+            for (int i = 0; i < pt.NextCount; i += 1)
             {
-                // Используем += 1 вместо запрещенного ++
-                for (int i = 0; i < pt.Next.Count; i += 1)
+                var child = pt.Next[i];
+
+                // Вычисляем длину отрезка с помощью SIMD-совместимого метода System.Numerics
+                float length = Vector3.Distance(pt.Position, child.Position);
+
+                // Записываем только валидные отрезки, имеющие ненулевую длину
+                if (length > 0f)
                 {
-                    var child = pt.Next[i];
-
-                    // Вычисляем длину отрезка с помощью SIMD-совместимого метода System.Numerics
-                    float length = Vector3.Distance(pt.Position, child.Position);
-
-                    // Записываем только валидные отрезки, имеющие ненулевую длину
-                    if (length > 0f)
-                    {
-                        segments.Add((pt.Position, child.Position, length));
-                        totalLength += length; // Накапливаем общую длину
-                    }
-
-                    traversalStack.Push(child);
+                    segments.Add((pt.Position, child.Position, length));
+                    totalLength += length; // Накапливаем общую длину
                 }
+
+                traversalStack.Push(child);
             }
         }
 
