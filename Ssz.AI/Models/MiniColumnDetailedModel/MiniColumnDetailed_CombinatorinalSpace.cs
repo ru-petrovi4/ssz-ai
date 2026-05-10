@@ -39,7 +39,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
             PyramidalAxons[i] = GrowPyramidalAxon(pyramidalSomaPositions[i], i);
         }
 
-        ThalamocorticalInput = new ThalamocorticalInput_CombinatorinalSpace(_random, MiniColumnRadiusUm, MiniColumnHeightUm, constants);
+        ThalamocorticalAxons = ThalamocorticalAxonGenerator.Generate(random, constants.HashLength);
     }
 
     public void Dispose()
@@ -75,7 +75,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
 
     public readonly Axon[] PyramidalAxons;
 
-    public readonly ThalamocorticalInput_CombinatorinalSpace ThalamocorticalInput;
+    public readonly Axon[] ThalamocorticalAxons;
 
     /// <summary>Активные зоны пирамидальных аксонов (Зоны 1).</summary>
     public FastList<ActiveZone>? Temp_PyramidalZones;
@@ -126,9 +126,9 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         _activeTcAxons.Clear();
         for (int i = 0; i < tcActivityBits.Length; i += 1)
         {
-            if (i < ThalamocorticalInput.ThalamocorticalAxons.Length)
+            if (i < ThalamocorticalAxons.Length)
             {
-                var axon = ThalamocorticalInput.ThalamocorticalAxons[i];
+                var axon = ThalamocorticalAxons[i];
                 axon.Temp_IsActive = (tcActivityBits[i] > 0.5f);
                 if (axon.Temp_IsActive)
                     _activeTcAxons.Add(axon);

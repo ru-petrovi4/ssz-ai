@@ -23,7 +23,7 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 //
 //  Координатная система (мкм):
 //    X, Y — горизонтальные оси в плоскости коры
-//    Z     — вертикальная ось (глубина слоёв, 0 = поверхность)
+//    Z     — вертикальная ось (Z = 0 = поверхность, Z < 0 — более глубокме слои)
 //
 //  Источник: Buxhoeveden & Casanova 2002 (Brain),
 //            Wikipedia: Cortical minicolumn.
