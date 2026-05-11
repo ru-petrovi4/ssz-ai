@@ -10,6 +10,9 @@ using System.Collections;
 using TorchSharp;
 using static TorchSharp.torch;
 using Ssz.AI.Helpers;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
+using Serilog.Data;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
@@ -101,6 +104,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         float[] tcActivityBits,
         float radiusUm,
         int minActiveAxons,
+        ILogger logger,
         float convergenceRadiusUm = -1f)
     {
         if (convergenceRadiusUm < 0f)
@@ -116,7 +120,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
             Temp_PyramidalZones = ComputeActiveZones(
                     GetSynapsesByAxons(_activePyramidalAxons),                    
                     radiusUm,
-                    minActiveAxons);
+                    minActiveAxons,
+                    logger);
         else
             Temp_PyramidalZones = null;
 
@@ -138,7 +143,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
             Temp_ThalamocorticalZones = ComputeActiveZones(
                     GetSynapsesByAxons(_activeTcAxons),                    
                     radiusUm,
-                    minActiveAxons);
+                    minActiveAxons,
+                    logger);
         else
             Temp_ThalamocorticalZones = null;
 
@@ -254,7 +260,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     private FastList<ActiveZone> ComputeActiveZones(
         Synapse[][] activeSynapsesGroups,        
         float radiusUm,
-        int minActiveAxons)
+        int minActiveAxons,
+        ILogger logger)
     {
         int activeCount = activeSynapsesGroups.Length;
 
@@ -365,7 +372,14 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         // чтобы получить форму [D, H, W] и индексы (z, y, x) без сдвига.
         using var axonsPerVoxel3D = axonsPerVoxel.squeeze(0); // [D, H, W]
         using var validMask = axonsPerVoxel3D.ge(minActiveAxons);
+        
+        torch.cuda.synchronize();
+        var sw = Stopwatch.StartNew();
         using var nonZeroIdx = validMask.nonzero();      // [N, 3]: (z, y, x)
+        torch.cuda.synchronize();
+        sw.Stop();
+        logger.LogInformation("nonzero computed in {ElapsedMilliseconds} ms, found {Count} valid voxels",
+            sw.ElapsedMilliseconds, nonZeroIdx.shape[0]);
 
         long numValid = nonZeroIdx.shape[0];
         long dims = nonZeroIdx.shape[1]; // должно быть 3

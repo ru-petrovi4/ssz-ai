@@ -930,7 +930,7 @@ public class Model01 : IDisposable
         if (MiniColumnDetailed is null)
             return;        
         
-        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, constantsClone.ZoneRadiusUm, constantsClone.ActivatedSynapsesCount);
+        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, constantsClone.ZoneRadiusUm, constantsClone.ActivatedSynapsesCount, Logger);
 
         //var activeZones = MiniColumnDetailed.Temp_ThalamocorticalZones;        
         //if (log && activeZones is not null)
