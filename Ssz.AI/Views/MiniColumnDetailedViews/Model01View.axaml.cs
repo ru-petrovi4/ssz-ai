@@ -41,11 +41,13 @@ public partial class Model01View : UserControl
         LevelScrollBar0.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
+            _randomInput = null;
             Refresh();
         };
         LevelScrollBar1.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
+            _randomInput = null;
             Refresh();
         };
         LevelScrollBar2.ValueChanged += (s, e) =>
@@ -190,19 +192,25 @@ public partial class Model01View : UserControl
         constants.ActivatedSynapsesCount = (int)LevelScrollBar5.Value;        
     }
 
-    #region Buttons Handlers 
+    #region Buttons Handlers    
 
-    private void MiniColumnDetailedModel_PrepareCreate3D_OnClick(object? sender, RoutedEventArgs args)
+    private void GradientInput_OnClick(object? sender, RoutedEventArgs args)
     {
-        Model!.Create_MiniColumnDetailed(_random);
+        _randomInput = null;
+
+        Refresh();
     }
 
-    private void MiniColumnDetailedModel_Create3D_OnClick(object? sender, RoutedEventArgs args)
-    {        
-        Model!.MiniColumnDetailedModel_Create3D(_random);
+    private void RandomInput_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _randomInput = new float[Model01.Constants.HashLength];        
+        for (int i = 0; i < 10; i += 1)
+        {
+            _randomInput[_random.Next(_randomInput.Length)] = 1.0f;
+        }
 
-        Refresh_3D();
-    }    
+        Refresh();
+    }
 
     #endregion
 
@@ -261,11 +269,11 @@ public partial class Model01View : UserControl
             do
             {
                 _refreshTaskIsPending = false; // Сбрасываем флаг перед началом
-
+                
                 // Выполнение тяжелой задачи с актуальными на данный момент данными
                 await Task.Run(() =>
                 {
-                    Model!.MiniColumnDetailedModel_Create3D(_random);
+                    Model!.MiniColumnDetailedModel_Create3D(_random, _randomInput);
                 });
 
                 Refresh_3D();
@@ -299,6 +307,8 @@ public partial class Model01View : UserControl
     }
 
     private Random _random = null!;
+
+    private float[]? _randomInput;
 
     private CancellationTokenSource? _cancellationTokenSource;
 

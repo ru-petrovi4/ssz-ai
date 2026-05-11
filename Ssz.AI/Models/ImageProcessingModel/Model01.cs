@@ -919,71 +919,44 @@ public class Model01 : IDisposable
         Logger.LogInformation($"");
     }
 
-    public void MiniColumnDetailedModel_Create3D(Random random)
+    public void MiniColumnDetailedModel_Create3D(Random random, float[]? randomInput = null)
     {
         if (MiniColumnDetailed is null)
             return;
 
         var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_SimpleDetectors(random);
-
-        bool log = false;
-
-        Stopwatch? sw = null;
-        if (log)
-        {
-            Logger.LogInformation($"Активных аксонов: {TensorPrimitives.Sum(cortexMemory.Hash)}");
-            //Console.Write("Индексы активных аксонов: ");
-            //foreach (int idx in activeIndices)
-            //    Console.Write($"{idx} ");
-            Logger.LogInformation($"");
-            Logger.LogInformation($"");
-
-            // ----------------------------------------------------------
-            //  ПАРАМЕТРЫ ПОИСКА
-            // ----------------------------------------------------------
-
-            Logger.LogInformation($"Параметры поиска:");
-            Logger.LogInformation($"  Радиус R = {Constants.ZoneRadiusUm} мкм");
-            Logger.LogInformation($"  Минимум N = {Constants.ActivatedSynapsesCount} уникальных активных аксонов в зоне");
-            Logger.LogInformation($"");
-
-            // ----------------------------------------------------------
-            //  ПОИСК АКТИВНЫХ ЗОН
-            // ----------------------------------------------------------
-            Console.Write("Поиск активных зон...");
-
-            sw = System.Diagnostics.Stopwatch.StartNew();
-        }
+        if (randomInput is not null)
+            Array.Copy(randomInput, cortexMemory.Hash, cortexMemory.Hash.Length);
         
         MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
-        var activeZones = MiniColumnDetailed.Temp_ThalamocorticalZones;        
 
-        if (log && activeZones is not null)
-        {
-            sw!.Stop();
+        //var activeZones = MiniColumnDetailed.Temp_ThalamocorticalZones;        
+        //if (log && activeZones is not null)
+        //{
+        //    sw!.Stop();
 
-            Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
-            Logger.LogInformation($"");
+        //    Logger.LogInformation($" готово за {sw.ElapsedMilliseconds} мс.");
+        //    Logger.LogInformation($"");
 
-            // ----------------------------------------------------------
-            //  ВЫВОД РЕЗУЛЬТАТОВ
-            // ----------------------------------------------------------
-            Logger.LogInformation($"Найдено активных зон: {activeZones.Count}");
-            Logger.LogInformation($"");
+        //    // ----------------------------------------------------------
+        //    //  ВЫВОД РЕЗУЛЬТАТОВ
+        //    // ----------------------------------------------------------
+        //    Logger.LogInformation($"Найдено активных зон: {activeZones.Count}");
+        //    Logger.LogInformation($"");
 
-            int displayCount = Math.Min(activeZones.Count, 10);
-            for (int i = 0; i < displayCount; i += 1)
-            {
-                var z = activeZones[i];
-                Logger.LogInformation(
-                    $"  Зона {i + 1,3}: центр=({z.Center.X,7:F1}, {z.Center.Y,7:F1}, {z.Center.Z,7:F1}) мкм  " +
-                    $"уникальных аксонов={z.UniqueAxonCount,3}  " +
-                    $"аксоны=[{string.Join(",", z.ActiveAxonIndices)}]");
-            }
+        //    int displayCount = Math.Min(activeZones.Count, 10);
+        //    for (int i = 0; i < displayCount; i += 1)
+        //    {
+        //        var z = activeZones[i];
+        //        Logger.LogInformation(
+        //            $"  Зона {i + 1,3}: центр=({z.Center.X,7:F1}, {z.Center.Y,7:F1}, {z.Center.Z,7:F1}) мкм  " +
+        //            $"уникальных аксонов={z.UniqueAxonCount,3}  " +
+        //            $"аксоны=[{string.Join(",", z.ActiveAxonIndices)}]");
+        //    }
 
-            if (activeZones.Count > displayCount)
-                Logger.LogInformation($"  ... и ещё {activeZones.Count - displayCount} зон.");
-        }
+        //    if (activeZones.Count > displayCount)
+        //        Logger.LogInformation($"  ... и ещё {activeZones.Count - displayCount} зон.");
+        //}
     }
 
     #endregion
@@ -1355,7 +1328,7 @@ public class Model01 : IDisposable
         /// <summary>
         ///     радиус зоны в мкм
         /// </summary>
-        public float ZoneRadiusUm { get; set; } = 20.0f; // Pyramidal: 14.0f;
+        public float ZoneRadiusUm { get; set; } = 14.0f; // Pyramidal: 14.0f;
 
         /// <summary>
         ///     минимум N уникальных активных аксонов
