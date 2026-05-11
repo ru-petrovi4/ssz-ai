@@ -3,7 +3,7 @@
        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
        xmlns:local="clr-namespace:Ssz.AI"
-       xmlns:localViews="clr-namespace:Ssz.AI.Views"
+       xmlns:localViews="clr-namespace:Ssz.AI.Views"       
        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
        xmlns:model3D="using:Ssz.Utils.Avalonia.Model3D"
        x:Class="Ssz.AI.Views.MiniColumnDetailedViews.Model01View">
@@ -16,6 +16,7 @@
     <Grid.RowDefinitions>
       <RowDefinition Height="auto" />
       <RowDefinition Height="auto" />      
+      <RowDefinition Height="auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
     <Grid>
@@ -28,6 +29,9 @@
         <TextBlock Text="MiniColumn 3D:" VerticalAlignment="Center" />                                    
         <Button Content="Gradient Input" Click="GradientInput_OnClick" /> 
         <Button Content="Random Input" Click="RandomInput_OnClick" />
+        <Button Content="Range Input" Click="RangeInput_OnClick" />
+        <Button Content="&lt;" Click="RangeInputLeft_OnClick" />
+        <Button Content="&gt;" Click="RangeInputRight_OnClick" />
       </StackPanel>
     </Grid>
     <Grid Grid.Row="1">
@@ -70,7 +74,10 @@
       <TextBlock Text="{Binding #LevelScrollBar5.Value}" Grid.Row="5" Grid.Column="1" />
       <ScrollBar Name="LevelScrollBar5" Grid.Row="5" Grid.Column="2" Orientation="Horizontal" AllowAutoHide="false" Minimum="0" Maximum="10" />      
     </Grid>
-    <StackPanel Grid.Row="2" Orientation="Horizontal">
+    <localViews:FloatVectorStripControl Grid.Row="2" x:Name="MainFloatVectorStripControl"      
+      StripHeight="20"
+      CellSpacing="2" />
+    <StackPanel Grid.Row="3" Orientation="Horizontal">
       <Grid>        
         <model3D:Model3DControl Width="{Binding #MainModel3DControl.Bounds.Height}" Name="MainModel3DControl" />     
         <Border Width="48" Height="48" x:Name="BusyImage" BorderBrush="Black" BorderThickness="2" Background="White" HorizontalAlignment="Right" VerticalAlignment="Top" Padding="2">

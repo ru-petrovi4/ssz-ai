@@ -41,14 +41,12 @@ public partial class Model01View : UserControl
 
         LevelScrollBar0.ValueChanged += (s, e) =>
         {
-            GetDataFromControls(constants);
-            _randomInput = null;
+            GetDataFromControls(constants);            
             Refresh();
         };
         LevelScrollBar1.ValueChanged += (s, e) =>
         {
-            GetDataFromControls(constants);
-            _randomInput = null;
+            GetDataFromControls(constants);            
             Refresh();
         };
         LevelScrollBar2.ValueChanged += (s, e) =>
@@ -198,6 +196,7 @@ public partial class Model01View : UserControl
     private void GradientInput_OnClick(object? sender, RoutedEventArgs args)
     {
         _randomInput = null;
+        _rangeInput = null;
 
         Refresh();
     }
@@ -209,8 +208,29 @@ public partial class Model01View : UserControl
         {
             _randomInput[_random.Next(_randomInput.Length)] = 1.0f;
         }
+        _rangeInput = null;
 
         Refresh();
+    }
+
+    private void RangeInput_OnClick(object? sender, RoutedEventArgs args)
+    {
+        _randomInput = null;
+        _rangeInput = new float[Model01.Constants.HashLength];        
+
+        Refresh();
+    }
+
+    private void RangeInputLeft_OnClick(object? sender, RoutedEventArgs args)
+    {
+        int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f) - 1;
+        LevelScrollBar0.Value = LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength;
+    }
+
+    private void RangeInputRight_OnClick(object? sender, RoutedEventArgs args)
+    {
+        int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f) + 1;
+        LevelScrollBar0.Value = LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength;
     }
 
     #endregion
@@ -273,7 +293,23 @@ public partial class Model01View : UserControl
 
                 var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = Model!.GetTestCortexMemory_SimpleDetectors(_random);
                 if (_randomInput is not null)
+                {
                     Array.Copy(_randomInput, cortexMemory.Hash, cortexMemory.Hash.Length);
+                }
+                else if (_rangeInput is not null)
+                {
+                    Array.Clear(_rangeInput);
+                    int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f);
+                    for (int i = 0; i < (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientMagnitude / 1200.0f); i += 1)
+                    {
+                        int bitIndex = start + i;
+                        if (bitIndex < _rangeInput.Length)
+                            _rangeInput[bitIndex] = 1.0f;
+                    }
+                    Array.Copy(_rangeInput, cortexMemory.Hash, cortexMemory.Hash.Length);
+                }
+
+                MainFloatVectorStripControl.Values = cortexMemory.Hash;
 
                 Model01.ModelConstants constantsClone = JsonSerializer.Deserialize<Model01.ModelConstants>(JsonSerializer.Serialize(Model01.Constants))!;
 
@@ -316,6 +352,7 @@ public partial class Model01View : UserControl
     private Random _random = null!;
 
     private float[]? _randomInput;
+    private float[]? _rangeInput;
 
     private CancellationTokenSource? _cancellationTokenSource;
 

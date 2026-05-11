@@ -292,7 +292,7 @@ public static class ThalamocorticalAxonGenerator
         BuildPrimaryFan(layerEntry, arborCenter, arborRadius, primaryBranches, rng, synapsePositions);
 
         var synapses = new FastList<Synapse>(synapsePositions.Count);
-        float r = ARBOR_RADIUS_MAX * 2.0f;
+        float r = ARBOR_RADIUS_MAX * 1.5f;
         for (int i = 0; i < synapsePositions.Count; i++)
         {
             var p = synapsePositions[i];
