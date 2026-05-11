@@ -128,18 +128,18 @@ public static class Visualization3D
                 axon.Root,                 
                 color));
 
-            for (int j = 0; j < axon.Synapses.Length; j += 1)
-            {
-                var s = axon.Synapses[j];
+            //for (int j = 0; j < axon.Synapses.Length; j += 1)
+            //{
+            //    var s = axon.Synapses[j];
 
-                sceneBounds.Update(s.Position);
+            //    sceneBounds.Update(s.Position);
                 
-                model3DScene.Points!.Add(new Point3DWithColor
-                {
-                    Position = s.Position,
-                    Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
-                });
-            }
+            //    model3DScene.Points!.Add(new Point3DWithColor
+            //    {
+            //        Position = s.Position,
+            //        Color = new System.Numerics.Vector4((float)color.R / 255, (float)color.G / 255, (float)color.B / 255, 1.0f)
+            //    });
+            //}
         }
 
         if (hideFarLines)
