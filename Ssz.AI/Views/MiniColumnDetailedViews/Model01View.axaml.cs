@@ -23,6 +23,7 @@ using Ssz.AI.ViewModels;
 using Ssz.AI.Models.ImageProcessingModel;
 using OfficeOpenXml.Table.PivotTable;
 using Avalonia.Input;
+using System.Text.Json;
 
 namespace Ssz.AI.Views.MiniColumnDetailedViews;
 
@@ -269,11 +270,17 @@ public partial class Model01View : UserControl
             do
             {
                 _refreshTaskIsPending = false; // Сбрасываем флаг перед началом
-                
+
+                var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = Model!.GetTestCortexMemory_SimpleDetectors(_random);
+                if (_randomInput is not null)
+                    Array.Copy(_randomInput, cortexMemory.Hash, cortexMemory.Hash.Length);
+
+                Model01.ModelConstants constantsClone = JsonSerializer.Deserialize<Model01.ModelConstants>(JsonSerializer.Serialize(Model01.Constants))!;
+
                 // Выполнение тяжелой задачи с актуальными на данный момент данными
                 await Task.Run(() =>
                 {
-                    Model!.MiniColumnDetailedModel_Create3D(_random, _randomInput);
+                    Model!.MiniColumnDetailedModel_Create3D_ThreadSafe(_random, cortexMemory, constantsClone);
                 });
 
                 Refresh_3D();

@@ -1,5 +1,7 @@
-﻿using System;
+﻿using Ssz.Utils;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
@@ -282,17 +284,24 @@ public static class ThalamocorticalAxonGenerator
         var synapsePositions = new List<Vector3>();
 
         // Сэмплирование: является ли этот аксон Type-2 (с коллатералью в слое 6)
-        bool hasLayer6Collateral = rng.NextDouble() < LAYER6_COLLATERAL_PROB;
+        //bool hasLayer6Collateral = rng.NextDouble() < LAYER6_COLLATERAL_PROB;
+        bool hasLayer6Collateral = false;
 
         AxonPoint layerEntry = BuildTrunk(root, arborCenter, rng, synapsePositions, hasLayer6Collateral);
 
         BuildPrimaryFan(layerEntry, arborCenter, arborRadius, primaryBranches, rng, synapsePositions);
 
-        var synapses = new Synapse[synapsePositions.Count];
+        var synapses = new FastList<Synapse>(synapsePositions.Count);
+        float r = ARBOR_RADIUS_MAX * 1.5f;
         for (int i = 0; i < synapsePositions.Count; i++)
-            synapses[i] = new Synapse(synapsePositions[i]);
+        {
+            var p = synapsePositions[i];
+            p.Z = 0.0f;
+            if (p.Length() < r)
+                synapses.Add(new Synapse(synapsePositions[i]));
+        }
 
-        return new Axon(root, synapses);
+        return new Axon(root, synapses.ToArray());
     }
 
     // ═══════════════════════════════════════════════════════════════════════

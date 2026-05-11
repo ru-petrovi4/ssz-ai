@@ -603,7 +603,7 @@ public class Model01 : IDisposable
         return (cortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }
 
-    private (Memory, MiniColumn) GetTestCortexMemory_GradientComplexDetectors(Random random)
+    public (Memory, MiniColumn) GetTestCortexMemory_GradientComplexDetectors(Random random)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];        
 
@@ -618,7 +618,7 @@ public class Model01 : IDisposable
         return (cortexMemory, nearest_HyperColumnCenter_MiniColumn);
     }    
 
-    private (Memory, MiniColumn) GetTestCortexMemory_SimpleDetectors(Random random)
+    public (Memory, MiniColumn) GetTestCortexMemory_SimpleDetectors(Random random)
     {
         MiniColumn nearest_HyperColumnCenter_MiniColumn = Cortex.MiniColumns[Cortex.HyperColumnCenters_MiniColumnIndices[random.Next(Cortex.HyperColumnCenters_MiniColumnIndices.Count)]];
 
@@ -919,16 +919,18 @@ public class Model01 : IDisposable
         Logger.LogInformation($"");
     }
 
-    public void MiniColumnDetailedModel_Create3D(Random random, float[]? randomInput = null)
+    /// <summary>
+    ///     Only one call can be running at one time.
+    /// </summary>
+    /// <param name="random"></param>
+    /// <param name="cortexMemory"></param>
+    /// <param name="constantsClone"></param>
+    public void MiniColumnDetailedModel_Create3D_ThreadSafe(Random random, Memory cortexMemory, ModelConstants constantsClone)
     {
         if (MiniColumnDetailed is null)
-            return;
-
-        var (cortexMemory, nearest_HyperColumnCenter_MiniColumn) = GetTestCortexMemory_SimpleDetectors(random);
-        if (randomInput is not null)
-            Array.Copy(randomInput, cortexMemory.Hash, cortexMemory.Hash.Length);
+            return;        
         
-        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, Constants.ZoneRadiusUm, Constants.ActivatedSynapsesCount);
+        MiniColumnDetailed.FindActiveZones(cortexMemory.Hash, constantsClone.ZoneRadiusUm, constantsClone.ActivatedSynapsesCount);
 
         //var activeZones = MiniColumnDetailed.Temp_ThalamocorticalZones;        
         //if (log && activeZones is not null)
