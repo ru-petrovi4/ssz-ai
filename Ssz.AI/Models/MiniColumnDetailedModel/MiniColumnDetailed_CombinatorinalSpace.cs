@@ -13,6 +13,7 @@ using Ssz.AI.Helpers;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Serilog.Data;
+using Ssz.Utils.Optimized;
 
 namespace Ssz.AI.Models.MiniColumnDetailedModel;
 
@@ -43,6 +44,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         }
 
         ThalamocorticalAxons = ThalamocorticalAxonGenerator.Generate(random, constants.HashLength);
+
+        Temp_ThalamocorticalZones_Cache = new(new FloatArrayComparer(constants.HashLength + 2));
     }
 
     public void Dispose()
@@ -86,6 +89,8 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
     /// <summary>Активные зоны входящих таламокортикальных аксонов (Зоны 2).</summary>
     public FastList<ActiveZone>? Temp_ThalamocorticalZones;
 
+    public readonly Dictionary<float[], FastList<ActiveZone>?> Temp_ThalamocorticalZones_Cache;
+
     /// <summary>Зоны совместной активации: рядом есть и Зоны 1, и Зоны 2 (Зоны 3).</summary>
     public FastList<ActiveZone>? Temp_ConvergenceZones;
 
@@ -104,7 +109,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         float[] tcActivityBits,
         float radiusUm,
         int minActiveAxons,
-        ILogger logger,
+        ILogger logger,        
         float convergenceRadiusUm = -1f)
     {
         if (convergenceRadiusUm < 0f)
@@ -139,14 +144,22 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
                     _activeTcAxons.Add(axon);
             }
         }
-        if (_activeTcAxons.Count >= minActiveAxons)
-            Temp_ThalamocorticalZones = ComputeActiveZones(
-                    GetSynapsesByAxons(_activeTcAxons),                    
-                    radiusUm,
-                    minActiveAxons,
-                    logger);
-        else
-            Temp_ThalamocorticalZones = null;
+        float[] temp_ThalamocorticalZones_Cache_Key = new float[tcActivityBits.Length + 2];
+        Array.Copy(tcActivityBits, temp_ThalamocorticalZones_Cache_Key, tcActivityBits.Length);
+        temp_ThalamocorticalZones_Cache_Key[tcActivityBits.Length] = radiusUm;
+        temp_ThalamocorticalZones_Cache_Key[tcActivityBits.Length + 1] = minActiveAxons;
+        if (!Temp_ThalamocorticalZones_Cache.TryGetValue(temp_ThalamocorticalZones_Cache_Key, out Temp_ThalamocorticalZones))
+        {            
+            if (_activeTcAxons.Count >= minActiveAxons)
+                Temp_ThalamocorticalZones = ComputeActiveZones(
+                        GetSynapsesByAxons(_activeTcAxons),
+                        radiusUm,
+                        minActiveAxons,
+                        logger);
+            else
+                Temp_ThalamocorticalZones = null;
+            Temp_ThalamocorticalZones_Cache.Add(temp_ThalamocorticalZones_Cache_Key, Temp_ThalamocorticalZones);
+        }
 
         // ----------------------------------------------------------
         //  ЗОНЫ 3: Конвергенция (Зоны 1 рядом с Зонами 2)
