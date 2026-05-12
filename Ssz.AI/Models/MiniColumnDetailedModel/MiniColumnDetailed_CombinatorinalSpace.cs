@@ -268,7 +268,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         // адаптивный размер воксела — не более radiusUm/2,
         // чтобы ядро свёртки всегда содержало >= 2 вокселя на радиус.
         // Нижний порог 1 мкм предотвращает взрывной рост числа вокселей.
-        float voxelSizeUm = 3.0f; //Math.Max(1.0f, Math.Min(radiusUm / 2.0f, 5.0f));
+        float voxelSizeUm = 2.0f; //Math.Max(1.0f, Math.Min(radiusUm / 2.0f, 5.0f));
 
         // ---- Bounding box ----
         SceneBounds bounds = new();
