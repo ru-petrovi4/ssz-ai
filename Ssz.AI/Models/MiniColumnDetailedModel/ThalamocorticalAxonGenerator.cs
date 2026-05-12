@@ -40,11 +40,11 @@ public static class ThalamocorticalAxonGenerator
     /// Верхняя граница слоя 4Cα (ближе к поверхности). Мкм.
     private const float LAYER_TOP_Z = -800f;
 
-    /// Нижняя граница слоя 4Cα (ближе к белому веществу). Мкм.
-    private const float LAYER_BOTTOM_Z = -1000f;
-
     /// Центр слоя 4Cα — место пиковой плотности TC-бутончиков. Мкм.
     private const float LAYER_CENTER_Z = -900f;
+
+    /// Нижняя граница слоя 4Cα (ближе к белому веществу). Мкм.
+    private const float LAYER_BOTTOM_Z = -1000f;    
 
     /// <summary>
     /// Смещение центра Гауссова Z-распределения для подслойной сегрегации.
@@ -53,12 +53,13 @@ public static class ThalamocorticalAxonGenerator
     /// </summary>
     private const float SUBLAYER_Z_OFFSET = 25f;
 
-    // ─── Геометрия слоя 6 (для Type-2 аксонов с коллатералью) ──────────────
-    /// Центр слоя 6. Мкм.
-    private const float LAYER6_CENTER_Z = -1200f;
+    // ─── Геометрия слоя 6 (для Type-2 аксонов с коллатералью) ──────────────    
 
     /// Верхняя граница слоя 6. Мкм.
     private const float LAYER6_TOP_Z = -1100f;
+
+    /// Центр слоя 6. Мкм.
+    private const float LAYER6_CENTER_Z = -1200f;
 
     /// Нижняя граница слоя 6. Мкм.
     private const float LAYER6_BOTTOM_Z = -1300f;
@@ -585,7 +586,7 @@ public static class ThalamocorticalAxonGenerator
     // ═══════════════════════════════════════════════════════════════════════
 
     private static void BuildPrimaryFan(
-        AxonPoint start,
+        AxonPoint layerEntry,
         ArborContext ctx,
         int primaryBranches,
         Random rng,
@@ -605,18 +606,18 @@ public static class ThalamocorticalAxonGenerator
         switch (primaryBranches)
         {
             case 2:
-                BuildBranch(start, angles[0], ctx, 0, ctx.Level0ArcLength,
+                BuildBranch(layerEntry, angles[0], ctx, 0, ctx.Level0ArcLength,
                     sublayerOffsets[0], rng, synapses);
-                BuildBranch(start, angles[1], ctx, 0, ctx.Level0ArcLength,
+                BuildBranch(layerEntry, angles[1], ctx, 0, ctx.Level0ArcLength,
                     sublayerOffsets[1], rng, synapses);
                 break;
 
             case 3:
-                BuildBranch(start, angles[0], ctx, 0, ctx.Level0ArcLength,
+                BuildBranch(layerEntry, angles[0], ctx, 0, ctx.Level0ArcLength,
                     sublayerOffsets[0], rng, synapses);
                 {
-                    var fork = MakeForkNode(start, angles[1], angles[2], rng);
-                    start.AddNext(fork);
+                    var fork = MakeForkNode(layerEntry, angles[1], angles[2], rng);
+                    layerEntry.AddNext(fork);
                     BuildBranch(fork, angles[1], ctx, 0, ctx.Level0ArcLength,
                         sublayerOffsets[1], rng, synapses);
                     BuildBranch(fork, angles[2], ctx, 0, ctx.Level0ArcLength,
@@ -626,10 +627,10 @@ public static class ThalamocorticalAxonGenerator
 
             case 4:
                 {
-                    var fork0 = MakeForkNode(start, angles[0], angles[1], rng);
-                    var fork1 = MakeForkNode(start, angles[2], angles[3], rng);
-                    start.AddNext(fork0);
-                    start.AddNext(fork1);
+                    var fork0 = MakeForkNode(layerEntry, angles[0], angles[1], rng);
+                    var fork1 = MakeForkNode(layerEntry, angles[2], angles[3], rng);
+                    layerEntry.AddNext(fork0);
+                    layerEntry.AddNext(fork1);
                     BuildBranch(fork0, angles[0], ctx, 0, ctx.Level0ArcLength,
                         sublayerOffsets[0], rng, synapses);
                     BuildBranch(fork0, angles[1], ctx, 0, ctx.Level0ArcLength,
