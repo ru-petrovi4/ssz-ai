@@ -271,15 +271,7 @@ public static class ThalamocorticalAxonGenerator
     /// При расстоянии > 1.5 × arborRadius угол принудительно разворачивается
     /// к центру (жёсткое ограничение).
     /// </summary>
-    private const float ARBOR_RADIUS_SOFT_LIMIT_FACTOR = 1.2f;
-
-    // ─── Коллатераль в слой 6 (Type-2 M-аксоны) ─────────────────────────────
-
-    private const float LAYER6_COLLATERAL_PROB = 0.40f;
-    private const float LAYER6_ARBOR_RADIUS = 150f;
-    private const float LAYER6_SEG_LEN_LEVEL0 = 400f;
-    private const int LAYER6_BRANCH_LEVELS = 3;
-    private const float LAYER6_Z_SIGMA = 35f;
+    private const float ARBOR_RADIUS_SOFT_LIMIT_FACTOR = 1.2f;    
 
     // ─── Пространственное расположение аксонов ──────────────────────────────
     /// Шаг гексагональной решётки аксонов (XY). Мкм. ~200 аксонов/мм².
@@ -329,17 +321,20 @@ public static class ThalamocorticalAxonGenerator
     /// </summary>
     public static Axon[] Generate(Random random, int n)
     {
-        var centers = GenerateHexGridCenters(random);
-        centers.Sort((a, b) => (a.X * a.X + a.Y * a.Y).CompareTo(b.X * b.X + b.Y * b.Y));
-
-        if (centers.Count < n)
+        var arborCenters = GenerateHexGridCenters(random);
+        if (arborCenters.Count < n)
             throw new InvalidOperationException(
-                $"На сетке только {centers.Count} узлов, запрошено {n}. " +
+                $"На сетке только {arborCenters.Count} узлов, запрошено {n}. " +
                 $"Увеличьте GRID_SEARCH_RADIUS.");
+        arborCenters.Sort((a, b) => (a.X * a.X + a.Y * a.Y).CompareTo(b.X * b.X + b.Y * b.Y));
+        var arborCenters_N = arborCenters.Take(n).ToArray();
+        random.Shuffle(arborCenters_N);        
 
         var axons = new Axon[n];
         for (int i = 0; i < n; i++)
-            axons[i] = BuildAxon(centers[i], random);
+        {
+            axons[i] = BuildAxon(arborCenters_N[i], random);
+        }
         return axons;
     }
 
@@ -347,24 +342,24 @@ public static class ThalamocorticalAxonGenerator
     // ПОСТРОЕНИЕ ОДНОГО АКСОНА
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static Axon BuildAxon(Vector2 arborCenter, Random rng)
+    private static Axon BuildAxon(Vector2 arborCenter, Random random)
     {
-        float arborRadius = SampleArborRadius(rng);
-        int primaryBranches = rng.Next(2, 5); // [2, 4] включительно
+        float arborRadius = SampleArborRadius(random);
+        int primaryBranches = random.Next(2, 5); // [2, 4] включительно
 
-        float startX = arborCenter.X + (float)(rng.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
-        float startY = arborCenter.Y + (float)(rng.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
+        float startX = arborCenter.X + (float)(random.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
+        float startY = arborCenter.Y + (float)(random.NextDouble() - 0.5) * 2 * TRUNK_XY_DRIFT;
         var root = new AxonPoint(new Vector3(startX, startY, AXON_START_Z));
 
         var synapsePositions = new List<Vector3>();
 
-        var ctx = new ArborContext
+        var arborContext = new ArborContext
         {
             Center = arborCenter,
             Radius = arborRadius,
-            Patches = SampleOdPatches(arborCenter, arborRadius, rng),
+            Patches = SampleOdPatches(arborCenter, arborRadius, random),
             Level0ArcLength = SEG_LEN_LEVEL0
-                * (1f + (float)(rng.NextDouble() - 0.5) * 2f * PRIMARY_ARC_LEN_JITTER),
+                * (1f + (float)(random.NextDouble() - 0.5) * 2f * PRIMARY_ARC_LEN_JITTER),
         };
 
         // коллатераль отключена по умолчанию во избежание переполнения
@@ -375,11 +370,11 @@ public static class ThalamocorticalAxonGenerator
         // дополнительного child (сама коллатераль), а продолжение ствола
         // идёт как следующий элемент цепочки ДО точки ответвления.
         bool hasLayer6Collateral = false;
-        // bool hasLayer6Collateral = rng.NextDouble() < LAYER6_COLLATERAL_PROB;
+        // bool hasLayer6Collateral = random.NextDouble() < LAYER6_COLLATERAL_PROB;
 
-        AxonPoint layerEntry = BuildTrunk(root, arborCenter, rng, synapsePositions, hasLayer6Collateral);
+        AxonPoint end = BuildTrunk(root, arborCenter, random, synapsePositions, hasLayer6Collateral);
 
-        BuildPrimaryFan(layerEntry, ctx, primaryBranches, rng, synapsePositions);
+        BuildPrimaryFan(end, arborContext, primaryBranches, random, synapsePositions);
 
         var synapses = new FastList<Synapse>(synapsePositions.Count);
         for (int i = 0; i < synapsePositions.Count; i++)
@@ -404,17 +399,17 @@ public static class ThalamocorticalAxonGenerator
     ///   Второстепенный патч заметно меньше главного (~65%), отражая
     ///   доминирование одного глаза.
     /// </summary>
-    private static OdPatch[] SampleOdPatches(Vector2 arborCenter, float arborRadius, Random rng)
+    private static OdPatch[] SampleOdPatches(Vector2 arborCenter, float arborRadius, Random random)
     {
-        bool singlePatch = rng.NextDouble() < OD_SINGLE_PATCH_PROB;
+        bool singlePatch = random.NextDouble() < OD_SINGLE_PATCH_PROB;
 
         // Главный патч: лёгкое смещение от геометрического центра арбора.
-        double primAngle = rng.NextDouble() * 2.0 * Math.PI;
-        float primOffset = arborRadius * (0.10f + (float)rng.NextDouble() * 0.15f);
+        double primAngle = random.NextDouble() * 2.0 * Math.PI;
+        float primOffset = arborRadius * (0.10f + (float)random.NextDouble() * 0.15f);
         float p0x = arborCenter.X + (float)Math.Cos(primAngle) * primOffset;
         float p0y = arborCenter.Y + (float)Math.Sin(primAngle) * primOffset;
         float p0r = OD_PATCH_RADIUS_MIN
-            + (float)rng.NextDouble() * (OD_PATCH_RADIUS_MAX - OD_PATCH_RADIUS_MIN);
+            + (float)random.NextDouble() * (OD_PATCH_RADIUS_MAX - OD_PATCH_RADIUS_MIN);
 
         if (singlePatch)
             return new[] { new OdPatch(p0x, p0y, p0r) };
@@ -422,9 +417,9 @@ public static class ThalamocorticalAxonGenerator
         // Второстепенный патч на АБСОЛЮТНОМ расстоянии 700–1000 мкм.
         // Это расстояние не зависит от arborRadius и отражает реальный период
         // OD-колонок в первичной зрительной коре человека.
-        double secAngle = rng.NextDouble() * 2.0 * Math.PI;
+        double secAngle = random.NextDouble() * 2.0 * Math.PI;
         float secDist = OD_INTER_PATCH_DIST_MIN
-            + (float)rng.NextDouble() * (OD_INTER_PATCH_DIST_MAX - OD_INTER_PATCH_DIST_MIN);
+            + (float)random.NextDouble() * (OD_INTER_PATCH_DIST_MAX - OD_INTER_PATCH_DIST_MIN);
         float p1x = p0x + (float)Math.Cos(secAngle) * secDist;
         float p1y = p0y + (float)Math.Sin(secAngle) * secDist;
         float p1r = p0r * OD_SECONDARY_PATCH_SIZE_RATIO;
@@ -471,7 +466,7 @@ public static class ThalamocorticalAxonGenerator
     ///   x, y — текущая позиция кончика ветви (мкм);
     ///   curAngle — текущий угол движения ветви (rad);
     ///   patches — массив OD-патчей аксона;
-    ///   rng — генератор случайных чисел.
+    ///   random — генератор случайных чисел.
     ///
     /// Возвращаемое значение: поправка к углу (rad), знак определяет
     /// направление поворота к патчу.
@@ -526,7 +521,7 @@ public static class ThalamocorticalAxonGenerator
     private static AxonPoint BuildTrunk(
         AxonPoint root,
         Vector2 arborCenter,
-        Random rng,
+        Random random,
         List<Vector3> synapses,
         bool hasLayer6Collateral)
     {
@@ -534,13 +529,15 @@ public static class ThalamocorticalAxonGenerator
         float z = AXON_START_Z + TRUNK_STEP_MKM;
         bool layer6Inserted = false;
 
-        while (z < LAYER_BOTTOM_Z)
+        float targetZ = LAYER_CENTER_Z + (float)SampleGaussian(random) * ARBOR_Z_SIGMA;
+
+        while (z < targetZ)
         {
-            float t = (z - AXON_START_Z) / (LAYER_BOTTOM_Z - AXON_START_Z);
+            float t = (z - AXON_START_Z) / (targetZ - AXON_START_Z);
             float x = root.Position.X + t * (arborCenter.X - root.Position.X)
-                + (float)(rng.NextDouble() - 0.5) * 5f;
+                + (float)(random.NextDouble() - 0.5) * 5f;
             float y = root.Position.Y + t * (arborCenter.Y - root.Position.Y)
-                + (float)(rng.NextDouble() - 0.5) * 5f;
+                + (float)(random.NextDouble() - 0.5) * 5f;
 
             var next = new AxonPoint(new Vector3(x, y, z));
             current.AddNext(next);
@@ -567,14 +564,14 @@ public static class ThalamocorticalAxonGenerator
                 && z >= LAYER6_CENTER_Z - TRUNK_STEP_MKM
                 && z < LAYER6_CENTER_Z + TRUNK_STEP_MKM)
             {
-                BuildLayer6Collateral(current, rng, synapses);
+                //BuildLayer6Collateral(current, random, synapses);
                 layer6Inserted = true;
             }
 
             z += TRUNK_STEP_MKM;
         }
 
-        var entry = new AxonPoint(new Vector3(arborCenter.X, arborCenter.Y, LAYER_BOTTOM_Z));
+        var entry = new AxonPoint(new Vector3(arborCenter.X, arborCenter.Y, targetZ));
         current.AddNext(entry);
         return entry;
     }
@@ -586,72 +583,69 @@ public static class ThalamocorticalAxonGenerator
     // ═══════════════════════════════════════════════════════════════════════
 
     private static void BuildPrimaryFan(
-        AxonPoint layerEntry,
-        ArborContext ctx,
+        AxonPoint start,
+        ArborContext arborContext,
         int primaryBranches,
-        Random rng,
+        Random random,
         List<Vector3> synapses)
     {
-        double baseAngle = rng.NextDouble() * 2 * Math.PI;
+        double baseAngle = random.NextDouble() * 2 * Math.PI;
         var angles = new double[primaryBranches];
         for (int i = 0; i < primaryBranches; i++)
+        {
             angles[i] = baseAngle + i * (2 * Math.PI / primaryBranches)
-                + (rng.NextDouble() - 0.5) * 0.52; // ±~15°
-
-        // подслойный таргет — случайно upper/lower для каждой первичной ветви.
-        var sublayerOffsets = new float[primaryBranches];
-        for (int i = 0; i < primaryBranches; i++)
-            sublayerOffsets[i] = (rng.NextDouble() < 0.5) ? +SUBLAYER_Z_OFFSET : -SUBLAYER_Z_OFFSET;
+                + (random.NextDouble() - 0.5) * 0.52; // ±~15°
+        }        
 
         switch (primaryBranches)
         {
             case 2:
-                BuildBranch(layerEntry, angles[0], ctx, 0, ctx.Level0ArcLength,
-                    sublayerOffsets[0], rng, synapses);
-                BuildBranch(layerEntry, angles[1], ctx, 0, ctx.Level0ArcLength,
-                    sublayerOffsets[1], rng, synapses);
+                BuildBranch(start, angles[0], arborContext, 0, arborContext.Level0ArcLength,
+                    random, synapses);
+                BuildBranch(start, angles[1], arborContext, 0, arborContext.Level0ArcLength,
+                    random, synapses);
                 break;
 
             case 3:
-                BuildBranch(layerEntry, angles[0], ctx, 0, ctx.Level0ArcLength,
-                    sublayerOffsets[0], rng, synapses);
+                BuildBranch(start, angles[0], arborContext, 0, arborContext.Level0ArcLength,
+                    random, synapses);
                 {
-                    var fork = MakeForkNode(layerEntry, angles[1], angles[2], rng);
-                    layerEntry.AddNext(fork);
-                    BuildBranch(fork, angles[1], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[1], rng, synapses);
-                    BuildBranch(fork, angles[2], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[2], rng, synapses);
+                    var fork = MakeForkNode(start, angles[1], angles[2], random);
+                    start.AddNext(fork);
+                    BuildBranch(fork, angles[1], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
+                    BuildBranch(fork, angles[2], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
                 }
                 break;
 
             case 4:
                 {
-                    var fork0 = MakeForkNode(layerEntry, angles[0], angles[1], rng);
-                    var fork1 = MakeForkNode(layerEntry, angles[2], angles[3], rng);
-                    layerEntry.AddNext(fork0);
-                    layerEntry.AddNext(fork1);
-                    BuildBranch(fork0, angles[0], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[0], rng, synapses);
-                    BuildBranch(fork0, angles[1], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[1], rng, synapses);
-                    BuildBranch(fork1, angles[2], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[2], rng, synapses);
-                    BuildBranch(fork1, angles[3], ctx, 0, ctx.Level0ArcLength,
-                        sublayerOffsets[3], rng, synapses);
+                    var fork0 = MakeForkNode(start, angles[0], angles[1], random);
+                    var fork1 = MakeForkNode(start, angles[2], angles[3], random);
+                    start.AddNext(fork0);
+                    start.AddNext(fork1);
+                    BuildBranch(fork0, angles[0], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
+                    BuildBranch(fork0, angles[1], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
+                    BuildBranch(fork1, angles[2], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
+                    BuildBranch(fork1, angles[3], arborContext, 0, arborContext.Level0ArcLength,
+                        random, synapses);
                 }
                 break;
         }
     }
 
-    private static AxonPoint MakeForkNode(AxonPoint from, double angle0, double angle1, Random rng)
+    private static AxonPoint MakeForkNode(AxonPoint from, double angle0, double angle1, Random random)
     {
         double midAngle = (angle0 + angle1) / 2.0;
-        float dist = BRANCH_STEP_MKM * 2f;
+        float dist = 1.0f;
         float x = from.Position.X + (float)Math.Cos(midAngle) * dist;
         float y = from.Position.Y + (float)Math.Sin(midAngle) * dist;
         float z = Math.Clamp(
-            from.Position.Z + (float)(rng.NextDouble() - 0.5) * 6f,
+            from.Position.Z + dist,
             LAYER_BOTTOM_Z, LAYER_TOP_Z);
         return new AxonPoint(new Vector3(x, y, z));
     }
@@ -667,21 +661,16 @@ public static class ThalamocorticalAxonGenerator
     private static void BuildBranch(
         AxonPoint start,
         double angle,
-        ArborContext ctx,
+        ArborContext arborContext,
         int level,
-        float arcLength,
-        float sublayerOffset,
-        Random rng,
+        float arcLength,        
+        Random random,
         List<Vector3> synapses)
     {
         float xyAngleNoise = 0.55f - level * 0.07f;
 
-        // Гауссов Z-таргет с подслойным смещением (только для уровня 0).
-        float effectiveCenterZ = LAYER_CENTER_Z + (level == 0 ? sublayerOffset : 0f);
-        float targetZ = SampleTargetZ(start.Position.Z, level,
-            effectiveCenterZ, ARBOR_Z_SIGMA,
-            LAYER_BOTTOM_Z, LAYER_TOP_Z,
-            rng);
+        float targetZ = start.Position.Z + (float)SampleGaussian(random) * SUBBRANCH_Z_DRIFT;        
+        targetZ = Math.Clamp(targetZ, LAYER_BOTTOM_Z + 5f, LAYER_TOP_Z - 5f);
 
         AxonPoint current = start;
         float distCovered = 0f;
@@ -693,31 +682,31 @@ public static class ThalamocorticalAxonGenerator
         double curAngle = angle;
 
         // начальное состояние Markov-цепи.
-        bool inCluster = rng.NextDouble() < CLUSTER_INITIAL_PROB;
+        bool inCluster = random.NextDouble() < CLUSTER_INITIAL_PROB;
         // Первый интервал семплируется в текущем состоянии.
-        float nextSynapseAt = SampleBoutonIntervalCurrentState(inCluster, rng);
+        float nextSynapseAt = SampleBoutonIntervalCurrentState(inCluster, random);
         // Затем делаем переход для следующего шага.
-        UpdateMarkovState(ref inCluster, rng);
+        UpdateMarkovState(ref inCluster, random);
 
         float terminalBoostStartDist = arcLength * (1f - TERMINAL_DENSITY_FRACTION);
 
         // Предвычисляем мягкую и жёсткую границу арбора.
-        float softLimit = ctx.Radius * ARBOR_RADIUS_SOFT_LIMIT_FACTOR;
-        float hardLimit = ctx.Radius * 1.5f;
+        float softLimit = arborContext.Radius * ARBOR_RADIUS_SOFT_LIMIT_FACTOR;
+        float hardLimit = arborContext.Radius * 1.5f;
 
         while (distCovered < arcLength)
         {
             float step = Math.Min(BRANCH_STEP_MKM, arcLength - distCovered);
 
             // Случайное блуждание угла.
-            curAngle += (rng.NextDouble() - 0.5) * 2.0 * xyAngleNoise;
+            curAngle += (random.NextDouble() - 0.5) * 2.0 * xyAngleNoise;
 
             // OD-притягивающий bias ветви к ближайшему патчу.
-            curAngle += ComputeOdBiasAngle(x, y, curAngle, ctx.Patches);
+            curAngle += ComputeOdBiasAngle(x, y, curAngle, arborContext.Patches);
 
             // Радиальный bias при выходе за мягкую границу арбора.
-            float rdx = x - ctx.Center.X;
-            float rdy = y - ctx.Center.Y;
+            float rdx = x - arborContext.Center.X;
+            float rdy = y - arborContext.Center.Y;
             float dist = MathF.Sqrt(rdx * rdx + rdy * rdy);
             if (dist > softLimit)
             {
@@ -730,7 +719,7 @@ public static class ThalamocorticalAxonGenerator
                 if (dist > hardLimit)
                 {
                     // Жёсткое ограничение: принудительно разворачиваем к центру.
-                    curAngle = angleToCenter + (rng.NextDouble() - 0.5) * 0.3;
+                    curAngle = angleToCenter + (random.NextDouble() - 0.5) * 0.3;
                 }
                 else
                 {
@@ -768,148 +757,45 @@ public static class ThalamocorticalAxonGenerator
                 // Пространственная концентрация обеспечивается направлением ветвей
                 // к OD-патчам (ComputeOdBiasAngle выше).
                 synapses.Add(new Vector3(
-                    bx + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
-                    by + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
-                    bz + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER));
+                    bx + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
+                    by + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
+                    bz + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER));
 
                 // Следующий интервал семплируется в текущем состоянии,
                 // затем делаем Markov-переход.
-                float interval = SampleBoutonIntervalCurrentState(inCluster, rng);
+                float interval = SampleBoutonIntervalCurrentState(inCluster, random);
                 if (nextSynapseAt > terminalBoostStartDist)
                     interval /= TERMINAL_DENSITY_BOOST;
                 nextSynapseAt += interval;
 
-                UpdateMarkovState(ref inCluster, rng);
+                UpdateMarkovState(ref inCluster, random);
             }
         }
 
         // концевой кластер с гейтингом по OD-патчам (сохранён).
-        AddTerminalCluster(x, y, z, ctx.Patches, rng, synapses);
+        AddTerminalCluster(x, y, z, arborContext.Patches, random, synapses);
 
         if (level < BRANCH_LEVELS - 1)
         {
-            if (level >= BRANCH_LEVELS - 3 && rng.NextDouble() < EARLY_TERMINATION_PROB)
+            if (level >= BRANCH_LEVELS - 3 && random.NextDouble() < EARLY_TERMINATION_PROB)
                 return;
 
             double spreadBase = Math.PI / 4.5 - level * 0.05;
-            double spreadL = spreadBase * (1.0 + (rng.NextDouble() - 0.5) * 0.4);
-            double spreadR = spreadBase * (1.0 + (rng.NextDouble() - 0.5) * 0.4);
+            double spreadL = spreadBase * (1.0 + (random.NextDouble() - 0.5) * 0.4);
+            double spreadR = spreadBase * (1.0 + (random.NextDouble() - 0.5) * 0.4);
 
             float nominalChildLen = arcLength * 0.5f;
             float childLenL = nominalChildLen
-                * (1f + (float)(rng.NextDouble() - 0.5) * 2f * BRANCH_ASYMMETRY_JITTER);
+                * (1f + (float)(random.NextDouble() - 0.5) * 2f * BRANCH_ASYMMETRY_JITTER);
             float childLenR = nominalChildLen
-                * (1f + (float)(rng.NextDouble() - 0.5) * 2f * BRANCH_ASYMMETRY_JITTER);
+                * (1f + (float)(random.NextDouble() - 0.5) * 2f * BRANCH_ASYMMETRY_JITTER);
 
-            BuildBranch(current, curAngle - spreadL, ctx, level + 1, childLenL,
-                sublayerOffset, rng, synapses);
-            BuildBranch(current, curAngle + spreadR, ctx, level + 1, childLenR,
-                sublayerOffset, rng, synapses);
+            BuildBranch(current, curAngle - spreadL, arborContext, level + 1, childLenL,
+                random, synapses);
+            BuildBranch(current, curAngle + spreadR, arborContext, level + 1, childLenR,
+                random, synapses);
         }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // КОЛЛАТЕРАЛЬ В СЛОЙ 6 (TYPE-2 АКСОНЫ, ~40%)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private static void BuildLayer6Collateral(
-        AxonPoint trunkPoint,
-        Random rng,
-        List<Vector3> synapses)
-    {
-        double initialAngle = rng.NextDouble() * 2 * Math.PI;
-        float dx = (float)Math.Cos(initialAngle) * BRANCH_STEP_MKM * 2f;
-        float dy = (float)Math.Sin(initialAngle) * BRANCH_STEP_MKM * 2f;
-        float collZ = LAYER6_CENTER_Z + (float)SampleGaussian(rng) * LAYER6_Z_SIGMA;
-        collZ = Math.Clamp(collZ, LAYER6_BOTTOM_Z, LAYER6_TOP_Z);
-
-        var collateralRoot = new AxonPoint(new Vector3(
-            trunkPoint.Position.X + dx,
-            trunkPoint.Position.Y + dy,
-            collZ));
-        trunkPoint.AddNext(collateralRoot);
-
-        BuildLayer6Branch(collateralRoot, initialAngle, 0, rng, synapses);
-    }
-
-    private static void BuildLayer6Branch(
-        AxonPoint start,
-        double angle,
-        int level,
-        Random rng,
-        List<Vector3> synapses)
-    {
-        float arcLength = LAYER6_SEG_LEN_LEVEL0 / (float)Math.Pow(2, level);
-        float xyAngleNoise = 0.50f - level * 0.08f;
-
-        float targetZ = SampleTargetZ(start.Position.Z, level,
-            LAYER6_CENTER_Z, LAYER6_Z_SIGMA,
-            LAYER6_BOTTOM_Z, LAYER6_TOP_Z,
-            rng);
-
-        AxonPoint current = start;
-        float distCovered = 0f;
-        float x = start.Position.X;
-        float y = start.Position.Y;
-        float z = start.Position.Z;
-        float zStep = (targetZ - z) / (arcLength / BRANCH_STEP_MKM + 1f);
-
-        double curAngle = angle;
-
-        bool inCluster = rng.NextDouble() < CLUSTER_INITIAL_PROB;
-        float nextSynapseAt = SampleBoutonIntervalCurrentState(inCluster, rng);
-        UpdateMarkovState(ref inCluster, rng);
-
-        while (distCovered < arcLength)
-        {
-            float step = Math.Min(BRANCH_STEP_MKM, arcLength - distCovered);
-            curAngle += (rng.NextDouble() - 0.5) * 2.0 * xyAngleNoise;
-
-            float prevX = x, prevY = y, prevZ = z;
-            float stepStartDist = distCovered;
-
-            x += (float)Math.Cos(curAngle) * step;
-            y += (float)Math.Sin(curAngle) * step;
-            z += zStep * (step / BRANCH_STEP_MKM);
-            z = Math.Clamp(z, LAYER6_BOTTOM_Z, LAYER6_TOP_Z);
-
-            var pt = new AxonPoint(new Vector3(x, y, z));
-            current.AddNext(pt);
-            current = pt;
-
-            distCovered += step;
-
-            while (distCovered >= nextSynapseAt)
-            {
-                float t = (nextSynapseAt - stepStartDist) / step;
-                if (t < 0f) t = 0f;
-                else if (t > 1f) t = 1f;
-
-                float bx = prevX + (x - prevX) * t;
-                float by = prevY + (y - prevY) * t;
-                float bz = prevZ + (z - prevZ) * t;
-
-                synapses.Add(new Vector3(
-                    bx + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
-                    by + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
-                    bz + (float)(rng.NextDouble() - 0.5) * BOUTON_POSITION_JITTER));
-
-                float interval = SampleBoutonIntervalCurrentState(inCluster, rng);
-                nextSynapseAt += interval;
-                UpdateMarkovState(ref inCluster, rng);
-            }
-        }
-
-        // Концевой кластер без OD-гейтинга (слой 6).
-        AddTerminalCluster(x, y, z, Array.Empty<OdPatch>(), rng, synapses);
-
-        if (level < LAYER6_BRANCH_LEVELS - 1)
-        {
-            double spreadAngle = Math.PI / 4.5 - level * 0.05;
-            BuildLayer6Branch(current, curAngle - spreadAngle, level + 1, rng, synapses);
-            BuildLayer6Branch(current, curAngle + spreadAngle, level + 1, rng, synapses);
-        }
-    }
+    }    
 
     // ═══════════════════════════════════════════════════════════════════════
     // МОЗАИЧНОЕ РАЗМЕЩЕНИЕ БУТОНЧИКОВ EN PASSANT (Markov: cluster ↔ sparse)
@@ -923,16 +809,16 @@ public static class ThalamocorticalAxonGenerator
     /// Параметры:
     ///   inCluster — текущее состояние Markov-цепи
     ///     (true = кластерный режим, false = разрежённый);
-    ///   rng — генератор случайных чисел.
+    ///   random — генератор случайных чисел.
     ///
     /// Возвращает: расстояние до следующего бутончика (мкм).
     /// </summary>
-    private static float SampleBoutonIntervalCurrentState(bool inCluster, Random rng)
+    private static float SampleBoutonIntervalCurrentState(bool inCluster, Random random)
     {
         if (inCluster)
-            return CLUSTER_STEP_MIN + (float)rng.NextDouble() * (CLUSTER_STEP_MAX - CLUSTER_STEP_MIN);
+            return CLUSTER_STEP_MIN + (float)random.NextDouble() * (CLUSTER_STEP_MAX - CLUSTER_STEP_MIN);
         else
-            return SPARSE_STEP_MIN + (float)rng.NextDouble() * (SPARSE_STEP_MAX - SPARSE_STEP_MIN);
+            return SPARSE_STEP_MIN + (float)random.NextDouble() * (SPARSE_STEP_MAX - SPARSE_STEP_MIN);
     }
 
     /// <summary>
@@ -945,16 +831,16 @@ public static class ThalamocorticalAxonGenerator
     ///   π_cluster = (1 − p_ss) / (2 − p_cc − p_ss)
     ///             = (1 − 0.40) / (2 − 0.75 − 0.40) = 0.706 ≈ 70%.
     /// </summary>
-    private static void UpdateMarkovState(ref bool inCluster, Random rng)
+    private static void UpdateMarkovState(ref bool inCluster, Random random)
     {
         if (inCluster)
         {
-            if (rng.NextDouble() >= CLUSTER_STAY_PROB)
+            if (random.NextDouble() >= CLUSTER_STAY_PROB)
                 inCluster = false;
         }
         else
         {
-            if (rng.NextDouble() >= SPARSE_STAY_PROB)
+            if (random.NextDouble() >= SPARSE_STAY_PROB)
                 inCluster = true;
         }
     }
@@ -975,31 +861,31 @@ public static class ThalamocorticalAxonGenerator
     /// Параметры:
     ///   x, y, z — позиция конца ветви (мкм);
     ///   patches — OD-патчи данного аксона;
-    ///   rng — генератор случайных чисел;
+    ///   random — генератор случайных чисел;
     ///   synapses — список синапсов для добавления.
     /// </summary>
     private static void AddTerminalCluster(
         float x, float y, float z,
         OdPatch[] patches,
-        Random rng,
+        Random random,
         List<Vector3> synapses)
     {
-        bool isRosette = rng.NextDouble() < TERMINAL_ROSETTE_PROB;
+        bool isRosette = random.NextDouble() < TERMINAL_ROSETTE_PROB;
 
         int count;
         float radius;
         if (isRosette)
         {
-            count = rng.Next(TERMINAL_ROSETTE_MIN, TERMINAL_ROSETTE_MAX);
+            count = random.Next(TERMINAL_ROSETTE_MIN, TERMINAL_ROSETTE_MAX);
             radius = TERMINAL_ROSETTE_RADIUS_MIN
-                + (float)rng.NextDouble()
+                + (float)random.NextDouble()
                 * (TERMINAL_ROSETTE_RADIUS_MAX - TERMINAL_ROSETTE_RADIUS_MIN);
         }
         else
         {
-            count = rng.Next(TERMINAL_NORMAL_MIN, TERMINAL_NORMAL_MAX);
+            count = random.Next(TERMINAL_NORMAL_MIN, TERMINAL_NORMAL_MAX);
             radius = TERMINAL_NORMAL_RADIUS_MIN
-                + (float)rng.NextDouble()
+                + (float)random.NextDouble()
                 * (TERMINAL_NORMAL_RADIUS_MAX - TERMINAL_NORMAL_RADIUS_MIN);
         }
         
@@ -1019,15 +905,15 @@ public static class ThalamocorticalAxonGenerator
         for (int t = 0; t < count; t++)
         {
             // Концевые гроздья плоские: Z-разброс вдвое меньше XY.
-            float bx = x + (float)(rng.NextDouble() - 0.5) * 2 * radius;
-            float by = y + (float)(rng.NextDouble() - 0.5) * 2 * radius;
-            float bz = z + (float)(rng.NextDouble() - 0.5) * radius;
+            float bx = x + (float)(random.NextDouble() - 0.5) * 2 * radius;
+            float by = y + (float)(random.NextDouble() - 0.5) * 2 * radius;
+            float bz = z + (float)(random.NextDouble() - 0.5) * radius;
 
             // Дополнительный бутонный гейтинг по OD-маске (сохранён из V3).
             if (patches.Length > 0)
             {
                 float accept = PatchAcceptance(bx, by, patches);
-                if (rng.NextDouble() >= accept) continue;
+                if (random.NextDouble() >= accept) continue;
             }
 
             synapses.Add(new Vector3(bx, by, bz));
@@ -1039,54 +925,22 @@ public static class ThalamocorticalAxonGenerator
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Сэмплирует целевую Z-координату для ветви данного уровня.
-    ///
-    /// Параметры:
-    ///   startZ — Z-координата начала ветви (мкм);
-    ///   level — текущий уровень ветвления (0 = первичная);
-    ///   centerZ — центральная Z-координата слоя (мкм);
-    ///   sigma — стандартное отклонение Гауссового таргета (мкм);
-    ///   bottomZ — нижняя граница слоя (мкм);
-    ///   topZ — верхняя граница слоя (мкм);
-    ///   rng — генератор случайных чисел.
-    ///
-    /// Возвращает: целевую Z-координату, зажатую в [bottomZ+5, topZ-5] (мкм).
-    /// </summary>
-    private static float SampleTargetZ(
-        float startZ,
-        int level,
-        float centerZ,
-        float sigma,
-        float bottomZ,
-        float topZ,
-        Random rng)
-    {
-        float targetZ;
-        if (level == 0)
-            targetZ = centerZ + (float)SampleGaussian(rng) * sigma;
-        else
-            targetZ = startZ + (float)SampleGaussian(rng) * SUBBRANCH_Z_DRIFT;
-
-        return Math.Clamp(targetZ, bottomZ + 5f, topZ - 5f);
-    }
-
-    /// <summary>
     /// Сэмплирует стандартное нормальное распределение N(0,1)
     /// методом Бокса–Мюллера.
     ///
     /// Параметры:
-    ///   rng — генератор случайных чисел (double равномерное [0,1)).
+    ///   random — генератор случайных чисел (double равномерное [0,1)).
     ///
     /// Возвращает: значение из N(0,1).
     /// </summary>
-    private static double SampleGaussian(Random rng)
+    private static double SampleGaussian(Random random)
     {
-        double u1 = 1.0 - rng.NextDouble();
-        double u2 = 1.0 - rng.NextDouble();
+        double u1 = 1.0 - random.NextDouble();
+        double u2 = 1.0 - random.NextDouble();
         return Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2 * Math.PI * u2);
     }
 
-    private static List<Vector2> GenerateHexGridCenters(Random rng)
+    private static List<Vector2> GenerateHexGridCenters(Random random)
     {
         var centers = new List<Vector2>();
         float hx = GRID_SPACING_MKM;
@@ -1099,8 +953,8 @@ public static class ThalamocorticalAxonGenerator
                 float x = col * hx + (row % 2 != 0 ? hx / 2f : 0f);
                 float y = row * hy;
                 // Биологическая нерегулярность ±15%
-                x += (float)(rng.NextDouble() - 0.5) * 2 * GRID_SPACING_MKM * 0.15f;
-                y += (float)(rng.NextDouble() - 0.5) * 2 * GRID_SPACING_MKM * 0.15f;
+                x += (float)(random.NextDouble() - 0.5) * 2 * GRID_SPACING_MKM * 0.15f;
+                y += (float)(random.NextDouble() - 0.5) * 2 * GRID_SPACING_MKM * 0.15f;
                 centers.Add(new Vector2(x, y));
             }
         }
@@ -1112,13 +966,157 @@ public static class ThalamocorticalAxonGenerator
     /// зажатое в [ARBOR_RADIUS_MIN, ARBOR_RADIUS_MAX]).
     ///
     /// Параметры:
-    ///   rng — генератор случайных чисел.
+    ///   random — генератор случайных чисел.
     ///
     /// Источник: Blasdel & Lund 1983.
     /// </summary>
-    private static float SampleArborRadius(Random rng)
+    private static float SampleArborRadius(Random random)
     {
-        float radius = 400f + (float)(SampleGaussian(rng) * 70f);
+        float radius = 400f + (float)(SampleGaussian(random) * 70f);
         return Math.Clamp(radius, ARBOR_RADIUS_MIN, ARBOR_RADIUS_MAX);
     }
 }
+
+
+//// ─── Коллатераль в слой 6 (Type-2 M-аксоны) ─────────────────────────────
+
+//    private const float LAYER6_COLLATERAL_PROB = 0.40f;
+//    private const float LAYER6_ARBOR_RADIUS = 150f;
+//    private const float LAYER6_SEG_LEN_LEVEL0 = 400f;
+//    private const int LAYER6_BRANCH_LEVELS = 3;
+//    private const float LAYER6_Z_SIGMA = 35f;
+
+    ///// <summary>
+    ///// Сэмплирует целевую Z-координату для ветви данного уровня.
+    /////
+    ///// Параметры:
+    /////   startZ — Z-координата начала ветви (мкм);
+    /////   level — текущий уровень ветвления (0 = первичная);
+    /////   centerZ — центральная Z-координата слоя (мкм);
+    /////   sigma — стандартное отклонение Гауссового таргета (мкм);
+    /////   bottomZ — нижняя граница слоя (мкм);
+    /////   topZ — верхняя граница слоя (мкм);
+    /////   rng — генератор случайных чисел.
+    /////
+    ///// Возвращает: целевую Z-координату, зажатую в [bottomZ+5, topZ-5] (мкм).
+    ///// </summary>
+    //private static float SampleTargetZ(
+    //    float startZ,
+    //    int level,
+    //    float centerZ,
+    //    float sigma,
+    //    float bottomZ,
+    //    float topZ,
+    //    Random rng)
+    //{
+    //    float targetZ;
+    //    if (level == 0)
+    //        targetZ = centerZ + (float)SampleGaussian(rng) * sigma;
+    //    else
+    //        targetZ = startZ + (float)SampleGaussian(rng) * SUBBRANCH_Z_DRIFT;
+
+//    return Math.Clamp(targetZ, bottomZ + 5f, topZ - 5f);
+//}
+
+//// ═══════════════════════════════════════════════════════════════════════
+//    // КОЛЛАТЕРАЛЬ В СЛОЙ 6 (TYPE-2 АКСОНЫ, ~40%)
+//    // ═══════════════════════════════════════════════════════════════════════
+
+//    private static void BuildLayer6Collateral(
+//        AxonPoint trunkPoint,
+//        Random random,
+//        List<Vector3> synapses)
+//    {
+//        double initialAngle = random.NextDouble() * 2 * Math.PI;
+//        float dx = (float)Math.Cos(initialAngle) * BRANCH_STEP_MKM * 2f;
+//        float dy = (float)Math.Sin(initialAngle) * BRANCH_STEP_MKM * 2f;
+//        float collZ = LAYER6_CENTER_Z + (float)SampleGaussian(random) * LAYER6_Z_SIGMA;
+//        collZ = Math.Clamp(collZ, LAYER6_BOTTOM_Z, LAYER6_TOP_Z);
+
+//        var collateralRoot = new AxonPoint(new Vector3(
+//            trunkPoint.Position.X + dx,
+//            trunkPoint.Position.Y + dy,
+//            collZ));
+//        trunkPoint.AddNext(collateralRoot);
+
+//        BuildLayer6Branch(collateralRoot, initialAngle, 0, random, synapses);
+//    }
+
+//    private static void BuildLayer6Branch(
+//        AxonPoint start,
+//        double angle,
+//        int level,
+//        Random random,
+//        List<Vector3> synapses)
+//    {
+//        float arcLength = LAYER6_SEG_LEN_LEVEL0 / (float)Math.Pow(2, level);
+//        float xyAngleNoise = 0.50f - level * 0.08f;
+
+//        float targetZ = SampleTargetZ(start.Position.Z, level,
+//            LAYER6_CENTER_Z, LAYER6_Z_SIGMA,
+//            LAYER6_BOTTOM_Z, LAYER6_TOP_Z,
+//            random);
+
+//        AxonPoint current = start;
+//        float distCovered = 0f;
+//        float x = start.Position.X;
+//        float y = start.Position.Y;
+//        float z = start.Position.Z;
+//        float zStep = (targetZ - z) / (arcLength / BRANCH_STEP_MKM + 1f);
+
+//        double curAngle = angle;
+
+//        bool inCluster = random.NextDouble() < CLUSTER_INITIAL_PROB;
+//        float nextSynapseAt = SampleBoutonIntervalCurrentState(inCluster, random);
+//        UpdateMarkovState(ref inCluster, random);
+
+//        while (distCovered < arcLength)
+//        {
+//            float step = Math.Min(BRANCH_STEP_MKM, arcLength - distCovered);
+//            curAngle += (random.NextDouble() - 0.5) * 2.0 * xyAngleNoise;
+
+//            float prevX = x, prevY = y, prevZ = z;
+//            float stepStartDist = distCovered;
+
+//            x += (float)Math.Cos(curAngle) * step;
+//            y += (float)Math.Sin(curAngle) * step;
+//            z += zStep * (step / BRANCH_STEP_MKM);
+//            z = Math.Clamp(z, LAYER6_BOTTOM_Z, LAYER6_TOP_Z);
+
+//            var pt = new AxonPoint(new Vector3(x, y, z));
+//            current.AddNext(pt);
+//            current = pt;
+
+//            distCovered += step;
+
+//            while (distCovered >= nextSynapseAt)
+//            {
+//                float t = (nextSynapseAt - stepStartDist) / step;
+//                if (t < 0f) t = 0f;
+//                else if (t > 1f) t = 1f;
+
+//                float bx = prevX + (x - prevX) * t;
+//                float by = prevY + (y - prevY) * t;
+//                float bz = prevZ + (z - prevZ) * t;
+
+//                synapses.Add(new Vector3(
+//                    bx + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
+//                    by + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER,
+//                    bz + (float)(random.NextDouble() - 0.5) * BOUTON_POSITION_JITTER));
+
+//                float interval = SampleBoutonIntervalCurrentState(inCluster, random);
+//                nextSynapseAt += interval;
+//                UpdateMarkovState(ref inCluster, random);
+//            }
+//        }
+
+//        // Концевой кластер без OD-гейтинга (слой 6).
+//        AddTerminalCluster(x, y, z, Array.Empty<OdPatch>(), random, synapses);
+
+//        if (level < LAYER6_BRANCH_LEVELS - 1)
+//        {
+//            double spreadAngle = Math.PI / 4.5 - level * 0.05;
+//            BuildLayer6Branch(current, curAngle - spreadAngle, level + 1, random, synapses);
+//            BuildLayer6Branch(current, curAngle + spreadAngle, level + 1, random, synapses);
+//        }
+//    }
