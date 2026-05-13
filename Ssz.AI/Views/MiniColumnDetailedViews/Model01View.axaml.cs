@@ -230,6 +230,9 @@ public partial class Model01View : UserControl
     private void RangeInputRight_OnClick(object? sender, RoutedEventArgs args)
     {
         int start = GetBitStart() + 1;
+        int bitLength = GetBitLength();
+        if (start > Model01.Constants.HashLength - bitLength)
+            return;
         LevelScrollBar0.Value = LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength;
     }
 
