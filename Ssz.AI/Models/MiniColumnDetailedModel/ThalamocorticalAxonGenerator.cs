@@ -37,32 +37,18 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 public static class ThalamocorticalAxonGenerator
 {
     // ─── Геометрия слоя 4Cα ────────────────────────────────────────────────
-    /// Верхняя граница слоя 4Cα (ближе к поверхности). Мкм.
-    private const float LAYER_TOP_Z = -800f;
+    ///// Верхняя граница слоя 4Cα (ближе к поверхности). Мкм.
+    //private const float LAYER_TOP_Z = -800f;
 
-    /// Центр слоя 4Cα — место пиковой плотности TC-бутончиков. Мкм.
-    private const float LAYER_CENTER_Z = -900f;
+    ///// Нижняя граница слоя 4Cα (ближе к белому веществу). Мкм.
+    //private const float LAYER_BOTTOM_Z = -1000f;    
+
+    // ─── Геометрия нижней 66% слоя 4Cα ────────────────────────────────────────────────
+    /// Верхняя граница слоя 4Cα (ближе к поверхности). Мкм.
+    private const float LAYER_TOP_Z = -866f;    
 
     /// Нижняя граница слоя 4Cα (ближе к белому веществу). Мкм.
-    private const float LAYER_BOTTOM_Z = -1000f;    
-
-    /// <summary>
-    /// Смещение центра Гауссова Z-распределения для подслойной сегрегации.
-    /// Половина первичных ветвей таргетируется на 4Cα-upper (центр -875),
-    /// другая — на 4Cα-lower (-925). Мкм.
-    /// </summary>
-    private const float SUBLAYER_Z_OFFSET = 25f;
-
-    // ─── Геометрия слоя 6 (для Type-2 аксонов с коллатералью) ──────────────    
-
-    /// Верхняя граница слоя 6. Мкм.
-    private const float LAYER6_TOP_Z = -1100f;
-
-    /// Центр слоя 6. Мкм.
-    private const float LAYER6_CENTER_Z = -1200f;
-
-    /// Нижняя граница слоя 6. Мкм.
-    private const float LAYER6_BOTTOM_Z = -1300f;
+    private const float LAYER_BOTTOM_Z = -1000f;
 
     // ─── Параметры ствола аксона ────────────────────────────────────────────
     /// Z-координата начала аксона (в белом веществе). Мкм.
@@ -527,9 +513,11 @@ public static class ThalamocorticalAxonGenerator
     {
         AxonPoint current = root;
         float z = AXON_START_Z + TRUNK_STEP_MKM;
-        bool layer6Inserted = false;
+        //bool layer6Inserted = false;
 
-        float targetZ = LAYER_CENTER_Z + (float)SampleGaussian(random) * ARBOR_Z_SIGMA;
+        float deltaZ = (float)SampleGaussian(random) * ARBOR_Z_SIGMA;
+        float targetZ = (LAYER_BOTTOM_Z + LAYER_TOP_Z) / 2.0f + deltaZ;
+        targetZ = Math.Clamp(targetZ, LAYER_BOTTOM_Z + 5f, LAYER_TOP_Z - 5f);
 
         while (z < targetZ)
         {
@@ -560,13 +548,13 @@ public static class ThalamocorticalAxonGenerator
             // BuildLayer6Collateral вызывает trunkPoint.AddNext(collateralRoot),
             // что при current.AddNext(next) уже выполненном даёт Next[1]=collateralRoot.
             // Итого 2 child — в пределах InlineArray(Size=2). Корректно.
-            if (hasLayer6Collateral && !layer6Inserted
-                && z >= LAYER6_CENTER_Z - TRUNK_STEP_MKM
-                && z < LAYER6_CENTER_Z + TRUNK_STEP_MKM)
-            {
-                //BuildLayer6Collateral(current, random, synapses);
-                layer6Inserted = true;
-            }
+            //if (hasLayer6Collateral && !layer6Inserted
+            //    && z >= LAYER6_CENTER_Z - TRUNK_STEP_MKM
+            //    && z < LAYER6_CENTER_Z + TRUNK_STEP_MKM)
+            //{
+            //    //BuildLayer6Collateral(current, random, synapses);
+            //    layer6Inserted = true;
+            //}
 
             z += TRUNK_STEP_MKM;
         }
@@ -978,6 +966,25 @@ public static class ThalamocorticalAxonGenerator
 }
 
 
+
+///// <summary>
+//    /// Смещение центра Гауссова Z-распределения для подслойной сегрегации.
+//    /// Половина первичных ветвей таргетируется на 4Cα-upper (центр -875),
+//    /// другая — на 4Cα-lower (-925). Мкм.
+//    /// </summary>
+//    private const float SUBLAYER_Z_OFFSET = 25f;
+
+//    // ─── Геометрия слоя 6 (для Type-2 аксонов с коллатералью) ──────────────    
+
+//    /// Верхняя граница слоя 6. Мкм.
+//    private const float LAYER6_TOP_Z = -1100f;
+
+//    /// Центр слоя 6. Мкм.
+//    private const float LAYER6_CENTER_Z = -1200f;
+
+//    /// Нижняя граница слоя 6. Мкм.
+//    private const float LAYER6_BOTTOM_Z = -1300f;
+
 //// ─── Коллатераль в слой 6 (Type-2 M-аксоны) ─────────────────────────────
 
 //    private const float LAYER6_COLLATERAL_PROB = 0.40f;
@@ -986,34 +993,34 @@ public static class ThalamocorticalAxonGenerator
 //    private const int LAYER6_BRANCH_LEVELS = 3;
 //    private const float LAYER6_Z_SIGMA = 35f;
 
-    ///// <summary>
-    ///// Сэмплирует целевую Z-координату для ветви данного уровня.
-    /////
-    ///// Параметры:
-    /////   startZ — Z-координата начала ветви (мкм);
-    /////   level — текущий уровень ветвления (0 = первичная);
-    /////   centerZ — центральная Z-координата слоя (мкм);
-    /////   sigma — стандартное отклонение Гауссового таргета (мкм);
-    /////   bottomZ — нижняя граница слоя (мкм);
-    /////   topZ — верхняя граница слоя (мкм);
-    /////   rng — генератор случайных чисел.
-    /////
-    ///// Возвращает: целевую Z-координату, зажатую в [bottomZ+5, topZ-5] (мкм).
-    ///// </summary>
-    //private static float SampleTargetZ(
-    //    float startZ,
-    //    int level,
-    //    float centerZ,
-    //    float sigma,
-    //    float bottomZ,
-    //    float topZ,
-    //    Random rng)
-    //{
-    //    float targetZ;
-    //    if (level == 0)
-    //        targetZ = centerZ + (float)SampleGaussian(rng) * sigma;
-    //    else
-    //        targetZ = startZ + (float)SampleGaussian(rng) * SUBBRANCH_Z_DRIFT;
+///// <summary>
+///// Сэмплирует целевую Z-координату для ветви данного уровня.
+/////
+///// Параметры:
+/////   startZ — Z-координата начала ветви (мкм);
+/////   level — текущий уровень ветвления (0 = первичная);
+/////   centerZ — центральная Z-координата слоя (мкм);
+/////   sigma — стандартное отклонение Гауссового таргета (мкм);
+/////   bottomZ — нижняя граница слоя (мкм);
+/////   topZ — верхняя граница слоя (мкм);
+/////   rng — генератор случайных чисел.
+/////
+///// Возвращает: целевую Z-координату, зажатую в [bottomZ+5, topZ-5] (мкм).
+///// </summary>
+//private static float SampleTargetZ(
+//    float startZ,
+//    int level,
+//    float centerZ,
+//    float sigma,
+//    float bottomZ,
+//    float topZ,
+//    Random rng)
+//{
+//    float targetZ;
+//    if (level == 0)
+//        targetZ = centerZ + (float)SampleGaussian(rng) * sigma;
+//    else
+//        targetZ = startZ + (float)SampleGaussian(rng) * SUBBRANCH_Z_DRIFT;
 
 //    return Math.Clamp(targetZ, bottomZ + 5f, topZ - 5f);
 //}

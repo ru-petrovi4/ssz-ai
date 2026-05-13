@@ -11,14 +11,15 @@ namespace Ssz.AI.Models.MiniColumnDetailedModel;
 public sealed class ActiveZone
 {
     /// <summary>Центр найденной зоны (мкм).</summary>
-    public Vector3 Center;
-
-    /// <summary>
-    /// Множество индексов РАЗНЫХ активных аксонов,
-    /// синапсы которых попали в радиус зоны.
-    /// </summary>
-    public readonly HashSet<int> ActiveAxonIndices = new();
-
-    /// <summary>Число уникальных активных аксонов в зоне.</summary>
-    public int UniqueAxonCount => ActiveAxonIndices.Count;
+    public Vector3 Center;    
 }
+
+
+///// <summary>
+//    /// Множество индексов РАЗНЫХ активных аксонов,
+//    /// синапсы которых попали в радиус зоны.
+//    /// </summary>
+//    public readonly HashSet<int> ActiveAxonIndices = new();
+
+//    /// <summary>Число уникальных активных аксонов в зоне.</summary>
+//    public int UniqueAxonCount => ActiveAxonIndices.Count;

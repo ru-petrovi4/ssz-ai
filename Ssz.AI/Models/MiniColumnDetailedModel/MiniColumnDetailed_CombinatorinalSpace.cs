@@ -281,7 +281,7 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
         // адаптивный размер воксела — не более radiusUm/2,
         // чтобы ядро свёртки всегда содержало >= 2 вокселя на радиус.
         // Нижний порог 1 мкм предотвращает взрывной рост числа вокселей.
-        float voxelSizeUm = 2.0f; //Math.Max(1.0f, Math.Min(radiusUm / 2.0f, 5.0f));
+        float voxelSizeUm = 1.0f; //Math.Max(1.0f, Math.Min(radiusUm / 2.0f, 5.0f));
 
         // ---- Bounding box ----
         SceneBounds bounds = new();
@@ -414,37 +414,42 @@ public sealed class MiniColumnDetailed_CombinatorinalSpace : IDisposable
                 bounds.YMin + yIdx * voxelSizeUm + voxelSizeUm * 0.5f,
                 bounds.ZMin + zIdx * voxelSizeUm + voxelSizeUm * 0.5f));
         }
-
-        // ---- Deduplicate / merge ----
-        // mergeRadius = 1.5 воксела (сливаем только смежные воксели,
-        // не уничтожая топологически разнесённые зоны вдоль аксона).
-        float mergeRadius = voxelSizeUm * 1.5f;
-        float mergeRadSq = mergeRadius * mergeRadius;
-
         var finalZones = new FastList<ActiveZone>(512);
-        bool[] merged = new bool[rawCenters.Count];
-
         for (int i = 0; i < rawCenters.Count; i += 1)
         {
-            if (merged[i]) continue;
-
-            Vector3 sumPos = rawCenters[i];
-            int cnt = 1;
-            merged[i] = true;
-
-            for (int j = i + 1; j < rawCenters.Count; j += 1)
-            {
-                if (!merged[j]
-                    && Vector3.DistanceSquared(rawCenters[i], rawCenters[j]) <= mergeRadSq)
-                {
-                    sumPos += rawCenters[j];
-                    cnt += 1;
-                    merged[j] = true;
-                }
-            }
-
-            finalZones.Add(new ActiveZone { Center = sumPos / cnt });
+            finalZones.Add(new ActiveZone { Center = rawCenters[i] });
         }
+
+        //// ---- Deduplicate / merge ----
+        //// mergeRadius = 1.5 воксела (сливаем только смежные воксели,
+        //// не уничтожая топологически разнесённые зоны вдоль аксона).
+        //float mergeRadius = voxelSizeUm * 1.5f;
+        //float mergeRadSq = mergeRadius * mergeRadius;
+
+
+        //bool[] merged = new bool[rawCenters.Count];
+
+        //for (int i = 0; i < rawCenters.Count; i += 1)
+        //{
+        //    if (merged[i]) continue;
+
+        //    Vector3 sumPos = rawCenters[i];
+        //    int cnt = 1;
+        //    merged[i] = true;
+
+        //    for (int j = i + 1; j < rawCenters.Count; j += 1)
+        //    {
+        //        if (!merged[j]
+        //            && Vector3.DistanceSquared(rawCenters[i], rawCenters[j]) <= mergeRadSq)
+        //        {
+        //            sumPos += rawCenters[j];
+        //            cnt += 1;
+        //            merged[j] = true;
+        //        }
+        //    }
+
+        //    finalZones.Add(new ActiveZone { Center = sumPos / cnt });
+        //}
 
         return finalZones;
     }
