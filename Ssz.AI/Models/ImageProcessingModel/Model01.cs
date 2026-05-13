@@ -1335,7 +1335,7 @@ public class Model01 : IDisposable
         /// <summary>
         ///     минимум N уникальных активных аксонов
         /// </summary>
-        public int ActivatedSynapsesCount { get; set; } = 3;
+        public int ActivatedSynapsesCount { get; set; } = 4;
     }
 }
 

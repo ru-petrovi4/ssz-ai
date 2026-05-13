@@ -42,36 +42,36 @@ public partial class Model01View : UserControl
         LevelScrollBar0.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);            
-            Refresh();
+            _ = Refresh();
         };
         LevelScrollBar1.ValueChanged += (s, e) =>
         {
-            GetDataFromControls(constants);            
-            Refresh();
+            GetDataFromControls(constants);
+            _ = Refresh();
         };
         LevelScrollBar2.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh();
+            _ = Refresh();
         };
         LevelScrollBar3.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh();
+            _ = Refresh();
         };
         LevelScrollBar4.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh();
+            _ = Refresh();
         };
         LevelScrollBar5.ValueChanged += (s, e) =>
         {
             GetDataFromControls(constants);
-            Refresh();
+            _ = Refresh();
         };
 
         Reset();
-        Refresh();
+        _ = Refresh();
         //if (true)
         //{
         //    Reset();
@@ -198,7 +198,7 @@ public partial class Model01View : UserControl
         _randomInput = null;
         _rangeInput = null;
 
-        Refresh();
+        _ = Refresh();
     }
 
     private void RandomInput_OnClick(object? sender, RoutedEventArgs args)
@@ -210,27 +210,44 @@ public partial class Model01View : UserControl
         }
         _rangeInput = null;
 
-        Refresh();
+        _ = Refresh();
     }
 
     private void RangeInput_OnClick(object? sender, RoutedEventArgs args)
     {
         _randomInput = null;
-        _rangeInput = new float[Model01.Constants.HashLength];        
+        _rangeInput = new float[Model01.Constants.HashLength];
 
-        Refresh();
+        _ = Refresh();
     }
 
     private void RangeInputLeft_OnClick(object? sender, RoutedEventArgs args)
     {
-        int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f) - 1;
+        int start = GetBitStart() - 1;
         LevelScrollBar0.Value = LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength;
     }
 
     private void RangeInputRight_OnClick(object? sender, RoutedEventArgs args)
     {
-        int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f) + 1;
+        int start = GetBitStart() + 1;
         LevelScrollBar0.Value = LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength;
+    }
+
+    private async void RangeInputRightRight_OnClick(object? sender, RoutedEventArgs args)
+    {
+        int start = 0;
+        int bitLength = GetBitLength();
+        for (; ; )
+        {
+            await Task.Delay(400);
+            Model01.Constants.TestGradientAngleDegrees = (float)(LevelScrollBar0.Minimum + (LevelScrollBar0.Maximum - LevelScrollBar0.Minimum) * start / Model01.Constants.HashLength);
+            await Refresh();
+            start += 1;
+            if (start > Model01.Constants.HashLength - bitLength)
+                break;
+        }
+
+        LevelScrollBar0.Value = Model01.Constants.TestGradientAngleDegrees;
     }
 
     #endregion
@@ -273,7 +290,7 @@ public partial class Model01View : UserControl
     private bool _refreshTaskIsRunning;
     private bool _refreshTaskIsPending;
 
-    private async void Refresh()
+    private async Task Refresh()
     {
         Refresh_ImagesSet1();
 
@@ -299,8 +316,8 @@ public partial class Model01View : UserControl
                 else if (_rangeInput is not null)
                 {
                     Array.Clear(_rangeInput);
-                    int start = (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f);
-                    for (int i = 0; i < (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientMagnitude / 1200.0f); i += 1)
+                    int start = GetBitStart();
+                    for (int i = 0; i < GetBitLength(); i += 1)
                     {
                         int bitIndex = start + i;
                         if (bitIndex < _rangeInput.Length)
@@ -327,6 +344,16 @@ public partial class Model01View : UserControl
         {
             RefreshTaskIsRunning = false;
         }
+    }    
+
+    private int GetBitStart()
+    {
+        return (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientAngleDegrees / 360.0f);
+    }
+
+    private int GetBitLength()
+    {
+        return (int)(Model01.Constants.HashLength * Model01.Constants.TestGradientMagnitude / 1200.0f);
     }
 
     private async void Refresh_ImagesSet1()

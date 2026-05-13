@@ -32,6 +32,7 @@
         <Button Content="Range Input" Click="RangeInput_OnClick" />
         <Button Content="&lt;" Click="RangeInputLeft_OnClick" />
         <Button Content="&gt;" Click="RangeInputRight_OnClick" />
+        <Button Content="&gt;&gt;" Click="RangeInputRightRight_OnClick" />
       </StackPanel>
     </Grid>
     <Grid Grid.Row="1">
